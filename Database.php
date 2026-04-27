@@ -46,7 +46,7 @@ final class Database
         $dsn = match ($driver) {
             'mysql' => sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
             'pgsql', 'postgres', 'postgresql' => sprintf('pgsql:host=%s;port=%d;dbname=%s', $host, $port, $database),
-            'sqlite' => sprintf('sqlite:%s', $database === ':memory:' ? ':memory:' : $database),
+            'sqlite' => sprintf('sqlite:%s', $database === ':memory:' ? ':memory:' : self::resolveSqlitePath($database)),
             default => throw new RuntimeException(sprintf('Unsupported DB driver: %s', $driver)),
         };
 
@@ -68,6 +68,29 @@ final class Database
         }
 
         return self::$pdo;
+    }
+
+    /**
+     * Resolve SQLite database path (convert relative to absolute)
+     */
+    private static function resolveSqlitePath(string $path): string
+    {
+        // If already absolute path, return as-is
+        if (DIRECTORY_SEPARATOR === '/' && str_starts_with($path, '/')) {
+            return $path; // Unix absolute path
+        }
+        if (DIRECTORY_SEPARATOR === '\\' && preg_match('/^[A-Z]:\\\\/i', $path)) {
+            return $path; // Windows absolute path
+        }
+        
+        // Convert relative path to absolute based on project root
+        // Look for BASE_PATH constant or use current directory
+        $basePath = defined('BASE_PATH') ? BASE_PATH : getcwd();
+        
+        // Remove leading ./ if present
+        $relativePath = ltrim($path, './');
+        
+        return rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $relativePath;
     }
 
     /**
