@@ -17,7 +17,7 @@ This is the core library for Siro API Framework. It provides essential component
 ## Installation
 
 ```bash
-composer require siro/core
+composer require sirosoft/core
 ```
 
 ## Requirements
