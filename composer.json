@@ -1,0 +1,26 @@
+{
+  "name": "siro/core",
+  "version": "0.7.4",
+  "description": "Siro API Framework Core - Lightweight PHP Micro-Framework",
+  "type": "library",
+  "license": "MIT",
+  "keywords": ["framework", "api", "micro-framework", "php", "core"],
+  "homepage": "https://github.com/SiroSoft/siro-core",
+  "support": {
+    "issues": "https://github.com/SiroSoft/siro-core/issues",
+    "source": "https://github.com/SiroSoft/siro-core"
+  },
+  "autoload": {
+    "psr-4": {
+      "Siro\\Core\\": ""
+    }
+  },
+  "require": {
+    "php": ">=8.2",
+    "ext-pdo": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
