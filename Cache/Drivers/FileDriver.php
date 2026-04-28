@@ -70,18 +70,9 @@ final class FileDriver
             }
 
             if ($prefix !== '') {
-                $content = file_get_contents($file);
-                if ($content === false || $content === '') {
-                    continue;
-                }
-
-                $decoded = json_decode($content, true);
-                if (!is_array($decoded)) {
-                    continue;
-                }
-
-                $key = (string) ($decoded['key'] ?? '');
-                if (!str_starts_with($key, $prefix)) {
+                $filename = basename($file);
+                $safePrefix = substr(preg_replace('/[^a-zA-Z0-9_\-]/', '_', $prefix), 0, 200);
+                if (!str_starts_with($filename, $safePrefix)) {
                     continue;
                 }
             }
@@ -96,7 +87,9 @@ final class FileDriver
 
     private function pathFor(string $key): string
     {
-        return $this->cachePath . DIRECTORY_SEPARATOR . sha1($key) . '.cache';
+        $safe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key);
+        $safe = substr($safe, 0, 200) . '_' . sha1($key);
+        return $this->cachePath . DIRECTORY_SEPARATOR . $safe . '.cache';
     }
 
     /**

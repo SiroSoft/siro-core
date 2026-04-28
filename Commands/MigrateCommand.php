@@ -11,7 +11,7 @@ use Throwable;
 
 final class MigrateCommand
 {
-    use CommandSupport;
+    use MigrationBaseCommand;
 
     public function __construct(private readonly string $basePath)
     {
@@ -22,26 +22,7 @@ final class MigrateCommand
     {
         unset($args);
 
-        Env::load($this->basePath . DIRECTORY_SEPARATOR . '.env');
-        
-        // Preflight check before attempting DB connection
-        $this->checkRequiredExtensions();
-        
-        /** @var array<string, mixed> $config */
-        $config = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
-        Database::configure($config);
-
-        try {
-            $pdo = Database::connection();
-        } catch (\PDOException $e) {
-            fwrite(STDERR, "Error: Cannot connect to database\n");
-            fwrite(STDERR, "Details: " . $e->getMessage() . "\n");
-            fwrite(STDERR, "\nPlease check:\n");
-            fwrite(STDERR, "  1. Your .env DB configuration (DB_HOST, DB_PORT, DB_DATABASE)\n");
-            fwrite(STDERR, "  2. Database server is running and accessible\n");
-            fwrite(STDERR, "  3. Network connectivity and firewall settings\n");
-            exit(1);
-        }
+        $pdo = $this->setupDatabaseConnection($this->basePath);
         
         $this->ensureMigrationTable($pdo);
 
@@ -135,10 +116,25 @@ final class MigrateCommand
 
         $pdo->exec($sql);
 
+        // Check if batch column already exists before trying to add it
+        $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $hasBatch = false;
         try {
-            $pdo->exec('ALTER TABLE migrations ADD COLUMN batch INT NOT NULL DEFAULT 1');
+            $columns = $pdo->query('SELECT batch FROM migrations LIMIT 0');
+            $hasBatch = $columns !== false;
         } catch (Throwable) {
-            // batch column already exists
+            $hasBatch = false;
+        }
+
+        if (!$hasBatch) {
+            try {
+                $alterSql = $driver === 'pgsql'
+                    ? 'ALTER TABLE migrations ADD COLUMN IF NOT EXISTS batch INT NOT NULL DEFAULT 1'
+                    : 'ALTER TABLE migrations ADD COLUMN batch INT NOT NULL DEFAULT 1';
+                $pdo->exec($alterSql);
+            } catch (Throwable) {
+                // column already exists
+            }
         }
     }
 
@@ -165,35 +161,5 @@ final class MigrateCommand
         $max = (int) ($row['max_batch'] ?? 0);
 
         return $max + 1;
-    }
-
-    private function checkRequiredExtensions(): void
-    {
-        $required = ['pdo', 'json'];
-        $missing = [];
-
-        foreach ($required as $ext) {
-            if (!extension_loaded($ext)) {
-                $missing[] = $ext;
-            }
-        }
-
-        // Check PDO drivers based on DB_CONNECTION
-        $dbConnection = strtolower((string) Env::get('DB_CONNECTION', 'mysql'));
-        $pdoDriver = match ($dbConnection) {
-            'pgsql' => 'pdo_pgsql',
-            'sqlite' => 'pdo_sqlite',
-            default => 'pdo_mysql',
-        };
-
-        if (!extension_loaded($pdoDriver)) {
-            $missing[] = $pdoDriver . " (for {$dbConnection})";
-        }
-
-        if ($missing !== []) {
-            fwrite(STDERR, "Error: Missing required PHP extensions: " . implode(', ', $missing) . PHP_EOL);
-            fwrite(STDERR, "Please install them or update your php.ini configuration." . PHP_EOL);
-            exit(1);
-        }
     }
 }

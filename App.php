@@ -151,6 +151,13 @@ final class App
             $status = $response->statusCode();
             $this->setDebugMeta();
             $response->send();
+        } catch (ValidationException $e) {
+            // Handle validation errors with 422 response
+            Logger::error($e);
+            $this->setDebugMeta();
+            $errorResponse = $e->toResponse();
+            $status = $errorResponse->statusCode();
+            $errorResponse->send();
         } catch (Throwable $e) {
             Logger::error($e);
 

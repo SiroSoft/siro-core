@@ -69,6 +69,65 @@ final class Validator
                         continue;
                     }
                 }
+
+                // unique:table,column
+                if (str_starts_with($rule, 'unique:')) {
+                    $params = substr($rule, 7);
+                    $parts = explode(',', $params);
+                    $table = trim($parts[0] ?? '');
+                    $column = trim($parts[1] ?? $field);
+                    
+                    if ($table !== '') {
+                        $exists = Database::table($table)
+                            ->where($column, '=', $value)
+                            ->count();
+                        
+                        if ($exists > 0) {
+                            $errors[$field][] = sprintf('%s already exists', self::label($field));
+                            continue;
+                        }
+                    }
+                }
+
+                // exists:table,column
+                if (str_starts_with($rule, 'exists:')) {
+                    $params = substr($rule, 7);
+                    $parts = explode(',', $params);
+                    $table = trim($parts[0] ?? '');
+                    $column = trim($parts[1] ?? $field);
+                    
+                    if ($table !== '') {
+                        $exists = Database::table($table)
+                            ->where($column, '=', $value)
+                            ->count();
+                        
+                        if ($exists === 0) {
+                            $errors[$field][] = sprintf('%s does not exist', self::label($field));
+                            continue;
+                        }
+                    }
+                }
+
+                // confirmed (checks if field_confirmation matches)
+                if ($rule === 'confirmed') {
+                    $confirmationField = $field . '_confirmation';
+                    $confirmationValue = $input[$confirmationField] ?? null;
+                    
+                    if ($value !== $confirmationValue) {
+                        $errors[$field][] = sprintf('%s confirmation does not match', self::label($field));
+                        continue;
+                    }
+                }
+
+                // in:a,b,c
+                if (str_starts_with($rule, 'in:')) {
+                    $allowedValues = array_map('trim', explode(',', substr($rule, 3)));
+                    
+                    if (!in_array((string) $value, $allowedValues, true)) {
+                        $errors[$field][] = sprintf('%s must be one of: %s', self::label($field), implode(', ', $allowedValues));
+                        continue;
+                    }
+                }
             }
         }
 

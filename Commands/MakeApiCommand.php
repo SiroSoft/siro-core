@@ -79,106 +79,95 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Models\{$model};
 use App\Resources\{$resourceClass};
-use Siro\Core\DB;
 use Siro\Core\Request;
 use Siro\Core\Response;
-use Siro\Core\Validator;
 
 final class {$class}
 {
     public function index(Request \$request): Response
     {
-        \$perPage = max(1, (int) \$request->query('per_page', 20));
+        \$perPage = \$request->queryInt('per_page', 20);
+        \$page = \$request->queryInt('page', 1);
 
-        \$result = DB::table('{$resource}')
+        \$result = {$model}::query()
             ->select(['id', 'name', 'created_at'])
             ->orderBy('id', 'DESC')
             ->cache(60)
-            ->paginate(\$perPage);
+            ->paginate(\$perPage, \$page);
 
-        return Response::success({$resourceClass}::collection(\$result['data']), '{$model} list fetched', 200, \$result['meta']);
+        return Response::paginated(
+            {$resourceClass}::collection(\$result['data']),
+            \$result['meta'],
+            '{$model} list fetched'
+        );
     }
 
     public function show(Request \$request): Response
     {
-        \$id = (int) \$request->param('id', 0);
+        \$id = \$request->int('id', 0);
         if (\$id <= 0) {
             return Response::error('Invalid id', 422, ['id' => ['Id must be a positive integer']]);
         }
 
-        \$item = DB::table('{$resource}')
-            ->select(['id', 'name', 'created_at'])
-            ->where('id', '=', \$id)
-            ->cache(60)
-            ->first();
+        \$item = {$model}::find(\$id);
 
         if (\$item === null) {
             return Response::error('{$model} not found', 404);
         }
 
-        return Response::success((new {$resourceClass}(\$item))->toArray(), '{$model} fetched');
+        return Response::success((new {$resourceClass}(\$item->toArray()))->toArray(), '{$model} fetched');
     }
 
     public function store(Request \$request): Response
     {
-        \$errors = Validator::make(\$request->body(), [
+        \$validated = \$request->validate([
             'name' => 'required|min:3|max:120',
         ]);
-        if (\$errors !== []) {
-            return Response::error('Validation failed', 422, \$errors);
-        }
 
-        \$id = DB::table('{$resource}')->insert([
-            'name' => (string) \$request->input('name'),
+        \$item = {$model}::create([
+            'name' => \$validated['name'],
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
-        return Response::created(['id' => \$id], '{$model} created');
+        return Response::created(['id' => \$item->id], '{$model} created');
     }
 
     public function update(Request \$request): Response
     {
-        \$id = (int) \$request->param('id', 0);
+        \$id = \$request->int('id', 0);
         if (\$id <= 0) {
             return Response::error('Invalid id', 422, ['id' => ['Id must be a positive integer']]);
         }
 
-        \$errors = Validator::make(\$request->body(), [
+        \$validated = \$request->validate([
             'name' => 'min:3|max:120',
         ]);
-        if (\$errors !== []) {
-            return Response::error('Validation failed', 422, \$errors);
-        }
 
-        \$payload = [];
-        if (\$request->input('name') !== null) {
-            \$payload['name'] = (string) \$request->input('name');
-        }
-
-        if (\$payload === []) {
-            return Response::error('Nothing to update', 422, ['body' => ['Provide at least one field']]);
-        }
-
-        \$affected = DB::table('{$resource}')->where('id', '=', \$id)->update(\$payload);
-        if (\$affected === 0) {
+        \$item = {$model}::find(\$id);
+        if (\$item === null) {
             return Response::error('{$model} not found', 404);
         }
+
+        \$item->update(\$validated);
 
         return Response::success(null, '{$model} updated');
     }
 
     public function delete(Request \$request): Response
     {
-        \$id = (int) \$request->param('id', 0);
+        \$id = \$request->int('id', 0);
         if (\$id <= 0) {
             return Response::error('Invalid id', 422, ['id' => ['Id must be a positive integer']]);
         }
 
-        \$deleted = DB::table('{$resource}')->where('id', '=', \$id)->delete();
-        if (\$deleted === 0) {
+        \$item = {$model}::find(\$id);
+        if (\$item === null) {
             return Response::error('{$model} not found', 404);
         }
+
+        \$item->delete();
 
         return Response::success(null, '{$model} deleted');
     }

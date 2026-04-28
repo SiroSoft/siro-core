@@ -88,11 +88,9 @@ final class Logger
             '/(authorization\s*[:=]\s*)([^\s,;]+)/i',
             '/(bearer\s+)([^\s,;]+)/i',
             '/(password\s*[:=]\s*)([^\s,;]+)/i',
-            '/(token\s*[:=]\s*)([^\s,;]+)/i',
         ];
 
         $replacements = [
-            '$1[REDACTED]',
             '$1[REDACTED]',
             '$1[REDACTED]',
             '$1[REDACTED]',

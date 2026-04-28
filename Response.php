@@ -75,6 +75,22 @@ final class Response
         return new self($payload, $statusCode);
     }
 
+    /**
+     * Create a paginated response.
+     *
+     * @param array<int, mixed> $data
+     * @param array{page: int, per_page: int, total: int, last_page: int} $meta
+     */
+    public static function paginated(array $data, array $meta, string $message = 'OK', int $statusCode = 200): self
+    {
+        return new self([
+            'success' => true,
+            'message' => $message,
+            'data' => $data,
+            'meta' => $meta,
+        ], $statusCode);
+    }
+
     public static function enableDebug(bool $enabled): void
     {
         self::$debugEnabled = $enabled;

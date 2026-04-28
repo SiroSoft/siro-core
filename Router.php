@@ -86,6 +86,11 @@ final class Router
         $method = $request->method();
         $path = $request->path();
 
+        // Auto-handle OPTIONS requests (CORS preflight)
+        if ($method === 'OPTIONS') {
+            return $this->handleOptionsRequest($path);
+        }
+
         $route = $this->staticRoutes[$method][$path] ?? null;
         if ($route === null) {
             $route = $this->matchDynamicRoute($method, $path);
@@ -426,5 +431,49 @@ final class Router
             'json' => '\App\Middleware\JsonMiddleware',
             default => $name,
         };
+    }
+
+    /**
+     * Handle OPTIONS requests automatically (CORS preflight).
+     * Returns 204 No Content with appropriate CORS headers.
+     */
+    private function handleOptionsRequest(string $path): Response
+    {
+        // Check if there are any routes for this path (any method)
+        $hasRoute = false;
+        
+        // Check static routes
+        foreach ($this->staticRoutes as $routes) {
+            if (isset($routes[$path])) {
+                $hasRoute = true;
+                break;
+            }
+        }
+
+        // Check dynamic routes
+        if (!$hasRoute) {
+            foreach ($this->dynamicRoutes as $routes) {
+                foreach ($routes as $route) {
+                    $params = $this->matchSegments($route['segments'], $this->splitSegments($path));
+                    if ($params !== null) {
+                        $hasRoute = true;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        if (!$hasRoute) {
+            return Response::error('Route not found', 404);
+        }
+
+        // Return 204 No Content for valid OPTIONS requests
+        http_response_code(204);
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        header('Access-Control-Max-Age: 86400');
+        
+        return Response::noContent();
     }
 }

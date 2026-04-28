@@ -11,7 +11,7 @@ use Throwable;
 
 final class MigrateRollbackCommand
 {
-    use CommandSupport;
+    use MigrationBaseCommand;
 
     public function __construct(private readonly string $basePath)
     {
@@ -26,26 +26,7 @@ final class MigrateRollbackCommand
             return 1;
         }
 
-        Env::load($this->basePath . DIRECTORY_SEPARATOR . '.env');
-        
-        // Preflight check
-        $this->checkRequiredExtensions();
-        
-        /** @var array<string, mixed> $config */
-        $config = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
-        Database::configure($config);
-
-        try {
-            $pdo = Database::connection();
-        } catch (\PDOException $e) {
-            fwrite(STDERR, "Error: Cannot connect to database\n");
-            fwrite(STDERR, "Details: " . $e->getMessage() . "\n");
-            fwrite(STDERR, "\nPlease check:\n");
-            fwrite(STDERR, "  1. Your .env DB configuration (DB_HOST, DB_PORT, DB_DATABASE)\n");
-            fwrite(STDERR, "  2. Database server is running and accessible\n");
-            fwrite(STDERR, "  3. Network connectivity and firewall settings\n");
-            exit(1);
-        }
+        $pdo = $this->setupDatabaseConnection($this->basePath);
         
         $this->ensureMigrationTable($pdo);
         $migrations = $this->lastAppliedMigrations($pdo, $step);
@@ -137,52 +118,5 @@ final class MigrateRollbackCommand
         }
 
         return 1;
-    }
-
-    private function ensureMigrationTable(PDO $pdo): void
-    {
-        $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-
-        $sql = match ($driver) {
-            'pgsql' => 'CREATE TABLE IF NOT EXISTS migrations (id BIGSERIAL PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
-            default => 'CREATE TABLE IF NOT EXISTS migrations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
-        };
-
-        $pdo->exec($sql);
-
-        try {
-            $pdo->exec('ALTER TABLE migrations ADD COLUMN batch INT NOT NULL DEFAULT 1');
-        } catch (Throwable) {
-            // already exists
-        }
-    }
-
-    private function checkRequiredExtensions(): void
-    {
-        $required = ['pdo', 'json'];
-        $missing = [];
-
-        foreach ($required as $ext) {
-            if (!extension_loaded($ext)) {
-                $missing[] = $ext;
-            }
-        }
-
-        $dbConnection = strtolower((string) Env::get('DB_CONNECTION', 'mysql'));
-        $pdoDriver = match ($dbConnection) {
-            'pgsql' => 'pdo_pgsql',
-            'sqlite' => 'pdo_sqlite',
-            default => 'pdo_mysql',
-        };
-
-        if (!extension_loaded($pdoDriver)) {
-            $missing[] = $pdoDriver . " (for {$dbConnection})";
-        }
-
-        if ($missing !== []) {
-            fwrite(STDERR, "Error: Missing required PHP extensions: " . implode(', ', $missing) . PHP_EOL);
-            fwrite(STDERR, "Please install them or update your php.ini configuration." . PHP_EOL);
-            exit(1);
-        }
     }
 }

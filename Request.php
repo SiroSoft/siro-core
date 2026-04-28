@@ -45,6 +45,15 @@ final class Request
         $query = $_GET;
         $headers = self::parseHeaders();
 
+        $maxBodySize = 2 * 1024 * 1024; // 2MB limit
+        $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        if ($contentLength > $maxBodySize) {
+            http_response_code(413);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
+            exit(1);
+        }
+
         $rawBody = file_get_contents('php://input') ?: '';
         $jsonBody = [];
 
@@ -176,6 +185,100 @@ final class Request
         $suffix = $queryString !== '' ? ('?' . $queryString) : '';
 
         return $this->method . ':' . $this->path . $suffix;
+    }
+
+    /**
+     * Validate request data using Validator.
+     * Automatically throws ValidationException on failure (returns 422).
+     *
+     * @param array<string, string> $rules
+     * @return array<string, mixed> Validated data
+     * @throws ValidationException
+     */
+    public function validate(array $rules): array
+    {
+        $data = $this->body();
+        $errors = Validator::make($data, $rules);
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get input as integer.
+     */
+    public function int(string $key, int $default = 0): int
+    {
+        $value = $this->input($key, $default);
+        return (int) $value;
+    }
+
+    /**
+     * Get input as string.
+     */
+    public function string(string $key, string $default = ''): string
+    {
+        $value = $this->input($key, $default);
+        return (string) $value;
+    }
+
+    /**
+     * Get input as boolean.
+     */
+    public function bool(string $key, bool $default = false): bool
+    {
+        $value = $this->input($key, $default);
+        
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return (bool) $value;
+    }
+
+    /**
+     * Get input as array.
+     *
+     * @return array<int|string, mixed>
+     */
+    public function array(string $key, array $default = []): array
+    {
+        $value = $this->input($key, $default);
+        return is_array($value) ? $value : $default;
+    }
+
+    /**
+     * Get input as float.
+     */
+    public function float(string $key, float $default = 0.0): float
+    {
+        $value = $this->input($key, $default);
+        return (float) $value;
+    }
+
+    /**
+     * Get query parameter as integer.
+     */
+    public function queryInt(string $key, int $default = 0): int
+    {
+        $value = $this->query($key, $default);
+        return (int) $value;
+    }
+
+    /**
+     * Get query parameter as string.
+     */
+    public function queryString(string $key, string $default = ''): string
+    {
+        $value = $this->query($key, $default);
+        return (string) $value;
     }
 
     private static function normalizePath(string $path): string

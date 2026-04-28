@@ -84,8 +84,10 @@ final class Database
         }
         
         // Convert relative path to absolute based on project root
-        // Look for BASE_PATH constant or use current directory
         $basePath = defined('BASE_PATH') ? BASE_PATH : getcwd();
+        if (defined('SIRO_BASE_PATH')) {
+            $basePath = SIRO_BASE_PATH;
+        }
         
         // Remove leading ./ if present
         $relativePath = ltrim($path, './');
@@ -144,7 +146,6 @@ final class Database
      */
     public static function execute(string $sql, array $params = []): int
     {
-        self::pullQueryCacheTtl();
         $stmt = self::prepareAndExecute($sql, $params);
         return $stmt->rowCount();
     }

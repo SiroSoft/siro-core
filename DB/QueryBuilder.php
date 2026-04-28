@@ -156,6 +156,33 @@ final class QueryBuilder
         return $this;
     }
 
+    private function quoteIdentifier(string $identifier): string
+    {
+        if ($identifier === '*') {
+            return $identifier;
+        }
+
+        $parts = explode('.', $identifier);
+        foreach ($parts as $i => $part) {
+            $part = trim($part);
+            if ($part !== '*' && $part !== '') {
+                $parts[$i] = '`' . str_replace('`', '``', $part) . '`';
+            }
+        }
+
+        return implode('.', $parts);
+    }
+
+    private function quoteColumnList(string $columns): string
+    {
+        $parts = explode(',', $columns);
+        foreach ($parts as $i => $part) {
+            $parts[$i] = $this->quoteIdentifier(trim($part));
+        }
+
+        return implode(', ', $parts);
+    }
+
     public function limit(int $limit): self
     {
         $this->limitValue = max(0, $limit);
@@ -205,7 +232,7 @@ final class QueryBuilder
         return $this->aggregate('AVG', $column);
     }
 
-    public function insert(array $data): int|string
+    public function insert(array $data): int
     {
         if ($data === []) {
             return 0;
@@ -222,10 +249,11 @@ final class QueryBuilder
             $bindings[$name] = $value;
         }
 
+        $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
         $sql = sprintf(
             'INSERT INTO %s (%s) VALUES (%s)',
-            $this->table,
-            implode(', ', $columns),
+            $this->quoteIdentifier($this->table),
+            implode(', ', $quotedColumns),
             implode(', ', $holders)
         );
 
@@ -234,7 +262,7 @@ final class QueryBuilder
         Cache::flushQueryBuilderTable($this->cacheTable);
 
         $lastId = Database::connection()->lastInsertId();
-        return $lastId !== '0' ? $lastId : $stmt->rowCount();
+        return $lastId !== false && $lastId !== '0' ? (int) $lastId : $stmt->rowCount();
     }
 
     public function update(array $data): int
@@ -248,12 +276,12 @@ final class QueryBuilder
 
         foreach ($data as $column => $value) {
             $name = 'u_' . preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $column);
-            $sets[] = sprintf('%s = :%s', $column, $name);
+            $sets[] = sprintf('%s = :%s', $this->quoteIdentifier($column), $name);
             $bindings[$name] = $value;
         }
 
         [$whereSql, $whereBindings] = $this->compileWhere();
-        $sql = sprintf('UPDATE %s SET %s%s', $this->table, implode(', ', $sets), $whereSql);
+        $sql = sprintf('UPDATE %s SET %s%s', $this->quoteIdentifier($this->table), implode(', ', $sets), $whereSql);
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute([...$bindings, ...$whereBindings]);
@@ -265,7 +293,7 @@ final class QueryBuilder
     public function delete(): int
     {
         [$whereSql, $whereBindings] = $this->compileWhere();
-        $sql = sprintf('DELETE FROM %s%s', $this->table, $whereSql);
+        $sql = sprintf('DELETE FROM %s%s', $this->quoteIdentifier($this->table), $whereSql);
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute($whereBindings);
@@ -277,10 +305,10 @@ final class QueryBuilder
     /**
      * @return array{data: array<int, array<string, mixed>>, meta: array<string, int>}
      */
-    public function paginate(int $perPage): array
+    public function paginate(int $perPage, ?int $page = null): array
     {
         $perPage = max(1, $perPage);
-        $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+        $page = $page ?? (isset($_GET['page']) ? (int) $_GET['page'] : 1);
         $page = max(1, $page);
         $offset = ($page - 1) * $perPage;
 
@@ -412,9 +440,9 @@ final class QueryBuilder
     {
         [$whereSql, $whereBindings] = $this->compileWhere();
         [$havingSql, $havingBindings] = $this->compileHaving();
-        $columns = implode(', ', $this->columns);
+        $columns = $this->quoteColumnList(implode(', ', $this->columns));
 
-        $sql = sprintf('SELECT %s FROM %s', $columns, $this->table);
+        $sql = sprintf('SELECT %s FROM %s', $columns, $this->quoteIdentifier($this->table));
         $sql .= $this->compileJoins();
         $sql .= $whereSql;
         $sql .= $this->compileGroupBy();
@@ -439,12 +467,12 @@ final class QueryBuilder
         [$havingSql, $havingBindings] = $this->compileHaving();
 
         if ($this->groups === []) {
-            $sql = sprintf('SELECT COUNT(*) AS aggregate FROM %s', $this->table);
+            $sql = sprintf('SELECT COUNT(*) AS aggregate FROM %s', $this->quoteIdentifier($this->table));
             $sql .= $this->compileJoins() . $whereSql . $havingSql;
             return [$sql, [...$whereBindings, ...$havingBindings]];
         }
 
-        $subQuery = sprintf('SELECT 1 FROM %s', $this->table)
+        $subQuery = sprintf('SELECT 1 FROM %s', $this->quoteIdentifier($this->table))
             . $this->compileJoins()
             . $whereSql
             . $this->compileGroupBy()
@@ -460,12 +488,12 @@ final class QueryBuilder
         [$havingSql, $havingBindings] = $this->compileHaving();
 
         if ($this->groups === []) {
-            $sql = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $column, $this->table);
+            $sql = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteIdentifier($this->table));
             $sql .= $this->compileJoins() . $whereSql . $havingSql;
             return [$sql, [...$whereBindings, ...$havingBindings]];
         }
 
-        $subQuery = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $column, $this->table)
+        $subQuery = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteIdentifier($this->table))
             . $this->compileJoins()
             . $whereSql
             . $this->compileGroupBy()
@@ -485,10 +513,10 @@ final class QueryBuilder
             $parts[] = sprintf(
                 ' %s JOIN %s ON %s %s %s',
                 $join['type'],
-                $join['table'],
-                $join['first'],
+                $this->quoteIdentifier($join['table']),
+                $this->quoteIdentifier($join['first']),
                 $join['operator'],
-                $join['second']
+                $this->quoteIdentifier($join['second'])
             );
         }
 
@@ -501,7 +529,8 @@ final class QueryBuilder
             return '';
         }
 
-        return ' GROUP BY ' . implode(', ', $this->groups);
+        $quoted = array_map(fn (string $col): string => $this->quoteIdentifier($col), $this->groups);
+        return ' GROUP BY ' . implode(', ', $quoted);
     }
 
     private function compileOrderBy(): string
@@ -512,7 +541,7 @@ final class QueryBuilder
 
         $parts = [];
         foreach ($this->orders as $order) {
-            $parts[] = $order['column'] . ' ' . $order['direction'];
+            $parts[] = $this->quoteIdentifier($order['column']) . ' ' . $order['direction'];
         }
 
         return ' ORDER BY ' . implode(', ', $parts);
@@ -543,11 +572,11 @@ final class QueryBuilder
                     $bindings[$param] = $this->bindings[$param];
                 }
 
-                $parts[] = $prefix . $where['column'] . ($where['not'] ? ' NOT IN (' : ' IN (') . implode(', ', $holderParts) . ')';
+                $parts[] = $prefix . $this->quoteIdentifier($where['column']) . ($where['not'] ? ' NOT IN (' : ' IN (') . implode(', ', $holderParts) . ')';
                 continue;
             }
 
-            $parts[] = $prefix . $where['column'] . ' ' . $where['operator'] . ' :' . $where['param'];
+            $parts[] = $prefix . $this->quoteIdentifier($where['column']) . ' ' . $where['operator'] . ' :' . $where['param'];
             $bindings[$where['param']] = $this->bindings[$where['param']];
         }
 
@@ -566,7 +595,7 @@ final class QueryBuilder
 
         foreach ($this->havings as $index => $having) {
             $prefix = $index === 0 ? '' : ' ' . $having['boolean'] . ' ';
-            $parts[] = $prefix . $having['column'] . ' ' . $having['operator'] . ' :' . $having['param'];
+            $parts[] = $prefix . $this->quoteIdentifier($having['column']) . ' ' . $having['operator'] . ' :' . $having['param'];
             $bindings[$having['param']] = $this->bindings[$having['param']];
         }
 

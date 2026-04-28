@@ -6,6 +6,7 @@ namespace Siro\Core;
 
 use Siro\Core\Commands\MakeApiCommand;
 use Siro\Core\Commands\MakeControllerCommand;
+use Siro\Core\Commands\MakeModelCommand;
 use Siro\Core\Commands\KeyGenerateCommand;
 use Siro\Core\Commands\MakeMigrationCommand;
 use Siro\Core\Commands\MakeResourceCommand;
@@ -37,6 +38,8 @@ final class Console
                 return (new MakeApiCommand($this->basePath))->run($args);
             case 'make:controller':
                 return (new MakeControllerCommand($this->basePath))->run($args);
+            case 'make:model':
+                return (new MakeModelCommand($this->basePath))->run($args);
             case 'make:migration':
                 return (new MakeMigrationCommand($this->basePath))->run($args);
             case 'make:resource':
@@ -64,6 +67,7 @@ final class Console
         $this->write('Usage:');
         $this->write('  php siro make:api users');
         $this->write('  php siro make:controller UserController');
+        $this->write('  php siro make:model User');
         $this->write('  php siro make:migration create_users_table');
         $this->write('  php siro make:resource UserResource');
         $this->write('  php siro migrate');

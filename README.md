@@ -6,13 +6,15 @@
 
 This is the core library for Siro API Framework. It provides essential components for building REST APIs:
 
-- ⚡ **Router & Request/Response** - Fast routing with middleware support
+- ⚡ **Router & Request/Response** - Fast routing with middleware support & auto OPTIONS handling
 - 🗄️ **Database QueryBuilder** - PDO-based query builder with automatic caching
+- 🎯 **Model Layer** - ORM-like experience with auto-detection, casts, and hidden fields
 - 🔐 **JWT Authentication** - Built-in JWT token generation and verification
+- ✅ **Smart Validation** - Automatic 422 responses with extended rules (unique, exists, confirmed, in)
 - 💾 **Cache System** - File and Redis cache drivers
-- 🛠️ **Console Commands** - CLI tools for migrations, scaffolding, and more
-- ✅ **Validation** - Request validation utilities
+- 🛠️ **Console Commands** - CLI tools for migrations, scaffolding, and model generation
 - 📦 **Resource Transformation** - API response formatting
+- 🔤 **Typed Input Helpers** - Type-safe request data handling
 
 ## Installation
 
@@ -46,7 +48,7 @@ $app = new App();
 Route::get('/', function() {
     return Response::json([
         'message' => 'Welcome to Siro API',
-        'version' => '0.7.4'
+        'version' => '0.7.5'
     ]);
 });
 
@@ -86,6 +88,60 @@ DB::table('users')
 DB::table('users')
     ->where('id', $id)
     ->delete();
+```
+
+### Model Layer (NEW in v0.7.5)
+
+Create models that extend `Siro\Core\Model`:
+
+```php
+namespace App\Models;
+
+use Siro\Core\Model;
+
+final class User extends Model
+{
+    protected string $table = 'users';
+    
+    protected array $hidden = ['password'];
+    
+    protected array $casts = [
+        'id' => 'int',
+        'status' => 'int',
+    ];
+    
+    protected array $fillable = ['name', 'email', 'password', 'status'];
+}
+```
+
+Use the model:
+
+```php
+use App\Models\User;
+
+// Find by ID
+$user = User::find(1);
+
+// Query builder integration
+$users = User::where('status', 1)
+    ->orderBy('name')
+    ->get();
+
+// Create
+$user = User::create([
+    'name' => 'John Doe',
+    'email' => 'john@example.com',
+    'password' => bcrypt('secret'),
+]);
+
+// Update
+$user->update(['name' => 'Jane Doe']);
+
+// Delete
+$user->delete();
+
+// Pagination
+$result = User::query()->paginate(20, $page);
 ```
 
 ### JWT Authentication
@@ -130,6 +186,21 @@ Run from terminal:
 php console greet John
 ```
 
+**Available Commands (v0.7.5):**
+```bash
+php siro make:model User          # Generate model scaffolding
+php siro make:api users           # Generate CRUD API
+php siro make:controller UserController
+php siro make:migration create_posts_table
+php siro make:resource UserResource
+php siro migrate                  # Run migrations
+php siro migrate:rollback         # Rollback migrations
+php siro migrate:status           # Check migration status
+php siro serve                    # Start development server
+php siro key:generate             # Generate APP_KEY
+php siro doctor                   # Check system health
+```
+
 ## Features
 
 ### Router
@@ -157,6 +228,47 @@ $app->middleware([\App\Middleware\AuthMiddleware::class]);
 Route::get('/admin', function() {
     return Response::json(['message' => 'Admin area']);
 })->middleware([\App\Middleware\AdminMiddleware::class]);
+```
+
+### Request Validation (NEW in v0.7.5)
+
+Automatic validation with 422 responses:
+
+```php
+use Siro\Core\Request;
+
+public function store(Request $request)
+{
+    // Throws ValidationException automatically on failure
+    $validated = $request->validate([
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|min:8|confirmed',
+        'status' => 'required|in:active,inactive,pending',
+    ]);
+    
+    // If we get here, validation passed
+    User::create($validated);
+}
+```
+
+**Extended Validation Rules:**
+- `unique:table,column` - Check value doesn't exist
+- `exists:table,column` - Check value exists
+- `confirmed` - Check if field matches `{field}_confirmation`
+- `in:a,b,c` - Check if value is in allowed list
+
+### Typed Input Helpers (NEW in v0.7.5)
+
+Type-safe request data handling:
+
+```php
+$id = $request->int('id');              // Integer
+$name = $request->string('name');       // String
+$active = $request->bool('active');     // Boolean
+$items = $request->array('items');      // Array
+$price = $request->float('price');      // Float
+$page = $request->queryInt('page', 1);  // Query param as int
+$search = $request->queryString('q');   // Query param as string
 ```
 
 ### Caching
@@ -231,6 +343,6 @@ Created and maintained by SiroSoft Team
 
 ---
 
-**Version:** 0.7.4  
-**Package:** siro/core  
+**Version:** 0.7.5  
+**Package:** sirosoft/core  
 **Type:** library
