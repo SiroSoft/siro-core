@@ -1,4 +1,4 @@
-# Siro Core Framework
+# Siro Core Framework v0.7.7
 
 **Siro API Framework Core** - Lightweight PHP Micro-Framework Core Library
 
@@ -16,6 +16,7 @@ This is the core library for Siro API Framework. It provides essential component
 - 📦 **Resource Transformation** - Auto-mapping helpers for API responses
 - 🔤 **Typed Input Helpers** - Type-safe request data handling
 - 📁 **File Upload** - Convenient file upload handling with validation
+- ✅ **Comprehensive Testing** - 142 unit tests with PHPUnit infrastructure (v0.7.7)
 
 ## Installation
 
@@ -469,12 +470,35 @@ MIT License - See LICENSE file for details
 - **Source:** https://github.com/SiroSoft/siro-core
 - **Main Repository:** https://github.com/SiroSoft/SiroPHP
 
+## Testing
+
+Siro Core includes comprehensive unit tests using PHPUnit.
+
+### Running Tests
+
+```bash
+# Run all tests
+./vendor/bin/phpunit
+
+# Run specific test suite
+./vendor/bin/phpunit tests/unit/ValidatorTest.php
+
+# Run with coverage report
+./vendor/bin/phpunit --coverage-html coverage
+```
+
+### Test Coverage (v0.7.7)
+
+- **Total Tests:** 142 unit tests
+- **Components Tested:** Validator, Request, Response, Router, Model, QueryBuilder, Resource
+- **Coverage Areas:** Input validation, type-safe helpers, response methods, routing, ORM operations, query building, resource transformation
+
 ## Credits
 
 Created and maintained by SiroSoft Team
 
 ---
 
-**Version:** 0.7.6  
+**Version:** 0.7.7  
 **Package:** sirosoft/core  
 **Type:** library
