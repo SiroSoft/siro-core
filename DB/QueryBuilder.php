@@ -8,7 +8,7 @@ use RuntimeException;
 use Siro\Core\Cache;
 use Siro\Core\Database;
 
-final class QueryBuilder
+class QueryBuilder
 {
     private string $table = '';
     /** @var array<int, string> */
@@ -83,6 +83,17 @@ final class QueryBuilder
     public function whereIn(string $column, array $values): self
     {
         return $this->addWhereIn('AND', $column, $values, false);
+    }
+
+    public function whereRaw(string $sql, string $boolean = 'AND'): self
+    {
+        $this->wheres[] = [
+            'type' => 'raw',
+            'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
+            'sql' => $sql,
+        ];
+
+        return $this;
     }
 
     public function orWhereIn(string $column, array $values): self

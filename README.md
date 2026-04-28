@@ -8,13 +8,14 @@ This is the core library for Siro API Framework. It provides essential component
 
 - ⚡ **Router & Request/Response** - Fast routing with middleware support & auto OPTIONS handling
 - 🗄️ **Database QueryBuilder** - PDO-based query builder with automatic caching
-- 🎯 **Model Layer** - ORM-like experience with auto-detection, casts, and hidden fields
+- 🎯 **Model Layer** - ORM-like experience with relationships, scopes, and soft deletes
 - 🔐 **JWT Authentication** - Built-in JWT token generation and verification
 - ✅ **Smart Validation** - Automatic 422 responses with extended rules (unique, exists, confirmed, in)
 - 💾 **Cache System** - File and Redis cache drivers
-- 🛠️ **Console Commands** - CLI tools for migrations, scaffolding, and model generation
-- 📦 **Resource Transformation** - API response formatting
+- 🛠️ **Console Commands** - CLI tools for migrations, scaffolding, and route listing
+- 📦 **Resource Transformation** - Auto-mapping helpers for API responses
 - 🔤 **Typed Input Helpers** - Type-safe request data handling
+- 📁 **File Upload** - Convenient file upload handling with validation
 
 ## Installation
 
@@ -48,7 +49,7 @@ $app = new App();
 Route::get('/', function() {
     return Response::json([
         'message' => 'Welcome to Siro API',
-        'version' => '0.7.5'
+        'version' => '0.7.6'
     ]);
 });
 
@@ -144,6 +145,84 @@ $user->delete();
 $result = User::query()->paginate(20, $page);
 ```
 
+### Model Relationships (NEW in v0.7.6)
+
+Define relationships in your models:
+
+```php
+namespace App\Models;
+
+use Siro\Core\Model;
+
+final class Post extends Model
+{
+    protected string $table = 'posts';
+    
+    // One-to-Many: A post has many comments
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class, 'post_id', 'id');
+    }
+    
+    // Many-to-One: A post belongs to a user
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+}
+```
+
+Use relationships:
+
+```php
+// Eager load relationships
+$post = Post::with('author', 'comments')->find(1);
+
+// Access related data
+$authorName = $post->author->name;
+$comments = $post->comments;  // Collection of Comment models
+
+// Query through relationships
+$userPosts = User::find(1)->posts()->where('status', 'published')->get();
+```
+
+### Soft Deletes (NEW in v0.7.6)
+
+Enable soft deletes by using the trait:
+
+```php
+namespace App\Models;
+
+use Siro\Core\Model;
+use Siro\Core\DB\SoftDeletes;
+
+final class User extends Model
+{
+    use SoftDeletes;
+    
+    protected string $table = 'users';
+}
+```
+
+Soft delete operations:
+
+```php
+// Soft delete (sets deleted_at timestamp)
+$user->delete();
+
+// Force delete (permanent removal)
+$user->forceDelete();
+
+// Include trashed records
+User::withTrashed()->get();
+
+// Only trashed records
+User::onlyTrashed()->get();
+
+// Restore a soft-deleted record
+User::withTrashed()->find(1)->restore();
+```
+
 ### JWT Authentication
 
 ```php
@@ -186,7 +265,7 @@ Run from terminal:
 php console greet John
 ```
 
-**Available Commands (v0.7.5):**
+**Available Commands (v0.7.6):**
 ```bash
 php siro make:model User          # Generate model scaffolding
 php siro make:api users           # Generate CRUD API
@@ -196,6 +275,7 @@ php siro make:resource UserResource
 php siro migrate                  # Run migrations
 php siro migrate:rollback         # Rollback migrations
 php siro migrate:status           # Check migration status
+php siro route:list               # List all routes (NEW in v0.7.6)
 php siro serve                    # Start development server
 php siro key:generate             # Generate APP_KEY
 php siro doctor                   # Check system health
@@ -271,6 +351,30 @@ $page = $request->queryInt('page', 1);  // Query param as int
 $search = $request->queryString('q');   // Query param as string
 ```
 
+### Enhanced Request Methods (NEW in v0.7.6)
+
+Additional convenient methods:
+
+```php
+// Get validated data (throws ValidationException on failure)
+$validated = $request->validated([
+    'email' => 'required|email',
+    'name' => 'required|min:3',
+]);
+
+// Get only specific fields from request
+$data = $request->only(['name', 'email']);
+// Returns: ['name' => 'John', 'email' => 'john@example.com']
+
+// Handle file uploads
+$file = $request->file('avatar');
+if ($file) {
+    $path = $file->store('uploads/avatars');
+    $originalName = $file->getClientOriginalName();
+    $size = $file->getSize();
+}
+```
+
 ### Caching
 
 Automatic cache invalidation on database mutations:
@@ -283,6 +387,34 @@ $users = DB::table('users')->cache(300)->get();
 DB::table('users')->insert([...]);  // INSERT
 DB::table('users')->update([...]);  // UPDATE
 DB::table('users')->delete();       // DELETE
+```
+
+### Resource Auto-Mapping (NEW in v0.7.6)
+
+Simplify API response formatting:
+
+```php
+use Siro\Core\Resource;
+
+// Single resource with auto-mapping from Model
+return Response::json(UserResource::make($user));
+
+// Collection with specific fields
+return Response::json(UserResource::collectionOf($users, ['id', 'name', 'email']));
+
+// Manual transformation
+final class UserResource extends Resource
+{
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->data['id'],
+            'name' => $this->data['name'],
+            'email' => $this->data['email'],
+            'created_at' => $this->data['created_at'],
+        ];
+    }
+}
 ```
 
 ### Migrations
@@ -343,6 +475,6 @@ Created and maintained by SiroSoft Team
 
 ---
 
-**Version:** 0.7.5  
+**Version:** 0.7.6  
 **Package:** sirosoft/core  
 **Type:** library

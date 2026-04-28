@@ -143,6 +143,71 @@ final class Router
     }
 
     /**
+     * Get all registered routes.
+     *
+     * @return array<int, array{method:string,path:string,handler:string,middleware:string,cache_ttl:int}>
+     */
+    public function getRoutes(): array
+    {
+        $routes = [];
+
+        foreach ($this->staticRoutes as $method => $paths) {
+            foreach ($paths as $path => $route) {
+                $routes[] = [
+                    'method' => $method,
+                    'path' => $path,
+                    'handler' => $this->handlerToString($route['handler']),
+                    'middleware' => implode(', ', array_map(fn (mixed $m): string => $this->middlewareToString($m), $route['middleware'])),
+                    'cache_ttl' => $route['cache_ttl'],
+                ];
+            }
+        }
+
+        foreach ($this->dynamicRoutes as $method => $routeList) {
+            foreach ($routeList as $route) {
+                $routes[] = [
+                    'method' => $method,
+                    'path' => $route['path'],
+                    'handler' => $this->handlerToString($route['handler']),
+                    'middleware' => implode(', ', array_map(fn (mixed $m): string => $this->middlewareToString($m), $route['middleware'])),
+                    'cache_ttl' => $route['cache_ttl'],
+                ];
+            }
+        }
+
+        usort($routes, fn (array $a, array $b): int => $a['path'] <=> $b['path'] ?: $a['method'] <=> $b['method']);
+
+        return $routes;
+    }
+
+    private function handlerToString(callable|array|string $handler): string
+    {
+        if (is_string($handler)) {
+            return $handler;
+        }
+
+        if (is_array($handler) && count($handler) === 2) {
+            $class = is_string($handler[0]) ? $handler[0] : $handler[0]::class;
+            return $class . '@' . $handler[1];
+        }
+
+        if (is_callable($handler)) {
+            return 'Closure';
+        }
+
+        return 'Unknown';
+    }
+
+    private function middlewareToString(callable|string $middleware): string
+    {
+        if (is_string($middleware)) {
+            return $middleware;
+        }
+
+        return 'callable';
+    }
+
+    /**
      * @param array<int, callable|string> $middleware
      */
     private function add(string $method, string $path, callable|array|string $handler, array $middleware = []): Route

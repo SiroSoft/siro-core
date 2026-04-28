@@ -13,6 +13,7 @@ use Siro\Core\Commands\MakeResourceCommand;
 use Siro\Core\Commands\MigrateCommand;
 use Siro\Core\Commands\MigrateRollbackCommand;
 use Siro\Core\Commands\MigrateStatusCommand;
+use Siro\Core\Commands\RouteListCommand;
 use Siro\Core\Commands\ServeCommand;
 use Siro\Core\Commands\DoctorCommand;
 
@@ -56,6 +57,8 @@ final class Console
                 return (new KeyGenerateCommand($this->basePath))->run($args);
             case 'doctor':
                 return (new DoctorCommand($this->basePath))->run($args);
+            case 'route:list':
+                return (new RouteListCommand($this->basePath))->run($args);
             default:
                 return $this->unknownCommand($command);
         }
@@ -75,6 +78,7 @@ final class Console
         $this->write('  php siro migrate:rollback --step=1');
         $this->write('  php siro migrate:status');
         $this->write('  php siro serve');
+        $this->write('  php siro route:list');
         $this->write('  php siro key:generate');
         $this->write('  php siro doctor');
     }

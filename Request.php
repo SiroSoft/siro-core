@@ -18,6 +18,8 @@ final class Request
     private array $routeParams = [];
     /** @var array<string, mixed>|null */
     private ?array $authenticatedUser = null;
+    /** @var array<string, UploadedFile> */
+    private array $uploadedFiles = [];
     private readonly string $clientIp;
 
     /**
@@ -44,6 +46,8 @@ final class Request
 
         $query = $_GET;
         $headers = self::parseHeaders();
+        $contentType = $headers['content-type'] ?? '';
+        $isMultipart = str_contains($contentType, 'multipart/form-data');
 
         $maxBodySize = 2 * 1024 * 1024; // 2MB limit
         $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
@@ -54,23 +58,70 @@ final class Request
             exit(1);
         }
 
-        $rawBody = file_get_contents('php://input') ?: '';
         $jsonBody = [];
 
-        if ($rawBody !== '') {
-            $decoded = json_decode($rawBody, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                // Malformed JSON - will be caught by validation later
-                // Store empty array to prevent fatal errors
-                $jsonBody = [];
-            } elseif (is_array($decoded)) {
-                $jsonBody = $decoded;
+        if ($isMultipart) {
+            // For multipart, PHP automatically populates $_POST and $_FILES
+            $jsonBody = $_POST;
+        } else {
+            $rawBody = file_get_contents('php://input') ?: '';
+
+            if ($rawBody !== '') {
+                $decoded = json_decode($rawBody, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $jsonBody = [];
+                } elseif (is_array($decoded)) {
+                    $jsonBody = $decoded;
+                }
             }
         }
 
         $clientIp = self::resolveClientIp();
+        $request = new self($method, $path, $query, $headers, $jsonBody, $clientIp);
 
-        return new self($method, $path, $query, $headers, $jsonBody, $clientIp);
+        if ($isMultipart) {
+            $request->parseUploadedFiles();
+        }
+
+        return $request;
+    }
+
+    private function parseUploadedFiles(): void
+    {
+        foreach ($_FILES as $key => $file) {
+            if (!is_array($file) || !isset($file['tmp_name'])) {
+                continue;
+            }
+
+            if (is_array($file['tmp_name'])) {
+                $this->parseNestedFiles($key, $file);
+            } elseif ($file['error'] !== UPLOAD_ERR_NO_FILE) {
+                $this->uploadedFiles[$key] = new UploadedFile($file);
+            }
+        }
+    }
+
+    private function parseNestedFiles(string $key, array $file): void
+    {
+        $names = is_array($file['name']) ? $file['name'] : [];
+        $tmpNames = is_array($file['tmp_name']) ? $file['tmp_name'] : [];
+        $types = is_array($file['type']) ? $file['type'] : [];
+        $sizes = is_array($file['size']) ? $file['size'] : [];
+        $errors = is_array($file['error']) ? $file['error'] : [];
+
+        foreach ($tmpNames as $index => $tmpName) {
+            if (isset($errors[$index]) && (int) $errors[$index] === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            $this->uploadedFiles[$key . '.' . $index] = new UploadedFile([
+                'name' => $names[$index] ?? '',
+                'tmp_name' => $tmpName,
+                'type' => $types[$index] ?? '',
+                'size' => $sizes[$index] ?? 0,
+                'error' => $errors[$index] ?? UPLOAD_ERR_NO_FILE,
+            ]);
+        }
     }
 
     public function method(): string
@@ -174,6 +225,22 @@ final class Request
         return $this->clientIp;
     }
 
+    public function hasFile(string $key): bool
+    {
+        return isset($this->uploadedFiles[$key]) && $this->uploadedFiles[$key]->isValid();
+    }
+
+    public function file(string $key): ?UploadedFile
+    {
+        return $this->uploadedFiles[$key] ?? null;
+    }
+
+    /** @return array<string, UploadedFile> */
+    public function allFiles(): array
+    {
+        return $this->uploadedFiles;
+    }
+
     public function cacheKey(): string
     {
         $query = $this->queryParams;
@@ -190,9 +257,10 @@ final class Request
     /**
      * Validate request data using Validator.
      * Automatically throws ValidationException on failure (returns 422).
+     * Returns only the fields that were validated.
      *
      * @param array<string, string> $rules
-     * @return array<string, mixed> Validated data
+     * @return array<string, mixed> Validated data (only fields with rules)
      * @throws ValidationException
      */
     public function validate(array $rules): array
@@ -202,6 +270,55 @@ final class Request
 
         if ($errors !== []) {
             throw new ValidationException($errors);
+        }
+
+        return array_intersect_key($data, $rules);
+    }
+
+    /**
+     * Alias for validate(). Kept for compatibility.
+     *
+     * @param array<string, string> $rules
+     * @return array<string, mixed>
+     * @throws ValidationException
+     */
+    public function validated(array $rules): array
+    {
+        return $this->validate($rules);
+    }
+
+    /**
+     * Return only the specified keys from the request body.
+     *
+     * @param array<int, string> $keys
+     * @return array<string, mixed>
+     */
+    public function only(array $keys): array
+    {
+        $data = $this->body();
+        $result = [];
+
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $data)) {
+                $result[$key] = $data[$key];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Return all request data except the specified keys.
+     *
+     * @param array<int, string> $keys
+     * @return array<string, mixed>
+     */
+    public function except(array $keys): array
+    {
+        $data = $this->body();
+
+        foreach ($keys as $key) {
+            unset($data[$key]);
         }
 
         return $data;

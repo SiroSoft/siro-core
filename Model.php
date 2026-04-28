@@ -6,7 +6,10 @@ namespace Siro\Core;
 
 use PDO;
 use RuntimeException;
+use Siro\Core\DB\ModelQueryBuilder;
 use Siro\Core\DB\QueryBuilder;
+use Siro\Core\DB\Relations\BelongsTo;
+use Siro\Core\DB\Relations\HasMany;
 
 /**
  * Base Model class for database operations.
@@ -189,28 +192,24 @@ abstract class Model
             return null;
         }
 
-        $model = new static($result);
-        $model->exists = true;
-
-        return $model;
+        return self::hydrate($result);
     }
 
     /**
      * Start a new query builder instance.
      */
-    public static function query(): QueryBuilder
+    public static function query(): ModelQueryBuilder
     {
         $instance = new static();
-        return Database::table($instance->getTable());
+        return new ModelQueryBuilder($instance->getTable(), static::class);
     }
 
     /**
      * Begin querying the model.
      */
-    public static function where(string $column, mixed $operatorOrValue, mixed $value = null): QueryBuilder
+    public static function where(string $column, mixed $operatorOrValue, mixed $value = null): ModelQueryBuilder
     {
-        $instance = new static();
-        $query = Database::table($instance->getTable());
+        $query = self::query();
 
         if (func_num_args() === 2) {
             return $query->where($column, $operatorOrValue);
@@ -220,14 +219,44 @@ abstract class Model
     }
 
     /**
-     * Get all models from the database.
+     * Execute a query and get results as Model instances.
      *
      * @return array<int, static>
      */
     public static function all(): array
     {
-        $instance = new static();
-        $results = Database::table($instance->getTable())->get();
+        $results = self::query()->run();
+
+        return array_map(
+            fn (array $row): self => self::hydrate($row),
+            $results
+        );
+    }
+
+    /**
+     * Execute a query and get the first result as a Model instance.
+     *
+     * @return static|null
+     */
+    public static function first(): ?self
+    {
+        $row = self::query()->runFirst();
+
+        if ($row === null) {
+            return null;
+        }
+
+        return self::hydrate($row);
+    }
+
+    /**
+     * Get Model results from a query builder.
+     *
+     * @return array<int, static>
+     */
+    public static function get(): array
+    {
+        $results = self::query()->run();
 
         return array_map(
             fn (array $row): self => self::hydrate($row),
@@ -323,17 +352,77 @@ abstract class Model
     }
 
     /**
-     * Hydrate a model from an array.
+     * Hydrate a model from an array (bypasses fillable protection).
      *
      * @param array<string, mixed> $attributes
      * @return static
      */
     public static function hydrate(array $attributes): self
     {
-        $model = new static($attributes);
+        $model = new static();
+        $model->forceFill($attributes);
         $model->exists = true;
 
         return $model;
+    }
+
+    /**
+     * Fill the model with an array of attributes (bypasses fillable protection).
+     *
+     * @param array<string, mixed> $attributes
+     */
+    public function forceFill(array $attributes): self
+    {
+        foreach ($attributes as $key => $value) {
+            $this->setAttribute($key, $value);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Define a one-to-many relationship.
+     */
+    protected function hasMany(string $relatedClass, string $foreignKey = '', string $localKey = 'id'): HasMany
+    {
+        $related = new $relatedClass();
+
+        if ($foreignKey === '') {
+            $foreignKey = $this->getForeignKeyName($relatedClass);
+        }
+
+        return new HasMany(
+            $relatedClass,
+            $foreignKey,
+            $localKey,
+            $this->getAttribute($localKey) ?? 0,
+        );
+    }
+
+    /**
+     * Define an inverse one-to-many relationship (belongs to).
+     */
+    protected function belongsTo(string $relatedClass, string $foreignKey = '', string $ownerKey = 'id'): BelongsTo
+    {
+        if ($foreignKey === '') {
+            $foreignKey = $this->getForeignKeyName(static::class);
+        }
+
+        return new BelongsTo(
+            $relatedClass,
+            $foreignKey,
+            $ownerKey,
+            $this->getAttribute($foreignKey) ?? 0,
+        );
+    }
+
+    /**
+     * Get the default foreign key name for a model.
+     */
+    private function getForeignKeyName(string $modelClass): string
+    {
+        $shortName = basename(str_replace('\\', '/', $modelClass));
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $shortName)) . '_id';
     }
 
     /**
@@ -347,6 +436,14 @@ abstract class Model
 
         if (method_exists($instance, $method)) {
             return $instance->$method(...$parameters);
+        }
+
+        // Check for scope method
+        $scopeMethod = 'scope' . ucfirst($method);
+        if (method_exists($instance, $scopeMethod)) {
+            $query = self::query();
+            $instance->{$scopeMethod}($query, ...$parameters);
+            return $query;
         }
 
         throw new RuntimeException(sprintf('Method %s::%s does not exist.', static::class, $method));
