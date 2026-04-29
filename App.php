@@ -142,6 +142,7 @@ final class App
         $method = 'GET';
         $path = '/';
         $status = 500;
+        $traceId = bin2hex(random_bytes(8));
 
         try {
             $request = Request::fromGlobals();
@@ -150,14 +151,13 @@ final class App
             $response = $this->router->dispatch($request);
             $status = $response->statusCode();
             $this->setDebugMeta();
-            $response->send();
+            $response->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (ValidationException $e) {
-            // Handle validation errors with 422 response
             Logger::error($e);
             $this->setDebugMeta();
             $errorResponse = $e->toResponse();
             $status = $errorResponse->statusCode();
-            $errorResponse->send();
+            $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (Throwable $e) {
             Logger::error($e);
 
@@ -172,11 +172,48 @@ final class App
             $this->setDebugMeta();
             $errorResponse = Response::error('Internal Server Error', 500, $errors);
             $status = $errorResponse->statusCode();
-            $errorResponse->send();
+            $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } finally {
             $timeMs = (microtime(true) - $requestStartedAt) * 1000;
-            Logger::request($method, $path, $status, $timeMs);
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            Logger::request($method, $path, $status, $timeMs, $ip, $traceId, $userAgent);
             Logger::slowRequest($method, $path, $status, $timeMs);
+
+            $traceData = [
+                'method' => $method,
+                'path' => $path,
+                'status' => $status,
+                'time_ms' => round($timeMs, 2),
+                'ip' => $ip,
+                'host' => $_SERVER['HTTP_HOST'] ?? 'localhost',
+                'content_type' => $_SERVER['CONTENT_TYPE'] ?? '',
+                'request_headers' => $request->headers(),
+                'request_body' => mb_substr((string) json_encode($request->body(), JSON_UNESCAPED_UNICODE), 0, 2000),
+            ];
+
+            // Capture response body from the response
+            if (isset($response)) {
+                $traceData['response_body'] = mb_substr(
+                    (string) json_encode($response->payload(), JSON_UNESCAPED_UNICODE),
+                    0,
+                    2000
+                );
+            }
+
+            // Capture auth header separately for replay
+            $authHeader = $request->header('authorization', '');
+            if ($authHeader !== '') {
+                $traceData['auth_header'] = $authHeader;
+            }
+
+            if ($this->debug) {
+                $traceData['queries'] = Database::getCapturedQueries();
+                $traceData['memory_mb'] = round(memory_get_peak_usage(true) / 1024 / 1024, 2);
+            }
+
+            Logger::trace($traceId, $traceData);
+            Database::resetCapturedQueries();
         }
     }
 

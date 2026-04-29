@@ -6,6 +6,9 @@ namespace Siro\Core;
 
 use Siro\Core\Commands\ConfigCacheCommand;
 use Siro\Core\Commands\EnvCheckCommand;
+use Siro\Core\Commands\LogExportCommand;
+use Siro\Core\Commands\LogReplayCommand;
+use Siro\Core\Commands\LogTraceCommand;
 use Siro\Core\Commands\MakeApiCommand;
 use Siro\Core\Commands\MakeAuthCommand;
 use Siro\Core\Commands\MakeControllerCommand;
@@ -67,6 +70,12 @@ final class Console
                 return (new ServeCommand($this->basePath))->run($args);
             case 'key:generate':
                 return (new KeyGenerateCommand($this->basePath))->run($args);
+            case 'log:trace':
+                return (new LogTraceCommand($this->basePath))->run($args);
+            case 'log:replay':
+                return (new LogReplayCommand($this->basePath))->run($args);
+            case 'log:export':
+                return (new LogExportCommand($this->basePath))->run($args);
             case 'config:cache':
                 return (new ConfigCacheCommand($this->basePath))->run($args);
             case 'env:check':
@@ -99,6 +108,10 @@ final class Console
         $this->write('  php siro migrate:rollback --step=1');
         $this->write('  php siro migrate:status');
         $this->write('  php siro serve');
+        $this->write('  php siro log:trace <trace_id>');
+        $this->write('  php siro log:trace --status=500');
+        $this->write('  php siro log:replay <trace_id>');
+        $this->write('  php siro log:export --format=json --output=traces.json');
         $this->write('  php siro config:cache');
         $this->write('  php siro env:check');
         $this->write('  php siro optimize');
