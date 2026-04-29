@@ -17,7 +17,12 @@ final class MakePostmanCommand
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $output = $this->basePath . DIRECTORY_SEPARATOR . 'postman_collection.json';
+        $postmanDir = $this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'postman';
+        if (!is_dir($postmanDir)) {
+            mkdir($postmanDir, 0775, true);
+        }
+        $output = $postmanDir . DIRECTORY_SEPARATOR . 'collection.json';
+        $publicOutput = $this->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json';
         $host = 'localhost:8080';
         $filterTag = null;
         $filterMethod = null;

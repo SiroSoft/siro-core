@@ -10,6 +10,7 @@ use Siro\Core\Commands\LogExportCommand;
 use Siro\Core\Commands\LogReplayCommand;
 use Siro\Core\Commands\LogTraceCommand;
 use Siro\Core\Commands\MakeApiCommand;
+use Siro\Core\Commands\MakeDocsCommand;
 use Siro\Core\Commands\MakeOpenApiCommand;
 use Siro\Core\Commands\MakePostmanCommand;
 use Siro\Core\Commands\MakeAuthCommand;
@@ -82,6 +83,8 @@ final class Console
                 return (new MakeOpenApiCommand($this->basePath))->run($args);
             case 'make:postman':
                 return (new MakePostmanCommand($this->basePath))->run($args);
+            case 'make:docs':
+                return (new MakeDocsCommand($this->basePath))->run($args);
             case 'config:cache':
                 return (new ConfigCacheCommand($this->basePath))->run($args);
             case 'env:check':
@@ -122,6 +125,7 @@ final class Console
         $this->write('  php siro make:openapi --flow=auth --tag=User --path=/api');
         $this->write('  php siro make:postman');
         $this->write('  php siro make:postman --flow=crud --method=POST');
+        $this->write('  php siro make:docs');
         $this->write('  php siro config:cache');
         $this->write('  php siro env:check');
         $this->write('  php siro optimize');

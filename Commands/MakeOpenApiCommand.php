@@ -17,7 +17,11 @@ final class MakeOpenApiCommand
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $output = $this->basePath . DIRECTORY_SEPARATOR . 'openapi.json';
+        $openapiDir = $this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi';
+        if (!is_dir($openapiDir)) {
+            mkdir($openapiDir, 0775, true);
+        }
+        $output = $openapiDir . DIRECTORY_SEPARATOR . 'openapi.json';
         $title = 'Siro API';
         $version = '1.0.0';
         $host = 'localhost:8080';
