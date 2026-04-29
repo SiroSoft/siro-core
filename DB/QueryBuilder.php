@@ -8,6 +8,15 @@ use RuntimeException;
 use Siro\Core\Cache;
 use Siro\Core\Database;
 
+/**
+ * Fluent SQL query builder.
+ *
+ * Builds parameterized SELECT/INSERT/UPDATE/DELETE queries with
+ * support for WHERE, JOIN, GROUP BY, HAVING, ORDER BY, pagination,
+ * aggregations, and query caching.
+ *
+ * @package Siro\Core\DB
+ */
 class QueryBuilder
 {
     private string $table = '';

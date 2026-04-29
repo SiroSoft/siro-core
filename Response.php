@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+/**
+ * JSON response builder and HTTP sender.
+ *
+ * Provides static factories for common API responses (success, error,
+ * created, noContent, paginated) and fluent header customization.
+ * Automatically sets security headers and handles JSON encoding.
+ *
+ * @package Siro\Core
+ */
 final class Response
 {
     private static bool $debugEnabled = false;

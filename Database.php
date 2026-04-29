@@ -9,6 +9,16 @@ use PDOStatement;
 use RuntimeException;
 use Siro\Core\DB\QueryBuilder;
 
+/**
+ * PDO connection manager and raw query executor.
+ *
+ * Manages a singleton PDO connection with support for MySQL, PostgreSQL,
+ * and SQLite. Tracks query execution time for slow query logging,
+ * captures all queries for debug traces, and supports nested transactions
+ * via savepoints.
+ *
+ * @package Siro\Core
+ */
 final class Database
 {
     /** @var array<string, mixed> */

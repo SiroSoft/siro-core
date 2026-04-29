@@ -14,7 +14,15 @@ final class MakePostmanCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Generate Postman collection v2.1.
+ *
+ * Creates a Postman collection with endpoints, auto-login
+ * pre-request script, body examples from validation rules,
+ * and bearer token variable.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $postmanDir = $this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'postman';
@@ -205,7 +213,12 @@ final class MakePostmanCommand
         $json = json_encode($collection, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         file_put_contents($output, $json);
 
-        $this->write('Postman collection generated: ' . $output);
+        $publicOutput = $this->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json';
+        copy($output, $publicOutput);
+
+        $this->write('Postman collection generated:');
+        $this->write("  docs/postman/collection.json");
+        $this->write("  public/postman_collection.json");
         if ($hasAuth) {
             $this->write('  - Auth: Bearer token auto-fetched via pre-request script');
             $this->write('  - Auth endpoint: ' . ($authEndpoint['method'] ?? 'POST') . ' ' . ($authEndpoint['path'] ?? '/api/auth/login'));

@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core\Cache\Drivers;
 
+/**
+ * Redis cache driver.
+ *
+ * Uses the \Redis extension with SETEX for atomic set-with-expiry
+ * and SCAN for prefix-based cache invalidation.
+ *
+ * @package Siro\Core\Cache\Drivers
+ */
 final class RedisDriver
 {
     public function __construct(private readonly \Redis $redis)

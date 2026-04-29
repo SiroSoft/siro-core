@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+/**
+ * Fluent route configurator.
+ *
+ * Returned by Router::get/post/put/delete() to allow chaining
+ * middleware() and cache() calls on route definitions.
+ *
+ * @package Siro\Core
+ */
 final class Route
 {
     public function __construct(

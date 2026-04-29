@@ -14,7 +14,15 @@ final class MakeOpenApiCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Generate OpenAPI 3.0.3 spec.
+ *
+ * Reads all routes from the Router, extracts validation rules from
+ * controller files via regex, and produces an openapi.json file
+ * compatible with Swagger UI and code generators.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $openapiDir = $this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi';

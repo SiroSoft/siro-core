@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+/**
+ * Environment variable loader and accessor.
+ *
+ * Parses .env files and provides typed access to environment
+ * variables via get(), bool(), and related methods.
+ *
+ * @package Siro\Core
+ */
 final class Env
 {
     public static function load(string $filePath): void

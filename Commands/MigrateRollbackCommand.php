@@ -17,7 +17,14 @@ final class MigrateRollbackCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Roll back the last N migrations.
+ *
+ * Reverts migrations by running their down() methods in
+ * reverse order. Default step is 1, configurable via --step=N.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $step = $this->parseStep($args);
@@ -97,7 +104,14 @@ final class MigrateRollbackCommand
         }
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Roll back the last N migrations.
+ *
+ * Reverts migrations by running their down() methods in
+ * reverse order. Default step is 1, configurable via --step=N.
+ *
+ * @package Siro\Core\Commands
+ */
     private function parseStep(array $args): int
     {
         $count = count($args);

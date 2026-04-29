@@ -12,7 +12,14 @@ final class OptimizeCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Optimize the application for production.
+ *
+ * Runs config:cache and composer dump-autoload to improve
+ * boot time and autoloading performance.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $this->write('Optimizing SiroPHP...');

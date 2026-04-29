@@ -14,7 +14,14 @@ final class RouteListCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Display all registered routes.
+ *
+ * Lists every route with its method, path, handler, and
+ * middleware in a formatted table.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $app = new App($this->basePath);

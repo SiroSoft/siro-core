@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+/**
+ * Input validation engine.
+ *
+ * Supports rules: required, email, numeric, integer, min, max,
+ * confirmed, in, unique, exists. Returns structured error messages.
+ *
+ * @package Siro\Core
+ */
 final class Validator
 {
     /**

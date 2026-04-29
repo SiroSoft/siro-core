@@ -6,6 +6,14 @@ namespace Siro\Core;
 
 use RuntimeException;
 
+/**
+ * Uploaded file handler.
+ *
+ * Wraps a PHP $_FILES entry with validation and storage methods.
+ * Supports file info, MIME type detection, and secure storage.
+ *
+ * @package Siro\Core
+ */
 final class UploadedFile
 {
     private readonly string $path;

@@ -7,6 +7,15 @@ namespace Siro\Core;
 use Siro\Core\Cache\Drivers\FileDriver;
 use Siro\Core\Cache\Drivers\RedisDriver;
 
+/**
+ * Cache facade with file and Redis driver support.
+ *
+ * Provides get/set/remember/forget/flush operations with
+ * prefix-based invalidation and query builder integration
+ * for automatic cache busting on data mutations.
+ *
+ * @package Siro\Core
+ */
 final class Cache
 {
     private static RedisDriver|FileDriver|null $driver = null;

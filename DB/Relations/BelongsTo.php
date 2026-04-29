@@ -7,6 +7,14 @@ namespace Siro\Core\DB\Relations;
 use Siro\Core\DB\ModelQueryBuilder;
 use Siro\Core\Model;
 
+/**
+ * BelongsTo relationship handler.
+ *
+ * Defines an inverse one-to-many relationship used in Model::belongsTo().
+ * Retrieves the parent model where the foreign key matches.
+ *
+ * @package Siro\Core\DB\Relations
+ */
 class BelongsTo
 {
     public function __construct(

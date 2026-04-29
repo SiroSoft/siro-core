@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core\Cache\Drivers;
 
+/**
+ * File-based cache driver.
+ *
+ * Stores cache entries as JSON files with TTL expiration.
+ * Uses LOCK_EX for concurrent write safety and SHA1-based
+ * filenames to avoid collisions.
+ *
+ * @package Siro\Core\Cache\Drivers
+ */
 final class FileDriver
 {
     private readonly string $cachePath;

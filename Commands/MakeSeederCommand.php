@@ -12,7 +12,14 @@ final class MakeSeederCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Generate a database seeder class.
+ *
+ * Creates a seeder file in database/seeds/ with a run() method
+ * for seeding initial data.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $name = trim((string) ($args[0] ?? ''));

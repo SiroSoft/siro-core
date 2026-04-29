@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Generate a Model class.
+ *
+ * Creates a model file extending Siro\Core\Model with auto-detected
+ * table name, casts, hidden, and fillable arrays.
+ *
+ * @package Siro\Core\Commands
+ */
 final class MakeModelCommand
 {
     use CommandSupport;

@@ -12,7 +12,14 @@ final class SeedCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Run database seeders.
+ *
+ * Executes all seeder classes in database/seeds/, or a
+ * specific seeder if a class name is provided.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $class = trim((string) ($args[0] ?? ''));

@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+/**
+ * HTTP request abstraction.
+ *
+ * Wraps $_SERVER, $_GET, $_POST, $_FILES, php://input into
+ * a typed object with typed input helpers, file upload support,
+ * IP resolution with trusted proxy support, and auto-validation.
+ *
+ * @package Siro\Core
+ */
 final class Request
 {
     private readonly string $method;

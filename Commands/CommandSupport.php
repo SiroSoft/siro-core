@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Shared CLI helper methods for commands.
+ *
+ * Provides write(), ask(), table(), confirmOverwrite(), studly(),
+ * and singular() utilities used by all *Command classes.
+ *
+ * @package Siro\Core\Commands
+ */
 trait CommandSupport
 {
     protected function write(string $line): void

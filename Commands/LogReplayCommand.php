@@ -12,7 +12,14 @@ final class LogReplayCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Generate a cURL command to replay a request.
+ *
+ * Reads a trace file and outputs a ready-to-run curl (or httpie)
+ * command that reproduces the original request exactly.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $traceId = trim((string) ($args[0] ?? ''));

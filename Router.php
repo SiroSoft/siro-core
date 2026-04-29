@@ -7,6 +7,15 @@ namespace Siro\Core;
 use Closure;
 use RuntimeException;
 
+/**
+ * HTTP request router and middleware pipeline.
+ *
+ * Supports static and dynamic routes ({param}), route groups with
+ * prefix and middleware inheritance. Middleware uses an onion model
+ * pipeline. Automatically handles OPTIONS preflight requests.
+ *
+ * @package Siro\Core
+ */
 final class Router
 {
     /** @var array<string, array<string, array{path:string,handler:callable|array|string,middleware:array<int, callable|string>,cache_ttl:int}>> */

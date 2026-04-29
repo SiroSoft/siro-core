@@ -6,6 +6,15 @@ namespace Siro\Core;
 
 use Throwable;
 
+/**
+ * File-based logger with daily rotation and trace support.
+ *
+ * Logs requests, errors, slow queries, and per-request trace data.
+ * Supports log retention, size-based rotation, credential sanitization,
+ * and CLI trace lookup.
+ *
+ * @package Siro\Core
+ */
 final class Logger
 {
     private static string $logDir = '';

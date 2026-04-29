@@ -7,8 +7,12 @@ namespace Siro\Core;
 use RuntimeException;
 
 /**
- * Exception thrown when validation fails.
- * Automatically returns 422 response with validation errors.
+ * Exception thrown when request validation fails.
+ *
+ * Caught by App::run() and converted to a 422 JSON response
+ * with structured error messages.
+ *
+ * @package Siro\Core
  */
 final class ValidationException extends RuntimeException
 {

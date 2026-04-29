@@ -14,7 +14,14 @@ final class DoctorCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Environment health check.
+ *
+ * Verifies PHP version, extensions, .env config, JWT strength,
+ * storage permissions, and database connectivity.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         unset($args);

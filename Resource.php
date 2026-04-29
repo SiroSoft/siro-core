@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+/**
+ * API resource transformer.
+ *
+ * Converts models and arrays into structured API responses.
+ * Supports auto-mapping from Model instances and field filtering.
+ *
+ * @package Siro\Core
+ */
 abstract class Resource
 {
     /** @var array<string, mixed> */

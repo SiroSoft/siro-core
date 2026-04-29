@@ -12,7 +12,15 @@ final class LogTraceCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * View and search request traces.
+ *
+ * Displays detailed trace information including method, path,
+ * timing, SQL queries, request/response body. Supports filtering
+ * by status code, HTTP method, and slow requests.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $traceId = '';

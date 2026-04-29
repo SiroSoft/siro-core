@@ -7,6 +7,14 @@ namespace Siro\Core\Auth;
 use RuntimeException;
 use Siro\Core\Env;
 
+/**
+ * JSON Web Token encoder/decoder (HS256).
+ *
+ * Handles access and refresh token generation, signature verification,
+ * expiry validation, and timing-safe comparison via hash_equals().
+ *
+ * @package Siro\Core
+ */
 final class JWT
 {
     public const TYPE_ACCESS = 'access';

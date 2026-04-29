@@ -29,6 +29,14 @@ use Siro\Core\Commands\SeedCommand;
 use Siro\Core\Commands\ServeCommand;
 use Siro\Core\Commands\DoctorCommand;
 
+/**
+ * CLI command dispatcher.
+ *
+ * Parses the command name from argv and delegates to the
+ * appropriate *Command class. Provides built-in help text.
+ *
+ * @package Siro\Core
+ */
 final class Console
 {
     public function __construct(private readonly string $basePath)

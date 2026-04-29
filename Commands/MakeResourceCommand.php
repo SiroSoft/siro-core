@@ -12,7 +12,14 @@ final class MakeResourceCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Generate an API Resource transformer.
+ *
+ * Creates a resource class extending Siro\Core\Resource with
+ * a toArray() method stub for the given entity.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $name = trim((string) ($args[0] ?? ''));

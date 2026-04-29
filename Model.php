@@ -12,8 +12,13 @@ use Siro\Core\DB\Relations\BelongsTo;
 use Siro\Core\DB\Relations\HasMany;
 
 /**
- * Base Model class for database operations.
- * Provides convenient methods for CRUD operations with automatic column detection.
+ * Base Model class for Eloquent-style ORM operations.
+ *
+ * Provides CRUD, scopes, relationships (hasMany, belongsTo), soft deletes,
+ * attribute casting, mass assignment protection, and automatic column
+ * detection from the database schema.
+ *
+ * @package Siro\Core
  */
 abstract class Model
 {

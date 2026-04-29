@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Generate a controller skeleton.
+ *
+ * Creates an empty controller file with proper namespace, imports,
+ * and method stubs for CRUD operations.
+ *
+ * @package Siro\Core\Commands
+ */
 final class MakeControllerCommand
 {
     use CommandSupport;

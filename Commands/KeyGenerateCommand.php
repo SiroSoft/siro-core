@@ -12,7 +12,14 @@ final class KeyGenerateCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Generate a secure JWT secret.
+ *
+ * Creates a random 64-character hex string and writes it
+ * to the JWT_SECRET key in .env.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         unset($args);

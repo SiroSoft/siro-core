@@ -12,7 +12,15 @@ final class LogExportCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Export trace data to file.
+ *
+ * Reads trace JSON files from storage/logs/traces/ and exports
+ * them in JSON or CSV format, with optional filtering by status,
+ * method, and date range.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $format = 'json';

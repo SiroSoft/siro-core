@@ -17,7 +17,14 @@ final class MigrateStatusCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Show migration status table.
+ *
+ * Displays all migration files with their current status
+ * (applied/pending) and batch number.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         unset($args);

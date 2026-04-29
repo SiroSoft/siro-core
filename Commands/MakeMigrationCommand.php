@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Generate a database migration file.
+ *
+ * Creates a timestamped migration file with an anonymous class
+ * skeleton containing up() and down() methods.
+ *
+ * @package Siro\Core\Commands
+ */
 final class MakeMigrationCommand
 {
     use CommandSupport;

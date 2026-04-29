@@ -10,8 +10,13 @@ use Siro\Core\Env;
 use Throwable;
 
 /**
- * Trait providing common migration command functionality.
- * Eliminates code duplication between MigrateCommand and MigrateRollbackCommand.
+ * Shared migration command infrastructure.
+ *
+ * Abstract base class providing database connection setup,
+ * migrations table creation, and PHP extension checks for
+ * all migration-related commands.
+ *
+ * @package Siro\Core\Commands
  */
 trait MigrationBaseCommand
 {

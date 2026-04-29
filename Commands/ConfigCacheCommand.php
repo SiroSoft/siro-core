@@ -14,7 +14,14 @@ final class ConfigCacheCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Cache environment configuration.
+ *
+ * Compiles .env and config/database.php into a single cached
+ * PHP file for faster boot times in production.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $cacheDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache';

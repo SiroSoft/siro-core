@@ -12,7 +12,14 @@ final class ServeCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Start the PHP built-in development server.
+ *
+ * Launches php -S on the configured host and port, serving
+ * from the public/ directory.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         $host = (string) ($args[0] ?? 'localhost');

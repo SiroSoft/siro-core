@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Generate full CRUD API scaffolding.
+ *
+ * Creates controller, resource transformer, and route entries
+ * for a given resource name. Generated code uses Model layer,
+ * typed input helpers, and auto-validation.
+ *
+ * @package Siro\Core\Commands
+ */
 final class MakeApiCommand
 {
     use CommandSupport;

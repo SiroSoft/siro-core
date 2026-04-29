@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Generate complete auth system scaffolding.
+ *
+ * Creates migrations, AuthController, routes, User model, and
+ * UserService for register/login/refresh/me/logout/forgot-password/
+ * reset-password/verify-email endpoints.
+ *
+ * @package Siro\Core\Commands
+ */
 final class MakeAuthCommand
 {
     use CommandSupport;

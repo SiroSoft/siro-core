@@ -7,6 +7,14 @@ namespace Siro\Core;
 use RuntimeException;
 use Throwable;
 
+/**
+ * Application entry point and lifecycle manager.
+ *
+ * Orchestrates the bootstrap sequence (env loading, security checks,
+ * DB connection, cache init), route registration, and request dispatch.
+ *
+ * @package Siro\Core
+ */
 final class App
 {
     private readonly string $basePath;
@@ -15,6 +23,9 @@ final class App
     private bool $showDebugTrace;
     private float $startedAt;
 
+    /**
+     * @param string $basePath Absolute path to the project root
+     */
     public function __construct(string $basePath)
     {
         $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
@@ -24,6 +35,16 @@ final class App
         $this->startedAt = microtime(true);
     }
 
+    /**
+     * Bootstrap the application.
+     *
+     * Loads .env, initializes Logger, validates security config,
+     * checks required PHP extensions, connects to the database,
+     * and boots the cache system.
+     *
+     * @throws RuntimeException if APP_DEBUG is true in production
+     * @throws RuntimeException if required PHP extensions are missing
+     */
     public function boot(): void
     {
         Env::load($this->basePath . DIRECTORY_SEPARATOR . '.env');
@@ -54,6 +75,12 @@ final class App
         Cache::boot($this->basePath);
     }
 
+    /**
+     * Validate that JWT_SECRET is set and not a placeholder.
+     * Auto-generates a secure secret if missing or weak.
+     *
+     * @throws RuntimeException if .env file is missing
+     */
     private function validateSecurityConfig(): void
     {
         $jwtSecret = (string) Env::get('JWT_SECRET', '');
@@ -63,15 +90,19 @@ final class App
             || str_contains($lower, 'your_secret');
 
         if ($jwtSecret === '' || strlen($jwtSecret) < 32 || $looksLikePlaceholder) {
-            // Auto-generate JWT secret if placeholder detected
             $this->autoGenerateJwtSecret();
         }
     }
 
+    /**
+     * Generate a random 64-char hex JWT secret and write it to .env.
+     *
+     * @throws RuntimeException if .env file not found
+     */
     private function autoGenerateJwtSecret(): void
     {
         $envPath = $this->basePath . DIRECTORY_SEPARATOR . '.env';
-        
+
         if (!is_file($envPath)) {
             throw new RuntimeException('.env file not found. Copy .env.example to .env first.');
         }
@@ -86,11 +117,15 @@ final class App
         }
 
         file_put_contents($envPath, $content);
-        
-        // Reload env to pick up new value
         Env::load($envPath);
     }
 
+    /**
+     * Verify required PHP extensions (pdo, json, mbstring) and
+     * the PDO driver matching DB_CONNECTION.
+     *
+     * @throws RuntimeException if any required extension is missing
+     */
     private function checkRequiredExtensions(): void
     {
         $required = ['pdo', 'json', 'mbstring'];
@@ -102,7 +137,6 @@ final class App
             }
         }
 
-        // Check PDO drivers based on DB_CONNECTION
         $dbConnection = strtolower((string) Env::get('DB_CONNECTION', 'mysql'));
         $pdoDriver = match ($dbConnection) {
             'pgsql' => 'pdo_pgsql',
@@ -116,7 +150,7 @@ final class App
 
         if ($missing !== []) {
             throw new RuntimeException(
-                'Missing required PHP extensions: ' . implode(', ', $missing) . 
+                'Missing required PHP extensions: ' . implode(', ', $missing) .
                 '. Install them or update your php.ini configuration.'
             );
         }
@@ -127,6 +161,13 @@ final class App
         return $this->router;
     }
 
+    /**
+     * Load route definitions from a PHP file.
+     *
+     * The file receives $app and $router variables to register routes.
+     *
+     * @param string $routesFile Absolute path to the routes file (e.g., routes/api.php)
+     */
     public function loadRoutes(string $routesFile): void
     {
         $app = $this;
@@ -134,6 +175,15 @@ final class App
         require $routesFile;
     }
 
+    /**
+     * Process the incoming HTTP request and send the response.
+     *
+     * Captures trace ID, timing, SQL queries (debug mode),
+     * and logs every request. Handles ValidationException (422)
+     * and generic Throwable (500) gracefully.
+     *
+     * Sets X-Siro-Trace-Id header on every response for production debugging.
+     */
     public function run(): void
     {
         Response::enableDebug($this->debug);
@@ -192,7 +242,6 @@ final class App
                 'request_body' => mb_substr((string) json_encode($request->body(), JSON_UNESCAPED_UNICODE), 0, 2000),
             ];
 
-            // Capture response body from the response
             if (isset($response)) {
                 $traceData['response_body'] = mb_substr(
                     (string) json_encode($response->payload(), JSON_UNESCAPED_UNICODE),
@@ -201,7 +250,6 @@ final class App
                 );
             }
 
-            // Capture auth header separately for replay
             $authHeader = $request->header('authorization', '');
             if ($authHeader !== '') {
                 $traceData['auth_header'] = $authHeader;
@@ -217,6 +265,10 @@ final class App
         }
     }
 
+    /**
+     * Attach debug metadata (execution time, memory, cache status)
+     * to the response when debug mode is enabled.
+     */
     private function setDebugMeta(): void
     {
         if (!$this->debug) {
@@ -232,5 +284,4 @@ final class App
             'cache' => Cache::requestStatus(),
         ]);
     }
-
 }

@@ -17,7 +17,14 @@ final class MigrateCommand
     {
     }
 
-    /** @param array<int, string> $args */
+    /**
+ * Run pending database migrations.
+ *
+ * Executes all migration files that have not yet been applied,
+ * in batch order, with optional transaction support.
+ *
+ * @package Siro\Core\Commands
+ */
     public function run(array $args): int
     {
         unset($args);
