@@ -10,11 +10,32 @@ namespace Siro\Core;
  * Supports rules: required, email, numeric, integer, min, max,
  * confirmed, in, unique, exists. Returns structured error messages.
  * Messages are translated via Lang when available.
+ * Custom rules can be registered via Validator::extend().
  *
  * @package Siro\Core
  */
 final class Validator
 {
+    /** @var array<string, callable> */
+    private static array $customRules = [];
+    /**
+     * Register a custom validation rule.
+     *
+     * The callback receives (mixed $value, string $field, array $input, mixed $parameter).
+     * Return true if valid, false or string error message if invalid.
+     *
+     * Usage:
+     *   Validator::extend('phone', function ($value, $field, $input, $param) {
+     *       return preg_match('/^\+?[0-9]{10,15}$/', (string) $value) ? true : ':field is not a valid phone number';
+     *   });
+     *
+     *   $request->validate(['phone' => 'phone']);
+     */
+    public static function extend(string $name, callable $callback): void
+    {
+        self::$customRules[$name] = $callback;
+    }
+
     /**
      * @param array<string, mixed> $input
      * @param array<string, string> $rules
@@ -133,6 +154,24 @@ final class Validator
                             'field' => self::label($field),
                             'values' => implode(', ', $allowedValues),
                         ]);
+                        continue;
+                    }
+                }
+
+                // Custom rules registered via Validator::extend()
+                $ruleName = $rule;
+                $ruleParam = null;
+                if (str_contains($rule, ':')) {
+                    $parts = explode(':', $rule, 2);
+                    $ruleName = $parts[0];
+                    $ruleParam = $parts[1];
+                }
+
+                if (isset(self::$customRules[$ruleName])) {
+                    $result = (self::$customRules[$ruleName])($value, $field, $input, $ruleParam);
+                    if ($result !== true) {
+                        $msg = is_string($result) ? $result : self::label($field) . ' is invalid';
+                        $errors[$field][] = str_replace(':field', self::label($field), $msg);
                         continue;
                     }
                 }

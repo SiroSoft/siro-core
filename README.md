@@ -1,4 +1,4 @@
-# Siro Core Framework v0.8.6
+# Siro Core Framework v0.8.7
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -594,6 +594,11 @@ php siro make:lang vi                 # Create new language pack
 
 # Event System (v0.8.6)
 php siro make:event UserCreated       # Generate event class
+
+# Storage, Validation & Gzip (v0.8.7)
+# Storage: put(), get(), delete(), exists(), url()
+# Custom validation rules via Validator::extend()
+# Auto gzip compression in responses
 ```
 
 ---
@@ -1250,6 +1255,192 @@ Event::on('reports.generated', function ($report) {
 - ✅ Model lifecycle integration
 - ✅ Zero external dependencies
 - ✅ Fast and lightweight
+
+---
+
+## 📁 File Storage (v0.8.7)
+
+Unified file storage abstraction supporting local filesystem and S3-compatible object storage.
+
+**Configuration (.env):**
+```env
+# Local driver (default)
+STORAGE_DRIVER=local
+STORAGE_PATH=storage/app
+
+# S3 driver
+# STORAGE_DRIVER=s3
+# STORAGE_S3_KEY=your-key
+# STORAGE_S3_SECRET=your-secret
+# STORAGE_S3_REGION=us-east-1
+# STORAGE_S3_BUCKET=my-bucket
+# STORAGE_S3_ENDPOINT=  # Optional for S3-compatible services
+```
+
+**Basic Usage:**
+```php
+use Siro\Core\Storage;
+
+// Write file
+Storage::put('documents/report.pdf', $pdfContent);
+
+// Read file
+$content = Storage::get('documents/report.pdf');
+
+// Check existence
+if (Storage::exists('documents/report.pdf')) {
+    // File exists
+}
+
+// Delete file
+Storage::delete('documents/report.pdf');
+
+// Get URL
+$url = Storage::url('documents/report.pdf');
+// Local: /storage/documents/report.pdf
+// S3: https://bucket.s3.region.amazonaws.com/documents/report.pdf
+
+// List files (local only)
+$files = Storage::files('documents');
+// ['report.pdf', 'invoice.pdf']
+```
+
+**Upload Example:**
+```php
+$file = $request->file('avatar');
+$path = 'avatars/' . uniqid() . '.' . $file->extension();
+
+Storage::put($path, file_get_contents($file->tmpName));
+
+return [
+    'url' => Storage::url($path),
+];
+```
+
+**Features:**
+- ✅ Local filesystem driver (default)
+- ✅ S3/S3-compatible driver (MinIO, DigitalOcean Spaces, etc.)
+- ✅ Same API for both drivers
+- ✅ No external dependencies for S3 (uses HTTP directly)
+- ✅ Automatic directory creation
+- ✅ MIME type detection
+- ✅ AWS Signature V4 authentication
+
+---
+
+## ✅ Custom Validation Rules (v0.8.7)
+
+Extend the Validator with custom rules using `Validator::extend()`.
+
+**Register Custom Rule:**
+```php
+use Siro\Core\Validator;
+
+Validator::extend('phone', function ($value, $field, $input, $param): string|bool {
+    return preg_match('/^\+?[0-9]{7,15}$/', (string) $value)
+        ? true
+        : ':field is not a valid phone number';
+});
+```
+
+**Use in Validation:**
+```php
+$request->validate([
+    'phone' => 'required|phone',
+]);
+```
+
+**With Parameters:**
+```php
+Validator::extend('min_words', function ($value, $field, $input, $param): string|bool {
+    $minWords = (int) ($param ?? 1);
+    $wordCount = str_word_count((string) $value);
+    
+    return $wordCount >= $minWords
+        ? true
+        : ":field must have at least {$minWords} words";
+});
+
+// Usage
+$request->validate([
+    'description' => 'min_words:10',
+]);
+```
+
+**Complex Validation:**
+```php
+Validator::extend('unique_email_domain', function ($value, $field, $input, $param): string|bool {
+    $domain = substr(strrchr($value, '@'), 1);
+    $blockedDomains = ['spam.com', 'fake.org'];
+    
+    if (in_array($domain, $blockedDomains)) {
+        return ":field domain is not allowed";
+    }
+    
+    return true;
+});
+```
+
+**Return Types:**
+- `true` - Validation passed
+- `false` - Validation failed (uses default error message)
+- `string` - Validation failed with custom error message
+
+**Features:**
+- ✅ Simple registration API
+- ✅ Access to full input data
+- ✅ Support for rule parameters
+- ✅ Custom error messages
+- ✅ Works with multi-language system
+- ✅ Can combine with built-in rules
+
+---
+
+## 🗜️ Auto Gzip Compression (v0.8.7)
+
+Automatic response compression when client supports it. Zero configuration required!
+
+**How It Works:**
+```php
+// In Response::send()
+$acceptEncoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
+
+if (str_contains($acceptEncoding, 'gzip') && function_exists('gzencode')) {
+    header('Content-Encoding: gzip');
+    echo gzencode($encoded);
+    return;
+}
+
+echo $encoded;  // Uncompressed for clients without gzip support
+```
+
+**Benefits:**
+- ✅ Reduces bandwidth by 60-80%
+- ✅ Faster page loads
+- ✅ Zero configuration
+- ✅ Backward compatible (clients without gzip get uncompressed)
+- ✅ Uses PHP's built-in `gzencode()`
+- ✅ No external dependencies
+
+**Example:**
+```json
+// Without gzip: 10KB
+{
+  "data": [...],
+  "message": "Success"
+}
+
+// With gzip: ~2KB (80% reduction)
+[gzipped binary data]
+```
+
+**Browser Support:**
+All modern browsers send `Accept-Encoding: gzip` header automatically:
+- Chrome ✅
+- Firefox ✅
+- Safari ✅
+- Edge ✅
+- Mobile browsers ✅
 
 ---
 

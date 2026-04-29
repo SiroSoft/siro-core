@@ -74,6 +74,7 @@ final class App
         Database::configure($dbConfig);
         Cache::boot($this->basePath);
         Lang::boot($this->basePath);
+        Storage::boot();
     }
 
     /**

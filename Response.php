@@ -154,6 +154,14 @@ final class Response
             return;
         }
 
+        // Gzip compression if accepted by client
+        $acceptEncoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
+        if (str_contains($acceptEncoding, 'gzip') && function_exists('gzencode')) {
+            header('Content-Encoding: gzip');
+            echo gzencode($encoded);
+            return;
+        }
+
         echo $encoded;
     }
 
