@@ -4,61 +4,87 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
-use Closure;
-
 /**
- * Minimal event dispatcher (Phalcon-style).
+ * Lightweight publish/subscribe event dispatcher.
  *
- * Supports string event names with wildcard patterns.
- * Return false from a listener to stop propagation.
+ * Supports named events with multiple listeners, wildcards,
+ * one-time listeners, and listener removal.
  *
  * Usage:
- *   Event::listen('user.registered', fn(User $user) => ...);
- *   Event::dispatch('user.registered', $user);
+ *   Event::on('user.created', function ($user) { ... });
+ *   Event::on('user.*', function ($event, $payload) { ... });
+ *   Event::emit('user.created', $user);
  *
  * @package Siro\Core
  */
 final class Event
 {
-    /** @var array<string, array<int, callable>> */
+    /** @var array<string, array<int, array{callback: callable, once: bool}>> */
     private static array $listeners = [];
 
     /**
-     * Register a listener for an event.
+     * Register an event listener.
      *
-     * Event names can use wildcards: 'user.*' matches 'user.registered', etc.
-     *
-     * @param string $event Event name or pattern (e.g., 'user.registered', 'user.*')
-     * @param callable $callback Handler receiving ($eventName, $payload)
+     * @param string $event Event name (e.g. "user.created", "user.*")
+     * @param callable $callback Listener: fn($payload) or fn($event, $payload)
      */
-    public static function listen(string $event, callable $callback): void
+    public static function on(string $event, callable $callback): void
     {
-        self::$listeners[$event][] = $callback;
+        self::$listeners[$event][] = [
+            'callback' => $callback,
+            'once' => false,
+        ];
     }
 
     /**
-     * Dispatch an event to all matching listeners.
-     *
-     * If a listener returns false, propagation stops immediately.
+     * Register a one-time event listener.
+     * Removed after being fired once.
+     */
+    public static function once(string $event, callable $callback): void
+    {
+        self::$listeners[$event][] = [
+            'callback' => $callback,
+            'once' => true,
+        ];
+    }
+
+    /**
+     * Remove all listeners for an event (or use wildcard).
+     */
+    public static function off(string $event): void
+    {
+        if (str_contains($event, '*')) {
+            $pattern = '/^' . str_replace('\\*', '.*', preg_quote($event, '/')) . '$/';
+            foreach (array_keys(self::$listeners) as $key) {
+                if (preg_match($pattern, $key)) {
+                    unset(self::$listeners[$key]);
+                }
+            }
+        } else {
+            unset(self::$listeners[$event]);
+        }
+    }
+
+    /**
+     * Fire an event, calling all registered listeners.
      *
      * @param string $event Event name
-     * @param mixed $payload Data passed to each listener
-     * @return bool True if propagation completed, false if stopped
+     * @param mixed $payload Data passed to listeners
+     * @return bool False if a listener returned false (halt), true otherwise
      */
-    public static function dispatch(string $event, mixed $payload = null): bool
+    public static function emit(string $event, mixed $payload = null): bool
     {
-        $normalized = strtolower(trim($event));
+        $matched = self::getListeners($event);
 
-        foreach (self::$listeners as $pattern => $callbacks) {
-            if (!self::matches($normalized, $pattern)) {
-                continue;
+        foreach ($matched as $index => $listener) {
+            $result = ($listener['callback'])($payload);
+
+            if ($listener['once']) {
+                unset(self::$listeners[$event][$index]);
             }
 
-            foreach ($callbacks as $callback) {
-                $result = $callback($event, $payload);
-                if ($result === false) {
-                    return false;
-                }
+            if ($result === false) {
+                return false;
             }
         }
 
@@ -66,59 +92,43 @@ final class Event
     }
 
     /**
-     * Remove a specific listener, or all listeners for an event.
+     * Get all listeners matching an event (exact + wildcard).
      *
-     * @param string $event Event name
-     * @param callable|null $callback Remove specific callback, or null to remove all
+     * @return array<int, array{callback: callable, once: bool}>
      */
-    public static function remove(string $event, ?callable $callback = null): void
+    private static function getListeners(string $event): array
     {
-        if ($callback === null) {
-            unset(self::$listeners[$event]);
-            return;
-        }
+        $matched = self::$listeners[$event] ?? [];
 
-        if (!isset(self::$listeners[$event])) {
-            return;
-        }
-
-        foreach (self::$listeners[$event] as $i => $existing) {
-            if ($existing === $callback) {
-                array_splice(self::$listeners[$event], $i, 1);
-                break;
+        foreach (self::$listeners as $key => $listeners) {
+            if ($key === $event || !str_contains($key, '*')) {
+                continue;
             }
-        }
-    }
 
-    /** @return array<string, array<int, callable>> */
-    public static function getListeners(): array
-    {
-        return self::$listeners;
-    }
-
-    /** Check if an event name matches a pattern (supports wildcards). */
-    private static function matches(string $event, string $pattern): bool
-    {
-        $normalizedPattern = strtolower(trim($pattern));
-
-        // Exact match
-        if ($normalizedPattern === $event) {
-            return true;
-        }
-
-        // Wildcard: 'user.*' matches 'user.registered', 'user.login'
-        if (str_ends_with($normalizedPattern, '.*')) {
-            $prefix = substr($normalizedPattern, 0, -2);
-            if ($prefix === '' || str_starts_with($event, $prefix . '.')) {
-                return true;
+            $pattern = '/^' . str_replace('\\*', '.*', preg_quote($key, '/')) . '$/';
+            if (preg_match($pattern, $event)) {
+                foreach ($listeners as $listener) {
+                    $matched[] = $listener;
+                }
             }
         }
 
-        // Global wildcard: '*' matches everything
-        if ($normalizedPattern === '*') {
-            return true;
-        }
+        return $matched;
+    }
 
-        return false;
+    /**
+     * Check if an event has listeners.
+     */
+    public static function hasListeners(string $event): bool
+    {
+        return self::getListeners($event) !== [];
+    }
+
+    /**
+     * Remove all listeners.
+     */
+    public static function flush(): void
+    {
+        self::$listeners = [];
     }
 }

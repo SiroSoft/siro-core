@@ -12,6 +12,7 @@ use Siro\Core\Commands\LogTraceCommand;
 use Siro\Core\Commands\MakeApiCommand;
 use Siro\Core\Commands\MakeMailCommand;
 use Siro\Core\Commands\MakeDocsCommand;
+use Siro\Core\Commands\MakeEventCommand;
 use Siro\Core\Commands\MakeOpenApiCommand;
 use Siro\Core\Commands\MakePostmanCommand;
 use Siro\Core\Commands\MakeAuthCommand;
@@ -118,6 +119,8 @@ final class Console
                 return (new MakePostmanCommand($this->basePath))->run($args);
             case 'make:docs':
                 return (new MakeDocsCommand($this->basePath))->run($args);
+            case 'make:event':
+                return (new MakeEventCommand($this->basePath))->run($args);
             case 'config:cache':
                 return (new ConfigCacheCommand($this->basePath))->run($args);
             case 'env:check':
@@ -159,6 +162,7 @@ final class Console
         $this->write('  php siro make:postman');
         $this->write('  php siro make:postman --flow=crud --method=POST');
         $this->write('  php siro make:mail WelcomeMail');
+        $this->write('  php siro make:event UserCreated');
         $this->write('  php siro make:docs');
         $this->write('  php siro schedule:run');
         $this->write('  php siro queue:work');

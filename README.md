@@ -1,4 +1,4 @@
-# Siro Core Framework v0.8.5
+# Siro Core Framework v0.8.6
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -591,6 +591,9 @@ php siro queue:flush                  # Clear failed jobs
 
 # Multi-language (v0.8.5)
 php siro make:lang vi                 # Create new language pack
+
+# Event System (v0.8.6)
+php siro make:event UserCreated       # Generate event class
 ```
 
 ---
@@ -1015,6 +1018,238 @@ php siro make:lang fr    # Creates storage/lang/fr/
 - ✅ Pluralization support
 - ✅ Easy to add new languages
 - ✅ Validator auto-translates errors
+
+---
+
+## ⚡ Event System (v0.8.6)
+
+Lightweight publish/subscribe event dispatcher with wildcard support, one-time listeners, and Model lifecycle hooks.
+
+**Basic Usage:**
+```php
+use Siro\Core\Event;
+
+// Register listener
+Event::on('users.created', function ($user) {
+    Log::info('New user: ' . $user->email);
+});
+
+// Fire event
+Event::emit('users.created', $user);
+```
+
+**One-time Listener:**
+```php
+Event::once('users.created', function ($user) {
+    // Runs exactly once, then auto-removes
+});
+```
+
+**Wildcard Listeners:**
+```php
+Event::on('users.*', function ($payload) {
+    // Catches: users.created, users.updated, users.deleted, etc.
+});
+```
+
+**Cancel Operations:**
+```php
+Event::on('users.creating', function ($user): bool {
+    if ($user->email === 'banned@example.com') {
+        return false; // Cancel creation
+    }
+    return true;
+});
+```
+
+**Remove Listeners:**
+```php
+// Remove specific event
+Event::off('users.created');
+
+// Remove with wildcard
+Event::off('users.*');
+
+// Remove all
+Event::flush();
+```
+
+**Check Listeners:**
+```php
+if (Event::hasListeners('users.created')) {
+    // Has listeners
+}
+```
+
+---
+
+### Model Lifecycle Events
+
+Models automatically fire events during CRUD operations:
+
+**Create Flow:**
+```
+saving → creating → INSERT → created → saved
+```
+
+**Update Flow:**
+```
+saving → updating → UPDATE → updated → saved
+```
+
+**Delete Flow:**
+```
+deleting → DELETE → deleted
+```
+
+**Usage Example:**
+```php
+use App\Models\User;
+
+// Listen to user creation
+Event::on('users.creating', function ($user): bool {
+    // Validate before create
+    if (User::where('email', $user->email)->exists()) {
+        return false; // Cancel
+    }
+    return true;
+});
+
+Event::on('users.created', function ($user) {
+    // Send welcome email
+    Mail::to($user->email)
+        ->subject('Welcome!')
+        ->html('<h1>Welcome!</h1>')
+        ->queue();
+});
+
+// Create user (events fire automatically)
+$user = User::create([
+    'name' => 'John Doe',
+    'email' => 'john@example.com'
+]);
+```
+
+---
+
+### Event Classes
+
+Generate structured event classes:
+
+```bash
+php siro make:event UserCreated
+# Creates: app/Events/UserCreatedEvent.php
+```
+
+**Generated Class:**
+```php
+<?php
+namespace App\Events;
+
+use Siro\Core\Event;
+
+final class UserCreatedEvent
+{
+    public static function dispatch(mixed $payload = null): void
+    {
+        Event::emit('user_created_event', $payload);
+    }
+
+    public static function listen(callable $callback): void
+    {
+        Event::on('user_created_event', $callback);
+    }
+}
+```
+
+**Usage:**
+```php
+// Listen
+UserCreatedEvent::listen(function ($user) {
+    Log::info('User created: ' . $user->email);
+});
+
+// Dispatch
+UserCreatedEvent::dispatch($user);
+```
+
+---
+
+### Real-world Examples
+
+**1. Audit Logging:**
+```php
+Event::on('users.*', function ($user) {
+    AuditLog::create([
+        'action' => Event::currentEvent(),
+        'user_id' => $user->id,
+        'timestamp' => now(),
+    ]);
+});
+```
+
+**2. Cache Invalidation:**
+```php
+Event::on('products.updated', function ($product) {
+    Cache::forget('product.' . $product->id);
+});
+
+Event::on('products.deleted', function ($product) {
+    Cache::forget('product.' . $product->id);
+});
+```
+
+**3. Notification System:**
+```php
+Event::on('orders.completed', function ($order) {
+    // Send email
+    Mail::to($order->user->email)
+        ->subject('Order Completed')
+        ->html(OrderCompletedMail::build($order))
+        ->queue();
+    
+    // Send SMS
+    SmsService::send($order->user->phone, 'Your order is completed!');
+});
+```
+
+**4. Validation Before Save:**
+```php
+Event::on('users.saving', function ($user): bool {
+    if (!filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+        throw new ValidationException('Invalid email');
+    }
+    return true;
+});
+```
+
+**5. Queue Heavy Operations:**
+```php
+Event::on('reports.generated', function ($report) {
+    // Offload to queue
+    Queue::push(SendReportEmailJob::class, [
+        'report_id' => $report->id,
+        'user_id' => $report->user_id
+    ]);
+});
+```
+
+---
+
+### Features
+
+- ✅ Simple pub/sub pattern
+- ✅ Wildcard event matching (`users.*`)
+- ✅ One-time listeners (`once()`)
+- ✅ Event cancellation (return false)
+- ✅ Multiple listeners per event
+- ✅ Payload passing
+- ✅ Listener removal (`off()`)
+- ✅ Check for listeners (`hasListeners()`)
+- ✅ Clear all listeners (`flush()`)
+- ✅ Model lifecycle integration
+- ✅ Zero external dependencies
+- ✅ Fast and lightweight
 
 ---
 

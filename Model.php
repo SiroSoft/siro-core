@@ -396,24 +396,48 @@ abstract class Model
             return true;
         }
 
-        if (!$this->exists) {
+        $table = $this->getTable();
+        $isNew = !$this->exists;
+
+        // Fire saving event (can cancel)
+        if (!Event::emit("{$table}.saving", $this)) {
+            return false;
+        }
+
+        if ($isNew) {
+            // Fire creating event (can cancel)
+            if (!Event::emit("{$table}.creating", $this)) {
+                return false;
+            }
+
             // Insert new record
-            $id = Database::table($this->getTable())->insert($data);
-            
+            $id = Database::table($table)->insert($data);
+
             if ($id !== 0) {
                 $this->setAttribute('id', $id);
                 $this->exists = true;
             }
 
-            return true;
+            Event::emit("{$table}.created", $this);
+        } else {
+            // Fire updating event (can cancel)
+            if (!Event::emit("{$table}.updating", $this)) {
+                return false;
+            }
+
+            // Update existing record
+            $affected = Database::table($table)
+                ->where('id', '=', $this->getAttribute('id'))
+                ->update($data);
+
+            if ($affected > 0) {
+                Event::emit("{$table}.updated", $this);
+            }
         }
 
-        // Update existing record
-        $affected = Database::table($this->getTable())
-            ->where('id', '=', $this->getAttribute('id'))
-            ->update($data);
+        Event::emit("{$table}.saved", $this);
 
-        return $affected > 0;
+        return true;
     }
 
     /**
@@ -436,12 +460,20 @@ abstract class Model
             return false;
         }
 
-        $affected = Database::table($this->getTable())
+        $table = $this->getTable();
+
+        // Fire deleting event (can cancel)
+        if (!Event::emit("{$table}.deleting", $this)) {
+            return false;
+        }
+
+        $affected = Database::table($table)
             ->where('id', '=', $this->getAttribute('id'))
             ->delete();
 
         if ($affected > 0) {
             $this->exists = false;
+            Event::emit("{$table}.deleted", $this);
             return true;
         }
 
