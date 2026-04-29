@@ -225,7 +225,7 @@ abstract class Model
      */
     public static function all(): array
     {
-        return self::query()->get();
+        return self::hydrateAll(self::query()->get());
     }
 
     /**
@@ -235,8 +235,8 @@ abstract class Model
      */
     public static function first(): ?self
     {
-        $results = self::query()->limit(1)->get();
-        return $results[0] ?? null;
+        $rows = self::query()->limit(1)->get();
+        return isset($rows[0]) ? self::hydrate($rows[0]) : null;
     }
 
     /**
@@ -246,7 +246,7 @@ abstract class Model
      */
     public static function get(): array
     {
-        return self::query()->get();
+        return self::hydrateAll(self::query()->get());
     }
 
     /**
@@ -266,7 +266,7 @@ abstract class Model
         $offset = ($page - 1) * $perPage;
         $lastPage = $total > 0 ? (int) ceil($total / $perPage) : 1;
 
-        $data = $query->limit($perPage)->offset($offset)->get();
+        $data = self::hydrateAll($query->limit($perPage)->offset($offset)->get());
 
         return [
             'data' => $data,
@@ -375,8 +375,9 @@ abstract class Model
             $query->where($column, '=', $value);
         }
 
-        $results = $query->limit(1)->get();
-        return $results[0] ?? null;
+        $rows = $query->limit(1)->get();
+        $row = $rows[0] ?? null;
+        return $row !== null ? self::hydrate($row) : null;
     }
 
     /**
@@ -450,6 +451,17 @@ abstract class Model
     private function getDirty(): array
     {
         return $this->attributes;
+    }
+
+    /**
+     * Hydrate all rows into Model instances.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, static>
+     */
+    public static function hydrateAll(array $rows): array
+    {
+        return array_map(fn (array $row): self => self::hydrate($row), $rows);
     }
 
     /**

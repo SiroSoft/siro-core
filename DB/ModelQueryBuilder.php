@@ -46,27 +46,25 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this;
     }
 
-    /** @return array<int, Model> */
+    /** @return array<int, array<string, mixed>> */
     public function get(): array
     {
         $this->applySoftDeleteFilter();
-        $rows = parent::get();
-
-        return array_map(fn (array $row): Model => $this->hydrate($row), $rows);
+        return parent::get();
     }
 
-    /** @return array{data: array<int, Model>, meta: array{page:int, per_page:int, total:int, last_page:int}} */
+    /** @return array<string, mixed>|null */
+    public function first(): ?array
+    {
+        $this->applySoftDeleteFilter();
+        return parent::first();
+    }
+
+    /** @return array{data: array, meta: array{page:int, per_page:int, total:int, last_page:int}} */
     public function paginate(int $perPage = 20, ?int $page = null): array
     {
         $this->applySoftDeleteFilter();
-        $result = parent::paginate($perPage, $page);
-
-        $result['data'] = array_map(
-            fn (array $row): Model => $this->hydrate($row),
-            $result['data']
-        );
-
-        return $result;
+        return parent::paginate($perPage, $page);
     }
 
     public function count(string $column = '*'): int
@@ -92,26 +90,19 @@ final class ModelQueryBuilder extends QueryBuilder
         if ($this->softDeleteFilterApplied) {
             return;
         }
-
         $this->softDeleteFilterApplied = true;
 
-        if ($this->withSoftDeleted || $this->onlySoftDeleted) {
-            if ($this->onlySoftDeleted) {
-                $this->whereRaw('deleted_at IS NOT NULL');
-            }
+        if ($this->withSoftDeleted) {
+            return;
+        }
+        if ($this->onlySoftDeleted) {
+            $this->whereRaw('deleted_at IS NOT NULL');
             return;
         }
 
-        $modelClass = $this->modelClass;
-        $uses = class_uses($modelClass) ?: [];
+        $uses = class_uses($this->modelClass) ?: [];
         if (in_array(SoftDeletes::class, $uses, true)) {
             $this->whereRaw('deleted_at IS NULL');
         }
-    }
-
-    private function hydrate(array $row): Model
-    {
-        $modelClass = $this->modelClass;
-        return $modelClass::hydrate($row);
     }
 }
