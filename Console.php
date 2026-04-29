@@ -10,6 +10,7 @@ use Siro\Core\Commands\LogExportCommand;
 use Siro\Core\Commands\LogReplayCommand;
 use Siro\Core\Commands\LogTraceCommand;
 use Siro\Core\Commands\MakeApiCommand;
+use Siro\Core\Commands\MakeMailCommand;
 use Siro\Core\Commands\MakeDocsCommand;
 use Siro\Core\Commands\MakeOpenApiCommand;
 use Siro\Core\Commands\MakePostmanCommand;
@@ -17,13 +18,18 @@ use Siro\Core\Commands\MakeAuthCommand;
 use Siro\Core\Commands\MakeControllerCommand;
 use Siro\Core\Commands\MakeModelCommand;
 use Siro\Core\Commands\KeyGenerateCommand;
+use Siro\Core\Commands\MakeJobCommand;
 use Siro\Core\Commands\MakeMigrationCommand;
 use Siro\Core\Commands\MakeResourceCommand;
 use Siro\Core\Commands\MakeSeederCommand;
 use Siro\Core\Commands\MigrateCommand;
+use Siro\Core\Commands\QueueFlushCommand;
+use Siro\Core\Commands\QueueRetryCommand;
+use Siro\Core\Commands\QueueStatusCommand;
 use Siro\Core\Commands\MigrateRollbackCommand;
 use Siro\Core\Commands\MigrateStatusCommand;
 use Siro\Core\Commands\OptimizeCommand;
+use Siro\Core\Commands\QueueWorkCommand;
 use Siro\Core\Commands\RouteListCommand;
 use Siro\Core\Commands\ScheduleRunCommand;
 use Siro\Core\Commands\SeedCommand;
@@ -75,6 +81,16 @@ final class Console
                 return (new SeedCommand($this->basePath))->run($args);
             case 'schedule:run':
                 return (new ScheduleRunCommand($this->basePath))->run($args);
+            case 'queue:work':
+                return (new QueueWorkCommand($this->basePath))->run($args);
+            case 'queue:retry':
+                return (new QueueRetryCommand($this->basePath))->run($args);
+            case 'queue:flush':
+                return (new QueueFlushCommand($this->basePath))->run($args);
+            case 'queue:status':
+                return (new QueueStatusCommand($this->basePath))->run($args);
+            case 'make:job':
+                return (new MakeJobCommand($this->basePath))->run($args);
             case 'migrate':
                 return (new MigrateCommand($this->basePath))->run($args);
             case 'migrate:rollback':
@@ -139,7 +155,16 @@ final class Console
         $this->write('  php siro make:openapi --flow=auth --tag=User --path=/api');
         $this->write('  php siro make:postman');
         $this->write('  php siro make:postman --flow=crud --method=POST');
+        $this->write('  php siro make:mail WelcomeMail');
         $this->write('  php siro make:docs');
+        $this->write('  php siro schedule:run');
+        $this->write('  php siro queue:work');
+        $this->write('  php siro queue:work --daemon');
+        $this->write('  php siro queue:retry all');
+        $this->write('  php siro queue:retry 5');
+        $this->write('  php siro queue:flush');
+        $this->write('  php siro queue:status');
+        $this->write('  php siro make:job SendWelcomeEmail');
         $this->write('  php siro storage:link');
         $this->write('  php siro config:cache');
         $this->write('  php siro env:check');

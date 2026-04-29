@@ -1,4 +1,4 @@
-# Siro Core Framework v0.8.3
+# Siro Core Framework v0.8.4
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -581,6 +581,13 @@ php siro doctor                       # Check system health
 # Storage & Scheduling (v0.8.3)
 php siro storage:link                 # Create symlink for uploaded files
 php siro schedule:run                 # Run scheduled tasks (for crontab)
+
+# Queue & Mail (v0.8.4)
+php siro queue:work                   # Process queued jobs
+php siro queue:work --daemon          # Run worker continuously
+php siro queue:status                 # Show queue status
+php siro queue:retry <id>             # Retry failed job
+php siro queue:flush                  # Clear failed jobs
 ```
 
 ---
@@ -690,6 +697,194 @@ final class HealthCheck
     }
 }
 ```
+
+---
+
+## 📧 Queue & Mail System (v0.8.4)
+
+### Job Queue
+
+DB-based job queue with automatic retry, priority support, and failed job tracking.
+
+**Push a Job:**
+```php
+use Siro\Core\Queue;
+
+// Simple job
+Queue::push(SendEmailJob::class, ['to' => 'user@example.com']);
+
+// With delay (3600 seconds = 1 hour)
+Queue::push(ProcessReportJob::class, $data, delay: 3600);
+
+// With priority (higher runs first)
+Queue::push(UrgentJob::class, $data, priority: 10);
+
+// Custom retry attempts and timeout
+Queue::push(HeavyJob::class, $data, maxAttempts: 5, timeout: 300);
+```
+
+**Create a Job Class:**
+```php
+<?php
+namespace App\Jobs;
+
+final class SendEmailJob
+{
+    public function handle(array $data = []): void
+    {
+        // Your logic here
+        mail($data['to'], 'Subject', 'Body');
+    }
+}
+```
+
+**Run Queue Worker:**
+```bash
+# Process all available jobs and exit
+php siro queue:work
+
+# Run continuously (daemon mode)
+php siro queue:work --daemon
+
+# Custom sleep between polls
+php siro queue:work --daemon --sleep=3
+
+# Override max attempts
+php siro queue:work --tries=5
+```
+
+**Setup Crontab for Production:**
+```bash
+# Add to crontab
+* * * * * cd /path/to/project && php siro queue:work
+
+# Or use supervisor for daemon mode
+```
+
+**Queue Management:**
+```bash
+# Check queue status
+php siro queue:status
+
+# Retry a specific failed job
+php siro queue:retry 123
+
+# Retry all failed jobs
+php siro queue:retry all
+
+# Clear all failed jobs
+php siro queue:flush
+```
+
+**Features:**
+- ✅ Automatic retry with exponential backoff (5s, 10s, 20s... max 300s)
+- ✅ Priority support (higher priority jobs run first)
+- ✅ Job timeout protection (default 120s)
+- ✅ Failed jobs tracking in `failed_jobs` table
+- ✅ Lock mechanism prevents duplicate processing
+- ✅ Works with SQLite, MySQL, PostgreSQL
+
+---
+
+### Email System
+
+Send emails via sendmail or SMTP with no external dependencies.
+
+**Send Immediately:**
+```php
+use Siro\Core\Mail;
+
+Mail::to('user@example.com')
+    ->subject('Welcome!')
+    ->html('<h1>Hello!</h1>')
+    ->send();
+```
+
+**Queue for Async Delivery:**
+```php
+Mail::to('user@example.com')
+    ->subject('Welcome!')
+    ->html('<h1>Hello!</h1>')
+    ->queue();  // Pushes to queue
+```
+
+**Delayed Delivery:**
+```php
+Mail::to('user@example.com')
+    ->subject('Welcome!')
+    ->html('<h1>Hello!</h1>')
+    ->sendLater(3600);  // Send after 1 hour
+```
+
+**Advanced Options:**
+```php
+Mail::to('user@example.com')
+    ->subject('Report')
+    ->html('<h1>Monthly Report</h1>')
+    ->cc('manager@example.com')
+    ->bcc('archive@example.com')
+    ->replyTo('support@example.com')
+    ->attach('/path/to/report.pdf')
+    ->send();
+```
+
+**Configuration (.env):**
+```env
+# Driver: sendmail or smtp
+MAIL_DRIVER=smtp
+
+# SMTP settings
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+
+# From address
+MAIL_FROM_ADDRESS=noreply@example.com
+MAIL_FROM_NAME="Siro API"
+```
+
+**Create Email Templates:**
+```php
+<?php
+namespace App\Mails;
+
+final class WelcomeMail
+{
+    public function build(array $data = []): string
+    {
+        $name = $data['name'] ?? 'User';
+        
+        return <<<HTML
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Welcome, {$name}!</h1>
+    <p>Thank you for joining us.</p>
+</body>
+</html>
+HTML;
+    }
+}
+```
+
+**Usage:**
+```php
+Mail::to('user@example.com')
+    ->subject('Welcome!')
+    ->html((new WelcomeMail())->build(['name' => 'John']))
+    ->send();
+```
+
+**Features:**
+- ✅ Sendmail driver (PHP mail())
+- ✅ SMTP driver with STARTTLS and AUTH LOGIN
+- ✅ No external dependencies (uses fsockopen)
+- ✅ HTML and plain text support
+- ✅ CC, BCC, Reply-To
+- ✅ File attachments with MIME encoding
+- ✅ Queue integration for async delivery
+- ✅ Delayed delivery support
 
 ---
 
