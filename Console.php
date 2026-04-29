@@ -38,6 +38,7 @@ use Siro\Core\Commands\SeedCommand;
 use Siro\Core\Commands\ServeCommand;
 use Siro\Core\Commands\StorageLinkCommand;
 use Siro\Core\Commands\DoctorCommand;
+use Siro\Core\Commands\ApiTestCommand;
 
 /**
  * CLI command dispatcher.
@@ -131,6 +132,8 @@ final class Console
                 return (new DoctorCommand($this->basePath))->run($args);
             case 'route:list':
                 return (new RouteListCommand($this->basePath))->run($args);
+            case 'api:test':
+                return (new ApiTestCommand($this->basePath))->run($args);
             default:
                 return $this->unknownCommand($command);
         }
@@ -180,6 +183,11 @@ final class Console
         $this->write('  php siro optimize');
         $this->write('  php siro route:list');
         $this->write('  php siro key:generate');
+        $this->write('  php siro api:test');
+        $this->write('  php siro api:test POST /auth/login email=admin@test.com password=123456');
+        $this->write('  php siro api:test GET /users --as=admin');
+        $this->write('  php siro api:test POST /users name=John email=john@test.com --as=admin');
+        $this->write('  php siro api:test --history');
         $this->write('  php siro doctor');
     }
 
