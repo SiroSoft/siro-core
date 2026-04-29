@@ -1,4 +1,4 @@
-# Siro Core Framework v0.8.7
+# Siro Core Framework v0.8.8
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -599,6 +599,10 @@ php siro make:event UserCreated       # Generate event class
 # Storage: put(), get(), delete(), exists(), url()
 # Custom validation rules via Validator::extend()
 # Auto gzip compression in responses
+
+# API Testing CLI (v0.8.8) ⭐
+php siro api:test GET /users          # Quick API testing
+php siro api:test POST /login --as=admin  # Auto-auth
 ```
 
 ---
@@ -1441,6 +1445,71 @@ All modern browsers send `Accept-Encoding: gzip` header automatically:
 - Safari ✅
 - Edge ✅
 - Mobile browsers ✅
+
+---
+
+## ⭐ CLI API Testing Tool (v0.8.8)
+
+Built-in API testing command that replaces Postman for quick endpoint testing.
+
+**Basic Usage:**
+```bash
+# Test GET endpoint
+php siro api:test GET /api/users
+
+# Test POST with data
+php siro api:test POST /auth/login email=admin@test.com password=123456
+
+# Auto-authentication (login once, token saved)
+php siro api:test POST /auth/login email=admin@test.com password=123 --as=admin
+php siro api:test GET /users --as=admin              # Auto uses token
+php siro api:test POST /users name=John --as=admin   # Auto uses token
+
+# View request history
+php siro api:test --history
+php siro api:test --history=20
+
+# Custom headers & port
+php siro api:test GET /api/data --header="X-Version: 2.0" --port=8080
+```
+
+**Features:**
+- ✅ **Zero dependencies** - Uses PHP built-in cURL
+- ✅ **Auto authentication** - Login once, token saved by role
+- ✅ **Pretty output** - Colored status codes, formatted JSON
+- ✅ **Request history** - Saves last 100 requests
+- ✅ **Multiple content types** - JSON (default) or form-urlencoded
+- ✅ **Custom headers** - Add any headers you need
+- ✅ **Security-first** - No shell commands, tokens stored securely
+
+**Example Output:**
+```
+  POST /auth/login
+  Status: 200 OK
+  Time:   45.2ms
+  Size:   1.2KB
+
+  Response Headers:
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+
+  Body:
+  {
+      "success": true,
+      "data": {
+          "token": "eyJ0eXAi..."
+      }
+  }
+
+  ✓ Token for 'admin' saved.
+```
+
+**Why Use api:test?**
+- 🚀 **Faster than Postman** - No GUI overhead, instant startup
+- 🔐 **Smart auth** - Automatic token management by role
+- 📊 **History tracking** - Review your testing session
+- 💻 **CLI-native** - Stay in terminal, keep context
+- 🎯 **Project-specific** - Perfect integration with SiroPHP
 
 ---
 

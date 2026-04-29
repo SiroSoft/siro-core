@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+use Siro\Core\App;
+use Siro\Core\Request;
+use Siro\Core\Response;
+use Siro\Core\Lang;
+use Siro\Core\ValidationException;
+
 final class ApiTestCommand
 {
     use CommandSupport;
@@ -21,22 +27,7 @@ final class ApiTestCommand
     public function run(array $args): int
     {
         if ($args === []) {
-            $this->write('Usage: php siro api:test <method> <path> [field:value...] [options]');
-            $this->write('Options:');
-            $this->write('  --json              Send as JSON (default)');
-            $this->write('  --form              Send as form-urlencoded');
-            $this->write('  --header="X: v"     Custom header');
-            $this->write('  --as=<role>         Auth as role (admin, user)');
-            $this->write('  --port=<port>       Server port (default 8000)');
-            $this->write('  --history           View request history');
-            $this->write('  --history=N          Show last N requests');
-            $this->write('  --history-clear     Clear history');
-            $this->write('');
-            $this->write('Examples:');
-            $this->write('  php siro api:test POST /auth/login email=admin@test.com password=123456');
-            $this->write('  php siro api:test GET /users --as=admin');
-            $this->write('  php siro api:test POST /users name=John email=john@test.com --as=admin');
-            $this->write('  php siro api:test --history');
+            $this->printHelp();
             return 0;
         }
 
@@ -65,9 +56,8 @@ final class ApiTestCommand
         }
 
         $fields = [];
-        $headers = [];
+        $customHeaders = [];
         $as = null;
-        $port = 8000;
         $contentType = 'json';
 
         for ($i = 2; $i < count($args); $i++) {
@@ -77,158 +67,170 @@ final class ApiTestCommand
             } elseif ($arg === '--form') {
                 $contentType = 'form';
             } elseif (str_starts_with($arg, '--header=')) {
-                $headers[] = substr($arg, 9);
+                $customHeaders[] = substr($arg, 9);
             } elseif (str_starts_with($arg, '--as=')) {
                 $as = substr($arg, 5);
-            } elseif (str_starts_with($arg, '--port=')) {
-                $port = max(1, (int) substr($arg, 7));
             } elseif (str_contains($arg, '=')) {
                 $parts = explode('=', $arg, 2);
                 $fields[$parts[0]] = $parts[1];
             }
         }
 
-        if ($as !== null) {
-            $token = $this->getToken($as);
-            if ($token === null) {
-                $this->write("Warning: No saved token for role '{$as}'. Send request without auth.");
-                $this->write("  Login first: php siro api:test POST /auth/login email={$as}@test.com password=... --as={$as}");
-            } else {
-                $headers[] = 'Authorization: Bearer ' . $token;
-            }
+        if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && $fields === []) {
+            $this->write("Enter fields for {$method} {$path} (leave field name empty to finish):");
+            $this->write('');
+            do {
+                $key = $this->ask('  Field name: ');
+                if ($key === '') {
+                    break;
+                }
+                $value = $this->ask('  Value: ');
+                $fields[$key] = $value;
+                $this->write('');
+            } while (true);
         }
 
-        return $this->sendRequest($method, $path, $fields, $headers, $contentType, $port, $as);
+        return $this->sendInternal($method, $path, $fields, $customHeaders, $contentType, $as);
     }
 
-    private function sendRequest(
+    private function sendInternal(
         string $method,
         string $path,
         array $fields,
-        array $headers,
+        array $customHeaders,
         string $contentType,
-        int $port,
         ?string $as
     ): int {
-        $url = "http://127.0.0.1:{$port}{$path}";
+        $query = [];
+        $pathOnly = $path;
+        $queryPos = strpos($path, '?');
+        if ($queryPos !== false) {
+            parse_str(substr($path, $queryPos + 1), $query);
+            $pathOnly = substr($path, 0, $queryPos);
+        }
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HEADER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
-
-        $curlHeaders = ['Accept: application/json'];
-
-        if ($method === 'POST' || $method === 'PUT' || $method === 'PATCH') {
-            if ($contentType === 'form') {
-                $curlHeaders[] = 'Content-Type: application/x-www-form-urlencoded';
-                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($fields));
-            } else {
-                $curlHeaders[] = 'Content-Type: application/json';
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields, JSON_UNESCAPED_UNICODE));
+        $token = null;
+        if ($as !== null) {
+            $token = $this->getToken($as);
+            if ($token === null) {
+                $this->write("Warning: No saved token for role '{$as}'.");
+                $this->write("  Login first: php siro api:test POST /auth/login email={$as}@test.com password=... --as={$as}");
             }
         }
 
-        foreach ($headers as $h) {
-            $curlHeaders[] = $h;
+        $parsedHeaders = [];
+        foreach ($customHeaders as $h) {
+            $parts = explode(':', $h, 2);
+            $parsedHeaders[strtolower(trim($parts[0]))] = trim($parts[1] ?? '');
         }
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $curlHeaders);
-
-        if ($method === 'GET') {
-            curl_setopt($ch, CURLOPT_HTTPGET, true);
-        } elseif ($method === 'POST') {
-            curl_setopt($ch, CURLOPT_POST, true);
-        } elseif ($method === 'PUT') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-        } elseif ($method === 'PATCH') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-        } elseif ($method === 'DELETE') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+        if ($token !== null) {
+            $parsedHeaders['authorization'] = 'Bearer ' . $token;
         }
+
+        $parsedHeaders['accept'] = 'application/json';
+        $parsedHeaders['content-type'] ??= 'application/json';
+        $parsedHeaders['host'] = 'localhost';
+
+        if ($contentType === 'form') {
+            $parsedHeaders['content-type'] = 'application/x-www-form-urlencoded';
+        }
+
+        $bodyData = in_array($method, ['POST', 'PUT', 'PATCH'], true) ? $fields : [];
 
         $start = microtime(true);
-        $response = curl_exec($ch);
-        $info = curl_getinfo($ch);
-        $error = curl_error($ch);
-        $duration = (microtime(true) - $start) * 1000;
-        curl_close($ch);
 
-        if ($error !== '') {
-            $this->write("Error: {$error}");
-            $this->write("Make sure the server is running: php siro serve --port={$port}");
+        try {
+            ob_start();
+
+            $app = new App($this->basePath);
+            $app->boot();
+            $app->loadRoutes($this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php');
+
+            Response::enableDebug(true);
+
+            $request = new Request($method, $pathOnly, $query, $parsedHeaders, $bodyData, '127.0.0.1');
+
+            $locale = $parsedHeaders['x-locale'] ?? '';
+            if ($locale !== '' && preg_match('/^[a-z]{2}$/i', $locale)) {
+                Lang::setLocale(strtolower($locale));
+            } else {
+                $acceptLang = $parsedHeaders['accept-language'] ?? '';
+                if ($acceptLang !== '' && preg_match('/^([a-z]+)/i', $acceptLang, $m)) {
+                    $langDir = Lang::basePath() . DIRECTORY_SEPARATOR . strtolower($m[1]);
+                    if (is_dir($langDir)) {
+                        Lang::setLocale(strtolower($m[1]));
+                    }
+                }
+            }
+
+            try {
+                $response = $app->router->dispatch($request);
+            } catch (ValidationException $e) {
+                $response = $e->toResponse();
+            }
+
+            $statusCode = $response->statusCode();
+            $duration = (microtime(true) - $start) * 1000;
+            $memory = memory_get_peak_usage(true) / 1024 / 1024;
+
+            $response->send();
+            $body = ob_get_clean() ?: '';
+
+            $this->write('');
+            $this->write("  \033[1;33m{$method} {$pathOnly}\033[0m");
+
+            $color = $statusCode < 300 ? '32' : ($statusCode < 400 ? '33' : '31');
+            $this->write("  \033[{$color}mStatus: {$statusCode}\033[0m");
+            $this->write("  Time:   " . number_format($duration, 1) . "ms");
+            $this->write("  Memory: " . number_format($memory, 1) . "MB");
+
+            if ($body !== '') {
+                $this->write('');
+                $this->write("  \033[1;90mBody:\033[0m");
+                $decoded = json_decode($body, true);
+                if (is_array($decoded)) {
+                    $this->write(json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                } else {
+                    $this->write(trim($body));
+                }
+            }
+
+            $this->write('');
+
+            if ($as !== null && $statusCode < 300) {
+                $decoded = json_decode($body, true);
+                if (is_array($decoded)) {
+                    $t = $decoded['data']['token'] ?? $decoded['token'] ?? null;
+                    if (is_string($t) && strlen($t) >= 10) {
+                        $tokens = $this->loadTokens();
+                        $tokens[$as] = $t;
+                        file_put_contents($this->authFile, json_encode($tokens, JSON_PRETTY_PRINT));
+                        $this->write("  \033[32mToken for '{$as}' saved.\033[0m");
+                    }
+                }
+            }
+
+            $this->saveHistory($method, $pathOnly, $fields, $customHeaders, $statusCode, $duration, $memory, $as);
+
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            $duration = (microtime(true) - $start) * 1000;
+            $memory = memory_get_peak_usage(true) / 1024 / 1024;
+
+            $this->write('');
+            $this->write("  \033[1;33m{$method} {$pathOnly}\033[0m");
+            $this->write("  \033[31mError: " . $e->getMessage() . "\033[0m");
+            $this->write("  File:  " . $e->getFile() . ":" . $e->getLine());
+            $this->write("  Time:  " . number_format($duration, 1) . "ms");
+            $this->write("  Memory: " . number_format($memory, 1) . "MB");
+            $this->write('');
+
+            $this->saveHistory($method, $pathOnly, $fields, $customHeaders, 500, $duration, $memory, $as);
             return 1;
         }
 
-        $headerSize = (int) $info['header_size'];
-        $responseHeaders = substr($response, 0, $headerSize);
-        $responseBody = substr($response, $headerSize);
-        $httpCode = (int) $info['http_code'];
-        $bodySize = strlen($responseBody);
-
-        $this->write('');
-        $this->write("  \033[1;33m{$method} {$path}\033[0m");
-
-        $color = $httpCode < 300 ? '32' : ($httpCode < 400 ? '33' : '31');
-        $this->write("  \033[{$color}mStatus: {$httpCode} OK\033[0m");
-        $this->write("  Time:   " . number_format($duration, 1) . "ms");
-        $this->write("  Size:   " . $this->formatBytes($bodySize));
-
-        $this->write('');
-        $this->write("  \033[1;90mResponse Headers:\033[0m");
-        $lines = explode("\n", trim($responseHeaders));
-        foreach ($lines as $line) {
-            $trimmed = trim($line);
-            if ($trimmed !== '') {
-                $this->write("    {$trimmed}");
-            }
-        }
-
-        $this->write('');
-        $this->write("  \033[1;90mBody:\033[0m");
-
-        if ($responseBody !== '') {
-            $decoded = json_decode($responseBody, true);
-            if (is_array($decoded)) {
-                $this->write(json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-            } else {
-                $this->write('    ' . $responseBody);
-            }
-        } else {
-            $this->write("    (empty)");
-        }
-
-        $this->write('');
-
-        if ($as !== null && $httpCode < 300) {
-            $this->autoSaveToken($responseBody, $as, $method, $path);
-        }
-
-        $this->saveHistory($method, $path, $fields, $headers, $httpCode, $duration, $bodySize, $as);
-
-        return $httpCode < 400 ? 0 : 1;
-    }
-
-    private function autoSaveToken(string $body, string $role, string $method, string $path): void
-    {
-        $decoded = json_decode($body, true);
-        if (!is_array($decoded)) {
-            return;
-        }
-
-        $token = $decoded['data']['token'] ?? $decoded['token'] ?? null;
-        if ($token === null || !is_string($token) || strlen($token) < 10) {
-            return;
-        }
-
-        $tokens = $this->loadTokens();
-        $tokens[$role] = $token;
-        file_put_contents($this->authFile, json_encode($tokens, JSON_PRETTY_PRINT));
-
-        $this->write("  \033[32m✓ Token for '{$role}' saved.\033[0m");
+        return $statusCode < 400 ? 0 : 1;
     }
 
     private function getToken(string $role): ?string
@@ -253,7 +255,7 @@ final class ApiTestCommand
         array $headers,
         int $httpCode,
         float $duration,
-        int $bodySize,
+        float $memory,
         ?string $as
     ): void {
         $history = $this->loadHistory();
@@ -265,7 +267,7 @@ final class ApiTestCommand
             'headers' => $headers,
             'status' => $httpCode,
             'duration_ms' => round($duration, 1),
-            'size_bytes' => $bodySize,
+            'memory_mb' => round($memory, 1),
             'as' => $as,
         ];
 
@@ -298,25 +300,19 @@ final class ApiTestCommand
         $history = array_reverse($history);
         $history = array_slice($history, 0, $limit);
 
-        $headers = ['#', 'Time', 'Method', 'Path', 'Status', 'Time', 'Size', 'As'];
-        $rows = [];
-
-        foreach ($history as $i => $entry) {
-            $status = (string) $entry['status'];
-            $statusStr = $entry['status'] < 300 ? $status : "\033[31m{$status}\033[0m";
-            $rows[] = [
+        $this->table(
+            ['#', 'Time', 'Method', 'Path', 'Status', 'Time', 'Mem', 'As'],
+            array_map(fn ($i, $e) => [
                 (string) ($i + 1),
-                $entry['time'] ?? '?',
-                $entry['method'],
-                $entry['path'],
-                $statusStr,
-                ($entry['duration_ms'] ?? '?') . 'ms',
-                $this->formatBytes($entry['size_bytes'] ?? 0),
-                $entry['as'] ?? '-',
-            ];
-        }
-
-        $this->table($headers, $rows);
+                $e['time'] ?? '?',
+                $e['method'],
+                $e['path'],
+                (string) ($e['status'] ?? '?'),
+                ($e['duration_ms'] ?? '?') . 'ms',
+                ($e['memory_mb'] ?? '?') . 'MB',
+                $e['as'] ?? '-',
+            ], array_keys($history), $history)
+        );
         $this->write('');
         $this->write('Total: ' . count($history) . ' requests');
         $this->write('Use --history=N to show more, --history-clear to clear');
@@ -333,14 +329,26 @@ final class ApiTestCommand
         return 0;
     }
 
-    private function formatBytes(int $bytes): string
+    private function printHelp(): void
     {
-        if ($bytes < 1024) {
-            return $bytes . 'B';
-        }
-        if ($bytes < 1024 * 1024) {
-            return number_format($bytes / 1024, 1) . 'KB';
-        }
-        return number_format($bytes / (1024 * 1024), 1) . 'MB';
+        $this->write('Usage: php siro api:test <method> <path> [field:value...] [options]');
+        $this->write('Options:');
+        $this->write('  --json              Send as JSON (default)');
+        $this->write('  --form              Send as form-urlencoded');
+        $this->write('  --header="X: v"     Custom header');
+        $this->write('  --as=<role>         Auth as role (admin, user)');
+        $this->write('  --history           View request history');
+        $this->write('  --history=N          Show last N requests');
+        $this->write('  --history-clear     Clear history');
+        $this->write('');
+        $this->write('Interactive mode:');
+        $this->write('  POST/PUT/PATCH without fields will prompt for input');
+        $this->write('');
+        $this->write('Examples:');
+        $this->write('  php siro api:test GET /api/users');
+        $this->write('  php siro api:test POST /auth/login email=admin@test.com password=123456');
+        $this->write('  php siro api:test GET /users --as=admin');
+        $this->write('  php siro api:test POST /users name=John email=john@test.com --as=admin');
+        $this->write('  php siro api:test --history');
     }
 }
