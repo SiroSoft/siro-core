@@ -73,6 +73,7 @@ final class App
         $dbConfig = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
         Database::configure($dbConfig);
         Cache::boot($this->basePath);
+        Lang::boot($this->basePath);
     }
 
     /**
@@ -198,6 +199,10 @@ final class App
             $request = Request::fromGlobals();
             $method = $request->method();
             $path = $request->path();
+
+            // Auto-detect locale from request header
+            $this->detectLocale($request);
+
             $response = $this->router->dispatch($request);
             $status = $response->statusCode();
             $this->setDebugMeta();
@@ -262,6 +267,32 @@ final class App
 
             Logger::trace($traceId, $traceData);
             Database::resetCapturedQueries();
+        }
+    }
+
+    /**
+     * Detect locale from the request Accept-Language header
+     * and set it on the Lang system.
+     *
+     * Priority: X-Locale header > Accept-Language > APP_LOCALE env
+     */
+    private function detectLocale(Request $request): void
+    {
+        // X-Locale header overrides everything (for testing)
+        $xLocale = $request->header('x-locale', '');
+        if ($xLocale !== '' && preg_match('/^[a-z]{2}([_-][a-z]{2})?$/i', $xLocale)) {
+            Lang::setLocale(strtolower(substr($xLocale, 0, 2)));
+            return;
+        }
+
+        // Parse Accept-Language header
+        $acceptLang = $request->header('accept-language', '');
+        if ($acceptLang !== '' && preg_match('/^([a-z]+)/i', $acceptLang, $matches)) {
+            $locale = strtolower($matches[1]);
+            $langDir = Lang::basePath() . DIRECTORY_SEPARATOR . $locale;
+            if (is_dir($langDir)) {
+                Lang::setLocale($locale);
+            }
         }
     }
 

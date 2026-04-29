@@ -1,4 +1,4 @@
-# Siro Core Framework v0.8.4
+# Siro Core Framework v0.8.5
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -588,6 +588,9 @@ php siro queue:work --daemon          # Run worker continuously
 php siro queue:status                 # Show queue status
 php siro queue:retry <id>             # Retry failed job
 php siro queue:flush                  # Clear failed jobs
+
+# Multi-language (v0.8.5)
+php siro make:lang vi                 # Create new language pack
 ```
 
 ---
@@ -885,6 +888,133 @@ Mail::to('user@example.com')
 - ✅ File attachments with MIME encoding
 - ✅ Queue integration for async delivery
 - ✅ Delayed delivery support
+
+---
+
+## 🌍 Multi-language Support (v0.8.5)
+
+Built-in internationalization (i18n) system with locale detection, fallback, and parameter replacement.
+
+**Configuration (.env):**
+```env
+APP_LOCALE=en              # Default locale
+APP_FALLBACK_LOCALE=en     # Fallback when key is missing
+```
+
+**Get Translations:**
+```php
+use Siro\Core\Lang;
+
+// Simple translation
+$message = Lang::get('messages.welcome');  // "Welcome"
+
+// With parameters
+$error = Lang::get('validation.required', ['field' => 'Email']);
+// Output: "Email is required"
+
+// Check if key exists
+if (Lang::has('messages.goodbye')) {
+    echo Lang::get('messages.goodbye');
+}
+
+// Pluralization
+$apples = Lang::plural('messages.apples', 5);
+// Output: "5 apples"
+$apples = Lang::plural('messages.apples', 1);
+// Output: "1 apple"
+```
+
+**Create Language Files:**
+
+Directory structure:
+```
+storage/lang/
+├── en/
+│   ├── messages.php
+│   └── validation.php
+├── vi/
+│   ├── messages.php
+│   └── validation.php
+└── fr/
+    ├── messages.php
+    └── validation.php
+```
+
+Example `storage/lang/en/messages.php`:
+```php
+<?php
+return [
+    'welcome'      => 'Welcome',
+    'goodbye'      => 'Goodbye',
+    'not_found'    => 'Not found',
+    'server_error' => 'Internal server error',
+    'success'      => 'Success',
+    'created'      => 'Created successfully',
+];
+```
+
+Example `storage/lang/vi/messages.php`:
+```php
+<?php
+return [
+    'welcome'      => 'Chào mừng',
+    'goodbye'      => 'Tạm biệt',
+    'not_found'    => 'Không tìm thấy',
+    'server_error' => 'Lỗi máy chủ',
+    'success'      => 'Thành công',
+    'created'      => 'Tạo thành công',
+];
+```
+
+**Auto Locale Detection:**
+
+The framework automatically detects user's language from HTTP headers:
+
+Priority order:
+1. `X-Locale` header (for testing/API clients)
+2. `Accept-Language` header (browser default)
+3. `APP_LOCALE` environment variable (fallback)
+
+**Usage in Routes:**
+```php
+$router->get('/', function (): array {
+    return [
+        'message' => Lang::get('messages.welcome'),
+        'locale' => Lang::locale(),  // Current locale
+    ];
+});
+```
+
+**Test Different Locales:**
+```bash
+# Default (English)
+curl http://localhost:8000/
+# {"message":"Welcome","locale":"en"}
+
+# Vietnamese
+curl -H "Accept-Language: vi" http://localhost:8000/
+# {"message":"Chào mừng","locale":"vi"}
+
+# Using X-Locale header
+curl -H "X-Locale: fr" http://localhost:8000/
+# {"message":"Bienvenue","locale":"fr"}
+```
+
+**Generate Language Pack:**
+```bash
+php siro make:lang vi    # Creates storage/lang/vi/
+php siro make:lang fr    # Creates storage/lang/fr/
+```
+
+**Features:**
+- ✅ Dot-notation keys (`messages.welcome.nested`)
+- ✅ Parameter replacement (`:field`, `:count`)
+- ✅ Locale fallback mechanism
+- ✅ Auto-detection from Accept-Language header
+- ✅ File caching for performance
+- ✅ Pluralization support
+- ✅ Easy to add new languages
+- ✅ Validator auto-translates errors
 
 ---
 

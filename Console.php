@@ -19,6 +19,7 @@ use Siro\Core\Commands\MakeControllerCommand;
 use Siro\Core\Commands\MakeModelCommand;
 use Siro\Core\Commands\KeyGenerateCommand;
 use Siro\Core\Commands\MakeJobCommand;
+use Siro\Core\Commands\MakeLangCommand;
 use Siro\Core\Commands\MakeMigrationCommand;
 use Siro\Core\Commands\MakeResourceCommand;
 use Siro\Core\Commands\MakeSeederCommand;
@@ -91,6 +92,8 @@ final class Console
                 return (new QueueStatusCommand($this->basePath))->run($args);
             case 'make:job':
                 return (new MakeJobCommand($this->basePath))->run($args);
+            case 'make:lang':
+                return (new MakeLangCommand($this->basePath))->run($args);
             case 'migrate':
                 return (new MigrateCommand($this->basePath))->run($args);
             case 'migrate:rollback':
@@ -165,6 +168,8 @@ final class Console
         $this->write('  php siro queue:flush');
         $this->write('  php siro queue:status');
         $this->write('  php siro make:job SendWelcomeEmail');
+        $this->write('  php siro make:lang vi messages');
+        $this->write('  php siro make:lang en validation');
         $this->write('  php siro storage:link');
         $this->write('  php siro config:cache');
         $this->write('  php siro env:check');
