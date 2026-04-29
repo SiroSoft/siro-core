@@ -1,5 +1,5 @@
 
-# Siro Core Framework v0.7.9
+# Siro Core Framework v0.7.10
 
 **Siro API Framework Core** - Lightweight PHP Micro-Framework Core Library
 
@@ -24,6 +24,7 @@ This is the core library for Siro API Framework. It provides essential component
 - 🎨 **Fluent Response** - Chainable header() and withHeaders() methods (v0.7.8)
 - 🔐 **Complete Auth System** - JWT refresh tokens, email verification, password reset (v0.7.9)
 - 🛡️ **Security Hardening** - Rate limiting per route, CSRF protection middleware (v0.7.9)
+- ⚙️ **Performance Optimization** - Config caching, env validation, slow query logging (v0.7.10)
 
 ## Installation
 
@@ -273,7 +274,7 @@ Run from terminal:
 php console greet John
 ```
 
-**Available Commands (v0.7.9):**
+**Available Commands (v0.7.10):**
 ```bash
 php siro make:model User          # Generate model scaffolding
 php siro make:api users           # Generate CRUD API
@@ -288,6 +289,9 @@ php siro migrate:status           # Check migration status (table format)
 php siro route:list               # List all routes (table format)
 php siro db:seed                  # Run all seeders (NEW in v0.7.8)
 php siro db:seed UserSeeder       # Run specific seeder
+php siro config:cache             # Cache config for faster boot (NEW in v0.7.10)
+php siro env:check                # Validate environment config (NEW in v0.7.10)
+php siro optimize                 # Optimize for production (NEW in v0.7.10)
 php siro serve                    # Start development server
 php siro key:generate             # Generate APP_KEY
 php siro doctor                   # Check system health
@@ -492,6 +496,51 @@ echo CsrfMiddleware::metaTag(); // Meta tag for JavaScript
 // });
 ```
 
+### Performance Optimization (NEW in v0.7.10)
+
+**Config Caching:**
+
+Cache environment variables and database configuration for faster application boot:
+
+```bash
+php siro config:cache    # Cache .env and config/database.php
+php siro optimize        # Config cache + composer dump-autoload
+```
+
+Cached config is stored in `storage/cache/config.php` and automatically loaded on subsequent requests.
+
+**Environment Validation:**
+
+Validate your environment before deployment:
+
+```bash
+php siro env:check
+```
+
+Checks:
+- ✅ `.env` file exists
+- ✅ Required variables set (APP_NAME, APP_ENV, APP_DEBUG, JWT_SECRET, DB_CONNECTION)
+- ✅ JWT_SECRET strength (min 32 chars, not a placeholder)
+- ✅ APP_DEBUG is false in production
+- ✅ PHP extensions loaded (pdo, json, mbstring)
+- ✅ Storage directories writable
+
+**Slow Query Logging:**
+
+Automatically log queries that exceed a configurable threshold:
+
+```env
+# .env
+DB_SLOW_QUERY_THRESHOLD=100  # Log queries slower than 100ms (default)
+```
+
+Slow queries are logged to `storage/logs/error.log` with format:
+```
+Slow query (150.25ms): SELECT * FROM users WHERE email = :email | Bindings: {"email":"test@example.com"}
+```
+
+Useful for identifying performance bottlenecks in production.
+
 ### Resource Auto-Mapping (NEW in v0.7.6)
 
 Simplify API response formatting:
@@ -601,6 +650,6 @@ Created and maintained by SiroSoft Team
 
 ---
 
-**Version:** 0.7.9  
+**Version:** 0.7.10  
 **Package:** sirosoft/core  
 **Type:** library

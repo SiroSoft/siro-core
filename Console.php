@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+use Siro\Core\Commands\ConfigCacheCommand;
+use Siro\Core\Commands\EnvCheckCommand;
 use Siro\Core\Commands\MakeApiCommand;
 use Siro\Core\Commands\MakeAuthCommand;
 use Siro\Core\Commands\MakeControllerCommand;
@@ -15,6 +17,7 @@ use Siro\Core\Commands\MakeSeederCommand;
 use Siro\Core\Commands\MigrateCommand;
 use Siro\Core\Commands\MigrateRollbackCommand;
 use Siro\Core\Commands\MigrateStatusCommand;
+use Siro\Core\Commands\OptimizeCommand;
 use Siro\Core\Commands\RouteListCommand;
 use Siro\Core\Commands\SeedCommand;
 use Siro\Core\Commands\ServeCommand;
@@ -64,6 +67,12 @@ final class Console
                 return (new ServeCommand($this->basePath))->run($args);
             case 'key:generate':
                 return (new KeyGenerateCommand($this->basePath))->run($args);
+            case 'config:cache':
+                return (new ConfigCacheCommand($this->basePath))->run($args);
+            case 'env:check':
+                return (new EnvCheckCommand($this->basePath))->run($args);
+            case 'optimize':
+                return (new OptimizeCommand($this->basePath))->run($args);
             case 'doctor':
                 return (new DoctorCommand($this->basePath))->run($args);
             case 'route:list':
@@ -90,6 +99,9 @@ final class Console
         $this->write('  php siro migrate:rollback --step=1');
         $this->write('  php siro migrate:status');
         $this->write('  php siro serve');
+        $this->write('  php siro config:cache');
+        $this->write('  php siro env:check');
+        $this->write('  php siro optimize');
         $this->write('  php siro route:list');
         $this->write('  php siro key:generate');
         $this->write('  php siro doctor');

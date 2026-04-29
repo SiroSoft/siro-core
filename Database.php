@@ -16,6 +16,9 @@ final class Database
     private static ?PDO $pdo = null;
     private static int $queryCacheTtl = 0;
     private static int $transactionDepth = 0;
+    private static int $slowQueryThreshold = 100;
+    /** @var array<int, array{sql:string,bindings:array<string,mixed>,time_ms:float,rows:int}> */
+    private static array $capturedQueries = [];
 
     /**
      * @param array<string, mixed> $config
@@ -23,6 +26,19 @@ final class Database
     public static function configure(array $config): void
     {
         self::$config = $config;
+        self::$slowQueryThreshold = max(0, (int) ($config['slow_query_threshold'] ?? 100));
+        self::$capturedQueries = [];
+    }
+
+    /** @return array<int, array{sql:string,bindings:array<string,mixed>,time_ms:float,rows:int}> */
+    public static function getCapturedQueries(): array
+    {
+        return self::$capturedQueries;
+    }
+
+    public static function resetCapturedQueries(): void
+    {
+        self::$capturedQueries = [];
     }
 
     public static function connection(): PDO
@@ -228,8 +244,33 @@ final class Database
      */
     private static function prepareAndExecute(string $sql, array $params): PDOStatement
     {
+        $start = microtime(true);
         $stmt = self::connection()->prepare($sql);
         $stmt->execute($params);
+        $elapsed = (microtime(true) - $start) * 1000;
+
+        $rows = 0;
+        try {
+            $rows = $stmt->rowCount();
+        } catch (\Throwable) {
+        }
+
+        self::$capturedQueries[] = [
+            'sql' => $sql,
+            'bindings' => $params,
+            'time_ms' => round($elapsed, 2),
+            'rows' => $rows,
+        ];
+
+        if ($elapsed > self::$slowQueryThreshold) {
+            Logger::error(new \RuntimeException(sprintf(
+                'Slow query (%.2fms): %s | Bindings: %s',
+                $elapsed,
+                $sql,
+                json_encode($params, JSON_UNESCAPED_UNICODE)
+            )));
+        }
+
         return $stmt;
     }
 

@@ -180,6 +180,44 @@ final class Router
         return $routes;
     }
 
+    /**
+     * Export routes as serializable array for caching.
+     *
+     * @return array{static:array, dynamic:array}
+     */
+    public function exportRoutes(): array
+    {
+        // Clone route data removing callable handlers (keep string/array references)
+        $static = [];
+        foreach ($this->staticRoutes as $method => $paths) {
+            foreach ($paths as $path => $route) {
+                $static[$method][$path] = [
+                    'path' => $route['path'],
+                    'handler' => $this->handlerToString($route['handler']),
+                    'handler_raw' => $route['handler'],
+                    'middleware' => $route['middleware'],
+                    'cache_ttl' => $route['cache_ttl'],
+                ];
+            }
+        }
+
+        $dynamic = [];
+        foreach ($this->dynamicRoutes as $method => $routeList) {
+            foreach ($routeList as $route) {
+                $dynamic[$method][] = [
+                    'path' => $route['path'],
+                    'segments' => $route['segments'],
+                    'handler' => $this->handlerToString($route['handler']),
+                    'handler_raw' => $route['handler'],
+                    'middleware' => $route['middleware'],
+                    'cache_ttl' => $route['cache_ttl'],
+                ];
+            }
+        }
+
+        return ['static' => $static, 'dynamic' => $dynamic];
+    }
+
     private function handlerToString(callable|array|string $handler): string
     {
         if (is_string($handler)) {
