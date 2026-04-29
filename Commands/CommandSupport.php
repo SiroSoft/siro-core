@@ -11,6 +11,49 @@ trait CommandSupport
         echo $line . PHP_EOL;
     }
 
+    /** @param array<int, array<int, string>> $rows */
+    protected function table(array $headers, array $rows): void
+    {
+        if ($headers === [] || $rows === []) {
+            return;
+        }
+
+        // Calculate column widths
+        $widths = [];
+        foreach ($headers as $i => $header) {
+            $widths[$i] = strlen($header);
+            foreach ($rows as $row) {
+                $len = strlen((string) ($row[$i] ?? ''));
+                if ($len > $widths[$i]) {
+                    $widths[$i] = $len;
+                }
+            }
+        }
+
+        // Header separator
+        $separator = '+' . implode('+', array_map(fn (int $w): string => str_repeat('-', $w + 2), $widths)) . '+';
+
+        // Print header
+        $this->write($separator);
+        $this->write('| ' . implode(' | ', array_map(
+            fn (int $i, string $h): string => str_pad($h, $widths[$i]),
+            array_keys($headers),
+            $headers
+        )) . ' |');
+        $this->write($separator);
+
+        // Print rows
+        foreach ($rows as $row) {
+            $this->write('| ' . implode(' | ', array_map(
+                fn (int $i, string $val): string => str_pad((string) $val, $widths[$i]),
+                array_keys($row),
+                $row
+            )) . ' |');
+        }
+
+        $this->write($separator);
+    }
+
     protected function ask(string $question): string
     {
         if (function_exists('readline')) {

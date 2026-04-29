@@ -10,10 +10,12 @@ use Siro\Core\Commands\MakeModelCommand;
 use Siro\Core\Commands\KeyGenerateCommand;
 use Siro\Core\Commands\MakeMigrationCommand;
 use Siro\Core\Commands\MakeResourceCommand;
+use Siro\Core\Commands\MakeSeederCommand;
 use Siro\Core\Commands\MigrateCommand;
 use Siro\Core\Commands\MigrateRollbackCommand;
 use Siro\Core\Commands\MigrateStatusCommand;
 use Siro\Core\Commands\RouteListCommand;
+use Siro\Core\Commands\SeedCommand;
 use Siro\Core\Commands\ServeCommand;
 use Siro\Core\Commands\DoctorCommand;
 
@@ -45,6 +47,10 @@ final class Console
                 return (new MakeMigrationCommand($this->basePath))->run($args);
             case 'make:resource':
                 return (new MakeResourceCommand($this->basePath))->run($args);
+            case 'make:seeder':
+                return (new MakeSeederCommand($this->basePath))->run($args);
+            case 'db:seed':
+                return (new SeedCommand($this->basePath))->run($args);
             case 'migrate':
                 return (new MigrateCommand($this->basePath))->run($args);
             case 'migrate:rollback':
@@ -73,8 +79,10 @@ final class Console
         $this->write('  php siro make:model User');
         $this->write('  php siro make:migration create_users_table');
         $this->write('  php siro make:resource UserResource');
+        $this->write('  php siro make:seeder UserSeeder');
         $this->write('  php siro migrate');
         $this->write('  php siro migrate:rollback');
+        $this->write('  php siro db:seed');
         $this->write('  php siro migrate:rollback --step=1');
         $this->write('  php siro migrate:status');
         $this->write('  php siro serve');

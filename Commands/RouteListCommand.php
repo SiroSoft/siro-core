@@ -28,23 +28,20 @@ final class RouteListCommand
             return 0;
         }
 
-        $methodPad = 8;
-        $pathPad = 50;
-
-        $this->write(str_pad('Method', $methodPad) . ' ' . str_pad('Path', $pathPad) . ' Middleware / Cache');
-        $this->write(str_repeat('-', $methodPad + $pathPad + 40));
-
+        $rows = [];
         foreach ($routes as $route) {
-            $method = str_pad($route['method'], $methodPad);
-            $path = str_pad($route['path'], $pathPad);
-
             $meta = $route['middleware'] !== '' ? $route['middleware'] : '-';
             if ($route['cache_ttl'] > 0) {
                 $meta .= ' [cache:' . $route['cache_ttl'] . 's]';
             }
 
-            $this->write($method . ' ' . $path . ' ' . $meta);
+            $rows[] = [$route['method'], $route['path'], $route['handler'], $meta];
         }
+
+        $this->table(
+            ['Method', 'Path', 'Handler', 'Middleware'],
+            $rows
+        );
 
         return 0;
     }

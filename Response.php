@@ -13,6 +13,8 @@ final class Response
     /** @var array<string, mixed> */
     private array $payload;
     private readonly int $statusCode;
+    /** @var array<string, string> */
+    private array $extraHeaders = [];
 
     /**
      * @param array<string, mixed> $payload
@@ -102,6 +104,21 @@ final class Response
         self::$debugMeta = $meta;
     }
 
+    public function header(string $name, string $value): self
+    {
+        $this->extraHeaders[$name] = $value;
+        return $this;
+    }
+
+    /** @param array<string, string> $headers */
+    public function withHeaders(array $headers): self
+    {
+        foreach ($headers as $name => $value) {
+            $this->extraHeaders[$name] = $value;
+        }
+        return $this;
+    }
+
     public function send(): void
     {
         if (self::$debugEnabled) {
@@ -112,6 +129,10 @@ final class Response
         header('Content-Type: application/json; charset=utf-8');
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: DENY');
+
+        foreach ($this->extraHeaders as $name => $value) {
+            header($name . ': ' . $value);
+        }
 
         $encoded = json_encode(
             $this->payload,

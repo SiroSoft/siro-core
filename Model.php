@@ -279,6 +279,91 @@ abstract class Model
     }
 
     /**
+     * Find a model by its primary key or throw an exception.
+     *
+     * @return static
+     * @throws RuntimeException
+     */
+    public static function findOrFail(int|string $id): self
+    {
+        $model = self::find($id);
+
+        if ($model === null) {
+            throw new RuntimeException(sprintf('Model not found with id %s', (string) $id));
+        }
+
+        return $model;
+    }
+
+    /**
+     * Find the first record matching the attributes or create it.
+     *
+     * @param array<string, mixed> $attributes
+     * @param array<string, mixed> $values
+     * @return static
+     */
+    public static function firstOrCreate(array $attributes, array $values = []): self
+    {
+        $query = self::query();
+        foreach ($attributes as $column => $value) {
+            $query->where($column, '=', $value);
+        }
+
+        $row = $query->runFirst();
+        if ($row !== null) {
+            return self::hydrate($row);
+        }
+
+        return self::create([...$attributes, ...$values]);
+    }
+
+    /**
+     * Find the first record matching the attributes or instantiate a new instance.
+     *
+     * @param array<string, mixed> $attributes
+     * @param array<string, mixed> $values
+     * @return static
+     */
+    public static function firstOrNew(array $attributes, array $values = []): self
+    {
+        $query = self::query();
+        foreach ($attributes as $column => $value) {
+            $query->where($column, '=', $value);
+        }
+
+        $row = $query->runFirst();
+        if ($row !== null) {
+            return self::hydrate($row);
+        }
+
+        return new static([...$attributes, ...$values]);
+    }
+
+    /**
+     * Update or create a record matching the attributes.
+     *
+     * @param array<string, mixed> $attributes
+     * @param array<string, mixed> $values
+     * @return static
+     */
+    public static function updateOrCreate(array $attributes, array $values = []): self
+    {
+        $query = self::query();
+        foreach ($attributes as $column => $value) {
+            $query->where($column, '=', $value);
+        }
+
+        $row = $query->runFirst();
+        if ($row !== null) {
+            $model = self::hydrate($row);
+            $model->update($values);
+            return $model;
+        }
+
+        return self::create([...$attributes, ...$values]);
+    }
+
+    /**
      * Save the model to the database.
      */
     public function save(): bool

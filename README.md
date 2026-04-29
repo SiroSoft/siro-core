@@ -1,4 +1,4 @@
-# Siro Core Framework v0.7.7
+# Siro Core Framework v0.7.8
 
 **Siro API Framework Core** - Lightweight PHP Micro-Framework Core Library
 
@@ -17,6 +17,10 @@ This is the core library for Siro API Framework. It provides essential component
 - 🔤 **Typed Input Helpers** - Type-safe request data handling
 - 📁 **File Upload** - Convenient file upload handling with validation
 - ✅ **Comprehensive Testing** - 142 unit tests with PHPUnit infrastructure (v0.7.7)
+- 🌱 **Database Seeders** - Built-in seeder system for test data (v0.7.8)
+- 📊 **Enhanced QueryBuilder** - whereBetween, whereNull, pluck, chunk, exists, inRandomOrder (v0.7.8)
+- ⚡ **Model Shortcuts** - findOrFail, firstOrCreate, updateOrCreate (v0.7.8)
+- 🎨 **Fluent Response** - Chainable header() and withHeaders() methods (v0.7.8)
 
 ## Installation
 
@@ -266,17 +270,20 @@ Run from terminal:
 php console greet John
 ```
 
-**Available Commands (v0.7.6):**
+**Available Commands (v0.7.8):**
 ```bash
 php siro make:model User          # Generate model scaffolding
 php siro make:api users           # Generate CRUD API
 php siro make:controller UserController
 php siro make:migration create_posts_table
 php siro make:resource UserResource
+php siro make:seeder UserSeeder   # Generate seeder (NEW in v0.7.8)
 php siro migrate                  # Run migrations
 php siro migrate:rollback         # Rollback migrations
-php siro migrate:status           # Check migration status
-php siro route:list               # List all routes (NEW in v0.7.6)
+php siro migrate:status           # Check migration status (table format)
+php siro route:list               # List all routes (table format)
+php siro db:seed                  # Run all seeders (NEW in v0.7.8)
+php siro db:seed UserSeeder       # Run specific seeder
 php siro serve                    # Start development server
 php siro key:generate             # Generate APP_KEY
 php siro doctor                   # Check system health
@@ -499,6 +506,6 @@ Created and maintained by SiroSoft Team
 
 ---
 
-**Version:** 0.7.7  
+**Version:** 0.7.8  
 **Package:** sirosoft/core  
 **Type:** library

@@ -50,26 +50,18 @@ final class MigrateStatusCommand
         sort($files);
 
         $applied = $this->appliedMigrations($pdo);
-        $appliedCount = 0;
-        $pendingCount = 0;
 
-        $this->write('Migration status:');
+        $rows = [];
         foreach ($files as $file) {
             $name = basename($file);
             $isApplied = isset($applied[$name]);
+            $status = $isApplied ? '[Y]' : '[N]';
+            $batch = $isApplied ? (string) $applied[$name] : '-';
 
-            if ($isApplied) {
-                $appliedCount++;
-                $this->write('[Y] ' . $name . ' (batch ' . $applied[$name] . ')');
-            } else {
-                $pendingCount++;
-                $this->write('[N] ' . $name . ' (pending)');
-            }
+            $rows[] = [$status, $name, $batch];
         }
 
-        $this->write('---');
-        $this->write('Applied: ' . $appliedCount);
-        $this->write('Pending: ' . $pendingCount);
+        $this->table(['', 'Migration', 'Batch'], $rows);
 
         return 0;
     }

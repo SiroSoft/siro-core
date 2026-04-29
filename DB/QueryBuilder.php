@@ -228,6 +228,181 @@ class QueryBuilder
         return $rows[0] ?? null;
     }
 
+    public function whereBetween(string $column, array $range): self
+    {
+        $min = $range[0] ?? 0;
+        $max = $range[1] ?? 0;
+        $paramMin = 'wb_min_' . $this->whereCounter;
+        $paramMax = 'wb_max_' . $this->whereCounter;
+        $this->whereCounter++;
+
+        $this->wheres[] = [
+            'type' => 'raw',
+            'boolean' => 'AND',
+            'sql' => $this->quoteIdentifier($column) . ' BETWEEN :' . $paramMin . ' AND :' . $paramMax,
+        ];
+        $this->bindings[$paramMin] = $min;
+        $this->bindings[$paramMax] = $max;
+
+        return $this;
+    }
+
+    public function whereNotBetween(string $column, array $range): self
+    {
+        $min = $range[0] ?? 0;
+        $max = $range[1] ?? 0;
+        $paramMin = 'wbn_min_' . $this->whereCounter;
+        $paramMax = 'wbn_max_' . $this->whereCounter;
+        $this->whereCounter++;
+
+        $this->wheres[] = [
+            'type' => 'raw',
+            'boolean' => 'AND',
+            'sql' => $this->quoteIdentifier($column) . ' NOT BETWEEN :' . $paramMin . ' AND :' . $paramMax,
+        ];
+        $this->bindings[$paramMin] = $min;
+        $this->bindings[$paramMax] = $max;
+
+        return $this;
+    }
+
+    public function whereNull(string $column): self
+    {
+        $this->wheres[] = [
+            'type' => 'raw',
+            'boolean' => 'AND',
+            'sql' => $this->quoteIdentifier($column) . ' IS NULL',
+        ];
+
+        return $this;
+    }
+
+    public function whereNotNull(string $column): self
+    {
+        $this->wheres[] = [
+            'type' => 'raw',
+            'boolean' => 'AND',
+            'sql' => $this->quoteIdentifier($column) . ' IS NOT NULL',
+        ];
+
+        return $this;
+    }
+
+    public function orWhereNull(string $column): self
+    {
+        $this->wheres[] = [
+            'type' => 'raw',
+            'boolean' => 'OR',
+            'sql' => $this->quoteIdentifier($column) . ' IS NULL',
+        ];
+
+        return $this;
+    }
+
+    public function orWhereNotNull(string $column): self
+    {
+        $this->wheres[] = [
+            'type' => 'raw',
+            'boolean' => 'OR',
+            'sql' => $this->quoteIdentifier($column) . ' IS NOT NULL',
+        ];
+
+        return $this;
+    }
+
+    /** @return array<int, mixed> */
+    public function pluck(string $column, ?string $key = null): array
+    {
+        $rows = $this->select([$column, $key ?? $column])->get();
+        $result = [];
+
+        foreach ($rows as $row) {
+            $value = $row[$column] ?? null;
+            if ($key !== null && isset($row[$key])) {
+                $result[$row[$key]] = $value;
+            } else {
+                $result[] = $value;
+            }
+        }
+
+        return $result;
+    }
+
+    public function value(string $column): mixed
+    {
+        $row = $this->select([$column])->first();
+        return $row[$column] ?? null;
+    }
+
+    public function chunk(int $size, callable $callback): bool
+    {
+        $page = 1;
+        $offset = 0;
+
+        do {
+            $clone = clone $this;
+            $rows = $clone->limit($size)->offset($offset)->get();
+
+            if ($rows === []) {
+                return true;
+            }
+
+            $callback($rows);
+            $page++;
+            $offset = ($page - 1) * $size;
+        } while (count($rows) === $size);
+
+        return true;
+    }
+
+    public function exists(): bool
+    {
+        return $this->count() > 0;
+    }
+
+    public function doesntExist(): bool
+    {
+        return $this->count() === 0;
+    }
+
+    public function inRandomOrder(?string $seed = null): self
+    {
+        $driver = 'mysql';
+        try {
+            $driver = \Siro\Core\Database::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        } catch (\Throwable) {
+        }
+
+        $sql = match ($driver) {
+            'pgsql', 'postgres', 'postgresql' => 'RANDOM()',
+            'sqlite' => 'RANDOM()',
+            default => 'RAND()',
+        };
+
+        $this->orders[] = ['column' => $sql, 'direction' => 'ASC'];
+        return $this;
+    }
+
+    public function dump(): self
+    {
+        [$sql, $bindings] = $this->buildSelectQuery();
+        echo PHP_EOL . 'SQL: ' . $sql . PHP_EOL;
+        echo 'Bindings: ' . json_encode($bindings, JSON_UNESCAPED_UNICODE) . PHP_EOL . PHP_EOL;
+        return $this;
+    }
+
+    public function dd(): never
+    {
+        $this->dump();
+        exit(1);
+    }
+
+    public function toSql(): string
+    {
+        [$sql] = $this->buildSelectQuery();
+        return $sql;
+    }
+
     public function count(string $column = '*'): int
     {
         return (int) $this->aggregate('COUNT', $column);
