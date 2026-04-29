@@ -135,7 +135,8 @@ final class AuthController
 
         $email = strtolower(trim($request->string('email')));
 
-        $existing = User::where('email', '=', $email)->first();
+        $rows = User::where('email', '=', $email)->limit(1)->get();
+        $existing = $rows[0] ?? null;
         if ($existing !== null) {
             return Response::error('Validation failed', 422, [
                 'email' => ['Email has already been taken'],
@@ -294,7 +295,8 @@ final class AuthController
         $request->validate(['token' => 'required']);
 
         $token = $request->string('token');
-        $user = User::where('verification_token', '=', $token)->first();
+        $rows = User::where('verification_token', '=', $token)->limit(1)->get();
+        $user = $rows[0] ?? null;
 
         if ($user === null) {
             return Response::error('Invalid verification token', 400);
@@ -313,7 +315,8 @@ final class AuthController
         $request->validate(['email' => 'required|email']);
 
         $email = strtolower(trim($request->string('email')));
-        $user = User::where('email', '=', $email)->first();
+        $rows = User::where('email', '=', $email)->limit(1)->get();
+        $user = $rows[0] ?? null;
 
         if ($user !== null) {
             $resetToken = bin2hex(random_bytes(32));
@@ -335,7 +338,8 @@ final class AuthController
         ]);
 
         $token = $request->string('token');
-        $user = User::where('password_reset_token', '=', $token)->first();
+        $rows = User::where('password_reset_token', '=', $token)->limit(1)->get();
+        $user = $rows[0] ?? null;
 
         if ($user === null) {
             return Response::error('Invalid or expired reset token', 400);

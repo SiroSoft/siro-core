@@ -12,6 +12,7 @@ final class ModelQueryBuilder extends QueryBuilder
     private string $modelClass;
     private bool $withSoftDeleted = false;
     private bool $onlySoftDeleted = false;
+    private bool $softDeleteFilterApplied = false;
 
     public function __construct(string $table, string $modelClass)
     {
@@ -45,28 +46,27 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this;
     }
 
-    public function run(): array
+    /** @return array<int, Model> */
+    public function get(): array
     {
         $this->applySoftDeleteFilter();
-        return parent::get();
-    }
-
-    public function runFirst(): ?array
-    {
-        $this->applySoftDeleteFilter();
-
-        $clone = clone $this;
-        $clone->limit(1);
         $rows = parent::get();
-        $first = $rows[0] ?? null;
 
-        return $first;
+        return array_map(fn (array $row): Model => $this->hydrate($row), $rows);
     }
 
-    public function runPaginate(int $perPage = 20, int $page = 0): array
+    /** @return array{data: array<int, Model>, meta: array{page:int, per_page:int, total:int, last_page:int}} */
+    public function paginate(int $perPage = 20, ?int $page = null): array
     {
         $this->applySoftDeleteFilter();
-        return parent::paginate($perPage, $page);
+        $result = parent::paginate($perPage, $page);
+
+        $result['data'] = array_map(
+            fn (array $row): Model => $this->hydrate($row),
+            $result['data']
+        );
+
+        return $result;
     }
 
     public function count(string $column = '*'): int
@@ -75,8 +75,26 @@ final class ModelQueryBuilder extends QueryBuilder
         return parent::count($column);
     }
 
+    public function sum(string $column): float|int
+    {
+        $this->applySoftDeleteFilter();
+        return parent::sum($column);
+    }
+
+    public function avg(string $column): float|int
+    {
+        $this->applySoftDeleteFilter();
+        return parent::avg($column);
+    }
+
     private function applySoftDeleteFilter(): void
     {
+        if ($this->softDeleteFilterApplied) {
+            return;
+        }
+
+        $this->softDeleteFilterApplied = true;
+
         if ($this->withSoftDeleted || $this->onlySoftDeleted) {
             if ($this->onlySoftDeleted) {
                 $this->whereRaw('deleted_at IS NOT NULL');
@@ -89,5 +107,11 @@ final class ModelQueryBuilder extends QueryBuilder
         if (in_array(SoftDeletes::class, $uses, true)) {
             $this->whereRaw('deleted_at IS NULL');
         }
+    }
+
+    private function hydrate(array $row): Model
+    {
+        $modelClass = $this->modelClass;
+        return $modelClass::hydrate($row);
     }
 }

@@ -219,18 +219,13 @@ abstract class Model
     }
 
     /**
-     * Execute a query and get results as Model instances.
+     * Execute a query and get all results as Model instances.
      *
      * @return array<int, static>
      */
     public static function all(): array
     {
-        $results = self::query()->run();
-
-        return array_map(
-            fn (array $row): self => self::hydrate($row),
-            $results
-        );
+        return self::query()->get();
     }
 
     /**
@@ -240,13 +235,8 @@ abstract class Model
      */
     public static function first(): ?self
     {
-        $row = self::query()->runFirst();
-
-        if ($row === null) {
-            return null;
-        }
-
-        return self::hydrate($row);
+        $results = self::query()->limit(1)->get();
+        return $results[0] ?? null;
     }
 
     /**
@@ -256,48 +246,36 @@ abstract class Model
      */
     public static function get(): array
     {
-        $results = self::query()->run();
-
-        return array_map(
-            fn (array $row): self => self::hydrate($row),
-            $results
-        );
+        return self::query()->get();
     }
 
     /**
-     * Paginate the results.
+     * Paginate the results with model hydration.
      *
      * @param int $perPage Number of items per page
      * @param int $page Current page number
-     * @return array{data: array<int, static>, current_page: int, per_page: int, total: int, last_page: int}
+     * @return array{data: array<int, static>, meta: array{page:int, per_page:int, total:int, last_page:int}}
      */
     public static function paginate(int $perPage = 15, int $page = 1): array
     {
+        $query = self::query();
+
+        $total = $query->count();
+        $perPage = max(1, $perPage);
         $page = max(1, $page);
         $offset = ($page - 1) * $perPage;
+        $lastPage = $total > 0 ? (int) ceil($total / $perPage) : 1;
 
-        // Get total count
-        $total = self::query()->count();
-
-        // Get paginated results
-        $results = self::query()
-            ->limit($perPage)
-            ->offset($offset)
-            ->get();
-
-        $data = array_map(
-            fn (array $row): self => self::hydrate($row),
-            $results
-        );
-
-        $lastPage = (int) ceil($total / $perPage);
+        $data = $query->limit($perPage)->offset($offset)->get();
 
         return [
             'data' => $data,
-            'current_page' => $page,
-            'per_page' => $perPage,
-            'total' => $total,
-            'last_page' => $lastPage,
+            'meta' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => $lastPage,
+            ],
         ];
     }
 
@@ -341,14 +319,9 @@ abstract class Model
      */
     public static function firstOrCreate(array $attributes, array $values = []): self
     {
-        $query = self::query();
-        foreach ($attributes as $column => $value) {
-            $query->where($column, '=', $value);
-        }
-
-        $row = $query->runFirst();
-        if ($row !== null) {
-            return self::hydrate($row);
+        $existing = self::findByAttributes($attributes);
+        if ($existing !== null) {
+            return $existing;
         }
 
         return self::create([...$attributes, ...$values]);
@@ -363,14 +336,9 @@ abstract class Model
      */
     public static function firstOrNew(array $attributes, array $values = []): self
     {
-        $query = self::query();
-        foreach ($attributes as $column => $value) {
-            $query->where($column, '=', $value);
-        }
-
-        $row = $query->runFirst();
-        if ($row !== null) {
-            return self::hydrate($row);
+        $existing = self::findByAttributes($attributes);
+        if ($existing !== null) {
+            return $existing;
         }
 
         return new static([...$attributes, ...$values]);
@@ -385,19 +353,30 @@ abstract class Model
      */
     public static function updateOrCreate(array $attributes, array $values = []): self
     {
+        $existing = self::findByAttributes($attributes);
+        if ($existing !== null) {
+            $existing->update($values);
+            return $existing;
+        }
+
+        return self::create([...$attributes, ...$values]);
+    }
+
+    /**
+     * Find a record by arbitrary attributes.
+     *
+     * @param array<string, mixed> $attributes
+     * @return static|null
+     */
+    private static function findByAttributes(array $attributes): ?self
+    {
         $query = self::query();
         foreach ($attributes as $column => $value) {
             $query->where($column, '=', $value);
         }
 
-        $row = $query->runFirst();
-        if ($row !== null) {
-            $model = self::hydrate($row);
-            $model->update($values);
-            return $model;
-        }
-
-        return self::create([...$attributes, ...$values]);
+        $results = $query->limit(1)->get();
+        return $results[0] ?? null;
     }
 
     /**
