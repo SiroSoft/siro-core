@@ -1,4 +1,4 @@
-# Siro Core Framework v0.8.0
+# Siro Core Framework v0.8.2
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -35,7 +35,7 @@
 - 📦 **Resource Transformation** - Auto-mapping for API responses
 - 🔤 **Typed Input Helpers** - Type-safe request data handling
 
-### Advanced Debugging (NEW in v0.8.0) 🌟
+### Advanced Debugging (v0.8.0) 🔍
 - 🔍 **Trace ID per Request** - Every request gets unique `X-Siro-Trace-Id`
 - 📋 **Request/Response Capture** - Full context including bodies (sanitized)
 - 🔄 **Request Replay** - `php siro log:replay <id>` generates curl command
@@ -95,7 +95,7 @@ $app = new App();
 Route::get('/', function() {
     return Response::json([
         'message' => 'Welcome to Siro API',
-        'version' => '0.8.0'
+        'version' => '0.8.2'
     ]);
 });
 
@@ -559,7 +559,7 @@ php siro migrate:status               # Check migration status
 php siro db:seed                      # Run all seeders
 php siro db:seed UserSeeder           # Run specific seeder
 
-# Debugging (NEW in v0.8.0)
+# Debugging (v0.8.0)
 php siro log:trace <trace_id>         # View trace details
 php siro log:trace --status=500       # Filter by status
 php siro log:trace --method=POST      # Filter by method
@@ -616,7 +616,7 @@ CACHE_PREFIX=siro_
 JWT_SECRET=your-jwt-secret-min-32-chars
 JWT_TTL=3600
 
-# Logging (NEW in v0.8.0)
+# Logging (v0.8.0)
 LOG_RETENTION_DAYS=30
 DB_SLOW_QUERY_THRESHOLD=100
 ```
@@ -667,7 +667,23 @@ Special thanks to all contributors who help make SiroPHP better.
 
 ---
 
-## 🎯 What's New in v0.8.0
+##  What's New in v0.8.2
+
+### Auto Documentation System 
+- 📝 **MakeDocsCommand** - Generate OpenAPI + Swagger UI in one command
+- 📂 **Smart Folder Structure** - Organized docs/openapi/, docs/postman/, docs/swagger/
+- 🌐 **Live Swagger UI** - Ready-to-serve HTML with CDN links
+-  **Postman Integration** - Collections with auto-login pre-request scripts
+- ✅ **Validation Parsing** - Extracts $request->validate() rules via regex
+-  **Security Detection** - Auto-detects auth middleware, adds Bearer JWT scheme
+- 🎯 **Smart Filtering** - Filter by tag, method, path, or flow (auth/crud)
+-  **Type Inference** - Converts validation rules to JSON Schema types
+- 🔗 **Path Parameters** - Auto-detects {id} patterns in routes
+-  **Body Examples** - Smart defaults from field names and rules
+
+**Generate API documentation in 1 second, not 1 hour!**
+
+##  What's New in v0.8.0
 
 ### 🌟 Advanced Debugging System
 

@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Generate API documentation.
+ *
+ * Creates OpenAPI spec in docs/openapi/, Swagger UI HTML in
+ * docs/swagger/, and copies both to public/ for serving.
+ *
+ * @package Siro\Core\Commands
+ */
 final class MakeDocsCommand
 {
     use CommandSupport;
