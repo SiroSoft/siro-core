@@ -1,4 +1,5 @@
-# Siro Core Framework v0.7.8
+
+# Siro Core Framework v0.7.9
 
 **Siro API Framework Core** - Lightweight PHP Micro-Framework Core Library
 
@@ -21,6 +22,8 @@ This is the core library for Siro API Framework. It provides essential component
 - 📊 **Enhanced QueryBuilder** - whereBetween, whereNull, pluck, chunk, exists, inRandomOrder (v0.7.8)
 - ⚡ **Model Shortcuts** - findOrFail, firstOrCreate, updateOrCreate (v0.7.8)
 - 🎨 **Fluent Response** - Chainable header() and withHeaders() methods (v0.7.8)
+- 🔐 **Complete Auth System** - JWT refresh tokens, email verification, password reset (v0.7.9)
+- 🛡️ **Security Hardening** - Rate limiting per route, CSRF protection middleware (v0.7.9)
 
 ## Installation
 
@@ -270,7 +273,7 @@ Run from terminal:
 php console greet John
 ```
 
-**Available Commands (v0.7.8):**
+**Available Commands (v0.7.9):**
 ```bash
 php siro make:model User          # Generate model scaffolding
 php siro make:api users           # Generate CRUD API
@@ -278,6 +281,7 @@ php siro make:controller UserController
 php siro make:migration create_posts_table
 php siro make:resource UserResource
 php siro make:seeder UserSeeder   # Generate seeder (NEW in v0.7.8)
+php siro make:auth                # Generate full auth system (NEW in v0.7.9)
 php siro migrate                  # Run migrations
 php siro migrate:rollback         # Rollback migrations
 php siro migrate:status           # Check migration status (table format)
@@ -397,6 +401,97 @@ DB::table('users')->update([...]);  // UPDATE
 DB::table('users')->delete();       // DELETE
 ```
 
+### Complete Auth System (NEW in v0.7.9)
+
+Generate full authentication system with one command:
+
+```bash
+php siro make:auth    # Generate migrations, controllers, routes, models
+php siro migrate      # Run migrations
+```
+
+**Generated API Endpoints:**
+- `POST /auth/register` - User registration
+- `POST /auth/login` - Login and get tokens
+- `POST /auth/refresh` - Refresh access token using refresh token
+- `POST /auth/logout` - Logout and revoke refresh token
+- `POST /auth/verify-email` - Verify email address
+- `POST /auth/forgot-password` - Request password reset
+- `POST /auth/reset-password` - Reset password with token
+- `GET /auth/me` - Get current user profile
+
+**JWT with Refresh Tokens:**
+
+```php
+use Siro\Core\Auth\JWT;
+
+// Generate access token (1 hour TTL)
+$accessToken = JWT::encodeAccess($userId, $tokenVersion);
+
+// Generate refresh token (7 days TTL)
+$refreshToken = JWT::encodeRefresh($userId, $tokenVersion);
+
+// Decode and verify token
+try {
+    $payload = JWT::decode($token);
+    echo "User ID: " . $payload['sub'];
+} catch (RuntimeException $e) {
+    echo "Invalid token: " . $e->getMessage();
+}
+```
+
+**Email Verification:**
+
+Users receive a verification token via email. Endpoint `/auth/verify-email` validates the token and marks the email as verified.
+
+**Password Reset Flow:**
+
+1. User requests reset: `POST /auth/forgot-password` with email
+2. System sends reset token to email
+3. User resets password: `POST /auth/reset-password` with token and new password
+
+### Security Hardening (NEW in v0.7.9)
+
+**Rate Limiting per Route:**
+
+```php
+use Siro\Core\Route;
+
+// Limit to 5 requests per minute
+Route::post('/auth/login', [AuthController::class, 'login'])
+    ->throttle(5, 1);
+
+// Limit to 60 requests per hour
+Route::post('/api/data', [DataController::class, 'store'])
+    ->throttle(60, 60);
+```
+
+Rate limit headers are automatically added to responses:
+- `X-RateLimit-Limit` - Maximum requests allowed
+- `X-RateLimit-Remaining` - Remaining requests
+- `X-RateLimit-Reset` - Timestamp when limit resets
+- `Retry-After` - Seconds to wait (when limit exceeded)
+
+**CSRF Protection:**
+
+```php
+use Siro\Core\Middleware\CsrfMiddleware;
+
+// Add CSRF protection to routes
+Route::post('/api/data', [Controller::class, 'store'])
+    ->middleware([CsrfMiddleware::class]);
+
+// In HTML forms, include CSRF token:
+echo CsrfMiddleware::field(); // Hidden input field
+// Or in meta tag:
+echo CsrfMiddleware::metaTag(); // Meta tag for JavaScript
+
+// In JavaScript, send token in header:
+// fetch('/api/data', {
+//     headers: { 'X-CSRF-TOKEN': csrfToken }
+// });
+```
+
 ### Resource Auto-Mapping (NEW in v0.7.6)
 
 Simplify API response formatting:
@@ -506,6 +601,6 @@ Created and maintained by SiroSoft Team
 
 ---
 
-**Version:** 0.7.8  
+**Version:** 0.7.9  
 **Package:** sirosoft/core  
 **Type:** library

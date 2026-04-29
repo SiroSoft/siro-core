@@ -31,4 +31,18 @@ final class Route
         $this->router->setRouteCacheTTL($this->method, $this->path, $ttl);
         return $this;
     }
+
+    /**
+     * Add rate limiting to route
+     * 
+     * @param int $maxAttempts Maximum number of attempts
+     * @param int $decayMinutes Decay period in minutes
+     */
+    public function throttle(int $maxAttempts = 60, int $decayMinutes = 1): self
+    {
+        // Use string format with parameters that Router can parse
+        $middlewareString = \Siro\Core\Middleware\ThrottleMiddleware::class . ':' . $maxAttempts . ',' . $decayMinutes;
+        $this->router->setRouteMiddleware($this->method, $this->path, [$middlewareString]);
+        return $this;
+    }
 }

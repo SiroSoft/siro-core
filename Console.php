@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core;
 
 use Siro\Core\Commands\MakeApiCommand;
+use Siro\Core\Commands\MakeAuthCommand;
 use Siro\Core\Commands\MakeControllerCommand;
 use Siro\Core\Commands\MakeModelCommand;
 use Siro\Core\Commands\KeyGenerateCommand;
@@ -37,6 +38,8 @@ final class Console
         }
 
         switch ($command) {
+            case 'make:auth':
+                return (new MakeAuthCommand($this->basePath))->run($args);
             case 'make:api':
                 return (new MakeApiCommand($this->basePath))->run($args);
             case 'make:controller':
@@ -74,6 +77,7 @@ final class Console
     {
         $this->write('Siro Console');
         $this->write('Usage:');
+        $this->write('  php siro make:auth');
         $this->write('  php siro make:api users');
         $this->write('  php siro make:controller UserController');
         $this->write('  php siro make:model User');

@@ -9,6 +9,9 @@ use Siro\Core\Env;
 
 final class JWT
 {
+    public const TYPE_ACCESS = 'access';
+    public const TYPE_REFRESH = 'refresh';
+
     public static function encode(array $payload): string
     {
         $header = ['alg' => 'HS256', 'typ' => 'JWT'];
@@ -23,6 +26,32 @@ final class JWT
         $segments[] = self::base64UrlEncode($signature);
 
         return implode('.', $segments);
+    }
+
+    public static function encodeAccess(int $userId, int $tokenVersion, int $ttl = 3600): string
+    {
+        $now = time();
+        return self::encode([
+            'sub' => $userId,
+            'ver' => max(1, $tokenVersion),
+            'iat' => $now,
+            'exp' => $now + $ttl,
+            'type' => self::TYPE_ACCESS,
+            'jti' => bin2hex(random_bytes(16)),
+        ]);
+    }
+
+    public static function encodeRefresh(int $userId, int $tokenVersion, int $ttl = 604800): string
+    {
+        $now = time();
+        return self::encode([
+            'sub' => $userId,
+            'ver' => max(1, $tokenVersion),
+            'iat' => $now,
+            'exp' => $now + $ttl,
+            'type' => self::TYPE_REFRESH,
+            'jti' => bin2hex(random_bytes(16)),
+        ]);
     }
 
     /** @return array<string, mixed> */
