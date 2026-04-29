@@ -68,7 +68,7 @@ use Siro\Core\Response;
 
 final class {$class}
 {
-    public function index(Request $request): Response
+    public function index(Request \$request): Response
     {
         return Response::success([], '{$class} index');
     }

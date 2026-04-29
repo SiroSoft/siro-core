@@ -79,20 +79,20 @@ final class UploadedFile
             throw new RuntimeException('Cannot store an invalid uploaded file.');
         }
 
-        $storageDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . trim($directory, '/\\');
+        $publicDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . trim($directory, '/\\');
 
-        if (!is_dir($storageDir)) {
-            mkdir($storageDir, 0775, true);
+        if (!is_dir($publicDir)) {
+            mkdir($publicDir, 0775, true);
         }
 
         $filename = $name ?? $this->generateFilename();
-        $destPath = $storageDir . DIRECTORY_SEPARATOR . $filename;
+        $destPath = $publicDir . DIRECTORY_SEPARATOR . $filename;
 
         if (!move_uploaded_file($this->path, $destPath)) {
             throw new RuntimeException(sprintf('Failed to move uploaded file to %s', $destPath));
         }
 
-        return 'storage/' . trim($directory, '/') . '/' . $filename;
+        return '/storage/' . trim($directory, '/') . '/' . $filename;
     }
 
     public function storeAs(string $directory, string $name): string

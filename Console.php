@@ -25,8 +25,10 @@ use Siro\Core\Commands\MigrateRollbackCommand;
 use Siro\Core\Commands\MigrateStatusCommand;
 use Siro\Core\Commands\OptimizeCommand;
 use Siro\Core\Commands\RouteListCommand;
+use Siro\Core\Commands\ScheduleRunCommand;
 use Siro\Core\Commands\SeedCommand;
 use Siro\Core\Commands\ServeCommand;
+use Siro\Core\Commands\StorageLinkCommand;
 use Siro\Core\Commands\DoctorCommand;
 
 /**
@@ -71,6 +73,8 @@ final class Console
                 return (new MakeSeederCommand($this->basePath))->run($args);
             case 'db:seed':
                 return (new SeedCommand($this->basePath))->run($args);
+            case 'schedule:run':
+                return (new ScheduleRunCommand($this->basePath))->run($args);
             case 'migrate':
                 return (new MigrateCommand($this->basePath))->run($args);
             case 'migrate:rollback':
@@ -79,6 +83,8 @@ final class Console
                 return (new MigrateStatusCommand($this->basePath))->run($args);
             case 'serve':
                 return (new ServeCommand($this->basePath))->run($args);
+            case 'storage:link':
+                return (new StorageLinkCommand($this->basePath))->run($args);
             case 'key:generate':
                 return (new KeyGenerateCommand($this->basePath))->run($args);
             case 'log:trace':
@@ -134,6 +140,7 @@ final class Console
         $this->write('  php siro make:postman');
         $this->write('  php siro make:postman --flow=crud --method=POST');
         $this->write('  php siro make:docs');
+        $this->write('  php siro storage:link');
         $this->write('  php siro config:cache');
         $this->write('  php siro env:check');
         $this->write('  php siro optimize');
