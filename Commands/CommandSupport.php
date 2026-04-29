@@ -105,4 +105,22 @@ trait CommandSupport
 
         return $value;
     }
+
+    protected function plural(string $value): string
+    {
+        // Already plural (ends with 's' but not 'ss')
+        if (str_ends_with($value, 's') && !str_ends_with($value, 'ss')) {
+            return $value;
+        }
+
+        if (str_ends_with($value, 'y')) {
+            return substr($value, 0, -1) . 'ies';
+        }
+
+        if (str_ends_with($value, 'ss')) {
+            return $value . 'es';
+        }
+
+        return $value . 's';
+    }
 }

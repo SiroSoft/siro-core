@@ -39,6 +39,8 @@ use Siro\Core\Commands\ServeCommand;
 use Siro\Core\Commands\StorageLinkCommand;
 use Siro\Core\Commands\DoctorCommand;
 use Siro\Core\Commands\ApiTestCommand;
+use Siro\Core\Commands\MakeCrudCommand;
+use Siro\Core\Commands\MakeTestCommand;
 
 /**
  * CLI command dispatcher.
@@ -132,6 +134,10 @@ final class Console
                 return (new DoctorCommand($this->basePath))->run($args);
             case 'route:list':
                 return (new RouteListCommand($this->basePath))->run($args);
+            case 'make:crud':
+                return (new MakeCrudCommand($this->basePath))->run($args);
+            case 'make:test':
+                return (new MakeTestCommand($this->basePath))->run($args);
             case 'api:test':
                 return (new ApiTestCommand($this->basePath))->run($args);
             default:
@@ -188,6 +194,9 @@ final class Console
         $this->write('  php siro api:test GET /users --as=admin');
         $this->write('  php siro api:test POST /users name=John email=john@test.com --as=admin');
         $this->write('  php siro api:test --history');
+        $this->write('  php siro make:crud users');
+        $this->write('  php siro make:crud posts');
+        $this->write('  php siro make:test UserApi');
         $this->write('  php siro doctor');
     }
 

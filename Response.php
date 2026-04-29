@@ -18,6 +18,8 @@ final class Response
     private static bool $debugEnabled = false;
     /** @var array<string, float|int|string|bool|null> */
     private static array $debugMeta = [];
+    private static string $requestId = '';
+    private static float $requestStartedAt = 0.0;
 
     /** @var array<string, mixed> */
     private array $payload;
@@ -113,6 +115,12 @@ final class Response
         self::$debugMeta = $meta;
     }
 
+    public static function setRequestMeta(string $requestId, float $startedAt): void
+    {
+        self::$requestId = $requestId;
+        self::$requestStartedAt = $startedAt;
+    }
+
     public function header(string $name, string $value): self
     {
         $this->extraHeaders[$name] = $value;
@@ -138,6 +146,14 @@ final class Response
         header('Content-Type: application/json; charset=utf-8');
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: DENY');
+
+        if (self::$requestId !== '') {
+            header('X-Request-Id: ' . self::$requestId);
+        }
+        if (self::$requestStartedAt > 0.0) {
+            $elapsed = (microtime(true) - self::$requestStartedAt) * 1000;
+            header('X-Response-Time: ' . number_format($elapsed, 2) . 'ms');
+        }
 
         foreach ($this->extraHeaders as $name => $value) {
             header($name . ': ' . $value);

@@ -195,6 +195,7 @@ final class App
         $path = '/';
         $status = 500;
         $traceId = bin2hex(random_bytes(8));
+        Response::setRequestMeta($traceId, $requestStartedAt);
 
         try {
             $request = Request::fromGlobals();
