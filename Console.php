@@ -10,6 +10,8 @@ use Siro\Core\Commands\LogExportCommand;
 use Siro\Core\Commands\LogReplayCommand;
 use Siro\Core\Commands\LogTraceCommand;
 use Siro\Core\Commands\MakeApiCommand;
+use Siro\Core\Commands\MakeOpenApiCommand;
+use Siro\Core\Commands\MakePostmanCommand;
 use Siro\Core\Commands\MakeAuthCommand;
 use Siro\Core\Commands\MakeControllerCommand;
 use Siro\Core\Commands\MakeModelCommand;
@@ -76,6 +78,10 @@ final class Console
                 return (new LogReplayCommand($this->basePath))->run($args);
             case 'log:export':
                 return (new LogExportCommand($this->basePath))->run($args);
+            case 'make:openapi':
+                return (new MakeOpenApiCommand($this->basePath))->run($args);
+            case 'make:postman':
+                return (new MakePostmanCommand($this->basePath))->run($args);
             case 'config:cache':
                 return (new ConfigCacheCommand($this->basePath))->run($args);
             case 'env:check':
@@ -112,6 +118,10 @@ final class Console
         $this->write('  php siro log:trace --status=500');
         $this->write('  php siro log:replay <trace_id>');
         $this->write('  php siro log:export --format=json --output=traces.json');
+        $this->write('  php siro make:openapi');
+        $this->write('  php siro make:openapi --flow=auth --tag=User --path=/api');
+        $this->write('  php siro make:postman');
+        $this->write('  php siro make:postman --flow=crud --method=POST');
         $this->write('  php siro config:cache');
         $this->write('  php siro env:check');
         $this->write('  php siro optimize');
