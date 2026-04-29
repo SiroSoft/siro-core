@@ -265,6 +265,43 @@ abstract class Model
     }
 
     /**
+     * Paginate the results.
+     *
+     * @param int $perPage Number of items per page
+     * @param int $page Current page number
+     * @return array{data: array<int, static>, current_page: int, per_page: int, total: int, last_page: int}
+     */
+    public static function paginate(int $perPage = 15, int $page = 1): array
+    {
+        $page = max(1, $page);
+        $offset = ($page - 1) * $perPage;
+
+        // Get total count
+        $total = self::query()->count();
+
+        // Get paginated results
+        $results = self::query()
+            ->limit($perPage)
+            ->offset($offset)
+            ->get();
+
+        $data = array_map(
+            fn (array $row): self => self::hydrate($row),
+            $results
+        );
+
+        $lastPage = (int) ceil($total / $perPage);
+
+        return [
+            'data' => $data,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'last_page' => $lastPage,
+        ];
+    }
+
+    /**
      * Create a new model and save it to the database.
      *
      * @param array<string, mixed> $attributes
