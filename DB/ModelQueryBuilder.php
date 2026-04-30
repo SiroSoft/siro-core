@@ -34,10 +34,15 @@ final class ModelQueryBuilder extends QueryBuilder
         throw new RuntimeException(sprintf('Scope %s not found on %s.', $method, $modelClass));
     }
 
-    public function withoutSoftDeleteFilter(): self
+    public function withTrashed(): self
     {
         $this->withSoftDeleted = true;
         return $this;
+    }
+
+    public function withoutSoftDeleteFilter(): self
+    {
+        return $this->withTrashed();
     }
 
     public function onlySoftDeleted(): self

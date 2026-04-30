@@ -38,4 +38,16 @@ trait SoftDeletes
 
         return false;
     }
+
+    public function restore(): bool
+    {
+        $this->setAttribute('deleted_at', null);
+        return $this->save();
+    }
+
+    public function trashed(): bool
+    {
+        $deletedAt = $this->getAttribute('deleted_at');
+        return $deletedAt !== null && $deletedAt !== '';
+    }
 }

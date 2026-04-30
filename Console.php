@@ -41,6 +41,7 @@ use Siro\Core\Commands\DoctorCommand;
 use Siro\Core\Commands\ApiTestCommand;
 use Siro\Core\Commands\MakeCrudCommand;
 use Siro\Core\Commands\MakeTestCommand;
+use Siro\Core\Commands\RateStatusCommand;
 
 /**
  * CLI command dispatcher.
@@ -142,6 +143,8 @@ final class Console
                 return (new MakeTestCommand($this->basePath))->run($args);
             case 'api:test':
                 return (new ApiTestCommand($this->basePath))->run($args);
+            case 'rate:status':
+                return (new RateStatusCommand($this->basePath))->run($args);
             default:
                 return $this->unknownCommand($command);
         }
@@ -201,6 +204,7 @@ final class Console
         $this->write('  php siro api:test --collection=myapi');
         $this->write('  php siro api:test --collection-list');
         $this->write('  php siro log:export <trace_id> --postman');
+        $this->write('  php siro rate:status');
         $this->write('  php siro make:crud users');
         $this->write('  php siro make:crud posts');
         $this->write('  php siro make:test UserApi');

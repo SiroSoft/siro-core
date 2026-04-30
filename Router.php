@@ -61,6 +61,12 @@ final class Router
      * - group('/api', function($router) {}, [Middleware::class])
      * - group('/api', [Middleware::class], function($router) {})
      */
+    public function version(int $version, callable $callback): void
+    {
+        $prefix = "/api/v{$version}";
+        $this->group($prefix, [], $callback);
+    }
+
     public function group(string $prefix, callable|array $arg2, callable|array|null $arg3 = null): void
     {
         $callback = null;
