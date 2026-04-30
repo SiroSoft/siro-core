@@ -1,4 +1,4 @@
-# Siro Core Framework v0.9.0
+# Siro Core Framework v0.10.0
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -648,6 +648,137 @@ Run scheduled tasks automatically using Laravel-like scheduling syntax.
 ```bash
 php siro schedule:run
 ```
+
+**Features:**
+- Laravel-like scheduling syntax (`->daily()`, `->hourly()`, etc.)
+- Automatic cron job setup
+- Run pending tasks on demand
+- Perfect for background jobs, cleanup, reports
+
+---
+
+### 🚀 Advanced API Testing Tools (v0.10.0)
+
+SiroPHP v0.10.0 introduces **3 game-changing features** that revolutionize API testing workflow.
+
+#### **1. Export Traces to Postman**
+
+Convert logged traces into Postman-compatible curl commands instantly:
+
+```bash
+# View a trace
+php siro log:trace siro_a1b2c3
+
+# Export as Postman curl command
+php siro log:export siro_a1b2c3 --postman
+```
+
+**Output:**
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer eyJ...' \
+  -d '{"email":"admin@test.com","password":"123456"}'
+
+Import into Postman:
+  Copy the curl command above
+  Postman → Import → Raw text → Paste → Continue
+```
+
+**Use Cases:**
+- Share exact failing requests with team
+- Build Postman collections from real traffic
+- Debug production issues locally
+
+---
+
+#### **2. Watch Mode - Auto Re-run on Changes**
+
+Automatically re-test APIs when you modify code:
+
+```bash
+php siro api:test GET /api/users --watch
+```
+
+**How it works:**
+1. Starts watching `app/` and `routes/` directories
+2. Detects file changes every 1 second
+3. Auto re-runs the test request
+4. Shows results immediately
+5. Continues watching (Ctrl+C to stop)
+
+**Perfect for TDD:**
+```
+Write route → Save → Test auto-runs → See result → Fix → Repeat
+No manual re-running needed!
+```
+
+---
+
+#### **3. Request Collections - Batch Testing**
+
+Save and run multiple requests like Postman collections:
+
+```bash
+# Save requests to collection
+php siro api:test POST /api/auth/login email=admin@test.com password=123 --collection-save=myapi --as=admin
+php siro api:test GET /api/users --as=admin --collection-save=myapi
+php siro api:test POST /api/posts title="Test" --as=admin --collection-save=myapi
+
+# List saved collections
+php siro api:test --collection-list
+
+# Run entire collection
+php siro api:test --collection=myapi
+```
+
+**Output:**
+```
+Running collection: myapi
+
+  [1/3] POST /api/auth/login
+  Status: 200 ✓
+  
+  [2/3] GET /api/users
+  Status: 200 ✓
+  
+  [3/3] POST /api/posts
+  Status: 201 ✓
+
+  Collection 'myapi' done: 3 passed, 0 failed
+```
+
+**Features:**
+- ✅ Save unlimited requests per collection
+- ✅ Automatic token management with `--as` flag
+- ✅ Sequential execution with progress tracking
+- ✅ Pass/fail statistics
+- ✅ Persistent storage in JSON format
+- ✅ Perfect for CI/CD integration
+
+---
+
+### Why These Features Matter
+
+**Traditional Workflow:**
+```
+1. Find bug in logs
+2. Manually construct curl command
+3. Test in terminal
+4. Copy to Postman
+5. Share with team
+→ Takes 5-10 minutes
+```
+
+**With SiroPHP v0.10.0:**
+```
+1. php siro log:export <id> --postman
+2. Copy output
+3. Done!
+→ Takes 10 seconds
+```
+
+**Productivity Boost: 30-60x faster!** 🚀
 
 **Setup Crontab:**
 ```bash
