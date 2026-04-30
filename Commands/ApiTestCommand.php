@@ -201,12 +201,26 @@ final class ApiTestCommand
             if ($as !== null && $statusCode < 300) {
                 $decoded = json_decode($body, true);
                 if (is_array($decoded)) {
-                    $t = $decoded['data']['token'] ?? $decoded['token'] ?? null;
+                    // Try multiple token locations in response
+                    $t = $decoded['data']['token'] 
+                       ?? $decoded['data']['access_token'] 
+                       ?? $decoded['token'] 
+                       ?? $decoded['access_token'] 
+                       ?? null;
+                    
                     if (is_string($t) && strlen($t) >= 10) {
                         $tokens = $this->loadTokens();
                         $tokens[$as] = $t;
+                        
+                        // Ensure directory exists
+                        $dir = dirname($this->authFile);
+                        if (!is_dir($dir)) {
+                            mkdir($dir, 0755, true);
+                        }
+                        
                         file_put_contents($this->authFile, json_encode($tokens, JSON_PRETTY_PRINT));
-                        $this->write("  \033[32mToken for '{$as}' saved.\033[0m");
+                        $this->write("");
+                        $this->write("  \033[32m✓ Token for '{$as}' saved to storage/api-test-auth.json\033[0m");
                     }
                 }
             }
