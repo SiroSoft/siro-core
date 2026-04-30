@@ -120,6 +120,8 @@ final class Console
                 return (new MakeOpenApiCommand($this->basePath))->run($args);
             case 'make:postman':
                 return (new MakePostmanCommand($this->basePath))->run($args);
+            case 'make:mail':
+                return (new MakeMailCommand($this->basePath))->run($args);
             case 'make:docs':
                 return (new MakeDocsCommand($this->basePath))->run($args);
             case 'make:event':

@@ -70,9 +70,9 @@ final class {$class} extends Resource
     public function toArray(): array
     {
         return [
-            'id' => $this->data['id'] ?? null,
-            'name' => $this->data['name'] ?? null,
-            'created_at' => $this->data['created_at'] ?? null,
+            'id' => \$this->data['id'] ?? null,
+            'name' => \$this->data['name'] ?? null,
+            'created_at' => \$this->data['created_at'] ?? null,
         ];
     }
 }
