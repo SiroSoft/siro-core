@@ -108,22 +108,24 @@ trait CommandSupport
 
     protected function plural(string $value): string
     {
-        // Words ending in 's', 'sh', 'ch', 'x', 'z' need 'es'
-        // But skip if already ends with 'ses' (already plural)
-        if (!str_ends_with($value, 'ses')) {
-            if (str_ends_with($value, 's') || str_ends_with($value, 'sh') || 
-                str_ends_with($value, 'ch') || str_ends_with($value, 'x') || 
-                str_ends_with($value, 'z')) {
-                return $value . 'es';
-            }
-        } else {
-            return $value; // Already plural
+        // If already ends with 's' (likely already plural), keep as-is
+        if (str_ends_with($value, 's')) {
+            return $value;
         }
 
+        // Words ending in 'sh', 'ch', 'x', 'z', 'ss' need 'es'
+        if (str_ends_with($value, 'sh') || str_ends_with($value, 'ch') || 
+            str_ends_with($value, 'x') || str_ends_with($value, 'z') ||
+            str_ends_with($value, 'ss')) {
+            return $value . 'es';
+        }
+
+        // Words ending in consonant + 'y' -> 'ies'
         if (str_ends_with($value, 'y')) {
             return substr($value, 0, -1) . 'ies';
         }
 
+        // Default: add 's'
         return $value . 's';
     }
 }
