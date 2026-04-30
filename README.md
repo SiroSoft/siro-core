@@ -1,4 +1,4 @@
-# Siro Core Framework v0.8.8
+# Siro Core Framework v0.8.9
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -603,6 +603,12 @@ php siro make:event UserCreated       # Generate event class
 # API Testing CLI (v0.8.8) ⭐
 php siro api:test GET /users          # Quick API testing
 php siro api:test POST /login --as=admin  # Auto-auth
+
+# CRUD Scaffolding & Response Headers (v0.8.9) 🚀
+php siro make:crud products           # Generate full CRUD in 30 seconds
+php siro make:test ProductApi         # Integration test generator
+php siro make:test ProductService --unit  # Unit test generator
+# Every response includes: X-Request-Id, X-Response-Time headers
 ```
 
 ---
@@ -1445,6 +1451,65 @@ All modern browsers send `Accept-Encoding: gzip` header automatically:
 - Safari ✅
 - Edge ✅
 - Mobile browsers ✅
+
+---
+
+## 🚀 CRUD Scaffolding & Testing (v0.8.9)
+
+### `php siro make:crud` - Full CRUD in 30 Seconds
+
+Generate complete CRUD with a single command:
+
+```bash
+php siro make:crud products
+```
+
+**Generates 6 files automatically:**
+- ✅ `app/Models/Product.php` - Model with fillable fields
+- ✅ `database/migrations/YYYY_create_products_table.php` - Migration
+- ✅ `app/Controllers/ProductController.php` - Full CRUD controller
+- ✅ `app/Resources/ProductResource.php` - Resource transformer
+- ✅ `routes/api.php` - Auto-injected routes
+- ✅ `tests/products_test.php` - Integration tests (4 cases)
+
+**Smart Features:**
+- Intelligent pluralization (category → categories)
+- Prevents overwrites (asks for confirmation)
+- Auto-detects existing routes
+- Includes validation rules
+- Pagination support built-in
+
+### `php siro make:test` - Test Generator
+
+```bash
+# API integration test (default)
+php siro make:test UserApi
+
+# Unit test
+php siro make:test UserService --unit
+```
+
+**API Test Template Includes:**
+- App bootstrapping
+- `dispatch()` helper for internal requests
+- `test()` function with colored output
+- ValidationException handling
+- Pre-configured structure
+
+### Response Headers
+
+Every response now includes:
+
+```
+X-Request-Id: a1b2c3d4e5f67890      # Unique trace ID
+X-Response-Time: 8.45ms              # Processing time
+```
+
+**Benefits:**
+- 🔍 Debug specific requests across logs
+- 📊 Monitor API performance
+- 🛠️ Correlate errors with request IDs
+- 📈 Track response times in production
 
 ---
 
