@@ -16,12 +16,14 @@ final class ApiTestCommand
 
     private string $authFile;
     private string $historyFile;
+    private string $collectionFile;
 
     public function __construct(private readonly string $basePath)
     {
         $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage';
         $this->authFile = $dir . DIRECTORY_SEPARATOR . 'api-test-auth.json';
         $this->historyFile = $dir . DIRECTORY_SEPARATOR . 'api-test-history.json';
+        $this->collectionFile = $dir . DIRECTORY_SEPARATOR . 'api-test-collections.json';
     }
 
     public function run(array $args): int
@@ -31,6 +33,7 @@ final class ApiTestCommand
             return 0;
         }
 
+        // ─── History ──────────────────────
         if (in_array('--history', $args, true) || in_array('--history-clear', $args, true)) {
             if (in_array('--history-clear', $args, true)) {
                 $this->clearHistory();
@@ -46,6 +49,20 @@ final class ApiTestCommand
             return $this->showHistory($limit);
         }
 
+        // ─── Collection list ──────────────
+        if (in_array('--collection-list', $args, true)) {
+            return $this->listCollections();
+        }
+
+        // ─── Collection run ───────────────
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--collection=')) {
+                $name = substr($arg, 13);
+                return $this->runCollection($name);
+            }
+        }
+
+        // ─── Normal request ───────────────
         $method = strtoupper($args[0] ?? '');
         $path = $args[1] ?? '';
 
@@ -59,6 +76,8 @@ final class ApiTestCommand
         $customHeaders = [];
         $as = null;
         $contentType = 'json';
+        $watch = false;
+        $collectionSave = null;
 
         for ($i = 2; $i < count($args); $i++) {
             $arg = $args[$i];
@@ -70,13 +89,17 @@ final class ApiTestCommand
                 $customHeaders[] = substr($arg, 9);
             } elseif (str_starts_with($arg, '--as=')) {
                 $as = substr($arg, 5);
+            } elseif ($arg === '--watch') {
+                $watch = true;
+            } elseif (str_starts_with($arg, '--collection-save=')) {
+                $collectionSave = substr($arg, 18);
             } elseif (str_contains($arg, '=')) {
                 $parts = explode('=', $arg, 2);
                 $fields[$parts[0]] = $parts[1];
             }
         }
 
-        if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && $fields === []) {
+        if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && $fields === [] && $collectionSave === null) {
             $this->write("Enter fields for {$method} {$path} (leave field name empty to finish):");
             $this->write('');
             do {
@@ -90,8 +113,188 @@ final class ApiTestCommand
             } while (true);
         }
 
-        return $this->sendInternal($method, $path, $fields, $customHeaders, $contentType, $as);
+        $statusCode = $this->sendInternal($method, $path, $fields, $customHeaders, $contentType, $as);
+
+        if ($collectionSave !== null) {
+            $this->saveToCollection($collectionSave, $method, $path, $fields, $customHeaders, $contentType, $as);
+            $this->write("  \033[32m✓ Saved to collection '{$collectionSave}'.\033[0m");
+        }
+
+        if ($watch) {
+            $this->watchMode($method, $path, $fields, $customHeaders, $contentType, $as);
+        }
+
+        return $statusCode < 400 ? 0 : 1;
     }
+
+    // ─── Watch Mode ────────────────────────────────
+
+    private function watchMode(
+        string $method,
+        string $path,
+        array $fields,
+        array $customHeaders,
+        string $contentType,
+        ?string $as
+    ): void {
+        $watchDirs = [
+            $this->basePath . DIRECTORY_SEPARATOR . 'app',
+            $this->basePath . DIRECTORY_SEPARATOR . 'routes',
+        ];
+
+        $watched = [];
+        foreach ($watchDirs as $dir) {
+            if (is_dir($dir)) {
+                $this->addFilesRecursive($dir, $watched);
+            }
+        }
+
+        $this->write("  \033[33mWatching for changes... (Ctrl+C to stop)\033[0m");
+        $this->write('');
+
+        while (true) {
+            sleep(1);
+            $changed = false;
+            foreach ($watched as $file => $mtime) {
+                if (!is_file($file)) {
+                    $changed = true;
+                    unset($watched[$file]);
+                    continue;
+                }
+                $newMtime = filemtime($file);
+                if ($newMtime !== $mtime) {
+                    $watched[$file] = $newMtime;
+                    $changed = true;
+                }
+            }
+            if ($changed) {
+                $this->write("  \033[33mChange detected, re-running...\033[0m");
+                $this->sendInternal($method, $path, $fields, $customHeaders, $contentType, $as);
+                $this->write("  \033[33mWatching for changes... (Ctrl+C to stop)\033[0m");
+                $this->write('');
+            }
+        }
+    }
+
+    private function addFilesRecursive(string $dir, array &$files): void
+    {
+        $items = scandir($dir);
+        if ($items === false) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $this->addFilesRecursive($path, $files);
+            } elseif (str_ends_with($item, '.php')) {
+                $files[$path] = filemtime($path);
+            }
+        }
+    }
+
+    // ─── Collection ────────────────────────────────
+
+    private function saveToCollection(
+        string $name,
+        string $method,
+        string $path,
+        array $fields,
+        array $headers,
+        string $contentType,
+        ?string $as
+    ): void {
+        $collections = $this->loadCollections();
+        if (!isset($collections[$name])) {
+            $collections[$name] = ['name' => $name, 'requests' => []];
+        }
+        $collections[$name]['requests'][] = [
+            'method' => $method,
+            'path' => $path,
+            'fields' => $fields,
+            'headers' => $headers,
+            'content_type' => $contentType,
+            'as' => $as,
+        ];
+        $dir = dirname($this->collectionFile);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        file_put_contents($this->collectionFile, json_encode($collections, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    }
+
+    private function runCollection(string $name): int
+    {
+        $collections = $this->loadCollections();
+        $col = $collections[$name] ?? null;
+        if ($col === null) {
+            $this->write("Collection '{$name}' not found.");
+            $this->write('Use --collection-list to see available collections.');
+            return 1;
+        }
+
+        $this->write("Running collection: \033[1;33m{$name}\033[0m");
+        $this->write('');
+
+        $passed = 0;
+        $failed = 0;
+        foreach ($col['requests'] as $i => $req) {
+            $label = "{$req['method']} {$req['path']}";
+            $this->write("  \033[90m[" . ($i + 1) . '/' . count($col['requests']) . "]\033[0m {$label}");
+            $code = $this->sendInternal(
+                $req['method'],
+                $req['path'],
+                $req['fields'] ?? [],
+                $req['headers'] ?? [],
+                $req['content_type'] ?? 'json',
+                $req['as'] ?? null,
+            );
+            if ($code === 0) {
+                $passed++;
+            } else {
+                $failed++;
+            }
+        }
+
+        $this->write('');
+        $this->write("  Collection '{$name}' done: {$passed} passed, {$failed} failed");
+        return $failed > 0 ? 1 : 0;
+    }
+
+    private function listCollections(): int
+    {
+        $collections = $this->loadCollections();
+        if ($collections === []) {
+            $this->write('No collections saved.');
+            $this->write('Save one: php siro api:test POST /api/auth/login email=... --collection-save=myapi');
+            return 0;
+        }
+
+        $this->table(
+            ['Name', 'Requests', 'Last updated'],
+            array_map(fn ($c) => [
+                $c['name'],
+                (string) count($c['requests']),
+                $c['requests'] !== [] ? ($c['requests'][count($c['requests']) - 1]['method'] . ' ' . $c['requests'][count($c['requests']) - 1]['path']) : '-',
+            ], array_values($collections))
+        );
+        $this->write('');
+        $this->write('Run: php siro api:test --collection=<name>');
+        return 0;
+    }
+
+    private function loadCollections(): array
+    {
+        if (!is_file($this->collectionFile)) {
+            return [];
+        }
+        $data = json_decode((string) file_get_contents($this->collectionFile), true);
+        return is_array($data) ? $data : [];
+    }
+
+    // ─── Core logic (unchanged) ────────────────────
 
     private function sendInternal(
         string $method,
@@ -137,7 +340,6 @@ final class ApiTestCommand
         }
 
         $bodyData = in_array($method, ['POST', 'PUT', 'PATCH'], true) ? $fields : [];
-
         $start = microtime(true);
 
         try {
@@ -201,23 +403,19 @@ final class ApiTestCommand
             if ($as !== null && $statusCode < 300) {
                 $decoded = json_decode($body, true);
                 if (is_array($decoded)) {
-                    // Try multiple token locations in response
-                    $t = $decoded['data']['token'] 
-                       ?? $decoded['data']['access_token'] 
-                       ?? $decoded['token'] 
-                       ?? $decoded['access_token'] 
+                    $t = $decoded['data']['token']
+                       ?? $decoded['data']['access_token']
+                       ?? $decoded['token']
+                       ?? $decoded['access_token']
                        ?? null;
-                    
+
                     if (is_string($t) && strlen($t) >= 10) {
                         $tokens = $this->loadTokens();
                         $tokens[$as] = $t;
-                        
-                        // Ensure directory exists
                         $dir = dirname($this->authFile);
                         if (!is_dir($dir)) {
                             mkdir($dir, 0755, true);
                         }
-                        
                         file_put_contents($this->authFile, json_encode($tokens, JSON_PRETTY_PRINT));
                         $this->write("");
                         $this->write("  \033[32m✓ Token for '{$as}' saved to storage/api-test-auth.json\033[0m");
@@ -284,11 +482,9 @@ final class ApiTestCommand
             'memory_mb' => round($memory, 1),
             'as' => $as,
         ];
-
         if (count($history) > 100) {
             $history = array_slice($history, -100);
         }
-
         file_put_contents($this->historyFile, json_encode($history, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     }
 
@@ -304,13 +500,11 @@ final class ApiTestCommand
     private function showHistory(int $limit): int
     {
         $history = $this->loadHistory();
-
         if ($history === []) {
             $this->write('No request history found.');
             $this->write('Make a request first: php siro api:test GET /api/users');
             return 0;
         }
-
         $history = array_reverse($history);
         $history = array_slice($history, 0, $limit);
 
@@ -330,7 +524,6 @@ final class ApiTestCommand
         $this->write('');
         $this->write('Total: ' . count($history) . ' requests');
         $this->write('Use --history=N to show more, --history-clear to clear');
-
         return 0;
     }
 
@@ -351,18 +544,20 @@ final class ApiTestCommand
         $this->write('  --form              Send as form-urlencoded');
         $this->write('  --header="X: v"     Custom header');
         $this->write('  --as=<role>         Auth as role (admin, user)');
+        $this->write('  --watch             Watch files + auto re-run on change');
+        $this->write('  --collection-save=N  Save request to named collection');
+        $this->write('  --collection=N       Run all requests in collection');
+        $this->write('  --collection-list    List saved collections');
         $this->write('  --history           View request history');
-        $this->write('  --history=N          Show last N requests');
+        $this->write('  --history=N         Show last N requests');
         $this->write('  --history-clear     Clear history');
-        $this->write('');
-        $this->write('Interactive mode:');
-        $this->write('  POST/PUT/PATCH without fields will prompt for input');
         $this->write('');
         $this->write('Examples:');
         $this->write('  php siro api:test GET /api/users');
         $this->write('  php siro api:test POST /auth/login email=admin@test.com password=123456');
         $this->write('  php siro api:test GET /users --as=admin');
-        $this->write('  php siro api:test POST /users name=John email=john@test.com --as=admin');
-        $this->write('  php siro api:test --history');
+        $this->write('  php siro api:test POST /users name=John --collection-save=myapi');
+        $this->write('  php siro api:test --collection=myapi');
+        $this->write('  php siro api:test GET /users --watch');
     }
 }

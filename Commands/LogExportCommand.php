@@ -12,15 +12,6 @@ final class LogExportCommand
     {
     }
 
-    /**
- * Export trace data to file.
- *
- * Reads trace JSON files from storage/logs/traces/ and exports
- * them in JSON or CSV format, with optional filtering by status,
- * method, and date range.
- *
- * @package Siro\Core\Commands
- */
     public function run(array $args): int
     {
         $format = 'json';
@@ -29,6 +20,7 @@ final class LogExportCommand
         $method = null;
         $slow = false;
         $days = null;
+        $traceId = '';
 
         foreach ($args as $arg) {
             $arg = trim($arg);
@@ -44,7 +36,15 @@ final class LogExportCommand
                 $slow = true;
             } elseif (str_starts_with($arg, '--days=')) {
                 $days = (int) substr($arg, 7);
+            } elseif ($arg === '--postman' || $arg === '--curl') {
+                $format = 'postman';
+            } elseif ($arg !== '' && !str_starts_with($arg, '--')) {
+                $traceId = $arg;
             }
+        }
+
+        if ($format === 'postman') {
+            return $this->exportPostman($traceId);
         }
 
         $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
@@ -93,7 +93,7 @@ final class LogExportCommand
         } elseif ($format === 'csv') {
             $content = $this->toCsv($traces);
         } else {
-            $this->write('Unsupported format. Use: json or csv');
+            $this->write('Unsupported format. Use: json, csv, or --postman');
             return 1;
         }
 
@@ -103,6 +103,76 @@ final class LogExportCommand
         } else {
             $this->write($content);
         }
+
+        return 0;
+    }
+
+    private function exportPostman(string $traceId): int
+    {
+        if ($traceId === '') {
+            $this->write('Usage: php siro log:export <trace_id> --postman');
+            $this->write('Generate a Postman-compatible curl command from a trace.');
+            return 1;
+        }
+
+        $traceFile = $this->basePath
+            . DIRECTORY_SEPARATOR . 'storage'
+            . DIRECTORY_SEPARATOR . 'logs'
+            . DIRECTORY_SEPARATOR . 'traces'
+            . DIRECTORY_SEPARATOR . $traceId . '.json';
+
+        if (!is_file($traceFile)) {
+            $this->write('Trace not found: ' . $traceId);
+            return 1;
+        }
+
+        $data = json_decode((string) file_get_contents($traceFile), true);
+        if (!is_array($data)) {
+            $this->write('Invalid trace file.');
+            return 1;
+        }
+
+        $method = $data['method'] ?? 'GET';
+        $path = $data['path'] ?? '/';
+        $host = 'http://localhost:8000';
+        $headers = [];
+        $body = '';
+
+        $requestHeaders = $data['request_headers'] ?? [];
+        if (is_array($requestHeaders)) {
+            foreach ($requestHeaders as $k => $v) {
+                if (strtolower($k) !== 'host') {
+                    $headers[] = "-H '{$k}: {$v}'";
+                }
+            }
+        }
+
+        if (isset($data['auth_header']) && $data['auth_header'] !== '') {
+            $headers[] = "-H 'Authorization: " . $data['auth_header'] . "'";
+        }
+
+        $requestBody = $data['request_body'] ?? '';
+        if ($requestBody !== '' && $requestBody !== '[]' && $requestBody !== '{}') {
+            $body = "  -d '" . str_replace("'", "'\\''", $requestBody) . "'";
+        }
+
+        $curlCmd = "curl -X {$method} {$host}{$path}";
+        if ($headers !== []) {
+            $curlCmd .= " \\\n  " . implode(" \\\n  ", $headers);
+        }
+        if ($body !== '') {
+            $curlCmd .= " \\\n" . $body;
+        }
+
+        $this->write('');
+        $this->write('  Postman-compatible curl:');
+        $this->write('');
+        $this->write('  ' . $curlCmd);
+        $this->write('');
+        $this->write('  Import into Postman:');
+        $this->write('    Copy the curl command above');
+        $this->write('    Postman → Import → Raw text → Paste → Continue');
+        $this->write('');
 
         return 0;
     }

@@ -196,6 +196,11 @@ final class Console
         $this->write('  php siro api:test GET /users --as=admin');
         $this->write('  php siro api:test POST /users name=John email=john@test.com --as=admin');
         $this->write('  php siro api:test --history');
+        $this->write('  php siro api:test GET /users --watch');
+        $this->write('  php siro api:test POST /users name=John --collection-save=myapi');
+        $this->write('  php siro api:test --collection=myapi');
+        $this->write('  php siro api:test --collection-list');
+        $this->write('  php siro log:export <trace_id> --postman');
         $this->write('  php siro make:crud users');
         $this->write('  php siro make:crud posts');
         $this->write('  php siro make:test UserApi');
