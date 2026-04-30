@@ -108,17 +108,20 @@ trait CommandSupport
 
     protected function plural(string $value): string
     {
-        // Already plural (ends with 's' but not 'ss')
-        if (str_ends_with($value, 's') && !str_ends_with($value, 'ss')) {
-            return $value;
+        // Words ending in 's', 'sh', 'ch', 'x', 'z' need 'es'
+        // But skip if already ends with 'ses' (already plural)
+        if (!str_ends_with($value, 'ses')) {
+            if (str_ends_with($value, 's') || str_ends_with($value, 'sh') || 
+                str_ends_with($value, 'ch') || str_ends_with($value, 'x') || 
+                str_ends_with($value, 'z')) {
+                return $value . 'es';
+            }
+        } else {
+            return $value; // Already plural
         }
 
         if (str_ends_with($value, 'y')) {
             return substr($value, 0, -1) . 'ies';
-        }
-
-        if (str_ends_with($value, 'ss')) {
-            return $value . 'es';
         }
 
         return $value . 's';
