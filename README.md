@@ -1,4 +1,4 @@
-# Siro Core Framework v0.10.0
+# Siro Core Framework v0.11.0
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -779,6 +779,115 @@ Running collection: myapi
 ```
 
 **Productivity Boost: 30-60x faster!** 🚀
+
+---
+
+### 🗄️ Soft Deletes (v0.11.0)
+
+Automatically filter deleted records while keeping them in the database for recovery.
+
+```php
+use Siro\Core\DB\SoftDeletes;
+
+final class Post extends Model {
+    use SoftDeletes;
+}
+```
+
+**Usage:**
+```php
+// Soft delete (sets deleted_at timestamp)
+$post->delete();
+
+// Query automatically excludes soft-deleted records
+Post::all(); // Only non-deleted posts
+
+// Include soft-deleted in query
+Post::query()->withTrashed()->get();
+
+// Get only soft-deleted records
+Post::query()->onlySoftDeleted()->get();
+
+// Restore a soft-deleted record
+$post->restore();
+
+// Permanently delete from database
+$post->forceDelete();
+
+// Check if record is soft-deleted
+if ($post->trashed()) {
+    echo "This post was deleted";
+}
+```
+
+**Benefits:**
+- ✅ Prevents accidental data loss
+- ✅ Enables audit trails and recovery
+- ✅ Automatic query filtering
+- ✅ Industry standard pattern
+
+---
+
+### 🔢 API Versioning (v0.11.0)
+
+Manage multiple API versions with clean routing separation.
+
+```php
+// routes/api.php
+$router->version(1, function ($router) {
+    $router->get('/users', [V1\UserController::class, 'index']);
+    $router->post('/posts', [V1\PostController::class, 'store']);
+});
+// → GET /api/v1/users
+// → POST /api/v1/posts
+
+$router->version(2, function ($router) {
+    $router->get('/users', [V2\UserController::class, 'index']); // New format
+    $router->post('/posts', [V2\PostController::class, 'store']); // New validation
+});
+// → GET /api/v2/users
+// → POST /api/v2/posts
+```
+
+**Use Cases:**
+- Gradual API migration without breaking existing clients
+- Different response formats per version
+- Separate middleware chains per version
+- Clean URL structure (`/api/v1`, `/api/v2`)
+
+---
+
+### 📊 Rate Limiting Dashboard (v0.11.0)
+
+Monitor and debug rate limiting in real-time.
+
+```bash
+php siro rate:status
+```
+
+**Output:**
+```
+Rate Limiting Status
+  Total entries: 6
+  Active:        2
+
++---------------------+-------+------+---------+
+| Key                 | Count | TTL  | Status  |
++---------------------+-------+------+---------+
+| 30ff2cff9fb616d9... | 45    | 30s  | OK      |
+| 4840fcb0d11385...   | 61    | 15s  | BLOCKED |
+| abc123def456...     | 5     | -    | EXPIRED |
++---------------------+-------+------+---------+
+
+Clear all: rm -rf storage/rate_limit/*.json
+```
+
+**Features:**
+- ✅ View all rate limit entries
+- ✅ Color-coded status (OK/BLOCKED/EXPIRED)
+- ✅ Shows request count and TTL
+- ✅ Monitor abuse patterns
+- ✅ Debug throttling issues
 
 **Setup Crontab:**
 ```bash
