@@ -42,6 +42,9 @@ use Siro\Core\Commands\ApiTestCommand;
 use Siro\Core\Commands\MakeCrudCommand;
 use Siro\Core\Commands\MakeTestCommand;
 use Siro\Core\Commands\RateStatusCommand;
+use Siro\Core\Commands\TestRunCommand;
+use Siro\Core\Commands\EnvSwitchCommand;
+use Siro\Core\Commands\SlowLogCommand;
 
 /**
  * CLI command dispatcher.
@@ -145,6 +148,12 @@ final class Console
                 return (new ApiTestCommand($this->basePath))->run($args);
             case 'rate:status':
                 return (new RateStatusCommand($this->basePath))->run($args);
+            case 'test':
+                return (new TestRunCommand($this->basePath))->run($args);
+            case 'env:switch':
+                return (new EnvSwitchCommand($this->basePath))->run($args);
+            case 'slow':
+                return (new SlowLogCommand($this->basePath))->run($args);
             default:
                 return $this->unknownCommand($command);
         }
@@ -205,6 +214,11 @@ final class Console
         $this->write('  php siro api:test --collection-list');
         $this->write('  php siro log:export <trace_id> --postman');
         $this->write('  php siro rate:status');
+        $this->write('  php siro test');
+        $this->write('  php siro env:switch staging');
+        $this->write('  php siro slow --limit=20 --min=200');
+        $this->write('  php siro api:test POST /webhook --webhook --port=9000');
+        $this->write('  php siro api:test GET /api/users --cors');
         $this->write('  php siro make:crud users');
         $this->write('  php siro make:crud posts');
         $this->write('  php siro make:test UserApi');

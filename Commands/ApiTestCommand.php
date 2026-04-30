@@ -99,6 +99,14 @@ final class ApiTestCommand
             }
         }
 
+        if (in_array('--cors', $args, true)) {
+            return $this->testCors($method, $path);
+        }
+
+        if (in_array('--webhook', $args, true)) {
+            return $this->listenWebhook($args);
+        }
+
         if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && $fields === [] && $collectionSave === null) {
             $this->write("Enter fields for {$method} {$path} (leave field name empty to finish):");
             $this->write('');
@@ -534,6 +542,118 @@ final class ApiTestCommand
         }
         $this->write('Request history cleared.');
         return 0;
+    }
+
+    // ─── CORS Test ───────────────────────────────
+
+    private function testCors(string $method, string $path): int
+    {
+        $this->write("  \033[1;33mCORS Test: {$method} {$path}\033[0m");
+        $this->write('');
+
+        // Test 1: Preflight OPTIONS
+        $this->write("  \033[1;90m[1/3] OPTIONS preflight request...\033[0m");
+        $opts = [
+            'method' => 'OPTIONS', 'path' => $path,
+            'fields' => [], 'headers' => ['origin' => 'http://localhost:3000', 'access-control-request-method' => $method],
+            'content_type' => 'json', 'as' => null,
+        ];
+        $code1 = $this->sendInternal($opts['method'], $opts['path'], $opts['fields'], ['Origin: http://localhost:3000', 'Access-Control-Request-Method: ' . $method], $opts['content_type'], $opts['as']);
+
+        // Test 2: Request with Origin
+        $this->write("  \033[1;90m[2/3] Request with Origin header...\033[0m");
+        $code2 = $this->sendInternal($method, $path, [], ['Origin: http://localhost:3000'], 'json', null);
+
+        // Test 3: Request without Origin
+        $this->write("  \033[1;90m[3/3] Request without Origin...\033[0m");
+        $code3 = $this->sendInternal($method, $path, [], [], 'json', null);
+
+        $this->write('');
+        $this->write('  CORS Test Results:');
+        $this->write("    Preflight (OPTIONS):  {$code1}");
+        $this->write("    With Origin:          {$code2}");
+        $this->write("    Without Origin:       {$code3}");
+        $this->write('');
+        $this->write('  Expected: OPTIONS → 204, others → <status>');
+
+        return 0;
+    }
+
+    // ─── Webhook Listener ─────────────────────────
+
+    private function listenWebhook(array $args): int
+    {
+        $port = 9000;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--port=')) {
+                $port = max(1, (int) substr($arg, 7));
+            }
+        }
+
+        $this->write("  \033[1;33mWebhook listener on http://localhost:{$port}/webhook\033[0m");
+        $this->write("  \033[90mPress Ctrl+C to stop\033[0m");
+        $this->write('');
+
+        $socket = stream_socket_server("tcp://0.0.0.0:{$port}", $errno, $errstr);
+        if ($socket === false) {
+            $this->write("  \033[31mError: Cannot bind to port {$port} ({$errstr})\033[0m");
+            return 1;
+        }
+
+        $count = 0;
+        while (true) {
+            $conn = @stream_socket_accept($socket, 5);
+            if ($conn === false) {
+                continue;
+            }
+
+            $data = fread($conn, 65536);
+            if ($data === false || $data === '') {
+                fclose($conn);
+                continue;
+            }
+
+            // Parse HTTP request
+            $lines = explode("\r\n", $data);
+            $requestLine = $lines[0] ?? '';
+            preg_match('/^(\w+) (\S+)/', $requestLine, $m);
+            $method = $m[1] ?? 'GET';
+            $uri = $m[2] ?? '/';
+
+            // Parse headers
+            $headers = [];
+            $i = 1;
+            while ($i < count($lines) && $lines[$i] !== '') {
+                if (str_contains($lines[$i], ':')) {
+                    [$k, $v] = explode(':', $lines[$i], 2);
+                    $headers[trim($k)] = trim($v);
+                }
+                $i++;
+            }
+
+            // Parse body
+            $body = implode("\r\n", array_slice($lines, $i + 1));
+            $bodyDecoded = json_decode($body, true);
+
+            $count++;
+            $this->write("  \033[32m[#{$count}] Received {$method} {$uri}\033[0m");
+            foreach ($headers as $k => $v) {
+                if (strtolower($k) === 'user-agent' || strtolower($k) === 'content-type') {
+                    $this->write("    {$k}: {$v}");
+                }
+            }
+            if (is_array($bodyDecoded)) {
+                $this->write('    Body:');
+                $this->write('      ' . json_encode($bodyDecoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            } elseif ($body !== '') {
+                $this->write('    Body: ' . mb_substr($body, 0, 500));
+            }
+            $this->write('');
+
+            // Send 200 response
+            fwrite($conn, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"received\":true}");
+            fclose($conn);
+        }
     }
 
     private function printHelp(): void
