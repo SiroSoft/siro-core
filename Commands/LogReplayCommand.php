@@ -12,27 +12,34 @@ final class LogReplayCommand
     {
     }
 
-    /**
- * Generate a cURL command to replay a request.
- *
- * Reads a trace file and outputs a ready-to-run curl (or httpie)
- * command that reproduces the original request exactly.
- *
- * @package Siro\Core\Commands
- */
     public function run(array $args): int
     {
         $traceId = trim((string) ($args[0] ?? ''));
         $format = 'curl';
+        $force = false;
+
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--format=')) {
                 $format = substr($arg, 9);
+            } elseif ($arg === '--force') {
+                $force = true;
+            } elseif ($arg === '--safe') {
+                $force = false;
             }
         }
 
         if ($traceId === '') {
-            $this->write('Usage: php siro log:replay <trace_id>');
-            $this->write('       php siro log:replay <trace_id> --format=httpie');
+            $this->write('Usage: php siro log:replay <trace_id> [options]');
+            $this->write('');
+            $this->write('Options:');
+            $this->write('  --format=curl     Output as curl (default)');
+            $this->write('  --format=httpie   Output as httpie');
+            $this->write('  --force           Skip safe-mode warning (dangerous)');
+            $this->write('  --safe            Safe mode: warn on non-GET (default)');
+            $this->write('');
+            $this->write('Examples:');
+            $this->write('  php siro log:replay siro_a1b2');
+            $this->write('  php siro log:replay siro_a1b2 --force');
             return 1;
         }
 
@@ -59,10 +66,31 @@ final class LogReplayCommand
         $url = 'http://' . $host . $path;
         $headers = $data['request_headers'] ?? [];
         $body = $data['request_body'] ?? '';
-
-        // Add auth header if present
         $auth = $data['auth_header'] ?? '';
         $ct = $data['content_type'] ?? '';
+
+        // ─── Safe mode: warning for non-GET methods ───
+        if ($method !== 'GET' && !$force) {
+            $this->write('');
+            $this->write("  \033[1;31m⚠  DANGER: Replaying {$method} {$path}\033[0m");
+            $this->write('  This request has side effects (not a read-only GET).');
+            $this->write('  Replaying it may:');
+            $this->write('    • Charge user again (payment)');
+            $this->write('    • Create duplicate records (insert)');
+            $this->write('    • Modify data unexpectedly (update)');
+            $this->write('    • Delete data permanently (delete)');
+            $this->write('');
+            $this->write('  To confirm, re-run with: --force');
+            $this->write('  To see without executing, use: php siro log:export ' . $traceId . ' --postman');
+            $this->write('');
+
+            $answer = $this->ask('  \033[1;33mAre you sure you want to replay this? (yes/no): \033[0m');
+            if (strtolower(trim($answer)) !== 'yes') {
+                $this->write('  Replay cancelled.');
+                return 1;
+            }
+            $this->write('');
+        }
 
         if ($format === 'httpie') {
             return $this->outputHttpie($method, $url, $headers, $body, $auth, $ct);

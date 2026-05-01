@@ -45,6 +45,7 @@ use Siro\Core\Commands\RateStatusCommand;
 use Siro\Core\Commands\TestRunCommand;
 use Siro\Core\Commands\EnvSwitchCommand;
 use Siro\Core\Commands\SlowLogCommand;
+use Siro\Core\Commands\LogCleanupCommand;
 
 /**
  * CLI command dispatcher.
@@ -154,6 +155,8 @@ final class Console
                 return (new EnvSwitchCommand($this->basePath))->run($args);
             case 'slow':
                 return (new SlowLogCommand($this->basePath))->run($args);
+            case 'log:cleanup':
+                return (new LogCleanupCommand($this->basePath))->run($args);
             default:
                 return $this->unknownCommand($command);
         }
@@ -213,6 +216,8 @@ final class Console
         $this->write('  php siro api:test --collection=myapi');
         $this->write('  php siro api:test --collection-list');
         $this->write('  php siro log:export <trace_id> --postman');
+        $this->write('  php siro log:cleanup --days=7 --dry-run');
+        $this->write('  php siro log:replay <trace_id> --force');
         $this->write('  php siro rate:status');
         $this->write('  php siro test');
         $this->write('  php siro env:switch staging');
