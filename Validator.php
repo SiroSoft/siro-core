@@ -7,7 +7,7 @@ namespace Siro\Core;
 /**
  * Input validation engine.
  *
- * Supports rules: required, email, numeric, integer, min, max,
+ * Supports rules: required, email, numeric, integer, file, min, max,
  * confirmed, in, unique, exists. Returns structured error messages.
  * Messages are translated via Lang when available.
  * Custom rules can be registered via Validator::extend().
@@ -76,12 +76,18 @@ final class Validator
 
                 if (str_starts_with($rule, 'min:')) {
                     $min = (int) substr($rule, 4);
-                    if (is_string($value) && strlen($value) < $min) {
+                    
+                    // For files, min is in KB
+                    if ($value instanceof UploadedFile && $value->isValid()) {
+                        $sizeInKb = (int) ceil($value->getSize() / 1024);
+                        if ($sizeInKb < $min) {
+                            $errors[$field][] = self::msg('validation.min', ['field' => self::label($field), 'min' => (string) $min]);
+                            continue;
+                        }
+                    } elseif (is_string($value) && strlen($value) < $min) {
                         $errors[$field][] = self::msg('validation.min', ['field' => self::label($field), 'min' => (string) $min]);
                         continue;
-                    }
-
-                    if (is_numeric($value) && (float) $value < $min) {
+                    } elseif (is_numeric($value) && (float) $value < $min) {
                         $errors[$field][] = self::msg('validation.min', ['field' => self::label($field), 'min' => (string) $min]);
                         continue;
                     }
@@ -89,12 +95,18 @@ final class Validator
 
                 if (str_starts_with($rule, 'max:')) {
                     $max = (int) substr($rule, 4);
-                    if (is_string($value) && strlen($value) > $max) {
+                    
+                    // For files, max is in KB
+                    if ($value instanceof UploadedFile && $value->isValid()) {
+                        $sizeInKb = (int) ceil($value->getSize() / 1024);
+                        if ($sizeInKb > $max) {
+                            $errors[$field][] = self::msg('validation.max', ['field' => self::label($field), 'max' => (string) $max]);
+                            continue;
+                        }
+                    } elseif (is_string($value) && strlen($value) > $max) {
                         $errors[$field][] = self::msg('validation.max', ['field' => self::label($field), 'max' => (string) $max]);
                         continue;
-                    }
-
-                    if (is_numeric($value) && (float) $value > $max) {
+                    } elseif (is_numeric($value) && (float) $value > $max) {
                         $errors[$field][] = self::msg('validation.max', ['field' => self::label($field), 'max' => (string) $max]);
                         continue;
                     }
@@ -142,6 +154,14 @@ final class Validator
 
                     if ($value !== $confirmationValue) {
                         $errors[$field][] = self::msg('validation.confirmed', ['field' => self::label($field)]);
+                        continue;
+                    }
+                }
+
+                if ($rule === 'file') {
+                    // Validate that the value is a valid uploaded file
+                    if (!$value instanceof UploadedFile || !$value->isValid()) {
+                        $errors[$field][] = self::msg('validation.file', ['field' => self::label($field)]);
                         continue;
                     }
                 }
@@ -204,6 +224,7 @@ final class Validator
             'validation.exists' => ':field does not exist',
             'validation.confirmed' => ':field confirmation does not match',
             'validation.in' => ':field must be one of: :values',
+            'validation.file' => ':field must be a valid file',
         ];
 
         $msg = $defaults[$key] ?? $key;

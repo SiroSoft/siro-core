@@ -70,6 +70,14 @@ final class Lang
     }
 
     /**
+     * Set the fallback locale.
+     */
+    public static function setFallbackLocale(string $locale): void
+    {
+        self::$fallbackLocale = $locale;
+    }
+
+    /**
      * Get a translation string.
      *
      * @param string $key Dot-notation key, e.g. "messages.welcome"
