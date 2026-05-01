@@ -30,8 +30,11 @@ final class RequestTest extends TestCase
             'price' => '99.99',
             'items' => ['item1', 'item2'],
         ];
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['REQUEST_URI'] = '/test';
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
         
-        $this->request = new Request();
+        $this->request = Request::fromGlobals();
     }
 
     protected function tearDown(): void

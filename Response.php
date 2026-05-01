@@ -81,6 +81,59 @@ final class Response
     }
 
     /**
+     * Create a redirect response.
+     */
+    public static function redirect(string $url, int $statusCode = 302): self
+    {
+        $response = new self([], $statusCode);
+        $response->extraHeaders['Location'] = $url;
+        return $response;
+    }
+
+    /**
+     * Create a raw response with custom content type.
+     */
+    public static function raw(string $content, string $contentType = 'text/plain', int $statusCode = 200): self
+    {
+        $response = new self(['raw' => $content], $statusCode);
+        $response->extraHeaders['Content-Type'] = $contentType;
+        return $response;
+    }
+
+    /**
+     * Create a file download response.
+     */
+    public static function download(string $filePath, ?string $filename = null, array $headers = []): self
+    {
+        $response = new self(['file' => $filePath], 200);
+        $disposition = $filename ? 'attachment; filename="' . $filename . '"' : 'attachment';
+        $response->extraHeaders['Content-Disposition'] = $disposition;
+        $response->extraHeaders['Content-Type'] = 'application/octet-stream';
+        
+        foreach ($headers as $name => $value) {
+            $response->extraHeaders[$name] = $value;
+        }
+        
+        return $response;
+    }
+
+    /**
+     * Create a file response (inline display).
+     */
+    public static function file(string $filePath, ?string $contentType = null, array $headers = []): self
+    {
+        $response = new self(['file' => $filePath], 200);
+        $response->extraHeaders['Content-Disposition'] = 'inline';
+        $response->extraHeaders['Content-Type'] = $contentType ?? 'application/octet-stream';
+        
+        foreach ($headers as $name => $value) {
+            $response->extraHeaders[$name] = $value;
+        }
+        
+        return $response;
+    }
+
+    /**
      * @param array<string, mixed> $payload
      */
     public static function json(array $payload, int $statusCode = 200): self

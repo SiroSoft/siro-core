@@ -95,6 +95,39 @@ abstract class Model implements \JsonSerializable
     }
 
     /**
+     * Set the fillable attributes.
+     *
+     * @param array<int, string> $fillable
+     */
+    public function setFillable(array $fillable): self
+    {
+        $this->fillable = $fillable;
+        return $this;
+    }
+
+    /**
+     * Set the hidden attributes.
+     *
+     * @param array<int, string> $hidden
+     */
+    public function setHidden(array $hidden): self
+    {
+        $this->hidden = $hidden;
+        return $this;
+    }
+
+    /**
+     * Set the attribute casts.
+     *
+     * @param array<string, string> $casts
+     */
+    public function setCasts(array $casts): self
+    {
+        $this->casts = $casts;
+        return $this;
+    }
+
+    /**
      * Set an attribute value.
      */
     public function setAttribute(string $key, mixed $value): void

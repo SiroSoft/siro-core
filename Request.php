@@ -36,8 +36,14 @@ final class Request
      * @param array<string, string> $headers
      * @param array<string, mixed> $jsonBody
      */
-    public function __construct(string $method, string $path, array $query, array $headers, array $jsonBody, string $clientIp)
-    {
+    public function __construct(
+        string $method = 'GET',
+        string $path = '/',
+        array $query = [],
+        array $headers = [],
+        array $jsonBody = [],
+        string $clientIp = '127.0.0.1'
+    ) {
         $this->method = strtoupper($method);
         $this->path = $path;
         $this->queryParams = $query;
@@ -299,6 +305,16 @@ final class Request
     public function validated(array $rules): array
     {
         return $this->validate($rules);
+    }
+
+    /**
+     * Get all input data (body + query params).
+     *
+     * @return array<string, mixed>
+     */
+    public function all(): array
+    {
+        return array_merge($this->queryParams, $this->bodyData);
     }
 
     /**
