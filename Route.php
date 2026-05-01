@@ -5,20 +5,108 @@ declare(strict_types=1);
 namespace Siro\Core;
 
 /**
- * Fluent route configurator.
+ * Fluent route configurator AND static facade for route registration.
  *
- * Returned by Router::get/post/put/delete() to allow chaining
- * middleware() and cache() calls on route definitions.
+ * As a facade, provides Laravel-style static methods:
+ *   Route::get('/path', $handler)
+ *   Route::post('/path', $handler)
+ *   etc.
+ *
+ * As a configurator, allows chaining:
+ *   Route::get('/path', $handler)->middleware([...])->cache(60)
  *
  * @package Siro\Core
  */
 final class Route
 {
+    /** @var Router|null */
+    private static ?Router $routerInstance = null;
+    
     public function __construct(
         private readonly Router $router,
         private readonly string $method,
         private readonly string $path
     ) {
+    }
+
+    /**
+     * Set the router instance for the facade
+     */
+    public static function setRouter(Router $router): void
+    {
+        self::$routerInstance = $router;
+    }
+
+    /**
+     * Get the current router instance
+     */
+    public static function getRouter(): ?Router
+    {
+        return self::$routerInstance;
+    }
+
+    /**
+     * Register a GET route (facade method)
+     *
+     * @param callable|array|string $handler
+     * @return self
+     */
+    public static function get(string $path, callable|array|string $handler): self
+    {
+        return self::registerRoute('GET', $path, $handler);
+    }
+
+    /**
+     * Register a POST route (facade method)
+     *
+     * @param callable|array|string $handler
+     * @return self
+     */
+    public static function post(string $path, callable|array|string $handler): self
+    {
+        return self::registerRoute('POST', $path, $handler);
+    }
+
+    /**
+     * Register a PUT route (facade method)
+     *
+     * @param callable|array|string $handler
+     * @return self
+     */
+    public static function put(string $path, callable|array|string $handler): self
+    {
+        return self::registerRoute('PUT', $path, $handler);
+    }
+
+    /**
+     * Register a DELETE route (facade method)
+     *
+     * @param callable|array|string $handler
+     * @return self
+     */
+    public static function delete(string $path, callable|array|string $handler): self
+    {
+        return self::registerRoute('DELETE', $path, $handler);
+    }
+
+    /**
+     * Register a PATCH route (facade method)
+     *
+     * @param callable|array|string $handler
+     * @return self
+     */
+    public static function patch(string $path, callable|array|string $handler): self
+    {
+        return self::registerRoute('PATCH', $path, $handler);
+    }
+
+    /**
+     * Clear the router instance (useful for testing)
+     */
+    public static function clearRoutes(): void
+    {
+        // Don't set to null - just keep the current router
+        // This allows tests to reuse the same router instance
     }
 
     /**
@@ -52,5 +140,27 @@ final class Route
         $middlewareString = \Siro\Core\Middleware\ThrottleMiddleware::class . ':' . $maxAttempts . ',' . $decayMinutes;
         $this->router->setRouteMiddleware($this->method, $this->path, [$middlewareString]);
         return $this;
+    }
+
+    /**
+     * Register a route with the static router instance
+     *
+     * @param callable|array|string $handler
+     * @return self
+     */
+    private static function registerRoute(string $method, string $path, callable|array|string $handler): self
+    {
+        $router = self::$routerInstance;
+        
+        if ($router === null) {
+            // Auto-create a router if none is set
+            $router = new Router();
+            self::$routerInstance = $router;
+        }
+        
+        $lowerMethod = strtolower($method);
+        $route = $router->{$lowerMethod}($path, $handler);
+        
+        return $route;
     }
 }

@@ -24,6 +24,9 @@ final class RouterTest extends TestCase
         parent::setUp();
         $this->router = new Router();
         
+        // Set the router for the Route facade
+        Route::setRouter($this->router);
+        
         // Clear any existing routes
         Route::clearRoutes();
     }

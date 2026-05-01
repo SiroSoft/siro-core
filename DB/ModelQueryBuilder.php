@@ -51,25 +51,30 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this;
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array<int, Model> */
     public function get(): array
     {
         $this->applySoftDeleteFilter();
-        return parent::get();
+        $rows = parent::get();
+        return $this->hydrateModels($rows);
     }
 
-    /** @return array<string, mixed>|null */
-    public function first(): ?array
+    /** @return Model|null */
+    // @phpstan-ignore method.childReturnType
+    public function first(): ?Model
     {
         $this->applySoftDeleteFilter();
-        return parent::first();
+        $row = parent::first();
+        return $row !== null ? $this->hydrateModel($row) : null;
     }
 
-    /** @return array{data: array, meta: array{page:int, per_page:int, total:int, last_page:int}} */
+    /** @return array{data: array<int, Model>, meta: array{page:int, per_page:int, total:int, last_page:int}} */
     public function paginate(int $perPage = 20, ?int $page = null): array
     {
         $this->applySoftDeleteFilter();
-        return parent::paginate($perPage, $page);
+        $result = parent::paginate($perPage, $page);
+        $result['data'] = $this->hydrateModels($result['data']);
+        return $result;
     }
 
     public function count(string $column = '*'): int
@@ -109,5 +114,28 @@ final class ModelQueryBuilder extends QueryBuilder
         if (in_array(SoftDeletes::class, $uses, true)) {
             $this->whereRaw('deleted_at IS NULL');
         }
+    }
+
+    /**
+     * Hydrate a single row into a model instance.
+     *
+     * @param array<string, mixed> $row
+     * @return Model
+     */
+    private function hydrateModel(array $row): Model
+    {
+        $modelClass = $this->modelClass;
+        return $modelClass::hydrate($row);
+    }
+
+    /**
+     * Hydrate multiple rows into model instances.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, Model>
+     */
+    private function hydrateModels(array $rows): array
+    {
+        return array_map(fn (array $row): Model => $this->hydrateModel($row), $rows);
     }
 }

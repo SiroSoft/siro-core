@@ -106,12 +106,12 @@ final class JWT
 
         $sub = isset($payload['sub']) ? (int) $payload['sub'] : 0;
         if ($sub <= 0) {
-            throw new RuntimeException('Invalid token subject.');
+            throw new RuntimeException('JWT token missing required "sub" claim (user ID). Token may be malformed or tampered.');
         }
 
         $ver = isset($payload['ver']) ? (int) $payload['ver'] : 0;
         if ($ver <= 0) {
-            throw new RuntimeException('Invalid token version.');
+            throw new RuntimeException('JWT token missing required "ver" claim (token version). Token may be from an incompatible system.');
         }
 
         return $payload;
