@@ -274,7 +274,12 @@ final class Request
      */
     public function validate(array $rules): array
     {
+        // Merge body data with uploaded files for validation
         $data = $this->body();
+        foreach ($this->uploadedFiles as $key => $file) {
+            $data[$key] = $file;
+        }
+        
         $errors = Validator::make($data, $rules);
 
         if ($errors !== []) {
