@@ -78,7 +78,11 @@ final class Request
         if ($isMultipart) {
             // For multipart, PHP automatically populates $_POST and $_FILES
             $jsonBody = $_POST;
+        } elseif (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true) && !empty($_POST)) {
+            // For form submissions, use $_POST
+            $jsonBody = $_POST;
         } else {
+            // For JSON API requests, read from php://input
             $rawBody = file_get_contents('php://input') ?: '';
 
             if ($rawBody !== '') {

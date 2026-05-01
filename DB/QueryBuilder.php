@@ -427,6 +427,16 @@ class QueryBuilder
         return $this->aggregate('AVG', $column);
     }
 
+    public function max(string $column): float|int
+    {
+        return $this->aggregate('MAX', $column);
+    }
+
+    public function min(string $column): float|int
+    {
+        return $this->aggregate('MIN', $column);
+    }
+
     public function insert(array $data): int
     {
         if ($data === []) {

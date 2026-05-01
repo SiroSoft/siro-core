@@ -277,6 +277,56 @@ abstract class Model implements \JsonSerializable
     }
 
     /**
+     * Get the hidden attributes.
+     *
+     * @return array<int, string>
+     */
+    public function getHidden(): array
+    {
+        return $this->hidden;
+    }
+
+    /**
+     * Add an order by clause to the query.
+     */
+    public static function orderBy(string $column, string $direction = 'asc'): ModelQueryBuilder
+    {
+        return self::query()->orderBy($column, $direction);
+    }
+
+    /**
+     * Set the limit for the query.
+     */
+    public static function limit(int $value): ModelQueryBuilder
+    {
+        return self::query()->limit($value);
+    }
+
+    /**
+     * Set the offset for the query.
+     */
+    public static function offset(int $value): ModelQueryBuilder
+    {
+        return self::query()->offset($value);
+    }
+
+    /**
+     * Specify columns to select.
+     */
+    public static function select(...$columns): ModelQueryBuilder
+    {
+        return self::query()->select(...$columns);
+    }
+
+    /**
+     * Retrieve the count of records.
+     */
+    public static function count(string $column = '*'): int
+    {
+        return self::query()->count($column);
+    }
+
+    /**
      * Execute a query and get the first result as a Model instance.
      *
      * @return static|null
