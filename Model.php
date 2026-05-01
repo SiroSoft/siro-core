@@ -20,7 +20,7 @@ use Siro\Core\DB\Relations\HasMany;
  *
  * @package Siro\Core
  */
-abstract class Model
+abstract class Model implements \JsonSerializable
 {
     /** @var string Table name (auto-detected if not set) */
     protected string $table = '';
@@ -179,6 +179,16 @@ abstract class Model
         }
 
         return $array;
+    }
+
+    /**
+     * Serialize the model to JSON (implements JsonSerializable).
+     *
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): mixed
+    {
+        return $this->toArray();
     }
 
     /**

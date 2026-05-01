@@ -138,25 +138,30 @@ final class Response
 
     public function send(): void
     {
+        // Only send headers in web context, not CLI
+        $isCli = php_sapi_name() === 'cli';
+        
         if (self::$debugEnabled) {
             $this->payload['debug'] = self::$debugMeta;
         }
 
-        http_response_code($this->statusCode);
-        header('Content-Type: application/json; charset=utf-8');
-        header('X-Content-Type-Options: nosniff');
-        header('X-Frame-Options: DENY');
+        if (!$isCli) {
+            http_response_code($this->statusCode);
+            header('Content-Type: application/json; charset=utf-8');
+            header('X-Content-Type-Options: nosniff');
+            header('X-Frame-Options: DENY');
 
-        if (self::$requestId !== '') {
-            header('X-Request-Id: ' . self::$requestId);
-        }
-        if (self::$requestStartedAt > 0.0) {
-            $elapsed = (microtime(true) - self::$requestStartedAt) * 1000;
-            header('X-Response-Time: ' . number_format($elapsed, 2) . 'ms');
-        }
+            if (self::$requestId !== '') {
+                header('X-Request-Id: ' . self::$requestId);
+            }
+            if (self::$requestStartedAt > 0.0) {
+                $elapsed = (microtime(true) - self::$requestStartedAt) * 1000;
+                header('X-Response-Time: ' . number_format($elapsed, 2) . 'ms');
+            }
 
-        foreach ($this->extraHeaders as $name => $value) {
-            header($name . ': ' . $value);
+            foreach ($this->extraHeaders as $name => $value) {
+                header($name . ': ' . $value);
+            }
         }
 
         $encoded = json_encode(
@@ -165,17 +170,21 @@ final class Response
         );
 
         if ($encoded === false) {
-            http_response_code(500);
+            if (!$isCli) {
+                http_response_code(500);
+            }
             echo '{"success":false,"message":"JSON encoding error","errors":{}}';
             return;
         }
 
-        // Gzip compression if accepted by client
-        $acceptEncoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
-        if (str_contains($acceptEncoding, 'gzip') && function_exists('gzencode')) {
-            header('Content-Encoding: gzip');
-            echo gzencode($encoded);
-            return;
+        // Gzip compression if accepted by client (only in web context)
+        if (!$isCli) {
+            $acceptEncoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
+            if (str_contains($acceptEncoding, 'gzip') && function_exists('gzencode')) {
+                header('Content-Encoding: gzip');
+                echo gzencode($encoded);
+                return;
+            }
         }
 
         echo $encoded;
