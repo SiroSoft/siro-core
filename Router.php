@@ -516,7 +516,17 @@ final class Router
         if (str_contains($middleware, ':')) {
             [$name, $paramString] = explode(':', $middleware, 2);
             $middlewareClass = $this->resolveMiddlewareAlias(trim($name));
-            $params = $paramString === '' ? [] : array_map('trim', explode(',', $paramString));
+            $rawParams = $paramString === '' ? [] : array_map('trim', explode(',', $paramString));
+            $params = array_map(function (string $p): mixed {
+                if (is_numeric($p)) {
+                    return str_contains($p, '.') ? (float) $p : (int) $p;
+                }
+                $lower = strtolower($p);
+                if ($lower === 'true') return true;
+                if ($lower === 'false') return false;
+                if ($lower === 'null') return null;
+                return $p;
+            }, $rawParams);
         } else {
             $middlewareClass = $this->resolveMiddlewareAlias($middleware);
         }
@@ -537,18 +547,45 @@ final class Router
         return $this->normalizeHandlerResult($instance->handle($request, $next, ...$params));
     }
 
+    /** @var array<string, string> Registered middleware aliases */
+    private static array $middlewareAliases = [];
+
+    /**
+     * Register a middleware alias.
+     *
+     * Usage in app bootstrap:
+     *   Router::setMiddlewareAliases([
+     *       'auth' => \App\Middleware\AuthMiddleware::class,
+     *       'throttle' => \App\Middleware\ThrottleMiddleware::class,
+     *   ]);
+     *
+     * @param array<string, string> $aliases
+     */
+    public static function setMiddlewareAliases(array $aliases): void
+    {
+        foreach ($aliases as $name => $class) {
+            self::$middlewareAliases[strtolower(trim($name))] = $class;
+        }
+    }
+
+    /**
+     * Register a single middleware alias.
+     */
+    public static function registerMiddlewareAlias(string $name, string $class): void
+    {
+        self::$middlewareAliases[strtolower(trim($name))] = $class;
+    }
+
+    /** @return array<string, string> */
+    public static function getMiddlewareAliases(): array
+    {
+        return self::$middlewareAliases;
+    }
+
     private function resolveMiddlewareAlias(string $name): string
     {
         $normalized = strtolower(trim($name));
-
-        // Return fully qualified class names as strings - these will be resolved by the app
-        return match ($normalized) {
-            'auth' => '\App\Middleware\AuthMiddleware',
-            'throttle' => '\App\Middleware\ThrottleMiddleware',
-            'cors' => '\App\Middleware\CorsMiddleware',
-            'json' => '\App\Middleware\JsonMiddleware',
-            default => $name,
-        };
+        return self::$middlewareAliases[$normalized] ?? $name;
     }
 
     /**
@@ -585,13 +622,10 @@ final class Router
             return Response::error('Route not found', 404);
         }
 
-        // Return 204 No Content for valid OPTIONS requests
-        http_response_code(204);
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-        header('Access-Control-Max-Age: 86400');
-        
-        return Response::noContent();
+        return Response::noContent()
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+            ->header('Access-Control-Max-Age', '86400');
     }
 }

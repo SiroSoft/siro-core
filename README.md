@@ -1,4 +1,4 @@
-# Siro Core Framework v0.12.0
+# Siro Core Framework v0.13.0
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -6,6 +6,8 @@
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
+[![Tests](https://img.shields.io/badge/tests-136%20passing-brightgreen.svg)](tests/)
+[![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
 
 ---
 
@@ -58,6 +60,15 @@
 - ⚙️ **Config Caching** - Cache environment for faster boot
 - 📈 **Slow Query Detection** - Auto-log queries exceeding threshold
 - ✅ **Environment Validation** - Pre-deployment checks
+
+### Testing & Quality (v0.13.0) 🏆
+- ✅ **136 PHPUnit Tests** - 100% pass rate
+- ✅ **PHPStan Level 6** - Zero errors, strict type checking
+- ✅ **Cross-Database Support** - SQLite and MySQL compatible
+- ✅ **Model ArrayAccess** - Array-style model access (`$model['field']`)
+- ✅ **Secure Deserialization** - JSON-based queue jobs (no RCE risk)
+- ✅ **Optimized Hydration** - Fixed double-hydration bugs in QueryBuilder
+- ✅ **Enhanced Test Runner** - `php siro test --phpunit` flag support
 
 ---
 

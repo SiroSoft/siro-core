@@ -20,7 +20,7 @@ use Siro\Core\DB\Relations\HasMany;
  *
  * @package Siro\Core
  */
-abstract class Model implements \JsonSerializable
+abstract class Model implements \JsonSerializable, \ArrayAccess
 {
     /** @var string Table name (auto-detected if not set) */
     protected string $table = '';
@@ -36,6 +36,9 @@ abstract class Model implements \JsonSerializable
 
     /** @var array<string, mixed> Model attributes */
     private array $attributes = [];
+
+    /** @var array<string, mixed> Original attribute values (for dirty tracking) */
+    private array $original = [];
 
     /** @var bool Whether the model exists in the database */
     private bool $exists = false;
@@ -196,6 +199,26 @@ abstract class Model implements \JsonSerializable
         return array_key_exists($name, $this->attributes);
     }
 
+    public function offsetExists(mixed $offset): bool
+    {
+        return $offset !== null && array_key_exists($offset, $this->attributes);
+    }
+
+    public function offsetGet(mixed $offset): mixed
+    {
+        return $this->getAttribute($offset);
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        $this->setAttribute($offset, $value);
+    }
+
+    public function offsetUnset(mixed $offset): void
+    {
+        unset($this->attributes[$offset]);
+    }
+
     /**
      * Convert model to array (excluding hidden fields).
      *
@@ -273,7 +296,7 @@ abstract class Model implements \JsonSerializable
      */
     public static function all(): array
     {
-        return self::hydrateAll(self::query()->get());
+        return self::query()->get();
     }
 
     /**
@@ -333,8 +356,7 @@ abstract class Model implements \JsonSerializable
      */
     public static function first(): ?self
     {
-        $rows = self::query()->limit(1)->get();
-        return isset($rows[0]) ? self::hydrate($rows[0]) : null;
+        return self::query()->first();
     }
 
     /**
@@ -344,7 +366,7 @@ abstract class Model implements \JsonSerializable
      */
     public static function get(): array
     {
-        return self::hydrateAll(self::query()->get());
+        return self::query()->get();
     }
 
     /**
@@ -364,7 +386,7 @@ abstract class Model implements \JsonSerializable
         $offset = ($page - 1) * $perPage;
         $lastPage = $total > 0 ? (int) ceil($total / $perPage) : 1;
 
-        $data = self::hydrateAll($query->limit($perPage)->offset($offset)->get());
+        $data = $query->limit($perPage)->offset($offset)->get();
 
         return [
             'data' => $data,
@@ -529,6 +551,7 @@ abstract class Model implements \JsonSerializable
         }
 
         Event::emit("{$table}.saved", $this);
+        $this->syncOriginal();
 
         return true;
     }
@@ -574,13 +597,28 @@ abstract class Model implements \JsonSerializable
     }
 
     /**
-     * Get the changed attributes.
+     * Get the changed attributes (diff against original).
      *
      * @return array<string, mixed>
      */
     private function getDirty(): array
     {
-        return $this->attributes;
+        $dirty = [];
+        foreach ($this->attributes as $key => $value) {
+            if (!array_key_exists($key, $this->original) || $this->original[$key] !== $value) {
+                $dirty[$key] = $value;
+            }
+        }
+        return $dirty;
+    }
+
+    /**
+     * Sync original attributes with current state (called after save/hydrate).
+     */
+    public function syncOriginal(): self
+    {
+        $this->original = $this->attributes;
+        return $this;
     }
 
     /**
@@ -604,6 +642,7 @@ abstract class Model implements \JsonSerializable
     {
         $model = new static();
         $model->forceFill($attributes);
+        $model->syncOriginal();
         $model->exists = true;
 
         return $model;

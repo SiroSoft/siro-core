@@ -50,7 +50,7 @@ final class Queue
     ): void {
         $payload = [
             'job' => $job,
-            'data' => serialize($data),
+            'data' => json_encode($data, JSON_UNESCAPED_UNICODE),
             'attempts' => 0,
             'max_attempts' => max(1, $maxAttempts),
             'priority' => $priority,
@@ -104,7 +104,10 @@ final class Queue
         $error = null;
 
         try {
-            $jobData = unserialize((string) $row['data']);
+            $jobData = json_decode((string) $row['data'], true);
+            if (!is_array($jobData)) {
+                $jobData = [];
+            }
             $timeout = (int) ($row['timeout'] ?? self::DEFAULT_TIMEOUT);
             $maxExecTime = time() + $timeout;
 
@@ -213,6 +216,16 @@ final class Queue
     /**
      * Retry a specific failed job by re-pushing it to the queue.
      */
+    private static function decodeJobData(mixed $data): mixed
+    {
+        if ($data === null || $data === '') {
+            return [];
+        }
+
+        $decoded = json_decode((string) $data, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
     public static function retryFailed(int|string $id): bool
     {
         if ($id === 'all') {
@@ -221,7 +234,7 @@ final class Queue
             foreach ($rows as $row) {
                 self::push(
                     $row['job'],
-                    unserialize((string) $row['data']),
+                    self::decodeJobData($row['data']),
                     0,
                     self::DEFAULT_PRIORITY,
                     self::DEFAULT_MAX_ATTEMPTS
@@ -239,7 +252,7 @@ final class Queue
 
         self::push(
             $row['job'],
-            unserialize((string) $row['data']),
+            self::decodeJobData($row['data']),
             0,
             self::DEFAULT_PRIORITY,
             self::DEFAULT_MAX_ATTEMPTS

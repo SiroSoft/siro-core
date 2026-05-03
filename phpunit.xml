@@ -25,6 +25,8 @@
         <exclude>
             <directory>tests</directory>
             <directory>vendor</directory>
+            <directory suffix=".php">verify_v076.php</directory>
         </exclude>
     </source>
+
 </phpunit>

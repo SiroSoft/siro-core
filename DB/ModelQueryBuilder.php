@@ -60,21 +60,18 @@ final class ModelQueryBuilder extends QueryBuilder
     }
 
     /** @return Model|null */
-    // @phpstan-ignore method.childReturnType
-    public function first(): ?Model
+    public function first(): mixed
     {
         $this->applySoftDeleteFilter();
-        $row = parent::first();
-        return $row !== null ? $this->hydrateModel($row) : null;
+        $rows = $this->limit(1)->get();
+        return $rows[0] ?? null;
     }
 
     /** @return array{data: array<int, Model>, meta: array{page:int, per_page:int, total:int, last_page:int}} */
     public function paginate(int $perPage = 20, ?int $page = null): array
     {
         $this->applySoftDeleteFilter();
-        $result = parent::paginate($perPage, $page);
-        $result['data'] = $this->hydrateModels($result['data']);
-        return $result;
+        return parent::paginate($perPage, $page);
     }
 
     public function count(string $column = '*'): int

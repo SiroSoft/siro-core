@@ -229,7 +229,7 @@ class QueryBuilder
     }
 
     /** @return array<string, mixed>|null */
-    public function first(): ?array
+    public function first(): mixed
     {
         $clone = clone $this;
         $clone->limit(1);
