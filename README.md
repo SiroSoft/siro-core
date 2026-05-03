@@ -78,6 +78,16 @@
 - ✅ **Version Consistency** - All references updated to v0.13.0
 - ✅ **Test Coverage** - Real tests replace TODO stubs (UserService_test: 4/4 PASS)
 
+### Advanced Features (v0.13.0+) ⚡
+- 🔐 **RS256 JWT Support** - RSA signature support with JWT_ALGORITHM=RS256
+- 🚀 **Eager Loading** - Model::with() + ->load() eliminates N+1 queries
+- ✅ **Extended Validation** - nullable, date, url, regex:/pattern/, required_if:field,value
+- 🔗 **Route Constraints** - ->where('id', '/^\d+$/') for regex route parameters
+- ⏰ **Advanced Cron** - Range (1-5), step (*/15), list (1,3,5) support
+- ⏱️ **Real Queue Timeout** - register_tick_function for actual timeout enforcement
+- 🎯 **Optimized Throttling** - Single app-level middleware with Redis + file fallback
+- 📝 **PHPStan Ready** - @property PHPDoc for models, zero baseline errors
+
 ### New CLI Tools (v0.13.0+) 🚀
 - 🏭 **Factory Generator** - `php siro make:factory User` for test data
 - 🔍 **Database Inspector** - `php siro db:show users` to view table data
