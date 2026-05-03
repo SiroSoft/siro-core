@@ -101,12 +101,13 @@ final class Route
     }
 
     /**
-     * Clear the router instance (useful for testing)
+     * Clear all registered routes on the router instance (useful for testing).
      */
     public static function clearRoutes(): void
     {
-        // Don't set to null - just keep the current router
-        // This allows tests to reuse the same router instance
+        if (self::$routerInstance !== null) {
+            self::$routerInstance->clearRoutes();
+        }
     }
 
     /**

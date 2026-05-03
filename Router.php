@@ -196,6 +196,17 @@ final class Router
     }
 
     /**
+     * Clear all registered routes. Useful for testing between runs.
+     */
+    public function clearRoutes(): void
+    {
+        $this->staticRoutes = [];
+        $this->dynamicRoutes = [];
+        $this->groupPrefix = '';
+        $this->groupMiddleware = [];
+    }
+
+    /**
      * Export routes as serializable array for caching.
      *
      * @return array{static:array, dynamic:array}
