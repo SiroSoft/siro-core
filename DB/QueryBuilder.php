@@ -176,17 +176,43 @@ class QueryBuilder
         return $this;
     }
 
+    private static ?string $driverName = null;
+
+    private static function detectDriver(): string
+    {
+        if (self::$driverName === null) {
+            try {
+                self::$driverName = \Siro\Core\Database::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+            } catch (\Throwable) {
+                self::$driverName = 'mysql';
+            }
+        }
+        return self::$driverName;
+    }
+
     private function quoteIdentifier(string $identifier): string
     {
         if ($identifier === '*') {
             return $identifier;
         }
 
-        $parts = explode('.', $identifier);
+        // Don't quote function calls or expressions with parentheses
+        if (str_contains($identifier, '(')) {
+            return $identifier;
+        }
+
+        $driver = self::detectDriver();
+        $char = match ($driver) {
+            'pgsql', 'postgres', 'postgresql' => '"',
+            default => '`',
+        };
+        $escaped = str_replace($char, $char . $char, $identifier);
+
+        $parts = explode('.', $escaped);
         foreach ($parts as $i => $part) {
             $part = trim($part);
             if ($part !== '*' && $part !== '') {
-                $parts[$i] = '`' . str_replace('`', '``', $part) . '`';
+                $parts[$i] = $char . $part . $char;
             }
         }
 
@@ -466,7 +492,13 @@ class QueryBuilder
         $stmt->execute($bindings);
         Cache::flushQueryBuilderTable($this->cacheTable);
 
-        $lastId = Database::connection()->lastInsertId();
+        $driver = self::detectDriver();
+        $sequence = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true)
+            ? "{$this->table}_id_seq"
+            : null;
+        $lastId = $sequence !== null
+            ? Database::connection()->lastInsertId($sequence)
+            : Database::connection()->lastInsertId();
         return $lastId !== false && $lastId !== '0' ? (int) $lastId : $stmt->rowCount();
     }
 

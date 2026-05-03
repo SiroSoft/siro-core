@@ -47,6 +47,11 @@ use Siro\Core\Commands\TestRunCommand;
 use Siro\Core\Commands\EnvSwitchCommand;
 use Siro\Core\Commands\SlowLogCommand;
 use Siro\Core\Commands\LogCleanupCommand;
+use Siro\Core\Commands\MakeFactoryCommand;
+use Siro\Core\Commands\DbShowCommand;
+use Siro\Core\Commands\RouteRulesCommand;
+use Siro\Core\Commands\LiveCommand;
+use Siro\Core\Commands\DeployCommand;
 
 /**
  * CLI command dispatcher.
@@ -160,6 +165,16 @@ final class Console
                 return (new SlowLogCommand($this->basePath))->run($args);
             case 'log:cleanup':
                 return (new LogCleanupCommand($this->basePath))->run($args);
+            case 'make:factory':
+                return (new MakeFactoryCommand($this->basePath))->run($args);
+            case 'db:show':
+                return (new DbShowCommand($this->basePath))->run($args);
+            case 'route:rules':
+                return (new RouteRulesCommand($this->basePath))->run($args);
+            case 'live':
+                return (new LiveCommand($this->basePath))->run($args);
+            case 'deploy':
+                return (new DeployCommand($this->basePath))->run($args);
             default:
                 return $this->unknownCommand($command);
         }
@@ -231,6 +246,14 @@ final class Console
         $this->write('  php siro make:crud users');
         $this->write('  php siro make:crud posts');
         $this->write('  php siro make:test UserApi');
+        $this->write('  php siro make:factory User');
+        $this->write('  php siro db:show users');
+        $this->write('  php siro db:show users --schema');
+        $this->write('  php siro route:rules');
+        $this->write('  php siro live');
+        $this->write('  php siro live --port=9090');
+        $this->write('  php siro deploy');
+        $this->write('  php siro deploy --init');
         $this->write('  php siro doctor');
     }
 

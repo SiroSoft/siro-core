@@ -70,6 +70,13 @@
 - ✅ **Optimized Hydration** - Fixed double-hydration bugs in QueryBuilder
 - ✅ **Enhanced Test Runner** - `php siro test --phpunit` flag support
 
+### New CLI Tools (v0.13.0+) 🚀
+- 🏭 **Factory Generator** - `php siro make:factory User` for test data
+- 🔍 **Database Inspector** - `php siro db:show users` to view table data
+- 📋 **Route Rules Parser** - `php siro route:rules` to extract validation rules
+- ⚡ **Live Dev Server** - `php siro live` with auto-reload on changes
+- 🚀 **Deployment System** - `php siro deploy` for Git/rsync/custom deploys
+
 ---
 
 ## 📦 Installation
@@ -620,6 +627,13 @@ php siro make:crud products           # Generate full CRUD in 30 seconds
 php siro make:test ProductApi         # Integration test generator
 php siro make:test ProductService --unit  # Unit test generator
 # Every response includes: X-Request-Id, X-Response-Time headers
+
+# New CLI Tools (v0.13.0+) 🆕
+php siro make:factory User            # Generate factory for test data
+php siro db:show users                # View table data and schema
+php siro route:rules                  # Extract validation rules from controllers
+php siro live                         # Dev server with auto-reload
+php siro deploy                       # Deploy via Git/rsync/custom strategies
 ```
 
 ---

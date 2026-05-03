@@ -71,7 +71,7 @@ final class Database
 
         $dsn = match ($driver) {
             'mysql' => sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
-            'pgsql', 'postgres', 'postgresql' => sprintf('pgsql:host=%s;port=%d;dbname=%s', $host, $port, $database),
+            'pgsql', 'postgres', 'postgresql' => sprintf('pgsql:host=%s;port=%d;dbname=%s;options=\'--client_encoding=%s\'', $host, $port, $database, $charset),
             'sqlite' => sprintf('sqlite:%s', $database === ':memory:' ? ':memory:' : self::resolveSqlitePath($database)),
             default => throw new RuntimeException(sprintf('Unsupported DB driver: %s', $driver)),
         };
