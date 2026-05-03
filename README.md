@@ -70,6 +70,14 @@
 - ✅ **Optimized Hydration** - Fixed double-hydration bugs in QueryBuilder
 - ✅ **Enhanced Test Runner** - `php siro test --phpunit` flag support
 
+### Critical Fixes (v0.13.0+) 🔒
+- ✅ **File Download Security** - Proper file streaming with Content-Length header
+- ✅ **JWT JTI Consistency** - Matching JTIs for token pairs prevent validation failures
+- ✅ **Mass Assignment Protection** - Secure default blocks unauthorized field updates
+- ✅ **Resource Pattern** - UserResource & ProductResource for clean API responses
+- ✅ **Version Consistency** - All references updated to v0.13.0
+- ✅ **Test Coverage** - Real tests replace TODO stubs (UserService_test: 4/4 PASS)
+
 ### New CLI Tools (v0.13.0+) 🚀
 - 🏭 **Factory Generator** - `php siro make:factory User` for test data
 - 🔍 **Database Inspector** - `php siro db:show users` to view table data
