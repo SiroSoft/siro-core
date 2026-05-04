@@ -46,6 +46,8 @@ use Siro\Core\Commands\TestRunCommand;
 use Siro\Core\Commands\EnvSwitchCommand;
 use Siro\Core\Commands\SlowLogCommand;
 use Siro\Core\Commands\LogCleanupCommand;
+use Siro\Core\Commands\LogTailCommand;
+use Siro\Core\Commands\LogStatsCommand;
 use Siro\Core\Commands\MakeFactoryCommand;
 use Siro\Core\Commands\MakeServiceCommand;
 use Siro\Core\Commands\MakeRepositoryCommand;
@@ -98,6 +100,8 @@ final class Console
             'log:export'  => ['handler' => LogExportCommand::class, 'desc' => 'Export trace', 'usage' => 'php siro log:export <trace_id> --postman'],
             'log:cleanup' => ['handler' => LogCleanupCommand::class, 'desc' => 'Clean old trace files', 'usage' => 'php siro log:cleanup [--days=N] [--dry-run]'],
             'log:slow'    => ['handler' => SlowLogCommand::class, 'desc' => 'Show slow requests', 'usage' => 'php siro log:slow [--limit=N] [--min=MS]'],
+            'log:tail'    => ['handler' => LogTailCommand::class, 'desc' => 'Tail log files in real-time', 'usage' => 'php siro log:tail [--type=request|error|slow] [--lines=N] [--follow|-f]'],
+            'log:stats'   => ['handler' => LogStatsCommand::class, 'desc' => 'Request statistics with charts', 'usage' => 'php siro log:stats [--days=N]'],
 
             'test'          => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite', 'usage' => 'php siro test'],
             'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API from CLI', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin] [--login]'],
@@ -254,7 +258,7 @@ final class Console
                 'make:openapi', 'make:postman'],
             'New Project'        => ['new'],
             'Database'           => ['migrate', 'migrate:rollback', 'migrate:status', 'db:seed', 'db:show'],
-            'Logs'               => ['log:trace', 'log:replay', 'log:export', 'log:cleanup', 'log:slow'],
+            'Logs'               => ['log:trace', 'log:replay', 'log:export', 'log:cleanup', 'log:slow', 'log:tail', 'log:stats'],
             'Test'               => ['test', 'api:test'],
             'Queue & Schedule'   => ['queue:work', 'queue:retry', 'queue:flush', 'queue:status', 'schedule:run'],
             'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link'],
