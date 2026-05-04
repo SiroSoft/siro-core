@@ -1,4 +1,4 @@
-# Siro Core Framework v0.14.0
+# Siro Core Framework v0.14.1
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -94,6 +94,20 @@
 - 📋 **Route Rules Parser** - `php siro route:rules` to extract validation rules
 - ⚡ **Live Dev Server** - `php siro live` with auto-reload on changes
 - 🚀 **Deployment System** - `php siro deploy` for Git/rsync/custom deploys
+
+### Service & Repository (v0.14.1) 🏗️
+- 🏗️ **Service Layer** - `php siro make:service Order` generates `app/Services/OrderService.php`
+- 🗂️ **Repository Pattern** - `php siro make:repository Product` generates `app/Repositories/ProductRepository.php`
+- 🚀 **Full CRUD** - `php siro make:crud invoice` generates Model + Migration + Repository + Service + Controller + Resource + Routes + Test
+- 🧠 **Smart Validation** - `make:crud` auto-detects validation rules based on model name (product→price,sku; order→total; user→email)
+- 🔄 **DI Auto-Resolution** - Router auto-resolves constructor dependencies via Reflection (Controller→Service→Repository→Model)
+
+### PHPUnit Test Generation (v0.14.1) 🧪
+- ✅ **`make:test ProductApi`** generates `tests/Feature/ProductApiTest.php` (PHPUnit class)
+- ✅ **`make:test CartService --unit`** generates `tests/Unit/CartServiceTest.php`
+- ✅ **`make:crud`** generates `tests/Feature/CategoryTest.php` with 4 test methods
+- ✅ **`php siro test --filter=CategoryTest`** run single test class
+- ✅ **`php siro test --testsuite=Feature`** run feature suite only
 
 ---
 
