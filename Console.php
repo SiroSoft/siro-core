@@ -57,7 +57,7 @@ use Siro\Core\Commands\NewCommand;
 
 final class Console
 {
-    private const VERSION = '0.14.0';
+    private const VERSION = '0.14.1';
 
     public function __construct(private readonly string $basePath)
     {
