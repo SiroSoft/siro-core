@@ -99,6 +99,20 @@
 
 ## 📦 Installation
 
+### 🚀 Recommended: Create a full project
+
+```bash
+composer create-project sirosoft/api my-app
+cd my-app
+php siro serve
+```
+
+This gives you a complete project skeleton with controllers, models, routes, tests, and all CLI tools.
+
+### 🔧 Alternative: Use core only (for existing projects)
+
+If you already have a PHP project and just need the framework engine:
+
 ```bash
 composer require sirosoft/core
 ```
