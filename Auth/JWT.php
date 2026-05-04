@@ -7,30 +7,36 @@ namespace Siro\Core\Auth;
 use RuntimeException;
 use Siro\Core\Env;
 
-/**
- * JSON Web Token encoder/decoder (HS256).
- *
- * Handles access and refresh token generation, signature verification,
- * expiry validation, and timing-safe comparison via hash_equals().
- *
- * @package Siro\Core
- */
 final class JWT
 {
     public const TYPE_ACCESS = 'access';
     public const TYPE_REFRESH = 'refresh';
+    public const ALG_HS256 = 'HS256';
+    public const ALG_RS256 = 'RS256';
+
+    private static function algorithm(): string
+    {
+        $alg = strtoupper((string) Env::get('JWT_ALGORITHM', self::ALG_HS256));
+        if (!in_array($alg, [self::ALG_HS256, self::ALG_RS256], true)) {
+            throw new RuntimeException('Unsupported JWT algorithm: ' . $alg . '. Supported: HS256, RS256.');
+        }
+        return $alg;
+    }
 
     public static function encode(array $payload): string
     {
-        $header = ['alg' => 'HS256', 'typ' => 'JWT'];
-        $secret = self::secret();
+        $alg = self::algorithm();
+        $header = ['alg' => $alg, 'typ' => 'JWT'];
 
         $segments = [
             self::base64UrlEncode((string) json_encode($header, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
             self::base64UrlEncode((string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
         ];
 
-        $signature = hash_hmac('sha256', implode('.', $segments), $secret, true);
+        $signature = match ($alg) {
+            self::ALG_RS256 => self::signRs256(implode('.', $segments)),
+            default => self::signHs256(implode('.', $segments)),
+        };
         $segments[] = self::base64UrlEncode($signature);
 
         return implode('.', $segments);
@@ -49,7 +55,7 @@ final class JWT
         ]);
     }
 
-    public static function encodeRefresh(int $userId, int $tokenVersion, int $ttl = 604800): string
+    public static function encodeRefresh(int $userId, int $tokenVersion, int $ttl = 604800, ?string $jti = null): string
     {
         $now = time();
         return self::encode([
@@ -58,7 +64,7 @@ final class JWT
             'iat' => $now,
             'exp' => $now + $ttl,
             'type' => self::TYPE_REFRESH,
-            'jti' => bin2hex(random_bytes(16)),
+            'jti' => $jti ?? bin2hex(random_bytes(16)),
         ]);
     }
 
@@ -82,14 +88,18 @@ final class JWT
             throw new RuntimeException('Invalid token payload.');
         }
 
-        if (($header['alg'] ?? null) !== 'HS256') {
-            throw new RuntimeException('Unsupported token algorithm.');
+        $alg = $header['alg'] ?? '';
+        if (!in_array($alg, [self::ALG_HS256, self::ALG_RS256], true)) {
+            throw new RuntimeException('Unsupported token algorithm: ' . $alg);
         }
 
-        $secret = self::secret();
-        $expected = hash_hmac('sha256', $headerB64 . '.' . $payloadB64, $secret, true);
+        $data = $headerB64 . '.' . $payloadB64;
+        $valid = match ($alg) {
+            self::ALG_RS256 => self::verifyRs256($data, $signature),
+            default => self::verifyHs256($data, $signature),
+        };
 
-        if (!hash_equals($expected, $signature)) {
+        if (!$valid) {
             throw new RuntimeException('Invalid token signature.');
         }
 
@@ -117,10 +127,75 @@ final class JWT
         return $payload;
     }
 
+    private static function signHs256(string $data): string
+    {
+        return hash_hmac('sha256', $data, self::secret(), true);
+    }
+
+    private static function verifyHs256(string $data, string $signature): bool
+    {
+        return hash_equals(self::signHs256($data), $signature);
+    }
+
+    private static function signRs256(string $data): string
+    {
+        $privateKey = (string) Env::get('JWT_PRIVATE_KEY', '');
+        if ($privateKey === '') {
+            $path = (string) Env::get('JWT_PRIVATE_KEY_PATH', '');
+            if ($path !== '') {
+                $privateKey = (string) file_get_contents($path);
+            }
+        }
+        if ($privateKey === '') {
+            throw new RuntimeException('JWT_PRIVATE_KEY or JWT_PRIVATE_KEY_PATH is required for RS256.');
+        }
+
+        $key = openssl_pkey_get_private($privateKey);
+        if ($key === false) {
+            throw new RuntimeException('Invalid RSA private key.');
+        }
+
+        $result = openssl_sign($data, $signature, $key, OPENSSL_ALGO_SHA256);
+        openssl_free_key($key);
+
+        if (!$result) {
+            throw new RuntimeException('Failed to sign token with RS256.');
+        }
+
+        return $signature;
+    }
+
+    private static function verifyRs256(string $data, string $signature): bool
+    {
+        $publicKey = (string) Env::get('JWT_PUBLIC_KEY', '');
+        if ($publicKey === '') {
+            $path = (string) Env::get('JWT_PUBLIC_KEY_PATH', '');
+            if ($path !== '') {
+                $publicKey = (string) file_get_contents($path);
+            }
+        }
+        if ($publicKey === '') {
+            throw new RuntimeException('JWT_PUBLIC_KEY or JWT_PUBLIC_KEY_PATH is required for RS256.');
+        }
+
+        $key = openssl_pkey_get_public($publicKey);
+        if ($key === false) {
+            throw new RuntimeException('Invalid RSA public key.');
+        }
+
+        $result = openssl_verify($data, $signature, $key, OPENSSL_ALGO_SHA256);
+        openssl_free_key($key);
+
+        return $result === 1;
+    }
+
     private static function secret(): string
     {
         $secret = (string) Env::get('JWT_SECRET', '');
         if ($secret === '') {
+            if (self::algorithm() !== self::ALG_HS256) {
+                return '';
+            }
             throw new RuntimeException('JWT_SECRET is not configured.');
         }
 

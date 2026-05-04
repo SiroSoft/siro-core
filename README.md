@@ -1,4 +1,4 @@
-# Siro Core Framework v0.13.0
+# Siro Core Framework v0.14.0
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -68,7 +68,7 @@
 - ✅ **Model ArrayAccess** - Array-style model access (`$model['field']`)
 - ✅ **Secure Deserialization** - JSON-based queue jobs (no RCE risk)
 - ✅ **Optimized Hydration** - Fixed double-hydration bugs in QueryBuilder
-- ✅ **Enhanced Test Runner** - `php siro test --phpunit` flag support
+- ✅ **PHPUnit Test Runner** - `php siro test` runs all suites
 
 ### Critical Fixes (v0.13.0+) 🔒
 - ✅ **File Download Security** - Proper file streaming with Content-Length header
@@ -579,6 +579,14 @@ Slow query (150.25ms): SELECT * FROM users WHERE email = :email | Bindings: {"em
 ## 🛠️ Console Commands
 
 ```bash
+# List & Help
+php siro list                         # Show all commands grouped by category
+php siro <command> --help             # Detailed help for specific command
+php siro --version                    # Show version
+
+# Create New Project
+php siro new my-api                   # Create project skeleton + JWT key
+
 # Code Generation
 php siro make:model User              # Generate model
 php siro make:api users               # Generate CRUD API
@@ -587,71 +595,67 @@ php siro make:migration create_posts_table
 php siro make:resource UserResource
 php siro make:seeder UserSeeder
 php siro make:auth                    # Generate full auth system
+php siro make:crud products           # Full CRUD in 30 seconds
+php siro make:test ProductApi         # Integration test generator
+php siro make:factory User            # Generate factory for test data
+php siro make:job SendWelcomeEmail    # Generate queue job
+php siro make:mail WelcomeMail        # Generate mail class
+php siro make:event UserCreated       # Generate event class
+php siro make:lang vi                 # Create new language pack
+php siro make:openapi --with-swagger  # Generate OpenAPI spec + Swagger UI
+php siro make:postman                 # Generate Postman collection
 
 # Database
 php siro migrate                      # Run migrations
 php siro migrate:rollback             # Rollback migrations
 php siro migrate:status               # Check migration status
 php siro db:seed                      # Run all seeders
-php siro db:seed UserSeeder           # Run specific seeder
+php siro db:show users                # View table data and schema
 
-# Debugging (v0.8.0)
+# Debugging & Logs
 php siro log:trace <trace_id>         # View trace details
 php siro log:trace --status=500       # Filter by status
-php siro log:trace --method=POST      # Filter by method
-php siro log:trace --slow             # Show slow requests
-php siro log:replay <trace_id>        # Generate curl command
-php siro log:export --format=json     # Export traces
+php siro log:replay <trace_id>        # Replay request from trace
+php siro log:export <id> --postman    # Export to Postman format
+php siro log:cleanup --days=7         # Clean old trace files
+php siro log:slow                     # Show slow requests
+
+# API Testing (Replace Postman!) ⭐
+php siro api:test GET /api/users
+php siro api:test GET /me --login email=admin@test.com password=secret
+php siro api:test POST /users name=John --as=admin
+php siro api:test --history
+php siro api:test --collection=myapi
+
+# Test Runner
+php siro test                         # Run full PHPUnit test suite
 
 # Performance
 php siro config:cache                 # Cache config
 php siro env:check                    # Validate environment
 php siro optimize                     # Optimize for production
 
-# Utilities
-php siro route:list                   # List all routes
+# Server & Deploy
 php siro serve                        # Start development server
-php siro key:generate                 # Generate APP_KEY
-php siro doctor                       # Check system health
-
-# Storage & Scheduling (v0.8.3)
+php siro live                         # Dev server with auto-reload
+php siro deploy                       # Deploy via Git/rsync/custom strategies
 php siro storage:link                 # Create symlink for uploaded files
-php siro schedule:run                 # Run scheduled tasks (for crontab)
 
-# Queue & Mail (v0.8.4)
+# Queue & Schedule
 php siro queue:work                   # Process queued jobs
 php siro queue:work --daemon          # Run worker continuously
 php siro queue:status                 # Show queue status
 php siro queue:retry <id>             # Retry failed job
 php siro queue:flush                  # Clear failed jobs
+php siro schedule:run                 # Run scheduled tasks (for crontab)
 
-# Multi-language (v0.8.5)
-php siro make:lang vi                 # Create new language pack
-
-# Event System (v0.8.6)
-php siro make:event UserCreated       # Generate event class
-
-# Storage, Validation & Gzip (v0.8.7)
-# Storage: put(), get(), delete(), exists(), url()
-# Custom validation rules via Validator::extend()
-# Auto gzip compression in responses
-
-# API Testing CLI (v0.8.8) ⭐
-php siro api:test GET /users          # Quick API testing
-php siro api:test POST /login --as=admin  # Auto-auth
-
-# CRUD Scaffolding & Response Headers (v0.9.0) 🚀
-php siro make:crud products           # Generate full CRUD in 30 seconds
-php siro make:test ProductApi         # Integration test generator
-php siro make:test ProductService --unit  # Unit test generator
-# Every response includes: X-Request-Id, X-Response-Time headers
-
-# New CLI Tools (v0.13.0+) 🆕
-php siro make:factory User            # Generate factory for test data
-php siro db:show users                # View table data and schema
-php siro route:rules                  # Extract validation rules from controllers
-php siro live                         # Dev server with auto-reload
-php siro deploy                       # Deploy via Git/rsync/custom strategies
+# System
+php siro route:list                   # List all routes
+php siro route:rules                  # Extract validation rules
+php siro key:generate                 # Generate JWT secret
+php siro doctor                       # System health check
+php siro env:switch staging           # Switch environment
+php siro rate:status                  # Rate limit dashboard
 ```
 
 ---
@@ -977,53 +981,17 @@ Run your entire test suite with a single command.
 php siro test
 ```
 
-**Output:**
+**Output (using PHPUnit):**
 ```
-Running all tests...
+PHPUnit 11.5.55 by Sebastian Bergmann and contributors.
 
-  UserApiTest_test.php
-    0 passed, 1 failed
-
-  UserService_test.php
-    1 passed, 0 failed
-
-  event_test.php
-    15 passed, 0 failed
-
-  final_core_test.php
-    19 passed, 0 failed
-
-  integration_test.php
-    31 passed, 0 failed
-
-  jwt_logger_cache_test.php
-    22 passed, 0 failed
-
-  lang_test.php
-    16 passed, 0 failed
-
-  middleware_edge_test.php
-    21 passed, 0 failed
-
-  querybuilder_test.php
-    24 passed, 0 failed
-
-  remaining_test.php
-    18 passed, 0 failed
-
-  router_request_test.php
-    48 passed, 0 failed
-
-  validator_model_test.php
-    46 passed, 0 failed
-
-  queue_mail_test.php
-    28 passed, 0 failed
-
-═══════════════════════════════════════
-  316 tests, 316 passed, 0 failed in 3.89s
-═══════════════════════════════════════
+OK (174 tests, 227 assertions)
 ```
+
+**Test Suites:**
+- `php vendor/bin/phpunit --testsuite=Unit` - 57 unit tests
+- `php vendor/bin/phpunit --testsuite=Integration` - 67 integration tests
+- `php vendor/bin/phpunit --testsuite=Feature` - 50 feature tests
 
 **Features:**
 - ✅ Auto-discovers all test files in `tests/` directory
@@ -2245,7 +2213,7 @@ SiroPHP now includes **PHPStan Level 6** static analysis for enterprise-grade co
 
 ```bash
 # Run static analysis
-php phpstan.phar analyse
+phpstan analyse
 
 # Results: 0 errors at Level 6 (high strictness)
 ```

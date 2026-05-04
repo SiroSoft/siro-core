@@ -130,6 +130,23 @@ final class Route
     }
 
     /**
+     * Add regex constraint to route parameter.
+     *
+     * Usage: Route::get('/users/{id}', ...)->where('id', '[0-9]+')
+     *
+     * @param array<string, string>|string $name
+     */
+    public function where(array|string $name, ?string $pattern = null): self
+    {
+        if (is_array($name)) {
+            $this->router->setRouteWhereConstraints($this->method, $this->path, $name);
+        } elseif ($pattern !== null) {
+            $this->router->setRouteWhereConstraints($this->method, $this->path, [$name => $pattern]);
+        }
+        return $this;
+    }
+
+    /**
      * Add rate limiting to route
      * 
      * @param int $maxAttempts Maximum number of attempts
@@ -137,9 +154,7 @@ final class Route
      */
     public function throttle(int $maxAttempts = 60, int $decayMinutes = 1): self
     {
-        // Use string format with parameters that Router can parse
-        $middlewareString = \Siro\Core\Middleware\ThrottleMiddleware::class . ':' . $maxAttempts . ',' . $decayMinutes;
-        $this->router->setRouteMiddleware($this->method, $this->path, [$middlewareString]);
+        $this->router->setRouteMiddleware($this->method, $this->path, ['throttle:' . $maxAttempts . ',' . $decayMinutes]);
         return $this;
     }
 

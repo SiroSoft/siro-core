@@ -38,8 +38,13 @@ final class MakeOpenApiCommand
         $filterMethod = null;
         $filterPath = null;
         $filterFlow = null;
+        $withSwagger = false;
 
         foreach ($args as $arg) {
+            if ($arg === '--with-swagger') {
+                $withSwagger = true;
+                continue;
+            }
             if (str_starts_with($arg, '--output=')) {
                 $output = substr($arg, 9);
             } elseif (str_starts_with($arg, '--title=')) {
@@ -224,6 +229,25 @@ final class MakeOpenApiCommand
 
         $this->write('OpenAPI spec generated: ' . $output);
 
+        if ($withSwagger) {
+            $swaggerDir = $this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'swagger';
+            if (!is_dir($swaggerDir)) {
+                mkdir($swaggerDir, 0775, true);
+            }
+            $html = $this->swaggerHtml();
+            file_put_contents($swaggerDir . DIRECTORY_SEPARATOR . 'index.html', $html);
+
+            $publicDir = $this->basePath . DIRECTORY_SEPARATOR . 'public';
+            copy($output, $publicDir . DIRECTORY_SEPARATOR . 'openapi.json');
+            copy($swaggerDir . DIRECTORY_SEPARATOR . 'index.html', $publicDir . DIRECTORY_SEPARATOR . 'docs.html');
+
+            $this->write("  docs/swagger/index.html");
+            $this->write("  public/openapi.json");
+            $this->write("  public/docs.html");
+            $this->write('');
+            $this->write('Visit: http://localhost:8080/docs.html');
+        }
+
         return 0;
     }
 
@@ -350,6 +374,40 @@ final class MakeOpenApiCommand
         }
 
         return null;
+    }
+
+    private function swaggerHtml(): string
+    {
+        return <<<'HTML'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Siro API Docs</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x2699;</text></svg>">
+<style>
+html { box-sizing: border-box; overflow-y: scroll; }
+*, *:before, *:after { box-sizing: inherit; }
+body { margin: 0; background: #fafafa; }
+.swagger-ui .topbar { display: none; }
+</style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+SwaggerUIBundle({
+    url: '/openapi.json',
+    dom_id: '#swagger-ui',
+    deepLinking: true,
+    presets: [SwaggerUIBundle.presets.apis],
+    layout: 'BaseLayout'
+});
+</script>
+</body>
+</html>
+HTML;
     }
 
     private function ruleToSchemaProperty(string $field, array $rules): array

@@ -34,6 +34,12 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /** @var array<int, string> Fillable fields for mass assignment */
     protected array $fillable = [];
 
+    /** @var array<string, array<int, string>> Relations to eager-load with their columns */
+    protected static array $eagerLoads = [];
+
+    /** @var array<string, mixed> Cached relation results */
+    private array $relations = [];
+
     /** @var array<string, mixed> Model attributes */
     private array $attributes = [];
 
@@ -91,7 +97,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     private function isFillable(string $key): bool
     {
         if ($this->fillable === []) {
-            return true; // All fields fillable if no fillable specified
+            return false;
         }
 
         return in_array($key, $this->fillable, true);
@@ -594,6 +600,81 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         }
 
         return false;
+    }
+
+    /**
+     * Specify relations to eager load.
+     *
+     * Usage: User::with('posts')->find(1)
+     *        User::with('posts', 'comments')
+     *        User::with(['posts' => ['id', 'title']])
+     *
+     * @param string|array<string, array<int, string>> ...$relations
+     */
+    public static function with(...$relations): ModelQueryBuilder
+    {
+        $query = self::query();
+        $eagerLoads = [];
+
+        foreach ($relations as $key => $value) {
+            if (is_string($value)) {
+                if (is_string($key)) {
+                    $eagerLoads[$key] = ['*'];
+                } else {
+                    $eagerLoads[$value] = ['*'];
+                }
+            } elseif (is_array($value)) {
+                $eagerLoads[(string) $key] = $value;
+            }
+        }
+
+        foreach ($eagerLoads as $relation => $columns) {
+            $query->eagerLoad($relation, $columns);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Eager load relations on the current model instances.
+     *
+     * @param string|array<string, array<int, string>> ...$relations
+     */
+    public function load(...$relations): self
+    {
+        $eagerLoads = [];
+        foreach ($relations as $key => $value) {
+            if (is_string($value)) {
+                if (is_string($key)) {
+                    $eagerLoads[$key] = ['*'];
+                } else {
+                    $eagerLoads[$value] = ['*'];
+                }
+            } elseif (is_array($value)) {
+                $eagerLoads[(string) $key] = $value;
+            }
+        }
+
+        $eager = new EagerLoader(static::class);
+        $eager->load($this, $eagerLoads);
+
+        return $this;
+    }
+
+    /**
+     * Get a cached relation value.
+     */
+    public function getRelation(string $name): mixed
+    {
+        return $this->relations[$name] ?? null;
+    }
+
+    /**
+     * Set a cached relation value.
+     */
+    public function setRelation(string $name, mixed $value): void
+    {
+        $this->relations[$name] = $value;
     }
 
     /**

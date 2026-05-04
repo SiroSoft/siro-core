@@ -180,7 +180,24 @@ final class Queue
             throw new \RuntimeException('Job timed out before execution started');
         }
 
-        $fn();
+        declare(ticks=1);
+        $check = function () use ($maxExecTime): void {
+            if (time() > $maxExecTime) {
+                throw new \RuntimeException('Job timed out during execution');
+            }
+        };
+
+        $registered = register_tick_function($check);
+        if ($registered === false) {
+            $fn();
+            return;
+        }
+
+        try {
+            $fn();
+        } finally {
+            unregister_tick_function($check);
+        }
     }
 
     /**

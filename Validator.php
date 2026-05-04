@@ -48,14 +48,43 @@ final class Validator
         foreach ($rules as $field => $ruleLine) {
             $value = $input[$field] ?? null;
             $fieldRules = explode('|', $ruleLine);
+            $isNullable = in_array('nullable', $fieldRules, true);
+            $isRequired = in_array('required', $fieldRules, true);
+
+            // Handle required_if
+            $requiredIf = null;
+            foreach ($fieldRules as $rule) {
+                if (str_starts_with($rule, 'required_if:')) {
+                    $requiredIf = substr($rule, 12);
+                    break;
+                }
+            }
+            if ($requiredIf !== null) {
+                $parts = explode(',', $requiredIf, 2);
+                $otherField = trim($parts[0] ?? '');
+                $otherValue = trim($parts[1] ?? '');
+                if ($otherField !== '' && ($input[$otherField] ?? null) == $otherValue) {
+                    $isRequired = true;
+                }
+            }
+
+            // Check required
+            if ($isRequired && ($value === null || $value === '')) {
+                $errors[$field][] = self::msg('validation.required', ['field' => self::label($field)]);
+                continue;
+            }
+
+            // Skip validation for empty values if nullable or not required
+            if (($value === null || $value === '') && !$isRequired) {
+                continue;
+            }
+            if ($value === null && $isNullable) {
+                continue;
+            }
 
             foreach ($fieldRules as $rule) {
-                if ($rule === 'required' && ($value === null || $value === '')) {
-                    $errors[$field][] = self::msg('validation.required', ['field' => self::label($field)]);
-                    continue;
-                }
-
-                if ($value === null || $value === '') {
+                // Skip meta-rules
+                if ($rule === 'nullable' || $rule === 'required' || str_starts_with($rule, 'required_if:')) {
                     continue;
                 }
 
@@ -74,10 +103,33 @@ final class Validator
                     continue;
                 }
 
+                if ($rule === 'date') {
+                    $ts = is_int($value) || is_float($value) ? $value : strtotime((string) $value);
+                    if ($ts === false || $ts <= 0) {
+                        $errors[$field][] = self::msg('validation.date', ['field' => self::label($field)]);
+                        continue;
+                    }
+                }
+
+                if ($rule === 'url' && filter_var($value, FILTER_VALIDATE_URL) === false) {
+                    $errors[$field][] = self::msg('validation.url', ['field' => self::label($field)]);
+                    continue;
+                }
+
+                if (str_starts_with($rule, 'regex:')) {
+                    $pattern = substr($rule, 6);
+                    if (@preg_match($pattern, '') === false) {
+                        continue;
+                    }
+                    if (!preg_match($pattern, (string) $value)) {
+                        $errors[$field][] = self::msg('validation.regex', ['field' => self::label($field)]);
+                        continue;
+                    }
+                }
+
                 if (str_starts_with($rule, 'min:')) {
                     $min = (int) substr($rule, 4);
                     
-                    // For files, min is in KB
                     if ($value instanceof UploadedFile && $value->isValid()) {
                         $sizeInKb = (int) ceil($value->getSize() / 1024);
                         if ($sizeInKb < $min) {
@@ -96,7 +148,6 @@ final class Validator
                 if (str_starts_with($rule, 'max:')) {
                     $max = (int) substr($rule, 4);
                     
-                    // For files, max is in KB
                     if ($value instanceof UploadedFile && $value->isValid()) {
                         $sizeInKb = (int) ceil($value->getSize() / 1024);
                         if ($sizeInKb > $max) {
@@ -159,7 +210,6 @@ final class Validator
                 }
 
                 if ($rule === 'file') {
-                    // Validate that the value is a valid uploaded file
                     if (!$value instanceof UploadedFile || !$value->isValid()) {
                         $errors[$field][] = self::msg('validation.file', ['field' => self::label($field)]);
                         continue;
@@ -178,7 +228,6 @@ final class Validator
                     }
                 }
 
-                // Custom rules registered via Validator::extend()
                 $ruleName = $rule;
                 $ruleParam = null;
                 if (str_contains($rule, ':')) {
@@ -218,6 +267,9 @@ final class Validator
             'validation.email' => ':field must be a valid email',
             'validation.numeric' => ':field must be numeric',
             'validation.integer' => ':field must be an integer',
+            'validation.date' => ':field must be a valid date',
+            'validation.url' => ':field must be a valid URL',
+            'validation.regex' => ':field format is invalid',
             'validation.min' => ':field must be at least :min',
             'validation.max' => ':field must not exceed :max',
             'validation.unique' => ':field already exists',

@@ -22,6 +22,8 @@ final class Router
     private array $staticRoutes = [];
     /** @var array<string, array<int, array{path:string,segments:array<int,string>,handler:callable|array|string,middleware:array<int, callable|string>,cache_ttl:int}>> */
     private array $dynamicRoutes = [];
+    /** @var array<string, array<string, string>> */
+    private array $whereConstraints = [];
     private string $groupPrefix = '';
     /** @var array<int, callable|string> */
     private array $groupMiddleware = [];
@@ -330,6 +332,17 @@ final class Router
         }
     }
 
+    /**
+     * @param array<string, string> $constraints
+     */
+    public function setRouteWhereConstraints(string $method, string $path, array $constraints): void
+    {
+        $method = strtoupper($method);
+        $path = $this->normalizePath($path);
+        $key = $method . ':' . $path;
+        $this->whereConstraints[$key] = $constraints;
+    }
+
     public function setRouteCacheTTL(string $method, string $path, int $ttl): void
     {
         $method = strtoupper($method);
@@ -445,6 +458,16 @@ final class Router
                 continue;
             }
 
+            // Apply where constraints
+            $constraints = $this->getWhereConstraints($method, $route['path']);
+            if ($constraints !== []) {
+                foreach ($params as $paramName => $paramValue) {
+                    if (isset($constraints[$paramName]) && !preg_match($constraints[$paramName], $paramValue)) {
+                        continue 2;
+                    }
+                }
+            }
+
             return [
                 'path' => $route['path'],
                 'handler' => $route['handler'],
@@ -499,6 +522,25 @@ final class Router
         }
 
         return $params;
+    }
+
+    /**
+     * Check if a param value matches its where constraint (if any).
+     */
+    private function matchesWhereConstraint(string $method, string $path, string $param, string $value): bool
+    {
+        $key = strtoupper($method) . ':' . $this->normalizePath($path);
+        $constraints = $this->whereConstraints[$key] ?? [];
+        if (!isset($constraints[$param])) {
+            return true;
+        }
+        return preg_match($constraints[$param], $value) === 1;
+    }
+
+    private function getWhereConstraints(string $method, string $path): array
+    {
+        $key = strtoupper($method) . ':' . $this->normalizePath($path);
+        return $this->whereConstraints[$key] ?? [];
     }
 
     private function isDynamicPath(string $path): bool

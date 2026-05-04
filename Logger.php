@@ -133,6 +133,13 @@ final class Logger
             $rotated = $mainFile . '.' . date('Y-m-d-Hi');
             @rename($mainFile, $rotated);
         }
+
+        // Cleanup old logs once per process
+        static $cleaned = false;
+        if (!$cleaned) {
+            $cleaned = true;
+            self::cleanOldLogs();
+        }
     }
 
     private static function writeTrace(string $traceId, array $data): void
@@ -164,6 +171,31 @@ final class Logger
         $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
 
         foreach ($files as $file) {
+            if (filemtime($file) < $cutoff) {
+                @unlink($file);
+            }
+        }
+    }
+
+    private static function cleanOldLogs(): void
+    {
+        if (self::$logDir === '' || !is_dir(self::$logDir)) {
+            return;
+        }
+
+        $cutoff = time() - (self::$retentionDays * 86400);
+
+        // Clean daily log files: request-*.log, error-*.log, slow-*.log
+        $dailyFiles = glob(self::$logDir . DIRECTORY_SEPARATOR . '*-????-??-??.log') ?: [];
+        foreach ($dailyFiles as $file) {
+            if (filemtime($file) < $cutoff) {
+                @unlink($file);
+            }
+        }
+
+        // Clean rotated cumulative files: error.log.YYYY-MM-DD-HHmm
+        $rotatedFiles = glob(self::$logDir . DIRECTORY_SEPARATOR . '*.log.*') ?: [];
+        foreach ($rotatedFiles as $file) {
             if (filemtime($file) < $cutoff) {
                 @unlink($file);
             }

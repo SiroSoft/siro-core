@@ -41,6 +41,10 @@ class BelongsTo
             ->where($this->ownerKey, '=', $this->foreignValue);
     }
 
+    public function getRelatedClass(): string { return $this->relatedClass; }
+    public function getForeignKey(): string { return $this->foreignKey; }
+    public function getOwnerKey(): string { return $this->ownerKey; }
+
     public function __call(string $method, array $parameters): mixed
     {
         return $this->query()->{$method}(...$parameters);

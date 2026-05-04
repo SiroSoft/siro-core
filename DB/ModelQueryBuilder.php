@@ -14,10 +14,22 @@ final class ModelQueryBuilder extends QueryBuilder
     private bool $onlySoftDeleted = false;
     private bool $softDeleteFilterApplied = false;
 
+    /** @var array<string, array<int, string>> */
+    private array $eagerLoads = [];
+
     public function __construct(string $table, string $modelClass)
     {
         parent::__construct($table);
         $this->modelClass = $modelClass;
+    }
+
+    /**
+     * @param array<int, string> $columns
+     */
+    public function eagerLoad(string $relation, array $columns = ['*']): self
+    {
+        $this->eagerLoads[$relation] = $columns;
+        return $this;
     }
 
     public function __call(string $method, array $parameters): mixed
@@ -56,7 +68,14 @@ final class ModelQueryBuilder extends QueryBuilder
     {
         $this->applySoftDeleteFilter();
         $rows = parent::get();
-        return $this->hydrateModels($rows);
+        $models = $this->hydrateModels($rows);
+
+        if ($this->eagerLoads !== []) {
+            $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
+            $loader->loadBatch($models, $this->eagerLoads);
+        }
+
+        return $models;
     }
 
     /** @return Model|null */
@@ -71,7 +90,33 @@ final class ModelQueryBuilder extends QueryBuilder
     public function paginate(int $perPage = 20, ?int $page = null): array
     {
         $this->applySoftDeleteFilter();
-        return parent::paginate($perPage, $page);
+
+        $total = $this->count();
+        $perPage = max(1, $perPage);
+        $page = max(1, $page ?? 1);
+        $offset = ($page - 1) * $perPage;
+        $lastPage = $total > 0 ? (int) ceil($total / $perPage) : 1;
+
+        // Use parent get() which returns raw arrays (avoid re-hydration from $this->get())
+        $this->limit($perPage)->offset($offset);
+        $rawRows = parent::get();
+
+        $models = $this->hydrateModels($rawRows);
+
+        if ($this->eagerLoads !== []) {
+            $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
+            $loader->loadBatch($models, $this->eagerLoads);
+        }
+
+        return [
+            'data' => $models,
+            'meta' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => $lastPage,
+            ],
+        ];
     }
 
     public function count(string $column = '*'): int

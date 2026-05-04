@@ -26,6 +26,10 @@ final class Response
     private readonly int $statusCode;
     /** @var array<string, string> */
     private array $extraHeaders = [];
+    private bool $isFileResponse = false;
+    private string $filePath = '';
+    private bool $isRaw = false;
+    private string $rawContent = '';
 
     /**
      * @param array<string, mixed> $payload
@@ -95,7 +99,9 @@ final class Response
      */
     public static function raw(string $content, string $contentType = 'text/plain', int $statusCode = 200): self
     {
-        $response = new self(['raw' => $content], $statusCode);
+        $response = new self([], $statusCode);
+        $response->isRaw = true;
+        $response->rawContent = $content;
         $response->extraHeaders['Content-Type'] = $contentType;
         return $response;
     }
@@ -105,10 +111,17 @@ final class Response
      */
     public static function download(string $filePath, ?string $filename = null, array $headers = []): self
     {
-        $response = new self(['file' => $filePath], 200);
+        if (!file_exists($filePath) || !is_readable($filePath)) {
+            return self::error('File not found', 404);
+        }
+
+        $response = new self([], 200);
+        $response->isFileResponse = true;
+        $response->filePath = $filePath;
         $disposition = $filename ? 'attachment; filename="' . $filename . '"' : 'attachment';
         $response->extraHeaders['Content-Disposition'] = $disposition;
-        $response->extraHeaders['Content-Type'] = 'application/octet-stream';
+        $response->extraHeaders['Content-Type'] = mime_content_type($filePath) ?: 'application/octet-stream';
+        $response->extraHeaders['Content-Length'] = (string) filesize($filePath);
         
         foreach ($headers as $name => $value) {
             $response->extraHeaders[$name] = $value;
@@ -122,9 +135,16 @@ final class Response
      */
     public static function file(string $filePath, ?string $contentType = null, array $headers = []): self
     {
-        $response = new self(['file' => $filePath], 200);
+        if (!file_exists($filePath) || !is_readable($filePath)) {
+            return self::error('File not found', 404);
+        }
+
+        $response = new self([], 200);
+        $response->isFileResponse = true;
+        $response->filePath = $filePath;
         $response->extraHeaders['Content-Disposition'] = 'inline';
-        $response->extraHeaders['Content-Type'] = $contentType ?? 'application/octet-stream';
+        $response->extraHeaders['Content-Type'] = $contentType ?? (mime_content_type($filePath) ?: 'application/octet-stream');
+        $response->extraHeaders['Content-Length'] = (string) filesize($filePath);
         
         foreach ($headers as $name => $value) {
             $response->extraHeaders[$name] = $value;
@@ -191,9 +211,18 @@ final class Response
 
     public function send(): void
     {
-        // Only send headers in web context, not CLI
         $isCli = php_sapi_name() === 'cli';
-        
+
+        if ($this->isFileResponse) {
+            $this->sendFile($isCli);
+            return;
+        }
+
+        if ($this->isRaw) {
+            $this->sendRaw($isCli);
+            return;
+        }
+
         if (self::$debugEnabled) {
             $this->payload['debug'] = self::$debugMeta;
         }
@@ -230,7 +259,6 @@ final class Response
             return;
         }
 
-        // Gzip compression if accepted by client (only in web context)
         if (!$isCli) {
             $acceptEncoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
             if (str_contains($acceptEncoding, 'gzip') && function_exists('gzencode')) {
@@ -241,6 +269,30 @@ final class Response
         }
 
         echo $encoded;
+    }
+
+    private function sendFile(bool $isCli): void
+    {
+        if (!$isCli) {
+            http_response_code($this->statusCode);
+            foreach ($this->extraHeaders as $name => $value) {
+                header($name . ': ' . $value);
+            }
+            readfile($this->filePath);
+        } else {
+            echo '[File: ' . $this->filePath . ']';
+        }
+    }
+
+    private function sendRaw(bool $isCli): void
+    {
+        if (!$isCli) {
+            http_response_code($this->statusCode);
+            foreach ($this->extraHeaders as $name => $value) {
+                header($name . ': ' . $value);
+            }
+        }
+        echo $this->rawContent;
     }
 
     /** @return array<string, mixed> */

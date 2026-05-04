@@ -30,9 +30,10 @@ class HasMany
             ->where($this->foreignKey, '=', $this->localValue);
     }
 
-    /**
-     * Forward calls to the query builder.
-     */
+    public function getRelatedClass(): string { return $this->relatedClass; }
+    public function getForeignKey(): string { return $this->foreignKey; }
+    public function getLocalKey(): string { return $this->localKey; }
+
     public function __call(string $method, array $parameters): mixed
     {
         return $this->query()->{$method}(...$parameters);

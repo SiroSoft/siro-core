@@ -7,6 +7,7 @@ namespace Siro\Core\Commands;
 use Siro\Core\App;
 use Siro\Core\Request;
 use Siro\Core\Response;
+use Siro\Core\Router;
 use Siro\Core\Lang;
 use Siro\Core\ValidationException;
 
@@ -78,6 +79,7 @@ final class ApiTestCommand
         $contentType = 'json';
         $watch = false;
         $collectionSave = null;
+        $login = false;
 
         for ($i = 2; $i < count($args); $i++) {
             $arg = $args[$i];
@@ -89,6 +91,8 @@ final class ApiTestCommand
                 $customHeaders[] = substr($arg, 9);
             } elseif (str_starts_with($arg, '--as=')) {
                 $as = substr($arg, 5);
+            } elseif ($arg === '--login') {
+                $login = true;
             } elseif ($arg === '--watch') {
                 $watch = true;
             } elseif (str_starts_with($arg, '--collection-save=')) {
@@ -119,6 +123,27 @@ final class ApiTestCommand
                 $fields[$key] = $value;
                 $this->write('');
             } while (true);
+        }
+
+        // Auto-login before making the request
+        if ($login) {
+            $loginEmail = $fields['email'] ?? ($as !== null ? $as . '@test.com' : '');
+            $loginPassword = $fields['password'] ?? 'password';
+            $loginRole = $as ?? 'default';
+
+            $this->write("  \033[33mLogging in as '{$loginRole}'...\033[0m");
+            $loginCode = $this->sendInternal('POST', '/api/auth/login',
+                ['email' => $loginEmail, 'password' => $loginPassword],
+                [], 'json', $loginRole
+            );
+
+            if ($loginCode !== 0) {
+                $this->write("  \033[31mLogin failed. Check credentials.\033[0m");
+                return 1;
+            }
+            $this->write("  \033[32mLogin successful. Token saved.\033[0m");
+            $this->write('');
+            $as = $loginRole;
         }
 
         $statusCode = $this->sendInternal($method, $path, $fields, $customHeaders, $contentType, $as);
@@ -352,6 +377,13 @@ final class ApiTestCommand
 
         try {
             ob_start();
+
+            Router::setMiddlewareAliases([
+                'auth' => \App\Middleware\AuthMiddleware::class,
+                'throttle' => \App\Middleware\ThrottleMiddleware::class,
+                'cors' => \App\Middleware\CorsMiddleware::class,
+                'json' => \App\Middleware\JsonMiddleware::class,
+            ]);
 
             $app = new App($this->basePath);
             $app->boot();

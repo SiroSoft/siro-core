@@ -11,7 +11,6 @@ use Siro\Core\Commands\LogReplayCommand;
 use Siro\Core\Commands\LogTraceCommand;
 use Siro\Core\Commands\MakeApiCommand;
 use Siro\Core\Commands\MakeMailCommand;
-use Siro\Core\Commands\MakeDocsCommand;
 use Siro\Core\Commands\MakeEventCommand;
 use Siro\Core\Commands\MakeOpenApiCommand;
 use Siro\Core\Commands\MakePostmanCommand;
@@ -52,215 +51,254 @@ use Siro\Core\Commands\DbShowCommand;
 use Siro\Core\Commands\RouteRulesCommand;
 use Siro\Core\Commands\LiveCommand;
 use Siro\Core\Commands\DeployCommand;
+use Siro\Core\Commands\NewCommand;
 
-/**
- * CLI command dispatcher.
- *
- * Parses the command name from argv and delegates to the
- * appropriate *Command class. Provides built-in help text.
- *
- * @package Siro\Core
- */
 final class Console
 {
+    private const VERSION = '0.14.0';
+
     public function __construct(private readonly string $basePath)
     {
     }
 
-    /** @param array<int, string> $argv */
+    /** @return array<string, array{handler: class-string, desc: string, usage: string}> */
+    private function commandRegistry(): array
+    {
+        return [
+            'make:auth'       => ['handler' => MakeAuthCommand::class, 'desc' => 'Generate auth system', 'usage' => 'php siro make:auth'],
+            'make:api'        => ['handler' => MakeApiCommand::class, 'desc' => 'Generate API resource', 'usage' => 'php siro make:api <name>'],
+            'make:controller' => ['handler' => MakeControllerCommand::class, 'desc' => 'Generate controller', 'usage' => 'php siro make:controller <name>'],
+            'make:model'      => ['handler' => MakeModelCommand::class, 'desc' => 'Generate model', 'usage' => 'php siro make:model <name>'],
+            'make:migration'  => ['handler' => MakeMigrationCommand::class, 'desc' => 'Generate migration', 'usage' => 'php siro make:migration <name>'],
+            'make:queue-table'=> ['handler' => MakeQueueTableCommand::class, 'desc' => 'Generate queue tables migration', 'usage' => 'php siro make:queue-table'],
+            'make:resource'   => ['handler' => MakeResourceCommand::class, 'desc' => 'Generate API resource transformer', 'usage' => 'php siro make:resource <name>'],
+            'make:seeder'     => ['handler' => MakeSeederCommand::class, 'desc' => 'Generate seeder', 'usage' => 'php siro make:seeder <name>'],
+            'make:crud'       => ['handler' => MakeCrudCommand::class, 'desc' => 'Full CRUD scaffolding', 'usage' => 'php siro make:crud <name> [--seed]'],
+            'make:test'       => ['handler' => MakeTestCommand::class, 'desc' => 'Generate test file', 'usage' => 'php siro make:test <name>'],
+            'make:job'        => ['handler' => MakeJobCommand::class, 'desc' => 'Generate job class', 'usage' => 'php siro make:job <name>'],
+            'make:mail'       => ['handler' => MakeMailCommand::class, 'desc' => 'Generate mail class', 'usage' => 'php siro make:mail <name>'],
+            'make:event'      => ['handler' => MakeEventCommand::class, 'desc' => 'Generate event class', 'usage' => 'php siro make:event <name>'],
+            'make:lang'       => ['handler' => MakeLangCommand::class, 'desc' => 'Generate language file', 'usage' => 'php siro make:lang <locale> <file>'],
+            'make:factory'    => ['handler' => MakeFactoryCommand::class, 'desc' => 'Generate factory', 'usage' => 'php siro make:factory <name>'],
+            'make:openapi'    => ['handler' => MakeOpenApiCommand::class, 'desc' => 'Generate OpenAPI spec', 'usage' => 'php siro make:openapi [--with-swagger] [--tag=TAG] [--flow=auth|crud]'],
+            'make:postman'    => ['handler' => MakePostmanCommand::class, 'desc' => 'Generate Postman collection', 'usage' => 'php siro make:postman [--flow=crud]'],
+
+            'migrate'          => ['handler' => MigrateCommand::class, 'desc' => 'Run migrations', 'usage' => 'php siro migrate'],
+            'migrate:rollback'  => ['handler' => MigrateRollbackCommand::class, 'desc' => 'Rollback migrations', 'usage' => 'php siro migrate:rollback [--step=N]'],
+            'migrate:status'    => ['handler' => MigrateStatusCommand::class, 'desc' => 'Migration status', 'usage' => 'php siro migrate:status'],
+            'db:seed'           => ['handler' => SeedCommand::class, 'desc' => 'Run seeders', 'usage' => 'php siro db:seed'],
+            'db:show'           => ['handler' => DbShowCommand::class, 'desc' => 'Show table data/schema', 'usage' => 'php siro db:show <table> [--schema]'],
+
+            'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request from trace', 'usage' => 'php siro log:replay <trace_id> [--force]'],
+            'log:trace'   => ['handler' => LogTraceCommand::class, 'desc' => 'View trace details', 'usage' => 'php siro log:trace [<id>] [--status=500] [--limit=N]'],
+            'log:export'  => ['handler' => LogExportCommand::class, 'desc' => 'Export trace', 'usage' => 'php siro log:export <trace_id> --postman'],
+            'log:cleanup' => ['handler' => LogCleanupCommand::class, 'desc' => 'Clean old trace files', 'usage' => 'php siro log:cleanup [--days=N] [--dry-run]'],
+            'log:slow'    => ['handler' => SlowLogCommand::class, 'desc' => 'Show slow requests', 'usage' => 'php siro log:slow [--limit=N] [--min=MS]'],
+
+            'test'          => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite', 'usage' => 'php siro test'],
+            'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API from CLI', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin] [--login]'],
+
+            'queue:work'    => ['handler' => QueueWorkCommand::class, 'desc' => 'Process queue jobs', 'usage' => 'php siro queue:work [--daemon]'],
+            'queue:retry'   => ['handler' => QueueRetryCommand::class, 'desc' => 'Retry failed jobs', 'usage' => 'php siro queue:retry <id|all>'],
+            'queue:flush'   => ['handler' => QueueFlushCommand::class, 'desc' => 'Clear failed jobs', 'usage' => 'php siro queue:flush'],
+            'queue:status'  => ['handler' => QueueStatusCommand::class, 'desc' => 'Queue statistics', 'usage' => 'php siro queue:status'],
+
+            'schedule:run'  => ['handler' => ScheduleRunCommand::class, 'desc' => 'Run scheduled tasks', 'usage' => 'php siro schedule:run'],
+
+            'serve'        => ['handler' => ServeCommand::class, 'desc' => 'Start dev server', 'usage' => 'php siro serve [--port=8080]'],
+            'live'         => ['handler' => LiveCommand::class, 'desc' => 'Live reload dev server', 'usage' => 'php siro live [--port=9090]'],
+            'deploy'       => ['handler' => DeployCommand::class, 'desc' => 'Deploy application', 'usage' => 'php siro deploy [--init]'],
+            'storage:link' => ['handler' => StorageLinkCommand::class, 'desc' => 'Create storage symlink', 'usage' => 'php siro storage:link'],
+
+            'key:generate'  => ['handler' => KeyGenerateCommand::class, 'desc' => 'Generate JWT secret', 'usage' => 'php siro key:generate'],
+            'config:cache'  => ['handler' => ConfigCacheCommand::class, 'desc' => 'Cache config', 'usage' => 'php siro config:cache'],
+            'optimize'      => ['handler' => OptimizeCommand::class, 'desc' => 'Optimize for production', 'usage' => 'php siro optimize'],
+            'env:check'     => ['handler' => EnvCheckCommand::class, 'desc' => 'Check environment', 'usage' => 'php siro env:check'],
+            'env:switch'    => ['handler' => EnvSwitchCommand::class, 'desc' => 'Switch environment', 'usage' => 'php siro env:switch <env>'],
+            'doctor'        => ['handler' => DoctorCommand::class, 'desc' => 'System health check', 'usage' => 'php siro doctor'],
+            'route:list'    => ['handler' => RouteListCommand::class, 'desc' => 'List all routes', 'usage' => 'php siro route:list'],
+            'route:rules'   => ['handler' => RouteRulesCommand::class, 'desc' => 'Show validation rules', 'usage' => 'php siro route:rules'],
+            'rate:status'   => ['handler' => RateStatusCommand::class, 'desc' => 'Rate limit dashboard', 'usage' => 'php siro rate:status'],
+            'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
+        ];
+    }
+
+    private function aliases(): array
+    {
+        return [
+            'slow' => 'log:slow',
+        ];
+    }
+
     public function run(array $argv): int
     {
         $command = trim($argv[1] ?? '');
         $args = array_slice($argv, 2);
+
+        if ($command === '--version' || $command === '-V') {
+            $this->write('SiroPHP v' . self::VERSION);
+            return 0;
+        }
 
         if ($command === '' || in_array($command, ['-h', '--help', 'help'], true)) {
             $this->printHelp();
             return 0;
         }
 
-        switch ($command) {
-            case 'make:auth':
-                return (new MakeAuthCommand($this->basePath))->run($args);
-            case 'make:api':
-                return (new MakeApiCommand($this->basePath))->run($args);
-            case 'make:controller':
-                return (new MakeControllerCommand($this->basePath))->run($args);
-            case 'make:model':
-                return (new MakeModelCommand($this->basePath))->run($args);
-            case 'make:migration':
-                return (new MakeMigrationCommand($this->basePath))->run($args);
-            case 'make:queue-table':
-                return (new MakeQueueTableCommand($this->basePath))->run($args);
-            case 'make:resource':
-                return (new MakeResourceCommand($this->basePath))->run($args);
-            case 'make:seeder':
-                return (new MakeSeederCommand($this->basePath))->run($args);
-            case 'db:seed':
-                return (new SeedCommand($this->basePath))->run($args);
-            case 'schedule:run':
-                return (new ScheduleRunCommand($this->basePath))->run($args);
-            case 'queue:work':
-                return (new QueueWorkCommand($this->basePath))->run($args);
-            case 'queue:retry':
-                return (new QueueRetryCommand($this->basePath))->run($args);
-            case 'queue:flush':
-                return (new QueueFlushCommand($this->basePath))->run($args);
-            case 'queue:status':
-                return (new QueueStatusCommand($this->basePath))->run($args);
-            case 'make:job':
-                return (new MakeJobCommand($this->basePath))->run($args);
-            case 'make:lang':
-                return (new MakeLangCommand($this->basePath))->run($args);
-            case 'migrate':
-                return (new MigrateCommand($this->basePath))->run($args);
-            case 'migrate:rollback':
-                return (new MigrateRollbackCommand($this->basePath))->run($args);
-            case 'migrate:status':
-                return (new MigrateStatusCommand($this->basePath))->run($args);
-            case 'serve':
-                return (new ServeCommand($this->basePath))->run($args);
-            case 'storage:link':
-                return (new StorageLinkCommand($this->basePath))->run($args);
-            case 'key:generate':
-                return (new KeyGenerateCommand($this->basePath))->run($args);
-            case 'log:trace':
-                return (new LogTraceCommand($this->basePath))->run($args);
-            case 'log:replay':
-                return (new LogReplayCommand($this->basePath))->run($args);
-            case 'log:export':
-                return (new LogExportCommand($this->basePath))->run($args);
-            case 'make:openapi':
-                return (new MakeOpenApiCommand($this->basePath))->run($args);
-            case 'make:postman':
-                return (new MakePostmanCommand($this->basePath))->run($args);
-            case 'make:mail':
-                return (new MakeMailCommand($this->basePath))->run($args);
-            case 'make:docs':
-                return (new MakeDocsCommand($this->basePath))->run($args);
-            case 'make:event':
-                return (new MakeEventCommand($this->basePath))->run($args);
-            case 'config:cache':
-                return (new ConfigCacheCommand($this->basePath))->run($args);
-            case 'env:check':
-                return (new EnvCheckCommand($this->basePath))->run($args);
-            case 'optimize':
-                return (new OptimizeCommand($this->basePath))->run($args);
-            case 'doctor':
-                return (new DoctorCommand($this->basePath))->run($args);
-            case 'route:list':
-                return (new RouteListCommand($this->basePath))->run($args);
-            case 'make:crud':
-                return (new MakeCrudCommand($this->basePath))->run($args);
-            case 'make:test':
-                return (new MakeTestCommand($this->basePath))->run($args);
-            case 'api:test':
-                return (new ApiTestCommand($this->basePath))->run($args);
-            case 'rate:status':
-                return (new RateStatusCommand($this->basePath))->run($args);
-            case 'test':
-                return (new TestRunCommand($this->basePath))->run($args);
-            case 'env:switch':
-                return (new EnvSwitchCommand($this->basePath))->run($args);
-            case 'slow':
-                return (new SlowLogCommand($this->basePath))->run($args);
-            case 'log:cleanup':
-                return (new LogCleanupCommand($this->basePath))->run($args);
-            case 'make:factory':
-                return (new MakeFactoryCommand($this->basePath))->run($args);
-            case 'db:show':
-                return (new DbShowCommand($this->basePath))->run($args);
-            case 'route:rules':
-                return (new RouteRulesCommand($this->basePath))->run($args);
-            case 'live':
-                return (new LiveCommand($this->basePath))->run($args);
-            case 'deploy':
-                return (new DeployCommand($this->basePath))->run($args);
-            default:
-                return $this->unknownCommand($command);
+        if ($command === 'list') {
+            $this->printList();
+            return 0;
         }
+
+        $aliases = $this->aliases();
+        if (isset($aliases[$command])) {
+            $command = $aliases[$command];
+        }
+
+        if ($command === 'make:docs') {
+            $command = 'make:openapi';
+            $args[] = '--with-swagger';
+        }
+
+        $registry = $this->commandRegistry();
+
+        if (!isset($registry[$command])) {
+            return $this->unknownCommand($command, $registry);
+        }
+
+        if (in_array('--help', $args, true) || in_array('-h', $args, true)) {
+            $this->printCommandHelp($command, $registry[$command]);
+            return 0;
+        }
+
+        /** @var string $handlerClass */
+        $handlerClass = $registry[$command]['handler'];
+        return (new $handlerClass($this->basePath))->run($args);
     }
 
     private function printHelp(): void
     {
-        $this->write('Siro Console');
+        $this->write('SiroPHP v' . self::VERSION . ' - PHP Micro-Framework for API Development');
+        $this->write('');
         $this->write('Usage:');
-        $this->write('  php siro make:auth');
-        $this->write('  php siro make:api users');
-        $this->write('  php siro make:controller UserController');
-        $this->write('  php siro make:model User');
-        $this->write('  php siro make:migration create_users_table');
-        $this->write('  php siro make:queue-table           # Generate queue tables migration');
-        $this->write('  php siro make:resource UserResource');
-        $this->write('  php siro make:seeder UserSeeder');
-        $this->write('  php siro migrate');
-        $this->write('  php siro migrate:rollback');
-        $this->write('  php siro db:seed');
-        $this->write('  php siro migrate:rollback --step=1');
-        $this->write('  php siro migrate:status');
-        $this->write('  php siro serve');
-        $this->write('  php siro log:trace <trace_id>');
-        $this->write('  php siro log:trace --status=500');
-        $this->write('  php siro log:replay <trace_id>');
-        $this->write('  php siro log:export --format=json --output=traces.json');
-        $this->write('  php siro make:openapi');
-        $this->write('  php siro make:openapi --flow=auth --tag=User --path=/api');
-        $this->write('  php siro make:postman');
-        $this->write('  php siro make:postman --flow=crud --method=POST');
-        $this->write('  php siro make:mail WelcomeMail');
-        $this->write('  php siro make:event UserCreated');
-        $this->write('  php siro make:docs');
-        $this->write('  php siro schedule:run');
-        $this->write('  php siro queue:work');
-        $this->write('  php siro queue:work --daemon');
-        $this->write('  php siro queue:retry all');
-        $this->write('  php siro queue:retry 5');
-        $this->write('  php siro queue:flush');
-        $this->write('  php siro queue:status');
-        $this->write('  php siro make:job SendWelcomeEmail');
-        $this->write('  php siro make:lang vi messages');
-        $this->write('  php siro make:lang en validation');
-        $this->write('  php siro storage:link');
-        $this->write('  php siro config:cache');
-        $this->write('  php siro env:check');
-        $this->write('  php siro optimize');
-        $this->write('  php siro route:list');
-        $this->write('  php siro key:generate');
-        $this->write('  php siro api:test');
-        $this->write('  php siro api:test POST /auth/login email=admin@test.com password=123456');
-        $this->write('  php siro api:test GET /users --as=admin');
-        $this->write('  php siro api:test POST /users name=John email=john@test.com --as=admin');
-        $this->write('  php siro api:test --history');
-        $this->write('  php siro api:test GET /users --watch');
-        $this->write('  php siro api:test POST /users name=John --collection-save=myapi');
-        $this->write('  php siro api:test --collection=myapi');
-        $this->write('  php siro api:test --collection-list');
-        $this->write('  php siro log:export <trace_id> --postman');
-        $this->write('  php siro log:cleanup --days=7 --dry-run');
-        $this->write('  php siro log:replay <trace_id> --force');
-        $this->write('  php siro rate:status');
-        $this->write('  php siro test');
-        $this->write('  php siro env:switch staging');
-        $this->write('  php siro slow --limit=20 --min=200');
-        $this->write('  php siro api:test POST /webhook --webhook --port=9000');
-        $this->write('  php siro api:test GET /api/users --cors');
-        $this->write('  php siro make:crud users');
-        $this->write('  php siro make:crud posts');
-        $this->write('  php siro make:test UserApi');
-        $this->write('  php siro make:factory User');
-        $this->write('  php siro db:show users');
-        $this->write('  php siro db:show users --schema');
-        $this->write('  php siro route:rules');
-        $this->write('  php siro live');
-        $this->write('  php siro live --port=9090');
-        $this->write('  php siro deploy');
-        $this->write('  php siro deploy --init');
-        $this->write('  php siro doctor');
+        $this->write('  php siro <command> [options]');
+        $this->write('');
+        $this->write('  php siro list                Show all available commands');
+        $this->write('  php siro <command> --help    Show help for a specific command');
+        $this->write('  php siro --version           Show version');
+        $this->write('');
+
+        $groups = $this->groupedCommands();
+        foreach ($groups as $group => $commands) {
+            $this->write('  ' . $group . ':');
+            foreach ($commands as $cmd => $desc) {
+                $this->write('    ' . str_pad($cmd, 22, ' ') . $desc);
+            }
+            $this->write('');
+        }
     }
 
-    private function unknownCommand(string $command): int
+    private function printList(): void
     {
-        $this->write('Unknown command: ' . $command);
-        $this->printHelp();
+        $this->write('SiroPHP v' . self::VERSION . ' - Available Commands');
+        $this->write(str_repeat('=', 60));
+        $this->write('');
+
+        $registry = $this->commandRegistry();
+        $groups = $this->groupedCommands();
+        foreach ($groups as $group => $commands) {
+            $this->write('  ' . $group . ':');
+            $this->write('');
+            foreach ($commands as $cmd => $desc) {
+                $usage = $registry[$cmd]['usage'] ?? 'php siro ' . $cmd;
+                $line = '    ' . str_pad($cmd, 22, ' ') . $usage;
+                $aliases = '';
+                $aliasMap = $this->aliases();
+                foreach ($aliasMap as $alias => $target) {
+                    if ($target === $cmd) {
+                        $aliases = ' (alias: ' . $alias . ')';
+                    }
+                }
+                $this->write($line . $aliases);
+            }
+            $this->write('');
+        }
+
+        $this->write('Run "php siro <command> --help" for detailed usage.');
+    }
+
+    private function printCommandHelp(string $command, array $info): void
+    {
+        $this->write('SiroPHP v' . self::VERSION);
+        $this->write('');
+        $this->write('  ' . $command . ' - ' . $info['desc']);
+        $this->write('');
+        $this->write('  Usage:');
+        $this->write('    ' . $info['usage']);
+        $this->write('');
+        $this->write('  Run "php siro list" to see all commands.');
+    }
+
+    private function groupedCommands(): array
+    {
+        $registry = $this->commandRegistry();
+        $groups = [
+            'Make / Generate'    => ['make:auth', 'make:api', 'make:controller', 'make:model', 'make:migration',
+                'make:queue-table', 'make:resource', 'make:seeder', 'make:crud', 'make:test',
+                'make:job', 'make:mail', 'make:event', 'make:lang', 'make:factory',
+                'make:openapi', 'make:postman'],
+            'New Project'        => ['new'],
+            'Database'           => ['migrate', 'migrate:rollback', 'migrate:status', 'db:seed', 'db:show'],
+            'Logs'               => ['log:trace', 'log:replay', 'log:export', 'log:cleanup', 'log:slow'],
+            'Test'               => ['test', 'api:test'],
+            'Queue & Schedule'   => ['queue:work', 'queue:retry', 'queue:flush', 'queue:status', 'schedule:run'],
+            'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link'],
+            'System & Config'    => ['key:generate', 'config:cache', 'optimize', 'env:check',
+                'env:switch', 'doctor', 'route:list', 'route:rules', 'rate:status'],
+        ];
+
+        $result = [];
+        foreach ($groups as $group => $cmds) {
+            $entries = [];
+            foreach ($cmds as $cmd) {
+                if (isset($registry[$cmd])) {
+                    $entries[$cmd] = $registry[$cmd]['desc'];
+                }
+            }
+            if ($entries !== []) {
+                $result[$group] = $entries;
+            }
+        }
+        return $result;
+    }
+
+    private function unknownCommand(string $command, array $registry): int
+    {
+        $this->write("Unknown command: \033[31m{$command}\033[0m");
+        $this->write('');
+
+        $suggestions = [];
+        foreach ($registry as $cmd => $info) {
+            $lev = levenshtein($command, $cmd);
+            if ($lev > 0 && $lev <= 3) {
+                $suggestions[] = $cmd;
+            }
+            if (str_starts_with($cmd, $command) || str_starts_with($command, $cmd)) {
+                $suggestions[] = $cmd;
+            }
+        }
+        $suggestions = array_unique($suggestions);
+        $suggestions = array_slice($suggestions, 0, 5);
+
+        if ($suggestions !== []) {
+            $this->write('Did you mean?');
+            foreach ($suggestions as $s) {
+                $this->write("  \033[33m{$s}\033[0m");
+            }
+            $this->write('');
+        }
+
+        $this->write('Run "php siro list" to see all commands.');
         return 1;
     }
 
