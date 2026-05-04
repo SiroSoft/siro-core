@@ -6,32 +6,41 @@ namespace Siro\Core\Commands;
 
 final class MakeCrudCommand
 {
-    use CommandSupport;
+    use CommandSupport {
+        confirmOverwrite as traitConfirmOverwrite;
+    }
+
+    private bool $forceOverwrite = false;
 
     public function __construct(private readonly string $basePath)
     {
     }
 
+    protected function confirmOverwrite(string $basePath, string $path): bool
+    {
+        return $this->forceOverwrite ? true : $this->traitConfirmOverwrite($basePath, $path);
+    }
+
     public function run(array $args): int
     {
-        $resource = strtolower(trim((string) ($args[0] ?? '')));
+        $resource = trim((string) ($args[0] ?? ''));
+
         if ($resource === '') {
-            $this->write('Resource name is required. Example: php siro make:crud users');
-            $this->write('This generates: Model, Migration, Controller, Resource, Routes, and Test file.');
+            $this->write('Usage: php siro make:crud <name> [--seed]');
             return 1;
         }
 
-        $resource = preg_replace('/[^a-z0-9_]+/', '_', $resource) ?? $resource;
-        $resource = trim($resource, '_');
-        if ($resource === '') {
-            $this->write('Invalid resource name.');
-            return 1;
-        }
-
+        $this->forceOverwrite = in_array('--force', $args, true);
         $model = ucfirst($this->studly($this->singular($resource)));
         $controllerClass = $model . 'Controller';
         $resourceClass = $model . 'Resource';
         $table = $this->plural(strtolower($resource));
+
+        $withoutService = in_array('--without-service', $args, true);
+        $withoutRepository = in_array('--without-repository', $args, true);
+
+        $serviceName = str_replace('Resource', 'Service', $resourceClass);
+        $repoName = str_replace('Resource', 'Repository', $resourceClass);
 
         $this->write("Generating CRUD for: {$resource}");
         $this->write('');
@@ -44,16 +53,26 @@ final class MakeCrudCommand
         // 2. Migration
         $ok = $this->generateMigration($table, $model) && $ok;
 
-        // 3. Controller
-        $ok = $this->generateController($controllerClass, $model, $resource) && $ok;
+        // 3. Repository
+        if (!$withoutRepository) {
+            $ok = $this->generateRepository($repoName, $model, $table) && $ok;
+        }
 
-        // 4. Resource
+        // 4. Service (depends on Repository)
+        if (!$withoutService) {
+            $ok = $this->generateService($serviceName, $model, $repoName, $withoutRepository) && $ok;
+        }
+
+        // 5. Controller (depends on Service)
+        $ok = $this->generateController($controllerClass, $model, $resourceClass, $serviceName, $withoutService) && $ok;
+
+        // 6. Resource
         $ok = $this->generateResource($resourceClass) && $ok;
 
-        // 5. Routes
+        // 7. Routes
         $ok = $this->generateRoutes($resource, $controllerClass) && $ok;
 
-        // 6. Test
+        // 8. Test
         $ok = $this->generateTest($resource, $model) && $ok;
 
         $this->write('');
@@ -132,13 +151,24 @@ declare(strict_types=1);
 return new class {
     public function up(\PDO \$db): void
     {
-        \$db->exec("CREATE TABLE IF NOT EXISTS {$table} (
-            id BIGINT PRIMARY KEY AUTO_INCREMENT,
-            name VARCHAR(255) NOT NULL,
-            {$columns}
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=INNODB DEFAULT CHARSET=utf8mb4");
+        \$driver = \$db->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        if (\$driver === 'sqlite') {
+            \$db->exec("CREATE TABLE IF NOT EXISTS {$table} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                {$columns}
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )");
+        } else {
+            \$db->exec("CREATE TABLE IF NOT EXISTS {$table} (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                {$columns}
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=INNODB DEFAULT CHARSET=utf8mb4");
+        }
     }
 
     public function down(\PDO \$db): void
@@ -158,7 +188,7 @@ PHP);
         return '';
     }
 
-    private function generateController(string $class, string $model, string $resource): bool
+    private function generateController(string $class, string $model, string $resource, string $serviceName, bool $withoutService): bool
     {
         $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . $class . '.php';
 
@@ -171,14 +201,30 @@ PHP);
             mkdir(dirname($path), 0775, true);
         }
 
-        file_put_contents($path, <<<PHP
+        $rules = $this->guessValidationRules($model);
+
+        if ($withoutService) {
+            // Controller -> Model directly
+            file_put_contents($path, $this->controllerWithModel($class, $model, $resource, $rules));
+        } else {
+            // Controller -> Service -> Model
+            file_put_contents($path, $this->controllerWithService($class, $model, $resource, $serviceName, $rules));
+        }
+        $this->write('Generated: app/Controllers/' . $class . '.php');
+        return true;
+    }
+
+    private function controllerWithModel(string $class, string $model, string $resource, string $rules): string
+    {
+        return <<<PHP
 <?php
 
 declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Models\{$model};
+use App\Models\\{$model};
+use App\Resources\\{$resource};
 use Siro\Core\Request;
 use Siro\Core\Response;
 
@@ -186,84 +232,298 @@ final class {$class}
 {
     public function index(Request \$request): Response
     {
-        \$perPage = \$request->queryInt('per_page', 20);
-        \$page = \$request->queryInt('page', 1);
-
-        \$result = {$model}::query()
-            ->orderBy('id', 'DESC')
-            ->paginate(\$perPage, \$page);
-
-        return Response::paginated(\$result['data'], \$result['meta'], '{$resource} list fetched');
+        \$result = {$model}::query()->orderBy('id', 'DESC')->paginate(\$request->queryInt('per_page', 20), \$request->queryInt('page', 1));
+        return Response::paginated({$resource}::collection(\$result['data']), \$result['meta'], '{$model} list');
     }
 
     public function show(Request \$request): Response
     {
         \$id = (int) \$request->param('id');
-        if (\$id <= 0) {
-            return Response::error('Invalid id', 422);
-        }
-
+        if (\$id <= 0) return Response::error('Invalid id', 422);
         \$item = {$model}::find(\$id);
-        if (\$item === null) {
-            return Response::error('{$model} not found', 404);
-        }
-
-        return Response::success(\$item->toArray(), '{$model} fetched');
+        if (\$item === null) return Response::error('{$model} not found', 404);
+        return Response::success({$resource}::make(\$item), '{$model} detail');
     }
 
     public function store(Request \$request): Response
     {
-        \$validated = \$request->validate([
-            'name' => 'required|min:3|max:120',
-        ]);
-
-        \$item = {$model}::create([
-            'name' => \$validated['name'],
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
-
-        return Response::created(\$item->toArray(), '{$model} created');
+        \$data = \$request->validate([{$rules}]);
+        \$item = {$model}::create(\$data + ['created_at' => date('Y-m-d H:i:s')]);
+        return Response::created({$resource}::make(\$item), '{$model} created');
     }
 
     public function update(Request \$request): Response
     {
         \$id = (int) \$request->param('id');
-        if (\$id <= 0) {
-            return Response::error('Invalid id', 422);
-        }
-
+        if (\$id <= 0) return Response::error('Invalid id', 422);
         \$item = {$model}::find(\$id);
-        if (\$item === null) {
-            return Response::error('{$model} not found', 404);
-        }
-
-        \$validated = \$request->validate([
-            'name' => 'min:3|max:120',
-        ]);
-
-        \$item->update(\$validated);
-        return Response::success(\$item->toArray(), '{$model} updated');
+        if (\$item === null) return Response::error('{$model} not found', 404);
+        \$item->update(\$request->validate([{$rules}]));
+        return Response::success({$resource}::make(\$item), '{$model} updated');
     }
 
     public function delete(Request \$request): Response
     {
         \$id = (int) \$request->param('id');
-        if (\$id <= 0) {
-            return Response::error('Invalid id', 422);
-        }
-
+        if (\$id <= 0) return Response::error('Invalid id', 422);
         \$item = {$model}::find(\$id);
-        if (\$item === null) {
-            return Response::error('{$model} not found', 404);
-        }
-
+        if (\$item === null) return Response::error('{$model} not found', 404);
         \$item->delete();
         return Response::success(null, '{$model} deleted');
     }
 }
+PHP;
+    }
+
+    private function controllerWithService(string $class, string $model, string $resource, string $serviceName, string $rules): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+use App\Services\\{$serviceName};
+use App\Resources\\{$resource};
+use Siro\Core\Request;
+use Siro\Core\Response;
+
+final class {$class}
+{
+    public function __construct(private readonly {$serviceName} \$service)
+    {
+    }
+
+    public function index(Request \$request): Response
+    {
+        \$result = \$this->service->getAll(\$request->queryInt('page', 1), \$request->queryInt('per_page', 20));
+        return Response::paginated({$resource}::collection(\$result['data']), \$result['meta'], '{$model} list');
+    }
+
+    public function show(Request \$request): Response
+    {
+        \$id = (int) \$request->param('id');
+        if (\$id <= 0) return Response::error('Invalid id', 422);
+        \$item = \$this->service->getById(\$id);
+        if (\$item === null) return Response::error('{$model} not found', 404);
+        return Response::success({$resource}::make(\$item), '{$model} detail');
+    }
+
+    public function store(Request \$request): Response
+    {
+        \$item = \$this->service->create(\$request->validate([{$rules}]));
+        return Response::created({$resource}::make(\$item), '{$model} created');
+    }
+
+    public function update(Request \$request): Response
+    {
+        \$id = (int) \$request->param('id');
+        if (\$id <= 0) return Response::error('Invalid id', 422);
+        \$item = \$this->service->update(\$id, \$request->validate([{$rules}]));
+        if (\$item === null) return Response::error('{$model} not found', 404);
+        return Response::success({$resource}::make(\$item), '{$model} updated');
+    }
+
+    public function delete(Request \$request): Response
+    {
+        \$id = (int) \$request->param('id');
+        if (\$id <= 0) return Response::error('Invalid id', 422);
+        return \$this->service->delete(\$id)
+            ? Response::success(null, '{$model} deleted')
+            : Response::error('{$model} not found', 404);
+    }
+}
+PHP;
+    }
+
+    private function guessValidationRules(string $model): string
+    {
+        $name = strtolower($model);
+        $rules = [];
+
+        if (str_contains($name, 'user') || str_contains($name, 'customer') || str_contains($name, 'person')) {
+            $rules[] = "'name' => 'required|min:2|max:100'";
+            $rules[] = "'email' => 'required|email'";
+        } elseif (str_contains($name, 'order') || str_contains($name, 'invoice')) {
+            $rules[] = "'customer_id' => 'required|integer'";
+            $rules[] = "'total' => 'required|numeric|min:0'";
+        } elseif (str_contains($name, 'product') || str_contains($name, 'item')) {
+            $rules[] = "'name' => 'required|min:2|max:200'";
+            $rules[] = "'price' => 'required|numeric|min:0'";
+            $rules[] = "'sku' => 'required|min:2|max:50'";
+        } elseif (str_contains($name, 'category') || str_contains($name, 'tag')) {
+            $rules[] = "'name' => 'required|min:2|max:100'";
+            $rules[] = "'slug' => 'required|min:2|max:100'";
+        } else {
+            $rules[] = "'name' => 'required|min:2|max:255'";
+        }
+
+        return implode(",\n            ", $rules);
+    }
+
+    private function generateService(string $serviceName, string $model, string $repoName, bool $withoutRepository): bool
+    {
+        $path = $this->basePath . '/app/Services/' . $serviceName . '.php';
+        if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
+            $this->write('Skipped: app/Services/' . $serviceName . '.php');
+            return false;
+        }
+        $dir = dirname($path);
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+
+        if ($withoutRepository) {
+            // Service -> Model directly
+            file_put_contents($path, <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Models\\{$model};
+
+final class {$serviceName}
+{
+    public function __construct(private readonly {$model} \$model)
+    {
+    }
+
+    public function getAll(int \$page = 1, int \$perPage = 20): array
+    {
+        return {$model}::query()->orderBy('id', 'DESC')->paginate(\$perPage, \$page);
+    }
+
+    public function getById(int \$id): mixed
+    {
+        return {$model}::find(\$id);
+    }
+
+    public function create(array \$data): mixed
+    {
+        return {$model}::create(\$data + ['created_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public function update(int \$id, array \$data): mixed
+    {
+        \$item = {$model}::find(\$id);
+        if (\$item === null) return null;
+        \$item->update(\$data);
+        return \$item;
+    }
+
+    public function delete(int \$id): bool
+    {
+        \$item = {$model}::find(\$id);
+        return \$item !== null && (bool) \$item->delete();
+    }
+}
 
 PHP);
-        $this->write('Generated: app/Controllers/' . $class . '.php');
+        } else {
+            // Service -> Repository -> Model
+            file_put_contents($path, <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Repositories\\{$repoName};
+use App\Models\\{$model};
+
+final class {$serviceName}
+{
+    public function __construct(private readonly {$repoName} \$repo)
+    {
+    }
+
+    public function getAll(int \$page = 1, int \$perPage = 20): array
+    {
+        return \$this->repo->findAll(\$page, \$perPage);
+    }
+
+    public function getById(int \$id): mixed
+    {
+        return \$this->repo->findById(\$id);
+    }
+
+    public function create(array \$data): mixed
+    {
+        return \$this->repo->store(\$data);
+    }
+
+    public function update(int \$id, array \$data): mixed
+    {
+        return \$this->repo->update(\$id, \$data);
+    }
+
+    public function delete(int \$id): bool
+    {
+        return \$this->repo->destroy(\$id);
+    }
+}
+
+PHP);
+        }
+        $this->write('Generated: app/Services/' . $serviceName . '.php');
+        return true;
+    }
+
+    private function generateRepository(string $repoName, string $model, string $table): bool
+    {
+        $path = $this->basePath . '/app/Repositories/' . $repoName . '.php';
+        if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
+            $this->write('Skipped: app/Repositories/' . $repoName . '.php');
+            return false;
+        }
+        $dir = dirname($path);
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+
+        file_put_contents($path, <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repositories;
+
+use App\Models\\{$model};
+
+final class {$repoName}
+{
+    public function findAll(int \$page = 1, int \$perPage = 20): array
+    {
+        return {$model}::query()->orderBy('id', 'DESC')->paginate(\$perPage, \$page);
+    }
+
+    public function findById(int \$id): mixed
+    {
+        return {$model}::find(\$id);
+    }
+
+    public function store(array \$data): mixed
+    {
+        return {$model}::create(\$data + ['created_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public function update(int \$id, array \$data): mixed
+    {
+        \$item = {$model}::find(\$id);
+        if (\$item === null) return null;
+        \$item->update(\$data);
+        return \$item;
+    }
+
+    public function destroy(int \$id): bool
+    {
+        \$item = {$model}::find(\$id);
+        if (\$item === null) return false;
+        return (bool) \$item->delete();
+    }
+}
+
+PHP);
+        $this->write('Generated: app/Repositories/' . $repoName . '.php');
         return true;
     }
 
@@ -319,8 +579,12 @@ PHP);
         }
 
         if (str_contains($content, $marker)) {
-            $this->write('Routes already exist for ' . $resource . '. Skipped.');
-            return false;
+            if (!$this->forceOverwrite) {
+                $this->write('Routes already exist for ' . $resource . '. Skipped.');
+                return false;
+            }
+            // Remove existing routes block for this resource (multi-line safe)
+            $content = preg_replace('/\s*\/\/ Generated by: php siro make:crud ' . preg_quote($resource, '/') . '.*?(?=\n\s*\/\/ Generated|$)/s', "\n", $content);
         }
 
         $routes = <<<PHP
@@ -350,114 +614,62 @@ PHP;
 
     private function generateTest(string $resource, string $model): bool
     {
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . $resource . '_test.php';
+        $className = $this->studly($resource) . 'Test';
+        $path = $this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature' . DIRECTORY_SEPARATOR . $className . '.php';
 
         if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
-            $this->write('Skipped: tests/' . $resource . '_test.php');
+            $this->write('Skipped: tests/Feature/' . $className . '.php');
             return false;
         }
 
-        $sClass = $this->studly($resource);
+        $dir = dirname($path);
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+
+        $endpoint = '/api/' . $resource;
 
         file_put_contents($path, <<<PHP
 <?php
 
 declare(strict_types=1);
 
-/**
- * Integration test for {$model} API.
- *
- * Run: php tests/{$resource}_test.php
- */
+namespace App\Tests\Feature;
 
-require_once __DIR__ . '/../vendor/autoload.php';
+use App\Tests\TestCase;
 
-use Siro\Core\App;
-use Siro\Core\Request;
-use Siro\Core\Response;
-
-\$basePath = dirname(__DIR__);
-
-\$app = new App(\$basePath);
-\$app->boot();
-\$app->loadRoutes(\$basePath . '/routes/api.php');
-
-echo "=== {$model} API Test ===\n\n";
-
-\$passed = 0;
-\$failed = 0;
-
-function test(string \$name, callable \$fn): void
+final class {$className} extends TestCase
 {
-    global \$passed, \$failed;
-    try {
-        \$fn();
-        echo "  \\033[32m✓\\033[0m {\$name}\n";
-        \$passed++;
-    } catch (\Throwable \$e) {
-        echo "  \\033[31m✗ {\$name}: {\$e->getMessage()}\\033[0m\n";
-        echo "    File: {\$e->getFile()}:{\$e->getLine()}\n";
-        \$failed++;
+    public function testIndexReturns200(): void
+    {
+        \$app = \$this->createApp();
+        \$response = \$this->dispatch(\$app, 'GET', '{$endpoint}');
+        \$this->assertEquals(200, \$response->statusCode());
+    }
+
+    public function testShowReturns404ForInvalidId(): void
+    {
+        \$app = \$this->createApp();
+        \$response = \$this->dispatch(\$app, 'GET', '{$endpoint}/999');
+        \$this->assertEquals(404, \$response->statusCode());
+    }
+
+    public function testStoreReturns201WithValidData(): void
+    {
+        \$app = \$this->createApp();
+        \$response = \$this->dispatch(\$app, 'POST', '{$endpoint}', ['name' => 'Test {$model}']);
+        \$this->assertEquals(201, \$response->statusCode());
+    }
+
+    public function testStoreReturns422WithoutRequiredFields(): void
+    {
+        \$app = \$this->createApp();
+        \$response = \$this->dispatch(\$app, 'POST', '{$endpoint}', []);
+        \$this->assertEquals(422, \$response->statusCode());
     }
 }
-
-function dispatch(string \$method, string \$path, array \$body = [], array \$headers = []): array
-{
-    global \$app;
-    ob_start();
-    try {
-        \$request = new Request(\$method, \$path, [], \$headers, \$body, '127.0.0.1');
-        \$response = \$app->router->dispatch(\$request);
-        ob_end_clean();
-        return [
-            'status' => \$response->statusCode(),
-            'body' => json_decode(json_encode(\$response->payload()), true),
-        ];
-    } catch (\Siro\Core\ValidationException \$e) {
-        ob_end_clean();
-        \$response = \$e->toResponse();
-        return [
-            'status' => \$response->statusCode(),
-            'body' => json_decode(json_encode(\$response->payload()), true),
-        ];
-    } catch (\Throwable \$e) {
-        ob_end_clean();
-        throw \$e;
-    }
-}
-
-// ─── Tests ──────────────────────────────────────────
-
-test('GET /api/{$resource} returns list', function () {
-    \$res = dispatch('GET', '/api/{$resource}');
-    assert(\$res['status'] === 200, 'Expected 200, got ' . \$res['status']);
-});
-
-test('GET /api/{$resource}/999 returns 404', function () {
-    \$res = dispatch('GET', '/api/{$resource}/999');
-    assert(\$res['status'] === 404, 'Expected 404, got ' . \$res['status']);
-    assert(\$res['body']['success'] === false, 'Expected success=false');
-});
-
-test('POST /api/{$resource} with valid data', function () {
-    \$res = dispatch('POST', '/api/{$resource}', ['name' => 'Test {$sClass}']);
-    assert(\$res['status'] === 201, 'Expected 201, got ' . \$res['status']);
-    assert(\$res['body']['success'] === true, 'Expected success=true');
-});
-
-test('POST /api/{$resource} without name returns 422', function () {
-    \$res = dispatch('POST', '/api/{$resource}', []);
-    assert(\$res['status'] === 422, 'Expected 422, got ' . \$res['status']);
-});
-
-echo "\n=== Results ===\n";
-echo "Passed: {\$passed}\n";
-echo "Failed: {\$failed}\n";
-exit(\$failed > 0 ? 1 : 0);
 
 PHP);
-        $this->write('Generated: tests/' . $resource . '_test.php');
-        $this->write('  Run: php tests/' . $resource . '_test.php');
+        $this->write('Generated: tests/Feature/' . $className . '.php');
+        $this->write('  Run: vendor/bin/phpunit --testsuite=Feature --filter=' . $className);
         return true;
     }
 }

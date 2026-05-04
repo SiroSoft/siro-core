@@ -47,6 +47,8 @@ use Siro\Core\Commands\EnvSwitchCommand;
 use Siro\Core\Commands\SlowLogCommand;
 use Siro\Core\Commands\LogCleanupCommand;
 use Siro\Core\Commands\MakeFactoryCommand;
+use Siro\Core\Commands\MakeServiceCommand;
+use Siro\Core\Commands\MakeRepositoryCommand;
 use Siro\Core\Commands\DbShowCommand;
 use Siro\Core\Commands\RouteRulesCommand;
 use Siro\Core\Commands\LiveCommand;
@@ -82,6 +84,8 @@ final class Console
             'make:factory'    => ['handler' => MakeFactoryCommand::class, 'desc' => 'Generate factory', 'usage' => 'php siro make:factory <name>'],
             'make:openapi'    => ['handler' => MakeOpenApiCommand::class, 'desc' => 'Generate OpenAPI spec', 'usage' => 'php siro make:openapi [--with-swagger] [--tag=TAG] [--flow=auth|crud]'],
             'make:postman'    => ['handler' => MakePostmanCommand::class, 'desc' => 'Generate Postman collection', 'usage' => 'php siro make:postman [--flow=crud]'],
+            'make:service'    => ['handler' => MakeServiceCommand::class, 'desc' => 'Generate service class', 'usage' => 'php siro make:service <name>'],
+            'make:repository' => ['handler' => MakeRepositoryCommand::class, 'desc' => 'Generate repository class', 'usage' => 'php siro make:repository <name>'],
 
             'migrate'          => ['handler' => MigrateCommand::class, 'desc' => 'Run migrations', 'usage' => 'php siro migrate'],
             'migrate:rollback'  => ['handler' => MigrateRollbackCommand::class, 'desc' => 'Rollback migrations', 'usage' => 'php siro migrate:rollback [--step=N]'],
@@ -246,6 +250,7 @@ final class Console
             'Make / Generate'    => ['make:auth', 'make:api', 'make:controller', 'make:model', 'make:migration',
                 'make:queue-table', 'make:resource', 'make:seeder', 'make:crud', 'make:test',
                 'make:job', 'make:mail', 'make:event', 'make:lang', 'make:factory',
+                'make:service', 'make:repository',
                 'make:openapi', 'make:postman'],
             'New Project'        => ['new'],
             'Database'           => ['migrate', 'migrate:rollback', 'migrate:status', 'db:seed', 'db:show'],

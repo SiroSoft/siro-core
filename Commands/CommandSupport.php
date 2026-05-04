@@ -83,14 +83,10 @@ trait CommandSupport
 
     protected function studly(string $value): string
     {
-        // Normalize separators first, then properly case
         $value = str_replace(['-', '_'], ' ', trim($value));
-        // If already contains spaces (from separators), treat as words
-        if (str_contains($value, ' ')) {
-            return str_replace(' ', '', ucwords(strtolower($value)));
-        }
-        // PascalCase or single word — passthrough
-        return $value;
+        $words = explode(' ', $value);
+        $words = array_map(fn(string $w): string => ucfirst(strtolower($w)), $words);
+        return implode('', $words);
     }
 
     protected function singular(string $value): string

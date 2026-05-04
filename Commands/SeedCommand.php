@@ -12,6 +12,14 @@ final class SeedCommand
     {
     }
 
+    private function boot(): void
+    {
+        if (!defined('BASE_PATH')) {
+            define('BASE_PATH', $this->basePath);
+        }
+        (new \Siro\Core\App($this->basePath))->boot();
+    }
+
     /**
  * Run database seeders.
  *
@@ -22,6 +30,8 @@ final class SeedCommand
  */
     public function run(array $args): int
     {
+        $this->boot();
+
         $class = trim((string) ($args[0] ?? ''));
         $seedDir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds';
 

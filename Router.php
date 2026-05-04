@@ -391,7 +391,7 @@ final class Router
                 throw new RuntimeException('Invalid array handler format. Use [ClassName::class, method].');
             }
 
-            $controller = new $class();
+            $controller = $this->resolveController($class);
             if (!method_exists($controller, $method)) {
                 throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
             }
@@ -412,7 +412,7 @@ final class Router
             throw new RuntimeException(sprintf('Controller class %s not found.', $class));
         }
 
-        $controller = new $class();
+        $controller = $this->resolveController($class);
         if (!method_exists($controller, $method)) {
             throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
         }
@@ -423,6 +423,43 @@ final class Router
             $response = $controller->{$method}();
         }
         return $this->normalizeHandlerResult($response);
+    }
+
+    /** @var array<string, object> */
+    private array $resolved = [];
+
+    private function resolveController(string $class): object
+    {
+        if (isset($this->resolved[$class])) {
+            return $this->resolved[$class];
+        }
+
+        $ref = new \ReflectionClass($class);
+        $ctor = $ref->getConstructor();
+
+        if ($ctor === null || $ctor->getNumberOfRequiredParameters() === 0) {
+            $this->resolved[$class] = $ref->newInstance();
+            return $this->resolved[$class];
+        }
+
+        $deps = [];
+        foreach ($ctor->getParameters() as $param) {
+            $type = $param->getType();
+            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+                $depClass = $type->getName();
+                if ($depClass === $class) {
+                    // Circular reference - skip
+                    $deps[] = null;
+                    continue;
+                }
+                $deps[] = $this->resolveController($depClass);
+            } else {
+                $deps[] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
+            }
+        }
+
+        $this->resolved[$class] = $ref->newInstanceArgs($deps);
+        return $this->resolved[$class];
     }
 
     private function normalizeHandlerResult(mixed $result): Response
