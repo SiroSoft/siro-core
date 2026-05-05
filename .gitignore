@@ -10,3 +10,6 @@ Thumbs.db
 /.cline/
 .vscode/
 .idea/
+
+# Temporary verification files
+*.VERIFICATION.md
