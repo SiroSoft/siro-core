@@ -96,10 +96,7 @@ final class Queue
             . $rows . '</tbody></table>'
             . '<p style="color:#999;font-size:12px;margin-top:20px">Siro Queue Dashboard</p></body></html>';
     }
-    {
-        $matched = array_filter(self::$fakeJobs, fn($j) => $j['job'] === $job);
-        \PHPUnit\Framework\Assert::assertCount(0, $matched, "Job {$job} was pushed unexpectedly.");
-    }
+
     private const DEFAULT_MAX_ATTEMPTS = 3;
     private const DEFAULT_TIMEOUT = 120;
     private const DEFAULT_PRIORITY = 0;
