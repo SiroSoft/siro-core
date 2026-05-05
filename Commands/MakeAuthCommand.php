@@ -561,45 +561,26 @@ PHP;
 
 declare(strict_types=1);
 
+use Siro\Core\Schema;
+use Siro\Core\DB\Blueprint;
+
 return new class
 {
-    public function up(\PDO \$pdo): void
+    public function up(): void
     {
-        \$driver = \$pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
-
-        if (\$driver === 'pgsql') {
-            \$pdo->exec("CREATE TABLE IF NOT EXISTS refresh_tokens (
-                id BIGSERIAL PRIMARY KEY,
-                jti VARCHAR(64) NOT NULL UNIQUE,
-                user_id BIGINT NOT NULL,
-                revoked SMALLINT NOT NULL DEFAULT 0,
-                expires_at TIMESTAMP NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )");
-        } elseif (\$driver === 'sqlite') {
-            \$pdo->exec("CREATE TABLE IF NOT EXISTS refresh_tokens (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                jti VARCHAR(64) NOT NULL UNIQUE,
-                user_id INTEGER NOT NULL,
-                revoked TINYINT NOT NULL DEFAULT 0,
-                expires_at TIMESTAMP NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )");
-        } else {
-            \$pdo->exec('CREATE TABLE IF NOT EXISTS refresh_tokens (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                jti VARCHAR(64) NOT NULL UNIQUE,
-                user_id BIGINT UNSIGNED NOT NULL,
-                revoked TINYINT NOT NULL DEFAULT 0,
-                expires_at TIMESTAMP NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
-        }
+        Schema::create('refresh_tokens', function (Blueprint \$t) {
+            \$t->id();
+            \$t->string('jti', 64)->unique();
+            \$t->bigint('user_id');
+            \$t->smallint('revoked')->default(0);
+            \$t->timestamp('expires_at');
+            \$t->timestamp('created_at')->useCurrent();
+        });
     }
 
-    public function down(\PDO \$pdo): void
+    public function down(): void
     {
-        \$pdo->exec('DROP TABLE IF EXISTS refresh_tokens');
+        Schema::drop('refresh_tokens');
     }
 };
 PHP;
@@ -612,40 +593,27 @@ PHP;
 
 declare(strict_types=1);
 
+use Siro\Core\Schema;
+use Siro\Core\DB\Blueprint;
+
 return new class
 {
-    public function up(PDO $pdo): void
+    public function up(): void
     {
-        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-
-        if ($driver === 'pgsql') {
-            $pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP NULL');
-            $pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(64) NULL');
-            $pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(64) NULL');
-            $pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMP NULL');
-        } else {
-            try { $pdo->exec('ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP NULL'); } catch (Throwable) {}
-            try { $pdo->exec('ALTER TABLE users ADD COLUMN verification_token VARCHAR(64) NULL'); } catch (Throwable) {}
-            try { $pdo->exec('ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(64) NULL'); } catch (Throwable) {}
-            try { $pdo->exec('ALTER TABLE users ADD COLUMN password_reset_expires_at TIMESTAMP NULL'); } catch (Throwable) {}
-        }
+        Schema::table('users', function (Blueprint $t) {
+            $t->timestamp('email_verified_at')->nullable();
+            $t->string('verification_token', 64)->nullable();
+            $t->string('password_reset_token', 64)->nullable();
+            $t->timestamp('password_reset_expires_at')->nullable();
+        });
     }
 
-    public function down(PDO $pdo): void
+    public function down(): void
     {
-        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-
-        if ($driver === 'pgsql') {
-            $pdo->exec('ALTER TABLE users DROP COLUMN IF EXISTS email_verified_at');
-            $pdo->exec('ALTER TABLE users DROP COLUMN IF EXISTS verification_token');
-            $pdo->exec('ALTER TABLE users DROP COLUMN IF EXISTS password_reset_token');
-            $pdo->exec('ALTER TABLE users DROP COLUMN IF EXISTS password_reset_expires_at');
-        } else {
-            try { $pdo->exec('ALTER TABLE users DROP COLUMN email_verified_at'); } catch (Throwable) {}
-            try { $pdo->exec('ALTER TABLE users DROP COLUMN verification_token'); } catch (Throwable) {}
-            try { $pdo->exec('ALTER TABLE users DROP COLUMN password_reset_token'); } catch (Throwable) {}
-            try { $pdo->exec('ALTER TABLE users DROP COLUMN password_reset_expires_at'); } catch (Throwable) {}
-        }
+        Schema::dropColumn('users', 'email_verified_at');
+        Schema::dropColumn('users', 'verification_token');
+        Schema::dropColumn('users', 'password_reset_token');
+        Schema::dropColumn('users', 'password_reset_expires_at');
     }
 };
 PHP;

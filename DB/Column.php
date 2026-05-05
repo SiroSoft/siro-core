@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Siro\Core\DB;
+
+final class Column
+{
+    public string $type;
+    public string $name;
+    public array $params;
+    public ?bool $nullable = null;
+    public mixed $defaultValue = null;
+    public bool $useCurrent = false;
+    public bool $unique_ = false;
+    private ?Blueprint $blueprint;
+
+    public function __construct(string $type, string $name, array $params = [], ?Blueprint $blueprint = null)
+    {
+        $this->type = $type;
+        $this->name = $name;
+        $this->params = $params;
+        $this->blueprint = $blueprint;
+    }
+
+    public function nullable(bool $value = true): self
+    {
+        $this->nullable = $value;
+        return $this;
+    }
+
+    public function default(mixed $value): self
+    {
+        $this->defaultValue = $value;
+        return $this;
+    }
+
+    public function useCurrent(): self
+    {
+        $this->useCurrent = true;
+        return $this;
+    }
+
+    public function unique(): self
+    {
+        $this->unique_ = true;
+        if ($this->blueprint !== null) {
+            $this->blueprint->unique($this->name);
+        }
+        return $this;
+    }
+}

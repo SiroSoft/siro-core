@@ -62,19 +62,22 @@ final class MakeMigrationCommand
 
 declare(strict_types=1);
 
+use Siro\Core\Schema;
+use Siro\Core\DB\Blueprint;
+
 return new class {
-    public function up(PDO \$db): void
+    public function up(): void
     {
-        // TODO: implement migration up
-        // Example:
-        // \$db->exec("CREATE TABLE users (id BIGINT PRIMARY KEY AUTO_INCREMENT)");
+        Schema::create('table_name', function (Blueprint \$t) {
+            \$t->id();
+            \$t->string('name');
+            \$t->timestamps();
+        });
     }
 
-    public function down(PDO \$db): void
+    public function down(): void
     {
-        // TODO: implement migration down
-        // Example:
-        // \$db->exec("DROP TABLE users");
+        Schema::drop('table_name');
     }
 };
 
