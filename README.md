@@ -1,4 +1,4 @@
-# Siro Core Framework v0.14.1
+# Siro Core Framework v0.15.0
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
 
@@ -8,6 +8,7 @@
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Tests](https://img.shields.io/badge/tests-136%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
+[![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
 
 ---
 
@@ -95,12 +96,41 @@
 - ⚡ **Live Dev Server** - `php siro live` with auto-reload on changes
 - 🚀 **Deployment System** - `php siro deploy` for Git/rsync/custom deploys
 
+### Schema Builder (v0.15.0) 🏗️
+- 🏗️ **Schema Builder** — `Schema::create()`, `Schema::table()`, `Schema::drop()` like Laravel but simpler
+- 🎯 **Driver-Agnostic Blueprint** — Write once, run on MySQL / PostgreSQL / SQLite
+- 🔗 **Foreign Key Constraints** — `$table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')`
+- 🔍 **Schema Introspection** — `hasTable()`, `hasColumn()`, `getColumnListing()`, `hasDatabase()`
+- ✨ **Migration templates** — `make:migration` and `make:crud` generate Schema-based code, no raw SQL
+
+### Multi-Database Connections (v0.15.0) 🔗
+- 🔗 **Named Connections** — `Database::connection('analytics')`, `DB::table('x')->connection('replica')`
+- 📡 **Read/Write Separation** — Configure multiple connections, query different databases
+- 📋 **Connection Management** — `Database::configure($config, 'name')`, `Database::connections()`, `Database::purge()`
+
+### Encryption (v0.15.0) 🔐
+- 🔐 **AES-256-CBC Encryption** — `Encrypt::encrypt($data)` / `Encrypt::decrypt($payload)`
+- ✅ **HMAC Integrity Check** — Tamper-proof with SHA-256 HMAC
+- 🔑 **Auto Key Resolution** — Uses `APP_KEY` or falls back to `JWT_SECRET`
+
+### HTTP Client (v0.15.0) 🌐
+- 🌐 **Zero-Dependency HTTP Client** — `Http::get()`, `Http::post()`, `Http::put()`, `Http::patch()`, `Http::delete()`
+- 📦 **Response Object** — `$response->status()`, `->body()`, `->json()`, `->ok()`, `->headers()`
+- ⚡ **Lightweight** — Single file, pure curl wrapper, no Guzzle dependency
+
+### Maintenance Mode (v0.15.0) 🔧
+- 🔧 **`php siro down`** — Enable maintenance mode with custom message
+- 🚀 **`php siro up`** — Disable maintenance mode
+- 🛡️ **Auto 503** — App returns 503 with `Retry-After` header when down
+- 🔓 **IP Allowlist** — `--allow=ip1,ip2` for authorized access during maintenance
+
+### PostgreSQL Production Support (v0.15.0) 🐘
+- 🐘 **Full PostgreSQL Support** — DSN with charset, `BIGSERIAL`, `RETURNING id`, `RANDOM()`
+- ✅ **Driver-Aware Quoting** — Double quotes for PostgreSQL, backticks for MySQL
+- ✅ **Migration Compatibility** — `IF NOT EXISTS`, no `UNSIGNED`, no `ENGINE=InnoDB`
+- ✅ **Schema Builder** — Generates PostgreSQL-compatible SQL automatically
+
 ### Service & Repository (v0.14.1) 🏗️
-- 🏗️ **Service Layer** - `php siro make:service Order` generates `app/Services/OrderService.php`
-- 🗂️ **Repository Pattern** - `php siro make:repository Product` generates `app/Repositories/ProductRepository.php`
-- 🚀 **Full CRUD** - `php siro make:crud invoice` generates Model + Migration + Repository + Service + Controller + Resource + Routes + Test
-- 🧠 **Smart Validation** - `make:crud` auto-detects validation rules based on model name (product→price,sku; order→total; user→email)
-- 🔄 **DI Auto-Resolution** - Router auto-resolves constructor dependencies via Reflection (Controller→Service→Repository→Model)
 
 ### PHPUnit Test Generation (v0.14.1) 🧪
 - ✅ **`make:test ProductApi`** generates `tests/Feature/ProductApiTest.php` (PHPUnit class)
@@ -2463,16 +2493,21 @@ Special thanks to all contributors who help make SiroPHP better.
 
 ### Previous Versions
 
-**v0.7.10** - Performance optimization (config caching, slow query logging, env validation)  
-**v0.7.9** - Auth & security hardening (rate limiting, CSRF protection, complete auth system)  
-**v0.7.8** - Enhanced QueryBuilder, model shortcuts, database seeders  
-**v0.7.7** - Comprehensive testing infrastructure (142 unit tests)  
-**v0.7.6** - Model relationships, soft deletes, resource auto-mapping  
-**v0.7.5** - Smart validation, typed input helpers, file uploads  
+**v0.15.0** — Schema Builder with Blueprint, Multi-DB connections, AES-256 Encryption, HTTP Client, Maintenance mode (`php siro down/up`), Foreign Key constraints, PostgreSQL production support, Health endpoint, Test assertion helpers (`assertStatus`, `assertJson`, `assertDatabaseHas`)  
+**v0.14.1** — Service & Repository pattern, PHPUnit test generation, `make:service`, `make:repository`, `make:crud` with full layers  
+**v0.14.0** — `debug:last`, `log:top`, `route:search`, `doctor --prod`, `api:test --loop`, `--simple` CRUD flag  
+**v0.13.0** — Factory generator, `db:show`, `route:rules`, live reload, deploy system, PHPStan Level 6, 136 tests  
+**v0.12.0** — `make:crud` scaffolding, `make:test`, benchmarks, watch mode, request collections, `env:switch`  
+**v0.11.0** — Service & Repository pattern, smart validation, eager loading, PHP 8.4 support  
+**v0.10.0** — Rate limiter dashboard, CSRF, config caching, optimize command  
+**v0.9.0** — Queue system, mail, events, scheduler, multi-language  
+**v0.8.0** — Debugging system (trace ID, replay, export), auto documentation with Swagger UI, Postman generator  
+**v0.7.0** — Initial release: router, models, JWT auth, validation, migrations, seeders  
 
 ---
 
-**Version:** 0.8.0  
+**Version:** 0.15.0  
 **Package:** sirosoft/core  
 **Type:** library  
-**Released:** April 29, 2026
+**Tests:** 136 ✅ (184 assertions)  
+**PHPStan:** Level 6 ✅
