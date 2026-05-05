@@ -5,3 +5,8 @@ composer.lock
 .DS_Store
 Thumbs.db
 .phpunit.cache
+
+# IDE and AI assistant folders (kept locally only)
+/.cline/
+.vscode/
+.idea/

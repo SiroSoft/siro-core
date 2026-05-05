@@ -617,7 +617,6 @@ php siro new my-api                   # Create project skeleton + JWT key
 
 # Code Generation
 php siro make:model User              # Generate model
-php siro make:api users               # Generate CRUD API
 php siro make:controller UserController
 php siro make:migration create_posts_table
 php siro make:resource UserResource

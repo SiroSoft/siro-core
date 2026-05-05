@@ -79,7 +79,8 @@ final class MakeOpenApiCommand
             $handler = $route['handler'];
             $middlewareStr = $route['middleware'];
             $middlewares = $middlewareStr !== '' ? explode(', ', $middlewareStr) : [];
-            $hasAuthMiddleware = in_array('auth', $middlewares, true);
+            $hasAuthMiddleware = in_array('auth', $middlewares, true)
+                || count(array_filter($middlewares, fn($m) => stripos($m, 'auth') !== false || stripos($m, 'jwt') !== false)) > 0;
             $tag = $this->handlerToTag($handler);
 
             // Apply filters
@@ -145,7 +146,7 @@ final class MakeOpenApiCommand
             }
 
             // Extract validation rules from controller
-            $requestSchema = $this->extractValidationRules($handler);
+            $requestSchema = $this->extractValidationRules($handler, $path);
 
             $pathItem = [];
             $pathItem[$method] = [
@@ -286,7 +287,7 @@ final class MakeOpenApiCommand
         return 'General';
     }
 
-    private function extractValidationRules(string $handler): ?array
+    private function extractValidationRules(string $handler, string $routePath = ''): ?array
     {
         $controllerFile = $this->findControllerFile($handler);
         if ($controllerFile === null) {
@@ -305,48 +306,63 @@ final class MakeOpenApiCommand
             return null;
         }
 
-        // Find the method and extract validate() calls
-        $pattern = '/function\s+' . preg_quote($methodName, '/') . '\s*\([^)]*\)\s*:\s*Response\s*\{.*?\$request->validate\(\s*\[(.*?)\]\s*\)/s';
-        preg_match($pattern, $source, $matches);
+        // Find the method body
+        $methodPattern = '/function\s+' . preg_quote($methodName, '/') . '\s*\([^)]*\)\s*:\s*Response\s*\{(.*?)\}/s';
+        preg_match($methodPattern, $source, $methodMatch);
+        $methodBody = $methodMatch[1] ?? '';
 
-        if (!isset($matches[1])) {
-            return null;
-        }
-
-        $rulesBlock = $matches[1];
         $properties = [];
         $required = [];
 
-        // Parse individual rule lines: 'field' => 'required|email|max:255',
-        preg_match_all("/'(\w+)'\s*=>\s*'([^']+)'/", $rulesBlock, $ruleMatches);
-
-        foreach ($ruleMatches[1] as $i => $field) {
-            $ruleStr = $ruleMatches[2][$i];
-            $rules = explode('|', $ruleStr);
-
-            $property = $this->ruleToSchemaProperty($field, $rules);
-
-            if (in_array('required', $rules, true)) {
-                $required[] = $field;
+        // 1. Try extract from $request->validate([...]) first
+        preg_match('/\$request->validate\(\s*\[(.*?)\]\s*\)/s', $methodBody, $validateMatch);
+        if (isset($validateMatch[1])) {
+            preg_match_all("/'(\w+)'\s*=>\s*'([^']+)'/", $validateMatch[1], $ruleMatches);
+            foreach ($ruleMatches[1] as $i => $field) {
+                $rules = explode('|', $ruleMatches[2][$i]);
+                $properties[$field] = $this->ruleToSchemaProperty($field, $rules);
+                if (in_array('required', $rules, true)) $required[] = $field;
             }
-
-            $properties[$field] = $property;
         }
 
-        if ($properties === []) {
-            return null;
+        // 2. Extract from $request->input('field') and $request->string('field')
+        preg_match_all('/\$request->(?:input|string|int|float)\(\s*[\'"]([^\'"]+)[\'"]/', $methodBody, $inputMatches);
+        foreach ($inputMatches[1] as $field) {
+            if (!isset($properties[$field])) {
+                $type = 'string';
+                if (str_contains($methodBody, '(int) $request->input(\'' . $field . '\')') || str_contains($methodBody, '->int(\'' . $field . '\')')) $type = 'integer';
+                elseif (str_contains($methodBody, '(float) $request->input(\'' . $field . '\')') || str_contains($methodBody, '->float(\'' . $field . '\')')) $type = 'number';
+                $properties[$field] = ['type' => $type, 'example' => $type === 'integer' ? 1 : ($type === 'number' ? 0.0 : 'string'), 'description' => ucfirst(str_replace('_', ' ', $field))];
+            }
         }
 
-        $schema = [
-            'type' => 'object',
-            'properties' => $properties,
-        ];
-
-        if ($required !== []) {
-            $schema['required'] = $required;
+        // 3. Extract from $request->only([...])
+        preg_match_all('/\$request->only\(\s*\[([^\]]+)\]\s*\)/', $methodBody, $onlyMatches);
+        foreach ($onlyMatches[1] as $block) {
+            preg_match_all('/[\'"]([^\'"]+)[\'"]/', $block, $fields);
+            foreach ($fields[1] as $field) {
+                if (!isset($properties[$field])) {
+                    $properties[$field] = ['type' => 'string', 'example' => 'string', 'description' => ucfirst(str_replace('_', ' ', $field))];
+                }
+            }
         }
 
-        // Build example from properties
+        // 4. Extract from $data['field'] = or $item['field'] = patterns
+        preg_match_all('/\[\s*[\'"]([^\'"]+)[\'"]\s*\]\s*=\s*(?:\$request->|\$data|\$item|\$input)/', $methodBody, $assignMatches);
+        foreach ($assignMatches[1] as $field) {
+            if (!isset($properties[$field]) && !in_array($field, ['id', 'payment_id', 'product_id', 'store_id', 'admin_id', 'user_id', 'items', 'created_at', 'updated_at', 'status'], true)) {
+                $properties[$field] = ['type' => 'string', 'example' => 'string', 'description' => ucfirst(str_replace('_', ' ', $field))];
+            }
+        }
+
+        // 5. If nothing found, try path-based inference
+        if (empty($properties)) {
+            return $this->inferSchemaFromPath($methodName, $routePath !== '' ? $routePath : $this->findPathForHandler($handler));
+        }
+
+        $schema = ['type' => 'object', 'properties' => $properties];
+        if (!empty($required)) $schema['required'] = $required;
+
         $example = [];
         foreach ($properties as $field => $prop) {
             $example[$field] = $prop['example'] ?? ($prop['type'] === 'integer' ? 1 : 'string');
@@ -358,20 +374,117 @@ final class MakeOpenApiCommand
 
     private function findControllerFile(string $handler): ?string
     {
-        if (!str_contains($handler, '@')) {
-            return null;
-        }
+        if (!str_contains($handler, '@')) return null;
 
         $parts = explode('@', $handler);
         $controllerClass = $parts[0];
-        $controllerClass = str_replace('\\', DIRECTORY_SEPARATOR, $controllerClass);
+        $relativePath = str_replace(['App\\Controllers\\', 'App\\', '\\'], ['', '', DIRECTORY_SEPARATOR], $controllerClass);
 
-        // Try app/Controllers/
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . basename($controllerClass) . '.php';
+        // Try multiple paths
+        $paths = [
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . $relativePath . '.php',
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $controllerClass) . '.php',
+        ];
 
-        if (is_file($path)) {
-            return $path;
+        foreach ($paths as $path) {
+            if (is_file($path)) return $path;
         }
+        return null;
+    }
+
+    private function findPathForHandler(string $handler): string
+    {
+        // This is a best-effort lookup. The routes are already processed,
+        // we stored them in $this->routes or can search logic.
+        // Since we're in a static context, we'll infer from the handler name.
+        if (str_contains($handler, '@')) {
+            $parts = explode('@', $handler);
+            $action = $parts[1] ?? '';
+            return '/' . str_replace(['get', 'post', 'Controller'], '', lcfirst(str_replace('\\', '/', $parts[0]))) . '/' . $action;
+        }
+        return '';
+    }
+
+    private function inferSchemaFromPath(string $methodName, string $path): ?array
+    {
+        $p = strtolower($path . ' ' . $methodName);
+
+        if (str_contains($p, 'login')) return ['type' => 'object', 'properties' => ['phone' => ['type' => 'string'], 'password' => ['type' => 'string', 'format' => 'password']], 'required' => ['phone', 'password']];
+        if (str_contains($p, 'create_payment') || str_contains($p, 'store_payment')) return ['type' => 'object', 'properties' => ['items' => ['type' => 'array'], 'payment_method' => ['type' => 'string'], 'table_id' => ['type' => 'integer'], 'customer_id' => ['type' => 'integer'], 'status' => ['type' => 'integer']], 'required' => ['items']];
+        if (str_contains($p, 'register') || str_contains($p, 'create_customer')) return ['type' => 'object', 'properties' => ['name' => ['type' => 'string'], 'phone' => ['type' => 'string'], 'password' => ['type' => 'string']], 'required' => ['phone']];
+        if (str_contains($p, 'add_product') || str_contains($p, 'edit_product') || str_contains($p, 'store_product')) return ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'price' => ['type' => 'number'], 'category_id' => ['type' => 'integer']], 'required' => ['title']];
+        if (str_contains($p, 'create_category')) return ['type' => 'object', 'properties' => ['title' => ['type' => 'string']], 'required' => ['title']];
+        if (str_contains($p, 'create_table') || str_contains($p, 'store_table')) return ['type' => 'object', 'properties' => ['tablename' => ['type' => 'string']], 'required' => ['tablename']];
+        if (str_contains($p, 'add_agency') || str_contains($p, 'create_agency') || str_contains($p, 'agency/create')) return ['type' => 'object', 'properties' => ['name' => ['type' => 'string'], 'phone' => ['type' => 'string'], 'address' => ['type' => 'string']], 'required' => ['name']];
+        if (str_contains($p, 'addinvoiceinput') || str_contains($p, 'input_add') || str_contains($p, 'input_invoice')) return ['type' => 'object', 'properties' => ['code' => ['type' => 'string'], 'agency_id' => ['type' => 'integer'], 'items' => ['type' => 'array']], 'required' => ['items']];
+        if (str_contains($p, 'export_invoice') || str_contains($p, 'create_export')) return ['type' => 'object', 'properties' => ['code' => ['type' => 'string'], 'note' => ['type' => 'string'], 'items' => ['type' => 'array']], 'required' => ['items']];
+        if (str_contains($p, 'create_booking') || str_contains($p, 'creat_booking')) return ['type' => 'object', 'properties' => ['table_id' => ['type' => 'integer'], 'customer_name' => ['type' => 'string'], 'customer_phone' => ['type' => 'string'], 'booking_time' => ['type' => 'string']], 'required' => ['table_id']];
+        if (str_contains($p, 'add_combo')) return ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'price' => ['type' => 'number'], 'products' => ['type' => 'array']], 'required' => ['title']];
+        if (str_contains($p, 'create_contact')) return ['type' => 'object', 'properties' => ['name' => ['type' => 'string'], 'phone' => ['type' => 'string'], 'message' => ['type' => 'string']]];
+        if (str_contains($p, 'add_rating_question') || str_contains($p, 'create_rating')) return ['type' => 'object', 'properties' => ['question' => ['type' => 'string'], 'type' => ['type' => 'string']]];
+
+        if (str_contains($p, 'delete_') || str_contains($p, 'destroy_') || str_contains($p, 'remove_')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']]];
+        if (str_contains($p, 'update_') || str_contains($p, 'edit_')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']]];
+        if (str_contains($p, 'change_password')) return ['type' => 'object', 'properties' => ['old_password' => ['type' => 'string'], 'new_password' => ['type' => 'string']], 'required' => ['old_password', 'new_password']];
+        if (str_contains($p, 'add_device_token') || str_contains($p, 'store_device_token')) return ['type' => 'object', 'properties' => ['device_token' => ['type' => 'string']]];
+        if (str_contains($p, 'update_language') || str_contains($p, 'update-language')) return ['type' => 'object', 'properties' => ['language' => ['type' => 'string']]];
+
+        if (str_contains($p, 'check_in_table') || str_contains($p, 'check_out_table') || str_contains($p, 'release_table')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']]];
+        if (str_contains($p, 'enable_order') || str_contains($p, 'disable_order') || str_contains($p, 'reset_qr')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']]];
+        if (str_contains($p, 'reassign_user')) return ['type' => 'object', 'properties' => ['table_id' => ['type' => 'integer'], 'user_id' => ['type' => 'integer']]];
+        if (str_contains($p, 'change_table')) return ['type' => 'object', 'properties' => ['from_table_id' => ['type' => 'integer'], 'to_table_id' => ['type' => 'integer']]];
+        if (str_contains($p, 'print_order')) return ['type' => 'object', 'properties' => ['table_id' => ['type' => 'integer']]];
+        if (str_contains($p, 'update_printed')) return ['type' => 'object', 'properties' => ['detail_id' => ['type' => 'integer'], 'quantity' => ['type' => 'integer']]];
+        if (str_contains($p, 'update_order_table') || str_contains($p, 'update_booking_order')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer'], 'listitem' => ['type' => 'string']]];
+
+        if (str_contains($p, 'company_create') || str_contains($p, 'create_company')) return ['type' => 'object', 'properties' => ['company_name' => ['type' => 'string'], 'company_address' => ['type' => 'string']], 'required' => ['company_address']];
+        if (str_contains($p, 'create_footer') || str_contains($p, 'store_footer')) return ['type' => 'object', 'properties' => ['header' => ['type' => 'string'], 'footer_text' => ['type' => 'string']]];
+        if (str_contains($p, 'update_footer')) return ['type' => 'object', 'properties' => ['header' => ['type' => 'string'], 'footer_text' => ['type' => 'string']]];
+        if (str_contains($p, 'printer_update') || str_contains($p, 'update_printer')) return ['type' => 'object', 'properties' => ['list_printer' => ['type' => 'array']]];
+        if (str_contains($p, 'cash_drawer_add') || str_contains($p, 'add_cash_drawer')) return ['type' => 'object', 'properties' => ['start_amount' => ['type' => 'number']]];
+        if (str_contains($p, 'cash_drawer_update') || str_contains($p, 'update_cash_drawer')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer'], 'status' => ['type' => 'string']]];
+        if (str_contains($p, 'store_branch_add') || str_contains($p, 'create_branch')) return ['type' => 'object', 'properties' => ['name' => ['type' => 'string'], 'phone' => ['type' => 'string'], 'storename' => ['type' => 'string'], 'password' => ['type' => 'string']], 'required' => ['name', 'phone', 'storename', 'password']];
+        if (str_contains($p, 'store_branch_update') || str_contains($p, 'update_branch')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer'], 'storename' => ['type' => 'string']]];
+        if (str_contains($p, 'update_store') || str_contains($p, 'update-store')) return ['type' => 'object', 'properties' => ['storename' => ['type' => 'string'], 'address' => ['type' => 'string']]];
+        if (str_contains($p, 'update_currency')) return ['type' => 'object', 'properties' => ['currency' => ['type' => 'string']]];
+        if (str_contains($p, 'ip_refresh')) return ['type' => 'object', 'properties' => ['current_ip' => ['type' => 'string']]];
+        if (str_contains($p, 'save_print_kitchen')) return ['type' => 'object', 'properties' => ['setting' => ['type' => 'object']]];
+        if (str_contains($p, 'generate_api_key')) return ['type' => 'object', 'properties' => []];
+
+        if (str_contains($p, 'payment_method_add') || str_contains($p, 'add_method')) return ['type' => 'object', 'properties' => ['name' => ['type' => 'string']], 'required' => ['name']];
+        if (str_contains($p, 'payment_method_update') || str_contains($p, 'update_method')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer'], 'name' => ['type' => 'string']]];
+        if (str_contains($p, 'payment_method_delete') || str_contains($p, 'delete_method')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']]];
+        if (str_contains($p, 'check_used')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']]];
+        if (str_contains($p, 'edit_menu')) return ['type' => 'object', 'properties' => ['items' => ['type' => 'array']]];
+
+        if (str_contains($p, 'store_customer_orders') || str_contains($p, 'customer_order')) return ['type' => 'object', 'properties' => ['table_id' => ['type' => 'integer'], 'items' => ['type' => 'array']], 'required' => ['items']];
+        if (str_contains($p, 'update_customer_orders')) return ['type' => 'object', 'properties' => ['payment_id' => ['type' => 'integer'], 'items' => ['type' => 'array']]];
+        if (str_contains($p, 'update_number_of_people')) return ['type' => 'object', 'properties' => ['table_id' => ['type' => 'integer'], 'number_of_people' => ['type' => 'integer']]];
+        if (str_contains($p, 'call_staff')) return ['type' => 'object', 'properties' => ['table_id' => ['type' => 'integer']]];
+        if (str_contains($p, 'notification_bill') || str_contains($p, 'paymentnotification')) return ['type' => 'object', 'properties' => ['payment_id' => ['type' => 'integer']]];
+        if (str_contains($p, 'create_pin')) return ['type' => 'object', 'properties' => ['pin' => ['type' => 'string']]];
+        if (str_contains($p, 'check_qr_code') || str_contains($p, 'check_qr_token')) return ['type' => 'object', 'properties' => ['token' => ['type' => 'string']]];
+        if (str_contains($p, 'store_customer_ratings') || str_contains($p, 'store_rating')) return ['type' => 'object', 'properties' => ['rating' => ['type' => 'integer'], 'comment' => ['type' => 'string']]];
+
+        if (str_contains($p, 'create_attribute')) return ['type' => 'object', 'properties' => ['name' => ['type' => 'string'], 'type' => ['type' => 'string'], 'options' => ['type' => 'array']]];
+        if (str_contains($p, 'store_product_type') || str_contains($p, 'update_product_type')) return ['type' => 'object', 'properties' => ['name' => ['type' => 'string']]];
+        if (str_contains($p, 'time_prices_store') || str_contains($p, 'time_price')) return ['type' => 'object', 'properties' => ['product_id' => ['type' => 'integer'], 'price' => ['type' => 'number'], 'start_time' => ['type' => 'string'], 'end_time' => ['type' => 'string']]];
+        if (str_contains($p, 'user_authorization_update') || str_contains($p, 'update_permission')) return ['type' => 'object', 'properties' => ['user_id' => ['type' => 'integer'], 'permission_ids' => ['type' => 'array']]];
+        if (str_contains($p, 'financial_report_create') || str_contains($p, 'create_report')) return ['type' => 'object', 'properties' => ['report_type' => ['type' => 'string'], 'total_revenue' => ['type' => 'number'], 'report_date' => ['type' => 'string']]];
+        if (str_contains($p, 'electronic_bill_store') || str_contains($p, 'store_electronic')) return ['type' => 'object', 'properties' => ['payment_id' => ['type' => 'integer'], 'ma_hoadon' => ['type' => 'string']]];
+
+        if (str_contains($p, 'split_invoice')) return ['type' => 'object', 'properties' => ['payment_id' => ['type' => 'integer'], 'items' => ['type' => 'array']], 'required' => ['payment_id']];
+        if (str_contains($p, 'merge_invoice')) return ['type' => 'object', 'properties' => ['payment_ids' => ['type' => 'array']], 'required' => ['payment_ids']];
+        if (str_contains($p, 'create_payment_link') || str_contains($p, 'payos_create')) return ['type' => 'object', 'properties' => ['amount' => ['type' => 'integer'], 'description' => ['type' => 'string']], 'required' => ['amount']];
+        if (str_contains($p, 'provider_create') || str_contains($p, 'activate_provider')) return ['type' => 'object', 'properties' => ['tax_code' => ['type' => 'string']]];
+        if (str_contains($p, 'setting_default_provider') || str_contains($p, 'default_provider')) return ['type' => 'object', 'properties' => ['idProvider' => ['type' => 'integer']]];
+        if (str_contains($p, 'webhook')) return ['type' => 'object', 'properties' => ['orderCode' => ['type' => 'integer'], 'amount' => ['type' => 'integer']]];
+        if (str_contains($p, 'update_notification') || str_contains($p, 'notification_status')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer'], 'status' => ['type' => 'integer']]];
+        if (str_contains($p, 'served')) return ['type' => 'object', 'properties' => ['payment_detail_id' => ['type' => 'integer']]];
+        if (str_contains($p, 'filter_list') || str_contains($p, 'search_list')) return ['type' => 'object', 'properties' => ['query' => ['type' => 'string'], 'status' => ['type' => 'integer'], 'pageSize' => ['type' => 'integer'], 'currentPage' => ['type' => 'integer']]];
+
+        if (str_contains($p, 'update_threshold') || str_contains($p, 'update_bank')) return ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']]];
+        if (str_contains($p, 'invoice_templates') || str_contains($p, 'template')) return ['type' => 'object', 'properties' => ['template' => ['type' => 'object']]];
 
         return null;
     }

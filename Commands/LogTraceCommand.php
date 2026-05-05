@@ -28,6 +28,7 @@ final class LogTraceCommand
         $method = null;
         $slow = false;
         $limit = 10;
+        $full = false;
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--status=')) {
@@ -39,19 +40,21 @@ final class LogTraceCommand
                 $limit = 50;
             } elseif (str_starts_with($arg, '--limit=')) {
                 $limit = max(1, (int) substr($arg, 7));
+            } elseif ($arg === '--full') {
+                $full = true;
             } elseif ($arg !== '') {
                 $traceId = $arg;
             }
         }
 
         if ($traceId !== '') {
-            return $this->showTrace($traceId);
+            return $this->showTrace($traceId, $full);
         }
 
         return $this->listTraces($status, $method, $slow, $limit);
     }
 
-    private function showTrace(string $traceId): int
+    private function showTrace(string $traceId, bool $full = false): int
     {
         $traceFile = $this->basePath
             . DIRECTORY_SEPARATOR . 'storage'
@@ -88,14 +91,38 @@ final class LogTraceCommand
         if ($requestBody !== '' && $requestBody !== '[]' && $requestBody !== '{}') {
             $this->write('');
             $this->write('  Request Body:');
-            $this->write('    ' . mb_substr($requestBody, 0, 500));
+            $displayBody = $full ? $requestBody : mb_substr($requestBody, 0, 500);
+            if ($full) {
+                $formatted = json_decode($displayBody, true);
+                if (is_array($formatted)) {
+                    foreach (explode("\n", json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) as $line) {
+                        $this->write('    ' . $line);
+                    }
+                } else {
+                    $this->write('    ' . $displayBody);
+                }
+            } else {
+                $this->write('    ' . $displayBody);
+            }
         }
 
         $responseBody = $data['response_body'] ?? '';
         if ($responseBody !== '' && $responseBody !== '[]' && $responseBody !== '{}') {
             $this->write('');
             $this->write('  Response Body:');
-            $this->write('    ' . mb_substr($responseBody, 0, 500));
+            $displayBody = $full ? $responseBody : mb_substr($responseBody, 0, 500);
+            if ($full) {
+                $formatted = json_decode($displayBody, true);
+                if (is_array($formatted)) {
+                    foreach (explode("\n", json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) as $line) {
+                        $this->write('    ' . $line);
+                    }
+                } else {
+                    $this->write('    ' . $displayBody);
+                }
+            } else {
+                $this->write('    ' . $displayBody);
+            }
         }
 
         $authHeader = $data['auth_header'] ?? '';
@@ -104,19 +131,43 @@ final class LogTraceCommand
             $this->write('  Auth: ' . mb_substr($authHeader, 0, 50) . '...');
         }
 
-        if (isset($data['queries']) && is_array($data['queries']) && $data['queries'] !== []) {
+        if (isset($data['request_headers']) && is_array($data['request_headers']) && $full) {
             $this->write('');
-            $this->write('  SQL Queries (' . count($data['queries']) . '):');
-            foreach ($data['queries'] as $i => $q) {
-                $this->write(sprintf(
-                    '    %d. %s [%d rows, %.2fms]',
-                    $i + 1, $q['sql'] ?? '?', $q['rows'] ?? 0, $q['time_ms'] ?? 0
-                ));
+            $this->write('  Request Headers:');
+            foreach ($data['request_headers'] as $key => $value) {
+                $k = strtolower((string) $key);
+                if ($k === 'authorization' || $k === 'cookie') {
+                    $this->write('    ' . $key . ': [REDACTED]');
+                } else {
+                    $this->write('    ' . $key . ': ' . $value);
+                }
             }
         }
 
+        if (isset($data['queries']) && is_array($data['queries']) && $data['queries'] !== []) {
+            $this->write('');
+            $this->write('  SQL Queries (' . count($data['queries']) . '):');
+            $totalTime = 0;
+            foreach ($data['queries'] as $i => $q) {
+                $totalTime += (float) ($q['time_ms'] ?? 0);
+                $sql = $q['sql'] ?? '?';
+                if (!$full && mb_strlen($sql) > 120) {
+                    $sql = mb_substr($sql, 0, 120) . '...';
+                }
+                $this->write(sprintf(
+                    '    %d. %s [%d rows, %.2fms]',
+                    $i + 1, $sql, $q['rows'] ?? 0, $q['time_ms'] ?? 0
+                ));
+            }
+            $this->write(sprintf('    Total SQL time: %.2fms', $totalTime));
+        }
+
         $this->write('');
+        if ($full) {
+            $this->write('  Debug: php siro debug:last');
+        }
         $this->write('  Replay: php siro log:replay ' . $traceId);
+        $this->write('  Export: php siro log:export ' . $traceId . ' --postman');
         $this->write(str_repeat('=', 56));
 
         return 0;

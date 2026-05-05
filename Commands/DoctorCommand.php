@@ -24,12 +24,13 @@ final class DoctorCommand
  */
     public function run(array $args): int
     {
-        unset($args);
+        $isProd = in_array('--prod', $args, true);
 
         Env::load($this->basePath . DIRECTORY_SEPARATOR . '.env');
 
-        $this->write("SiroPHP Environment Doctor\n");
-        $this->write("==========================\n");
+        $title = $isProd ? 'SiroPHP Production Doctor' : 'SiroPHP Environment Doctor';
+        $this->write($title . "\n");
+        $this->write(str_repeat('=', strlen($title)) . "\n\n");
 
         $allPassed = true;
 
@@ -38,6 +39,15 @@ final class DoctorCommand
         $phpOk = version_compare($phpVersion, '8.2.0', '>=');
         $this->printCheck('PHP Version', $phpVersion . ' (>= 8.2 required)', $phpOk);
         if (!$phpOk) $allPassed = false;
+
+        if ($isProd) {
+            $phpProdOk = version_compare($phpVersion, '8.3.0', '>=');
+            if ($phpProdOk) {
+                $this->write("    ℹ️  ✅ Production-ready version (>= 8.3)\n");
+            } else {
+                $this->write("    ⚠️  ⚠️  Consider upgrading to PHP 8.3+ for production\n");
+            }
+        }
 
         // Check Required Extensions
         $extensions = [
@@ -82,6 +92,26 @@ final class DoctorCommand
         $this->printCheck('JWT_SECRET', strlen($jwtSecret) >= 32 ? 'Configured (' . strlen($jwtSecret) . ' chars)' : 'Not configured or too short', $jwtOk);
         if (!$jwtOk) $allPassed = false;
 
+        if ($isProd) {
+            $appEnv = strtolower((string) Env::get('APP_ENV', 'production'));
+            $appDebug = strtolower((string) Env::get('APP_DEBUG', 'false'));
+            $envOk = $appEnv === 'production' && $appDebug === 'false';
+            $this->printCheck('APP_ENV', $appEnv . ' (should be production)', $appEnv === 'production');
+            if ($appEnv !== 'production') $allPassed = false;
+            $this->printCheck('APP_DEBUG', $appDebug . ' (should be false)', $appDebug === 'false');
+            if ($appDebug !== 'false') $allPassed = false;
+
+            $httpsOk = Env::get('APP_URL', '') !== '' && str_starts_with((string) Env::get('APP_URL', ''), 'https://');
+            $this->printCheck('HTTPS', Env::get('APP_URL', 'not set'), $httpsOk);
+            if (!$httpsOk) $allPassed = false;
+
+            $corsOk = Env::get('CORS_ALLOWED_ORIGINS', '') !== '';
+            $this->printCheck('CORS', $corsOk ? Env::get('CORS_ALLOWED_ORIGINS', '') : 'Not configured', $corsOk);
+            if (!$corsOk) {
+                $this->write("    ⚠️  Set CORS_ALLOWED_ORIGINS to prevent unauthorized access\n");
+            }
+        }
+
         // Check Storage Writable
         $storageDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage';
         $storageWritable = is_dir($storageDir) && is_writable($storageDir);
@@ -91,7 +121,7 @@ final class DoctorCommand
         // Check Log Files
         $logDir = $storageDir . DIRECTORY_SEPARATOR . 'logs';
         if (is_dir($logDir)) {
-            $logFiles = ['request.log', 'error.log', 'slow.log'];
+            $logFiles = ['error.log', 'slow.log'];
             foreach ($logFiles as $logFile) {
                 $logPath = $logDir . DIRECTORY_SEPARATOR . $logFile;
                 $exists = file_exists($logPath);
@@ -103,8 +133,22 @@ final class DoctorCommand
             $allPassed = false;
         }
 
-        // Check Database Connection (optional)
-        $this->write("\nDatabase Connection Test:");
+        if ($isProd) {
+            $traceDir = $storageDir . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+            $traceWritable = is_dir($traceDir) && is_writable($traceDir);
+            $this->printCheck('Traces Directory', $traceWritable ? 'Writable' : 'Missing/Not writable', $traceWritable);
+            if (!$traceWritable) $allPassed = false;
+
+            $cacheDir = $storageDir . DIRECTORY_SEPARATOR . 'cache';
+            if (is_dir($cacheDir)) {
+                $cacheWritable = is_writable($cacheDir);
+                $this->printCheck('Cache Directory', $cacheWritable ? 'Writable' : 'Not writable', $cacheWritable);
+                if (!$cacheWritable) $allPassed = false;
+            }
+        }
+
+        // Check Database Connection (required in production)
+        $this->write("\nDatabase Connection Test:\n");
         try {
             /** @var array<string, mixed> $config */
             $config = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
@@ -113,14 +157,20 @@ final class DoctorCommand
             $pdo->query('SELECT 1');
             $this->write("  ✅ Database connection successful\n");
         } catch (\Throwable $e) {
-            $this->write("  ⚠️  Database connection failed: " . $e->getMessage() . "\n");
-            $this->write("     (This is OK if database server is not running locally)\n");
+            $msg = "  " . ($isProd ? '❌' : '⚠️') . "  Database connection failed: " . $e->getMessage() . "\n";
+            $this->write($msg);
+            if ($isProd) {
+                $this->write("     ❌ Database is REQUIRED in production mode\n");
+                $allPassed = false;
+            } else {
+                $this->write("     (This is OK if database server is not running locally)\n");
+            }
         }
 
         // Final verdict
         $this->write("\n" . str_repeat('=', 50) . "\n");
         if ($allPassed) {
-            $this->write("✅ All checks passed! Your environment is ready.\n");
+            $this->write("✅ All checks passed! System is " . ($isProd ? 'production' : 'development') . " ready.\n");
             return 0;
         } else {
             $this->write("❌ Some checks failed. Please fix the issues above.\n");

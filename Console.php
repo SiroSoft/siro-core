@@ -9,7 +9,9 @@ use Siro\Core\Commands\EnvCheckCommand;
 use Siro\Core\Commands\LogExportCommand;
 use Siro\Core\Commands\LogReplayCommand;
 use Siro\Core\Commands\LogTraceCommand;
-use Siro\Core\Commands\MakeApiCommand;
+use Siro\Core\Commands\LogTopCommand;
+use Siro\Core\Commands\DebugLastCommand;
+use Siro\Core\Commands\RouteSearchCommand;
 use Siro\Core\Commands\MakeMailCommand;
 use Siro\Core\Commands\MakeEventCommand;
 use Siro\Core\Commands\MakeOpenApiCommand;
@@ -70,14 +72,13 @@ final class Console
     {
         return [
             'make:auth'       => ['handler' => MakeAuthCommand::class, 'desc' => 'Generate auth system', 'usage' => 'php siro make:auth'],
-            'make:api'        => ['handler' => MakeApiCommand::class, 'desc' => 'Generate API resource', 'usage' => 'php siro make:api <name>'],
             'make:controller' => ['handler' => MakeControllerCommand::class, 'desc' => 'Generate controller', 'usage' => 'php siro make:controller <name>'],
             'make:model'      => ['handler' => MakeModelCommand::class, 'desc' => 'Generate model', 'usage' => 'php siro make:model <name>'],
             'make:migration'  => ['handler' => MakeMigrationCommand::class, 'desc' => 'Generate migration', 'usage' => 'php siro make:migration <name>'],
             'make:queue-table'=> ['handler' => MakeQueueTableCommand::class, 'desc' => 'Generate queue tables migration', 'usage' => 'php siro make:queue-table'],
             'make:resource'   => ['handler' => MakeResourceCommand::class, 'desc' => 'Generate API resource transformer', 'usage' => 'php siro make:resource <name>'],
             'make:seeder'     => ['handler' => MakeSeederCommand::class, 'desc' => 'Generate seeder', 'usage' => 'php siro make:seeder <name>'],
-            'make:crud'       => ['handler' => MakeCrudCommand::class, 'desc' => 'Full CRUD scaffolding', 'usage' => 'php siro make:crud <name> [--seed]'],
+            'make:crud'       => ['handler' => MakeCrudCommand::class, 'desc' => 'Full CRUD scaffolding (--simple, --seed, --force)', 'usage' => 'php siro make:crud <name> [--simple] [--seed] [--force]'],
             'make:test'       => ['handler' => MakeTestCommand::class, 'desc' => 'Generate test file', 'usage' => 'php siro make:test <name>'],
             'make:job'        => ['handler' => MakeJobCommand::class, 'desc' => 'Generate job class', 'usage' => 'php siro make:job <name>'],
             'make:mail'       => ['handler' => MakeMailCommand::class, 'desc' => 'Generate mail class', 'usage' => 'php siro make:mail <name>'],
@@ -95,16 +96,18 @@ final class Console
             'db:seed'           => ['handler' => SeedCommand::class, 'desc' => 'Run seeders', 'usage' => 'php siro db:seed'],
             'db:show'           => ['handler' => DbShowCommand::class, 'desc' => 'Show table data/schema', 'usage' => 'php siro db:show <table> [--schema]'],
 
-            'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request from trace', 'usage' => 'php siro log:replay <trace_id> [--force]'],
-            'log:trace'   => ['handler' => LogTraceCommand::class, 'desc' => 'View trace details', 'usage' => 'php siro log:trace [<id>] [--status=500] [--limit=N]'],
-            'log:export'  => ['handler' => LogExportCommand::class, 'desc' => 'Export trace', 'usage' => 'php siro log:export <trace_id> --postman'],
+            'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request (--set, --seed)', 'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val]'],
+            'log:trace'   => ['handler' => LogTraceCommand::class, 'desc' => 'View trace details (--full for more)', 'usage' => 'php siro log:trace [<id>] [--status=500] [--limit=N] [--full]'],
+            'log:export'  => ['handler' => LogExportCommand::class, 'desc' => 'Export trace (JSON/CSV/Postman)', 'usage' => 'php siro log:export <trace_id> --postman'],
             'log:cleanup' => ['handler' => LogCleanupCommand::class, 'desc' => 'Clean old trace files', 'usage' => 'php siro log:cleanup [--days=N] [--dry-run]'],
             'log:slow'    => ['handler' => SlowLogCommand::class, 'desc' => 'Show slow requests', 'usage' => 'php siro log:slow [--limit=N] [--min=MS]'],
             'log:tail'    => ['handler' => LogTailCommand::class, 'desc' => 'Tail log files in real-time', 'usage' => 'php siro log:tail [--type=request|error|slow] [--lines=N] [--follow|-f]'],
             'log:stats'   => ['handler' => LogStatsCommand::class, 'desc' => 'Request statistics with charts', 'usage' => 'php siro log:stats [--days=N]'],
+            'log:top'     => ['handler' => LogTopCommand::class, 'desc' => 'Top slowest APIs by total time', 'usage' => 'php siro log:top [--limit=N] [--min=MS]'],
+            'debug:last'  => ['handler' => DebugLastCommand::class, 'desc' => 'Show last request details', 'usage' => 'php siro debug:last'],
 
             'test'          => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite', 'usage' => 'php siro test'],
-            'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API from CLI', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin] [--login]'],
+            'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API (--loop, --as=admin/guest)', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]'],
 
             'queue:work'    => ['handler' => QueueWorkCommand::class, 'desc' => 'Process queue jobs', 'usage' => 'php siro queue:work [--daemon]'],
             'queue:retry'   => ['handler' => QueueRetryCommand::class, 'desc' => 'Retry failed jobs', 'usage' => 'php siro queue:retry <id|all>'],
@@ -123,8 +126,9 @@ final class Console
             'optimize'      => ['handler' => OptimizeCommand::class, 'desc' => 'Optimize for production', 'usage' => 'php siro optimize'],
             'env:check'     => ['handler' => EnvCheckCommand::class, 'desc' => 'Check environment', 'usage' => 'php siro env:check'],
             'env:switch'    => ['handler' => EnvSwitchCommand::class, 'desc' => 'Switch environment', 'usage' => 'php siro env:switch <env>'],
-            'doctor'        => ['handler' => DoctorCommand::class, 'desc' => 'System health check', 'usage' => 'php siro doctor'],
+            'doctor'        => ['handler' => DoctorCommand::class, 'desc' => 'System health check (--prod)', 'usage' => 'php siro doctor [--prod]'],
             'route:list'    => ['handler' => RouteListCommand::class, 'desc' => 'List all routes', 'usage' => 'php siro route:list'],
+            'route:search'  => ['handler' => RouteSearchCommand::class, 'desc' => 'Search routes by keyword', 'usage' => 'php siro route:search <keyword>'],
             'route:rules'   => ['handler' => RouteRulesCommand::class, 'desc' => 'Show validation rules', 'usage' => 'php siro route:rules'],
             'rate:status'   => ['handler' => RateStatusCommand::class, 'desc' => 'Rate limit dashboard', 'usage' => 'php siro rate:status'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
@@ -166,6 +170,12 @@ final class Console
         if ($command === 'make:docs') {
             $command = 'make:openapi';
             $args[] = '--with-swagger';
+        }
+
+        // open:postman <trace_id> → log:export <trace_id> --postman
+        if ($command === 'open:postman') {
+            $command = 'log:export';
+            $args[] = '--postman';
         }
 
         $registry = $this->commandRegistry();
@@ -251,19 +261,19 @@ final class Console
     {
         $registry = $this->commandRegistry();
         $groups = [
-            'Make / Generate'    => ['make:auth', 'make:api', 'make:controller', 'make:model', 'make:migration',
+            'Make / Generate'    => ['make:auth', 'make:controller', 'make:model', 'make:migration',
                 'make:queue-table', 'make:resource', 'make:seeder', 'make:crud', 'make:test',
                 'make:job', 'make:mail', 'make:event', 'make:lang', 'make:factory',
                 'make:service', 'make:repository',
                 'make:openapi', 'make:postman'],
             'New Project'        => ['new'],
             'Database'           => ['migrate', 'migrate:rollback', 'migrate:status', 'db:seed', 'db:show'],
-            'Logs'               => ['log:trace', 'log:replay', 'log:export', 'log:cleanup', 'log:slow', 'log:tail', 'log:stats'],
+            'Logs'               => ['log:trace', 'log:replay', 'log:export', 'log:cleanup', 'log:slow', 'log:tail', 'log:stats', 'log:top', 'debug:last'],
             'Test'               => ['test', 'api:test'],
             'Queue & Schedule'   => ['queue:work', 'queue:retry', 'queue:flush', 'queue:status', 'schedule:run'],
             'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link'],
             'System & Config'    => ['key:generate', 'config:cache', 'optimize', 'env:check',
-                'env:switch', 'doctor', 'route:list', 'route:rules', 'rate:status'],
+                'env:switch', 'doctor', 'route:list', 'route:search', 'route:rules', 'rate:status'],
         ];
 
         $result = [];

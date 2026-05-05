@@ -80,6 +80,7 @@ final class ApiTestCommand
         $watch = false;
         $collectionSave = null;
         $login = false;
+        $loop = 1;
 
         for ($i = 2; $i < count($args); $i++) {
             $arg = $args[$i];
@@ -95,6 +96,8 @@ final class ApiTestCommand
                 $login = true;
             } elseif ($arg === '--watch') {
                 $watch = true;
+            } elseif (str_starts_with($arg, '--loop=')) {
+                $loop = max(1, (int) substr($arg, 7));
             } elseif (str_starts_with($arg, '--collection-save=')) {
                 $collectionSave = substr($arg, 18);
             } elseif (str_contains($arg, '=')) {
@@ -146,7 +149,44 @@ final class ApiTestCommand
             $as = $loginRole;
         }
 
-        $statusCode = $this->sendInternal($method, $path, $fields, $customHeaders, $contentType, $as);
+        // Handle --as=guest (no auth)
+        if ($as === 'guest') {
+            $as = null;
+            $this->write("  \033[33mGuest mode: no auth token\033[0m");
+        }
+
+        // Handle --as=user:123 (specific user ID for login)
+        if ($as !== null && str_contains($as, ':')) {
+            $parts = explode(':', $as, 2);
+            $as = $parts[0];
+            $fields['user_id'] = $parts[1];
+        }
+
+        $statusCode = 0;
+        $totalMs = 0;
+
+        if ($loop > 1) {
+            $this->write("  \033[33mRunning {$loop} requests...\033[0m");
+            $this->write('');
+        }
+
+        for ($i = 0; $i < $loop; $i++) {
+            $start = microtime(true);
+            $statusCode = $this->sendInternal($method, $path, $fields, $customHeaders, $contentType, $as);
+            $elapsed = (microtime(true) - $start) * 1000;
+            $totalMs += $elapsed;
+
+            if ($loop > 1) {
+                $mark = $statusCode < 400 ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m";
+                $this->write("    {$mark} Request " . ($i + 1) . "/{$loop}: {$statusCode} (" . round($elapsed, 1) . "ms)");
+            }
+        }
+
+        if ($loop > 1) {
+            $avgMs = $totalMs / $loop;
+            $this->write('');
+            $this->write("  \033[33mResults: {$loop} requests, avg " . round($avgMs, 1) . "ms, total " . round($totalMs / 1000, 2) . "s\033[0m");
+        }
 
         if ($collectionSave !== null) {
             $this->saveToCollection($collectionSave, $method, $path, $fields, $customHeaders, $contentType, $as);

@@ -17,6 +17,7 @@ final class LogReplayCommand
         $traceId = trim((string) ($args[0] ?? ''));
         $format = 'curl';
         $force = false;
+        $overrides = [];
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--format=')) {
@@ -25,6 +26,13 @@ final class LogReplayCommand
                 $force = true;
             } elseif ($arg === '--safe') {
                 $force = false;
+            } elseif (str_starts_with($arg, '--set=')) {
+                $parts = explode('=', substr($arg, 6), 2);
+                if (isset($parts[1])) {
+                    $overrides[$parts[0]] = $parts[1];
+                }
+            } elseif (str_starts_with($arg, '--seed')) {
+                $overrides['_seed'] = '1';
             }
         }
 
@@ -36,10 +44,14 @@ final class LogReplayCommand
             $this->write('  --format=httpie   Output as httpie');
             $this->write('  --force           Skip safe-mode warning (dangerous)');
             $this->write('  --safe            Safe mode: warn on non-GET (default)');
+            $this->write('  --set key=value   Override request field');
+            $this->write('  --seed            Seed database from request data');
             $this->write('');
             $this->write('Examples:');
             $this->write('  php siro log:replay siro_a1b2');
             $this->write('  php siro log:replay siro_a1b2 --force');
+            $this->write('  php siro log:replay siro_a1b2 --set user_id=1');
+            $this->write('  php siro log:replay siro_a1b2 --seed');
             return 1;
         }
 
@@ -68,6 +80,49 @@ final class LogReplayCommand
         $body = $data['request_body'] ?? '';
         $auth = $data['auth_header'] ?? '';
         $ct = $data['content_type'] ?? '';
+
+        // ─── Apply overrides ───
+        $seedMode = false;
+        foreach ($overrides as $key => $value) {
+            if ($key === '_seed') {
+                $seedMode = true;
+                continue;
+            }
+            $decoded = json_decode($body, true);
+            if (is_array($decoded)) {
+                $decoded[$key] = $value;
+                $body = json_encode($decoded);
+            }
+        }
+        if ($seedMode) {
+            $seedData = json_decode($body, true);
+            if (is_array($seedData)) {
+                unset($seedData['id'], $seedData['created_at'], $seedData['updated_at']);
+                $json = json_encode($seedData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+                $seedFile = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeders' . DIRECTORY_SEPARATOR . 'ReplaySeeder.php';
+                file_put_contents($seedFile, <<<PHP
+<?php
+
+declare(strict_types=1);
+
+return new class {
+    public function run(\$db): void
+    {
+        // Seeded from replay: {$path}
+        \$data = {$json};
+        // TODO: adjust table name and insert logic
+        // \$db->exec("INSERT INTO ...");
+    }
+};
+
+PHP);
+                $this->write('  Generated: database/seeders/ReplaySeeder.php');
+                $this->write('  Run: php siro db:seed ReplaySeeder');
+                $this->write('');
+            } else {
+                $this->write('  Cannot seed: request body is not valid JSON.');
+            }
+        }
 
         // ─── Safe mode: warning for non-GET methods ───
         if ($method !== 'GET' && !$force) {

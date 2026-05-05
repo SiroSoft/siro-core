@@ -26,23 +26,28 @@ final class MakeCrudCommand
         $resource = trim((string) ($args[0] ?? ''));
 
         if ($resource === '') {
-            $this->write('Usage: php siro make:crud <name> [--seed]');
+            $this->write('Usage: php siro make:crud <name> [--seed] [--simple]');
             return 1;
         }
 
         $this->forceOverwrite = in_array('--force', $args, true);
         $model = ucfirst($this->studly($this->singular($resource)));
+        $classBase = $model;
         $controllerClass = $model . 'Controller';
         $resourceClass = $model . 'Resource';
         $table = $this->plural(strtolower($resource));
 
-        $withoutService = in_array('--without-service', $args, true);
-        $withoutRepository = in_array('--without-repository', $args, true);
+        $isSimple = in_array('--simple', $args, true);
+        $withSeed = in_array('--seed', $args, true);
+
+        $withoutService = $isSimple || in_array('--without-service', $args, true);
+        $withoutRepository = $isSimple || in_array('--without-repository', $args, true);
 
         $serviceName = str_replace('Resource', 'Service', $resourceClass);
         $repoName = str_replace('Resource', 'Repository', $resourceClass);
 
-        $this->write("Generating CRUD for: {$resource}");
+        $mode = $isSimple ? 'Simple' : 'Full';
+        $this->write("Generating {$mode} CRUD for: {$resource}");
         $this->write('');
 
         $ok = true;
@@ -50,37 +55,71 @@ final class MakeCrudCommand
         // 1. Model
         $ok = $this->generateModel($model, $table) && $ok;
 
-        // 2. Migration
-        $ok = $this->generateMigration($table, $model) && $ok;
+        // 2. Migration (skip in simple mode)
+        if (!$isSimple) {
+            $ok = $this->generateMigration($table, $model) && $ok;
+        }
 
-        // 3. Repository
+        // 3. Repository (skip in simple mode)
         if (!$withoutRepository) {
             $ok = $this->generateRepository($repoName, $model, $table) && $ok;
         }
 
-        // 4. Service (depends on Repository)
+        // 4. Service (skip in simple mode)
         if (!$withoutService) {
             $ok = $this->generateService($serviceName, $model, $repoName, $withoutRepository) && $ok;
         }
 
-        // 5. Controller (depends on Service)
+        // 5. Controller
         $ok = $this->generateController($controllerClass, $model, $resourceClass, $serviceName, $withoutService) && $ok;
 
-        // 6. Resource
-        $ok = $this->generateResource($resourceClass) && $ok;
+        // 6. Resource (skip in simple mode)
+        if (!$isSimple) {
+            $ok = $this->generateResource($resourceClass) && $ok;
+        }
 
         // 7. Routes
         $ok = $this->generateRoutes($resource, $controllerClass) && $ok;
 
-        // 8. Test
-        $ok = $this->generateTest($resource, $model) && $ok;
+        // 8. Test (skip in simple mode)
+        if (!$isSimple) {
+            $ok = $this->generateTest($resource, $model) && $ok;
+        }
 
         $this->write('');
         if ($ok) {
-            $this->write('CRUD generation complete. Next steps:');
-            $this->write("  php siro migrate");
-            $this->write("  php siro db:seed");
-            $this->write("  php siro api:test GET /api/{$resource}");
+            $this->write('');
+            $this->write('  ' . str_repeat('=', 54));
+            $this->write('  ' . $mode . ' CRUD — ' . $classBase . ' created successfully!');
+            $this->write('  ' . str_repeat('=', 54));
+            $this->write('');
+            $this->write('  Next steps:');
+            $this->write('');
+            $step = 1;
+            if (!$isSimple) {
+                $this->write('  ' . $step . '. Run migration:');
+                $this->write('     php siro migrate');
+                $this->write('');
+                $step++;
+                if ($withSeed) {
+                    $this->write('     php siro db:seed');
+                    $this->write('');
+                }
+            }
+            $this->write('  ' . $step . '. Start dev server:');
+            $this->write('     php siro serve');
+            $this->write('');
+            $step++;
+            $this->write('  ' . $step . '. Test API:');
+            $this->write('     php siro api:test GET /api/' . $resource);
+            $this->write('');
+            $step++;
+            $this->write('  ' . $step . '. Debug request:');
+            $this->write('     php siro log:trace');
+            $this->write('     php siro log:replay <trace_id>');
+            $this->write('');
+            $this->write('  ' . str_repeat('-', 54));
+            $this->write('  Need help? → php siro list');
         } else {
             $this->write('Some files were skipped (already exist). Use --force to overwrite.');
         }
