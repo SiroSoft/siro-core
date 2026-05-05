@@ -176,18 +176,27 @@ final class Logger
         $decoded = json_decode($json, true);
         if (!is_array($decoded)) return $json;
 
-        foreach (self::$sanitizeConfig['body'] as $field) {
-            foreach ($decoded as $key => &$value) {
-                $lk = strtolower((string) $key);
-                if ($lk === $field || str_contains($lk, $field)) {
-                    if (is_string($value)) {
+        $decoded = self::sanitizeRecursive($decoded, self::$sanitizeConfig['body']);
+
+        return json_encode($decoded, JSON_UNESCAPED_UNICODE);
+    }
+
+    private static function sanitizeRecursive(array $data, array $sensitiveFields): array
+    {
+        foreach ($data as $key => &$value) {
+            $lk = strtolower((string) $key);
+            if (is_array($value)) {
+                $value = self::sanitizeRecursive($value, $sensitiveFields);
+            } elseif (is_string($value)) {
+                foreach ($sensitiveFields as $field) {
+                    if ($lk === $field || str_contains($lk, $field)) {
                         $value = '[REDACTED]';
+                        break;
                     }
                 }
             }
         }
-
-        return json_encode($decoded, JSON_UNESCAPED_UNICODE);
+        return $data;
     }
 
     public static function escapeLog(string $message): string

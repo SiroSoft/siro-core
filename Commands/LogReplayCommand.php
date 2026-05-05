@@ -229,6 +229,9 @@ final class LogReplayCommand
             return 0;
         }
 
+        // Audit log for all replay operations
+        $this->auditReplay($traceId, $method, $path, $dryRun ? 'dry-run' : ($diffMode ? 'diff' : ($editMode ? 'edit' : 'replay')));
+
         // Normal replay (curl output or execute)
         if (!$force && $method !== 'GET') {
             $this->write('⚠ Safe mode: not replaying ' . $method . ' request. Use --force to execute.');
@@ -242,6 +245,27 @@ final class LogReplayCommand
         }
 
         return 0;
+    }
+
+    private function auditReplay(string $traceId, string $method, string $path, string $mode): void
+    {
+        $auditDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs';
+        if (!is_dir($auditDir)) return;
+
+        $auditFile = $auditDir . DIRECTORY_SEPARATOR . 'replay-audit.log';
+        $env = strtolower((string) getenv('APP_ENV')) ?: 'unknown';
+        $user = getenv('USER') ?: getenv('USERNAME') ?: 'unknown';
+        $line = sprintf(
+            '[%s] user=%s env=%s mode=%s trace=%s %s %s',
+            date('Y-m-d H:i:s'),
+            $user,
+            $env,
+            $mode,
+            $traceId,
+            $method,
+            $path
+        );
+        file_put_contents($auditFile, $line . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
 
     private function executeReplay(string $method, string $url, string $body, array $headers, string $auth, string $ct, array $data): array

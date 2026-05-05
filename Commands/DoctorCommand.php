@@ -129,11 +129,25 @@ final class DoctorCommand
                 if (!$exists) $allPassed = false;
             }
 
-            // Check .htaccess protection
+            // Check log directory is NOT inside public/
+            $publicDir = $this->basePath . DIRECTORY_SEPARATOR . 'public';
+            $logInsidePublic = $publicDir !== '' && str_starts_with(realpath($logDir) ?: $logDir, rtrim(realpath($publicDir) ?: $publicDir, DIRECTORY_SEPARATOR));
+            $this->printCheck('Logs outside public/', $logInsidePublic ? '⚠ INSIDE public/' : 'OK (outside)', !$logInsidePublic);
+            if ($logInsidePublic) $allPassed = false;
+
+            // Check .htaccess protection (Apache)
             $htaccess = $logDir . DIRECTORY_SEPARATOR . '.htaccess';
             $htaccessOk = file_exists($htaccess) && str_contains((string) file_get_contents($htaccess), 'Deny from all');
-            $this->printCheck('Log Protection (.htaccess)', $htaccessOk ? 'Protected' : 'Missing', $htaccessOk);
+            $this->printCheck('Log Protection (.htaccess/Apache)', $htaccessOk ? 'Protected' : 'Missing', $htaccessOk);
             if (!$htaccessOk) $allPassed = false;
+
+            // Check for Nginx-style protection (suggest if missing)
+            $nginxConfig = $publicDir . DIRECTORY_SEPARATOR . 'nginx-log-protection.conf';
+            if (!file_exists($nginxConfig) && $isProd) {
+                $this->printCheck('Log Protection (Nginx config)', 'Missing (recommended)', false);
+                $allPassed = false;
+                $this->write('     Suggestion: Add to nginx config: location /storage/logs/ { deny all; }');
+            }
         } else {
             $this->printCheck('Log Directory', 'storage/logs does not exist', false);
             $allPassed = false;

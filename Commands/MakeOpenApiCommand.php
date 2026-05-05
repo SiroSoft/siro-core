@@ -783,7 +783,14 @@ final class MakeOpenApiCommand
         if (!is_dir($publicDir)) mkdir($publicDir, 0775, true);
         copy($outputDir . DIRECTORY_SEPARATOR . 'openapi.json', $publicDir . DIRECTORY_SEPARATOR . 'openapi.json');
         copy($outputDir . DIRECTORY_SEPARATOR . 'swagger' . DIRECTORY_SEPARATOR . 'index.html', $publicDir . DIRECTORY_SEPARATOR . 'docs.html');
-        $this->write('  API Docs ready!');
+        $isProd = in_array(strtolower((string) getenv('APP_ENV')), ['production', 'prod', 'staging'], true);
+        if ($isProd) {
+            $this->write('  ⚠ Files copied to public/ — accessible to anyone!');
+            $this->write('  ⚠ Add route middleware to protect /openapi.json and /docs.html');
+            $this->write('  ⚠ Or remove files after review: rm public/openapi.json public/docs.html');
+        } else {
+            $this->write('  API Docs ready!');
+        }
 
         $host = $this->host;
         $this->write("  Swagger UI: http://{$host}/docs.html");
