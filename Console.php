@@ -42,6 +42,7 @@ use Siro\Core\Commands\StorageLinkCommand;
 use Siro\Core\Commands\DoctorCommand;
 use Siro\Core\Commands\DownCommand;
 use Siro\Core\Commands\FixCommand;
+use Siro\Core\Commands\ReplayCommand;
 use Siro\Core\Commands\TraceListCommand;
 use Siro\Core\Commands\UpCommand;
 use Siro\Core\Commands\ApiTestCommand;
@@ -139,6 +140,7 @@ final class Console
             'route:rules'   => ['handler' => RouteRulesCommand::class, 'desc' => 'Show validation rules', 'usage' => 'php siro route:rules'],
             'trace:list'    => ['handler' => TraceListCommand::class, 'desc' => 'List recent traces (--limit=N)', 'usage' => 'php siro trace:list [--limit=20]'],
             'rate:status'   => ['handler' => RateStatusCommand::class, 'desc' => 'Rate limit dashboard', 'usage' => 'php siro rate:status'],
+            'replay'        => ['handler' => ReplayCommand::class, 'desc' => 'Replay last trace (or by id)', 'usage' => 'php siro replay [trace_id] [--edit] [--diff]'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
         ];
     }
@@ -283,7 +285,7 @@ final class Console
             'Queue & Schedule'   => ['queue:work', 'queue:retry', 'queue:flush', 'queue:status', 'schedule:run'],
             'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link'],
             'System & Config'    => ['key:generate', 'config:cache', 'optimize', 'env:check',
-                'env:switch', 'doctor', 'fix', 'down', 'up', 'trace:list', 'route:list', 'route:search', 'route:rules', 'rate:status'],
+                'env:switch', 'doctor', 'fix', 'down', 'up', 'replay', 'trace:list', 'route:list', 'route:search', 'route:rules', 'rate:status'],
         ];
 
         $result = [];

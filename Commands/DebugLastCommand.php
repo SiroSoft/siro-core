@@ -74,12 +74,10 @@ final class DebugLastCommand
                     }
                     $this->write('');
                     if ($hasBodyKeys) {
-                        $this->write('  💡 Quick fix:');
-                        $setParts = [];
+                        $this->write('  💡 Fix now:');
                         foreach ($errors as $field => $msgs) {
-                            $setParts[] = 'body.' . $field . '=...';
+                            $this->write('    php siro replay ' . $traceId . ' --set body.' . $field . '=1');
                         }
-                        $this->write('    php siro log:replay ' . $traceId . ' --set ' . implode(' ', $setParts));
                     }
                     $this->write('  💡 Or edit request body:');
                     $this->write('    php siro log:replay ' . $traceId . ' --edit');

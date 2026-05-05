@@ -95,8 +95,9 @@ final class FixCommand
             $currentMtime = $this->getMaxMtime($dirs);
             if ($currentMtime > $lastMtime) {
                 $lastMtime = $currentMtime;
+                $traceId = $this->getLastTraceId();
                 $this->write('');
-                $this->write('  🔄 Code changed → replaying...');
+                $this->write('  🔄 Code changed → replaying ' . ($traceId ?? 'last request') . '...');
                 $output = shell_exec($lastTest . ' 2>&1');
                 if ($output !== null) {
                     $lines = explode("\n", $output);
@@ -140,6 +141,16 @@ final class FixCommand
             }
         }
         return $max;
+    }
+
+    private function getLastTraceId(): ?string
+    {
+        $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        if (!is_dir($traceDir)) return null;
+        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        if ($files === []) return null;
+        rsort($files);
+        return basename($files[0], '.json');
     }
 
     private function getLastApiTest(): ?string
