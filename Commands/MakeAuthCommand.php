@@ -565,14 +565,36 @@ return new class
 {
     public function up(\PDO \$pdo): void
     {
-        \$pdo->exec('CREATE TABLE IF NOT EXISTS refresh_tokens (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            jti VARCHAR(64) NOT NULL UNIQUE,
-            user_id BIGINT UNSIGNED NOT NULL,
-            revoked TINYINT NOT NULL DEFAULT 0,
-            expires_at TIMESTAMP NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )');
+        \$driver = \$pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+
+        if (\$driver === 'pgsql') {
+            \$pdo->exec("CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id BIGSERIAL PRIMARY KEY,
+                jti VARCHAR(64) NOT NULL UNIQUE,
+                user_id BIGINT NOT NULL,
+                revoked SMALLINT NOT NULL DEFAULT 0,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )");
+        } elseif (\$driver === 'sqlite') {
+            \$pdo->exec("CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                jti VARCHAR(64) NOT NULL UNIQUE,
+                user_id INTEGER NOT NULL,
+                revoked TINYINT NOT NULL DEFAULT 0,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )");
+        } else {
+            \$pdo->exec('CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                jti VARCHAR(64) NOT NULL UNIQUE,
+                user_id BIGINT UNSIGNED NOT NULL,
+                revoked TINYINT NOT NULL DEFAULT 0,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+        }
     }
 
     public function down(\PDO \$pdo): void
@@ -595,32 +617,35 @@ return new class
     public function up(PDO $pdo): void
     {
         $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $null = $driver === 'pgsql' ? 'NULL' : 'NULL';
-        $timestamp = $driver === 'pgsql' ? 'TIMESTAMP' : 'TIMESTAMP';
 
-        try {
-            $pdo->exec("ALTER TABLE users ADD COLUMN email_verified_at {$timestamp} {$null}");
-        } catch (Throwable) {}
-
-        try {
-            $pdo->exec("ALTER TABLE users ADD COLUMN verification_token VARCHAR(64) {$null}");
-        } catch (Throwable) {}
-
-        try {
-            $pdo->exec("ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(64) {$null}");
-        } catch (Throwable) {}
-
-        try {
-            $pdo->exec("ALTER TABLE users ADD COLUMN password_reset_expires_at {$timestamp} {$null}");
-        } catch (Throwable) {}
+        if ($driver === 'pgsql') {
+            $pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP NULL');
+            $pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(64) NULL');
+            $pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(64) NULL');
+            $pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMP NULL');
+        } else {
+            try { $pdo->exec('ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP NULL'); } catch (Throwable) {}
+            try { $pdo->exec('ALTER TABLE users ADD COLUMN verification_token VARCHAR(64) NULL'); } catch (Throwable) {}
+            try { $pdo->exec('ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(64) NULL'); } catch (Throwable) {}
+            try { $pdo->exec('ALTER TABLE users ADD COLUMN password_reset_expires_at TIMESTAMP NULL'); } catch (Throwable) {}
+        }
     }
 
     public function down(PDO $pdo): void
     {
-        try { $pdo->exec('ALTER TABLE users DROP COLUMN email_verified_at'); } catch (Throwable) {}
-        try { $pdo->exec('ALTER TABLE users DROP COLUMN verification_token'); } catch (Throwable) {}
-        try { $pdo->exec('ALTER TABLE users DROP COLUMN password_reset_token'); } catch (Throwable) {}
-        try { $pdo->exec('ALTER TABLE users DROP COLUMN password_reset_expires_at'); } catch (Throwable) {}
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+        if ($driver === 'pgsql') {
+            $pdo->exec('ALTER TABLE users DROP COLUMN IF EXISTS email_verified_at');
+            $pdo->exec('ALTER TABLE users DROP COLUMN IF EXISTS verification_token');
+            $pdo->exec('ALTER TABLE users DROP COLUMN IF EXISTS password_reset_token');
+            $pdo->exec('ALTER TABLE users DROP COLUMN IF EXISTS password_reset_expires_at');
+        } else {
+            try { $pdo->exec('ALTER TABLE users DROP COLUMN email_verified_at'); } catch (Throwable) {}
+            try { $pdo->exec('ALTER TABLE users DROP COLUMN verification_token'); } catch (Throwable) {}
+            try { $pdo->exec('ALTER TABLE users DROP COLUMN password_reset_token'); } catch (Throwable) {}
+            try { $pdo->exec('ALTER TABLE users DROP COLUMN password_reset_expires_at'); } catch (Throwable) {}
+        }
     }
 };
 PHP;

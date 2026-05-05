@@ -84,10 +84,15 @@ final class MigrateStatusCommand
 
         $pdo->exec($sql);
 
-        try {
-            $pdo->exec('ALTER TABLE migrations ADD COLUMN batch INT NOT NULL DEFAULT 1');
-        } catch (Throwable) {
-            // already exists
+        $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'pgsql') {
+            $pdo->exec('ALTER TABLE migrations ADD COLUMN IF NOT EXISTS batch INT NOT NULL DEFAULT 1');
+        } else {
+            try {
+                $pdo->exec('ALTER TABLE migrations ADD COLUMN batch INT NOT NULL DEFAULT 1');
+            } catch (Throwable) {
+                // already exists
+            }
         }
     }
 

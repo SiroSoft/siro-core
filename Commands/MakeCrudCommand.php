@@ -191,7 +191,15 @@ return new class {
     public function up(\PDO \$db): void
     {
         \$driver = \$db->getAttribute(\PDO::ATTR_DRIVER_NAME);
-        if (\$driver === 'sqlite') {
+        if (\$driver === 'pgsql') {
+            \$db->exec("CREATE TABLE IF NOT EXISTS {$table} (
+                id BIGSERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                {$columns}
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )");
+        } elseif (\$driver === 'sqlite') {
             \$db->exec("CREATE TABLE IF NOT EXISTS {$table} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
