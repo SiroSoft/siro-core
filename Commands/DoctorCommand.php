@@ -128,6 +128,12 @@ final class DoctorCommand
                 $this->printCheck("Log File: {$logFile}", $exists ? 'Exists' : 'Missing', $exists);
                 if (!$exists) $allPassed = false;
             }
+
+            // Check .htaccess protection
+            $htaccess = $logDir . DIRECTORY_SEPARATOR . '.htaccess';
+            $htaccessOk = file_exists($htaccess) && str_contains((string) file_get_contents($htaccess), 'Deny from all');
+            $this->printCheck('Log Protection (.htaccess)', $htaccessOk ? 'Protected' : 'Missing', $htaccessOk);
+            if (!$htaccessOk) $allPassed = false;
         } else {
             $this->printCheck('Log Directory', 'storage/logs does not exist', false);
             $allPassed = false;

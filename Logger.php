@@ -6,21 +6,19 @@ namespace Siro\Core;
 
 use Throwable;
 
-/**
- * File-based logger with daily rotation and trace support.
- *
- * Logs requests, errors, slow queries, and per-request trace data.
- * Supports log retention, size-based rotation, credential sanitization,
- * and CLI trace lookup.
- *
- * @package Siro\Core
- */
 final class Logger
 {
     private static string $logDir = '';
     private static int $retentionDays = 30;
     private static int $slowThreshold = 100;
-    private static int $maxFileSize = 50 * 1024 * 1024; // 50MB
+    private static int $maxFileSize = 50 * 1024 * 1024;
+
+    /** @var array{headers: array<int, string>, body: array<int, string>, query: array<int, string>} */
+    private static array $sanitizeConfig = [
+        'headers' => ['authorization', 'cookie', 'x-api-key', 'x-csrf-token', 'session-id'],
+        'body' => ['password', 'token', 'otp', 'secret', 'credit_card', 'credit-card', 'card_number', 'cvv', 'pin', 'ssn', 'passport'],
+        'query' => ['token', 'key', 'secret', 'api_key', 'code'],
+    ];
 
     public static function boot(string $basePath): void
     {
@@ -34,6 +32,16 @@ final class Logger
 
         self::$retentionDays = max(1, (int) Env::get('LOG_RETENTION_DAYS', '30'));
         self::$slowThreshold = max(0, (int) Env::get('DB_SLOW_QUERY_THRESHOLD', '100'));
+
+        // Protect log directory from web access
+        self::protectLogDir();
+    }
+
+    public static function setSanitizeConfig(array $config): void
+    {
+        if (isset($config['headers'])) self::$sanitizeConfig['headers'] = $config['headers'];
+        if (isset($config['body'])) self::$sanitizeConfig['body'] = $config['body'];
+        if (isset($config['query'])) self::$sanitizeConfig['query'] = $config['query'];
     }
 
     public static function request(string $method, string $path, int $status, float $timeMs, string $ip = '', string $traceId = '', string $userAgent = ''): void
@@ -53,7 +61,7 @@ final class Logger
             $parts[] = 'ip:' . $ip;
         }
         if ($userAgent !== '') {
-            $parts[] = 'ua:' . mb_substr($userAgent, 0, 60);
+            $parts[] = 'ua:' . self::escapeLog(mb_substr($userAgent, 0, 60));
         }
 
         self::write('request', implode(' | ', $parts));
@@ -86,23 +94,111 @@ final class Logger
                 $error->getLine()
             );
 
-            // Stack trace for fatal errors
             $trace = $error->getTraceAsString();
             if ($trace !== '') {
-                $line .= PHP_EOL . '  Stack trace:' . PHP_EOL . '  ' . str_replace(PHP_EOL, PHP_EOL . '  ', $trace);
+                $line .= PHP_EOL . '  Stack trace:' . PHP_EOL . '  ' . str_replace(PHP_EOL, PHP_EOL . '  ', self::sanitize($trace));
             }
         } else {
             $line = sprintf('[%s] %s', date('Y-m-d H:i:s'), self::sanitize($error));
         }
 
-        self::write('error', $line, true);
+        self::write('error', self::escapeLog($line), true);
     }
 
     public static function trace(string $traceId, array $data): void
     {
         $data['timestamp'] = date('Y-m-d H:i:s');
         $data['trace_id'] = $traceId;
+
+        // Sanitize request headers
+        if (isset($data['request_headers']) && is_array($data['request_headers'])) {
+            $data['request_headers'] = self::sanitizeHeaders($data['request_headers']);
+        }
+
+        // Sanitize request body
+        if (isset($data['request_body']) && is_string($data['request_body'])) {
+            $data['request_body'] = self::sanitizeJsonBody($data['request_body']);
+        }
+
+        // Sanitize response body
+        if (isset($data['response_body']) && is_string($data['response_body'])) {
+            $data['response_body'] = self::sanitizeJsonBody($data['response_body']);
+        }
+
+        // Sanitize query params
+        if (isset($data['query_params']) && is_array($data['query_params'])) {
+            foreach (self::$sanitizeConfig['query'] as $field) {
+                if (isset($data['query_params'][$field])) {
+                    $data['query_params'][$field] = '[REDACTED]';
+                }
+            }
+        }
+
         self::writeTrace($traceId, $data);
+    }
+
+    public static function sanitize(string $message): string
+    {
+        // Escape log injection first
+        $message = self::escapeLog($message);
+
+        // Redact sensitive patterns in any context
+        $sensitive = [
+            '/(authorization\s*[:=]\s*)([^\s,;&]+)/i' => '$1[REDACTED]',
+            '/(bearer\s+)([^\s,;&]{8,})/i' => '$1[REDACTED]',
+            '/(password\s*[:=]\s*["\']?)([^\s,;&"\']{3,})/i' => '$1[REDACTED]',
+            '/(\bpassword\b)([^"]*?)(\d{3,})/i' => '$1[REDACTED]',
+            '/(token\s*[:=]\s*["\']?)([^\s,;&"\']{8,})/i' => '$1[REDACTED]',
+            '/(secret\s*[:=]\s*["\']?)([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
+            '/(otp\s*[:=]\s*["\']?)([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
+            '/(credit_card|card_number|cvv|ssn|passport)\s*[:=]\s*["\']?([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
+            '/(\bapi[_-]?key\b\s*[:=]\s*["\']?)([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
+            '/(session[_-]?id\s*[:=]\s*["\']?)([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
+            '/\b\d{13,19}\b/' => '[REDACTED-CARD]', // Credit card number pattern
+        ];
+
+        return (string) preg_replace(array_keys($sensitive), array_values($sensitive), $message);
+    }
+
+    public static function sanitizeHeaders(array $headers): array
+    {
+        foreach ($headers as $key => $value) {
+            $lk = strtolower((string) $key);
+            if (in_array($lk, self::$sanitizeConfig['headers'], true)) {
+                $headers[$key] = '[REDACTED]';
+            }
+        }
+        return $headers;
+    }
+
+    public static function sanitizeJsonBody(string $json): string
+    {
+        $decoded = json_decode($json, true);
+        if (!is_array($decoded)) return $json;
+
+        foreach (self::$sanitizeConfig['body'] as $field) {
+            foreach ($decoded as $key => &$value) {
+                $lk = strtolower((string) $key);
+                if ($lk === $field || str_contains($lk, $field)) {
+                    if (is_string($value)) {
+                        $value = '[REDACTED]';
+                    }
+                }
+            }
+        }
+
+        return json_encode($decoded, JSON_UNESCAPED_UNICODE);
+    }
+
+    public static function escapeLog(string $message): string
+    {
+        // Prevent log injection by escaping newlines and control characters
+        return str_replace(["\r\n", "\n", "\r"], '\n', $message);
+    }
+
+    public static function getLogDir(): string
+    {
+        return self::$logDir;
     }
 
     private static function write(string $type, string $line, bool $alsoDaily = false): void
@@ -115,26 +211,21 @@ final class Logger
             @mkdir(self::$logDir, 0775, true);
         }
 
-        // Daily log file: request-2026-04-29.log
         $dailyFile = self::$logDir . DIRECTORY_SEPARATOR . $type . '-' . date('Y-m-d') . '.log';
-        $line = $line . PHP_EOL;
+        $line = self::escapeLog($line) . PHP_EOL;
 
-        // Always write to daily file
         error_log($line, 3, $dailyFile);
 
-        // Also append to main file for quick tail
         if ($alsoDaily) {
             $mainFile = self::$logDir . DIRECTORY_SEPARATOR . $type . '.log';
             error_log($line, 3, $mainFile);
         }
 
-        // Rotate if too large (only for main files)
         if ($alsoDaily && is_file($mainFile) && filesize($mainFile) > self::$maxFileSize) {
             $rotated = $mainFile . '.' . date('Y-m-d-Hi');
             @rename($mainFile, $rotated);
         }
 
-        // Cleanup old logs once per process
         static $cleaned = false;
         if (!$cleaned) {
             $cleaned = true;
@@ -152,7 +243,6 @@ final class Logger
         $traceFile = $traceDir . DIRECTORY_SEPARATOR . $traceId . '.json';
         file_put_contents($traceFile, (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 
-        // Cleanup old traces daily (keep retention days)
         static $cleaned = false;
         if (!$cleaned) {
             $cleaned = true;
@@ -163,59 +253,41 @@ final class Logger
     private static function cleanOldTraces(): void
     {
         $traceDir = self::$logDir . DIRECTORY_SEPARATOR . 'traces';
-        if (!is_dir($traceDir)) {
-            return;
-        }
+        if (!is_dir($traceDir)) return;
 
         $cutoff = time() - (self::$retentionDays * 86400);
-        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
-
-        foreach ($files as $file) {
-            if (filemtime($file) < $cutoff) {
-                @unlink($file);
-            }
+        foreach (glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [] as $file) {
+            if (filemtime($file) < $cutoff) @unlink($file);
         }
     }
 
     private static function cleanOldLogs(): void
     {
-        if (self::$logDir === '' || !is_dir(self::$logDir)) {
-            return;
-        }
+        if (self::$logDir === '' || !is_dir(self::$logDir)) return;
 
         $cutoff = time() - (self::$retentionDays * 86400);
 
-        // Clean daily log files: request-*.log, error-*.log, slow-*.log
-        $dailyFiles = glob(self::$logDir . DIRECTORY_SEPARATOR . '*-????-??-??.log') ?: [];
-        foreach ($dailyFiles as $file) {
-            if (filemtime($file) < $cutoff) {
-                @unlink($file);
-            }
+        foreach (glob(self::$logDir . DIRECTORY_SEPARATOR . '*-????-??-??.log') ?: [] as $file) {
+            if (filemtime($file) < $cutoff) @unlink($file);
         }
-
-        // Clean rotated cumulative files: error.log.YYYY-MM-DD-HHmm
-        $rotatedFiles = glob(self::$logDir . DIRECTORY_SEPARATOR . '*.log.*') ?: [];
-        foreach ($rotatedFiles as $file) {
-            if (filemtime($file) < $cutoff) {
-                @unlink($file);
-            }
+        foreach (glob(self::$logDir . DIRECTORY_SEPARATOR . '*.log.*') ?: [] as $file) {
+            if (filemtime($file) < $cutoff) @unlink($file);
         }
     }
 
-    private static function sanitize(string $message): string
+    private static function protectLogDir(): void
     {
-        $patterns = [
-            '/(authorization\s*[:=]\s*)([^\s,;]+)/i',
-            '/(bearer\s+)([^\s,;]+)/i',
-            '/(password\s*[:=]\s*)([^\s,;]+)/i',
-            '/(token\s*[:=]\s*)([^\s,;]{8,})/i',
-            '/(secret\s*[:=]\s*)([^\s,;]{8,})/i',
-        ];
+        // Create .htaccess to protect log directory from web access
+        $htaccess = self::$logDir . DIRECTORY_SEPARATOR . '.htaccess';
+        if (!file_exists($htaccess)) {
+            file_put_contents($htaccess, "Deny from all\n");
+        }
 
-        $replacements = [
-            '$1[REDACTED]', '$1[REDACTED]', '$1[REDACTED]', '$1[REDACTED]', '$1[REDACTED]',
-        ];
-
-        return (string) preg_replace($patterns, $replacements, $message);
+        // Protect trace directory too
+        $traceDir = self::$logDir . DIRECTORY_SEPARATOR . 'traces';
+        $traceHtaccess = $traceDir . DIRECTORY_SEPARATOR . '.htaccess';
+        if (is_dir($traceDir) && !file_exists($traceHtaccess)) {
+            file_put_contents($traceHtaccess, "Deny from all\n");
+        }
     }
 }

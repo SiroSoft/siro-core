@@ -19,13 +19,29 @@ final class LogReplayCommand
         $force = false;
         $editMode = false;
         $diffMode = false;
+        $dryRun = false;
         $overrides = [];
+
+        // Production safety: detect environment
+        $env = strtolower((string) getenv('APP_ENV'));
+        if ($env === '') {
+            $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';
+            if (file_exists($envFile)) {
+                $content = file_get_contents($envFile);
+                if (preg_match('/^APP_ENV\s*=\s*(\w+)/m', (string) $content, $m)) {
+                    $env = strtolower($m[1]);
+                }
+            }
+        }
+        $isProduction = in_array($env, ['production', 'prod', 'staging'], true);
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--format=')) {
                 $format = substr($arg, 9);
             } elseif ($arg === '--force') {
                 $force = true;
+            } elseif ($arg === '--dry-run') {
+                $dryRun = true;
             } elseif ($arg === '--safe') {
                 $force = false;
             } elseif ($arg === '--edit') {
@@ -137,6 +153,39 @@ final class LogReplayCommand
                 $this->write('  $db->table("' . ($data['table'] ?? 'table') . '")->insert(' . json_encode($seedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . ');');
                 $this->write('  Then run: php siro db:seed');
             }
+            return 0;
+        }
+
+        // Production safety: block unsafe replay
+        if ($isProduction && !$dryRun && !$diffMode && !$editMode) {
+            $this->write('');
+            $this->write('  ⚠ Production environment detected!');
+            $this->write('  Replaying requests on production is blocked by default.');
+            $this->write('');
+            $this->write('  Allowed on production:');
+            $this->write('    php siro replay ' . $traceId . ' --dry-run    # View only (safe)');
+            $this->write('    php siro replay ' . $traceId . ' --diff       # Compare (safe)');
+            $this->write('');
+            $this->write('  To force replay (NOT recommended on production):');
+            $this->write('    export APP_ENV=local && php siro replay ' . $traceId . ' --force');
+            $this->write('');
+            if ($method !== 'GET') {
+                $this->write('  ❌ Blocked: ' . $method . ' ' . $path . ' would modify data.');
+                return 1;
+            }
+        }
+
+        // --dry-run: just show what would be replayed
+        if ($dryRun) {
+            $this->write('');
+            $this->write('  🔍 Dry run — no request sent');
+            $this->write('  ' . str_repeat('-', 40));
+            $this->write('  Method: ' . $method);
+            $this->write('  URL:    ' . $url);
+            $this->write('  Body:   ' . ($body ?: '(empty)'));
+            $this->write('  Auth:   ' . ($auth ? 'Bearer [token present]' : 'none'));
+            $this->write('  ' . str_repeat('-', 40));
+            $this->write('  To execute: php siro replay ' . $traceId);
             return 0;
         }
 
