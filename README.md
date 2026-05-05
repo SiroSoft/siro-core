@@ -9,6 +9,7 @@
 [![Tests](https://img.shields.io/badge/tests-136%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
+[![Security](https://img.shields.io/badge/security-log%20sanitized-brightgreen)](https://github.com/SiroSoft/siro-core)
 
 ---
 
