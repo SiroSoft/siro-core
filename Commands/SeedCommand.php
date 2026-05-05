@@ -133,32 +133,4 @@ final class SeedCommand
         $this->write('Seeding completed. Ran ' . $count . ' seeder(s).');
         return 0;
     }
-
-        $files = glob($seedDir . DIRECTORY_SEPARATOR . '*.php') ?: [];
-        sort($files);
-
-        if ($files === []) {
-            $this->write('No seeders found in database/seeds/');
-            return 0;
-        }
-
-        $this->write('Running seeders...');
-
-        foreach ($files as $file) {
-            $class = basename($file, '.php');
-            require $file;
-
-            if (!class_exists($class) || !method_exists($class, 'run')) {
-                $this->write('Skipped invalid seeder: ' . $class);
-                continue;
-            }
-
-            $this->write('Seeding: ' . $class);
-            $seeder = new $class();
-            $seeder->run();
-        }
-
-        $this->write('Seeding completed.');
-        return 0;
-    }
 }

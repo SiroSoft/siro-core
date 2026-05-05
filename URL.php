@@ -44,8 +44,8 @@ final class URL
 
     public static function validateRequest(Request $request, bool $throw = false): ?array
     {
-        $payload = $request->query('payload', '');
-        $signature = $request->query('signature', '');
+        $payload = (string) $request->query('payload', '');
+        $signature = (string) $request->query('signature', '');
         if ($payload === '' || $signature === '') {
             if ($throw) throw new RuntimeException('Missing signature parameters.');
             return null;

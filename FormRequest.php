@@ -58,16 +58,7 @@ abstract class FormRequest
             throw new ValidationException($this->request, ['authorization' => ['Unauthorized.']]);
         }
 
-        $rules = $this->rules();
-        $messages = $this->messages();
-        $validator = new Validator($this->request->body(), $rules, $messages);
-        $this->validated = $validator->validated();
-        $this->errors = $validator->errors();
-
-        if ($this->errors !== []) {
-            throw new ValidationException($this->request, $this->errors);
-        }
-
+        $this->validated = $this->request->validate($this->rules());
         return $this->validated;
     }
 

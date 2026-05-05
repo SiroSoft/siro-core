@@ -1,0 +1,1765 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Variable \$request might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: App.php
+
+		-
+			message: '#^Method Siro\\Core\\Auth\\JWT\:\:encode\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Auth/JWT.php
+
+		-
+			message: '#^Class Siro\\Core\\Collection implements generic interface ArrayAccess but does not specify its types\: TKey, TValue$#'
+			identifier: missingType.generics
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Class Siro\\Core\\Collection implements generic interface IteratorAggregate but does not specify its types\: TKey, TValue$#'
+			identifier: missingType.generics
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Default value of the parameter \#1 \$depth \(float\) of method Siro\\Core\\Collection\:\:flatten\(\) is incompatible with type int\.$#'
+			identifier: parameter.defaultValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Function dd not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Function dump not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Method Siro\\Core\\Collection\:\:all\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Method Siro\\Core\\Collection\:\:combine\(\) has parameter \$values with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Method Siro\\Core\\Collection\:\:jsonSerialize\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Method Siro\\Core\\Collection\:\:make\(\) has parameter \$items with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Method Siro\\Core\\Collection\:\:merge\(\) has parameter \$items with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Method Siro\\Core\\Collection\:\:merge\(\) has parameter \$items with no value type specified in iterable type array\|Siro\\Core\\Collection\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Method Siro\\Core\\Collection\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Method Siro\\Core\\Collection\:\:whereIn\(\) has parameter \$values with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Class App\\Middleware\\AuthMiddleware not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Class App\\Middleware\\CorsMiddleware not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Class App\\Middleware\\JsonMiddleware not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Class App\\Middleware\\ThrottleMiddleware not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:addFilesRecursive\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:listenWebhook\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:loadCollections\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:loadHistory\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:loadTokens\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:saveHistory\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:saveHistory\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:saveToCollection\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:saveToCollection\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:sendInternal\(\) has parameter \$customHeaders with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:sendInternal\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:watchMode\(\) has parameter \$customHeaders with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:watchMode\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^While loop condition is always true\.$#'
+			identifier: while.alwaysTrue
+			count: 2
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ConfigCacheCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ConfigCacheCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ConfigCacheCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ConfigCacheCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DbShowCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DbShowCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DebugLastCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DebugLastCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DeployCommand\:\:loadConfig\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DeployCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DeployCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DoctorCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DoctorCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DoctorCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DoctorCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DownCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DownCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DownCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/DownCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\EnvCheckCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/EnvCheckCommand.php
+
+		-
+			message: '#^Property Siro\\Core\\Commands\\EnvCheckCommand\:\:\$requiredConfig type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/EnvCheckCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\EnvSwitchCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/EnvSwitchCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\EnvSwitchCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/EnvSwitchCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\KeyGenerateCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/KeyGenerateCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\KeyGenerateCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/KeyGenerateCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LiveCommand\:\:checkChanges\(\) has parameter \$dirs with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LiveCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LiveCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^While loop condition is always true\.$#'
+			identifier: while.alwaysTrue
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogCleanupCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogCleanupCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogCleanupCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogCleanupCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogExportCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogExportCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogExportCommand\:\:toCsv\(\) has parameter \$traces with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:outputCurl\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:outputHttpie\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogStatsCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogStatsCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogTailCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogTailCommand.php
+
+		-
+			message: '#^While loop condition is always true\.$#'
+			identifier: while.alwaysTrue
+			count: 1
+			path: Commands/LogTailCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogTopCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogTopCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogTopCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogTopCommand.php
+
+		-
+			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\LogTopCommand\:\:table\(\) expects array\<int, array\<int, string\>\>, list\<array\<int, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogTopCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogTraceCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogTraceCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeAuthCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeAuthCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeControllerCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeControllerCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeCrudCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeCrudCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeCrudCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeCrudCommand.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: Commands/MakeCrudCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeDocsCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeDocsCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeEventCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeEventCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeFactoryCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeFactoryCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeFactoryCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeFactoryCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeJobCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeJobCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeLangCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeLangCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeMailCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeMailCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeMigrationCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeMigrationCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeModelCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeModelCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:extractValidationRules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:inferSchemaFromPath\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:ruleToSchemaProperty\(\) has parameter \$rules with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:ruleToSchemaProperty\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakePostmanCommand\:\:buildRequestBody\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakePostmanCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakePostmanCommand\:\:ruleToExample\(\) has parameter \$rules with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakePostmanCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakePostmanCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakePostmanCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakePostmanCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakePostmanCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeQueueTableCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeQueueTableCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeRepositoryCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeRepositoryCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeRepositoryCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeRepositoryCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeResourceCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeResourceCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeResourceCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeResourceCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeSeederCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeSeederCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeSeederCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeSeederCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeServiceCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeServiceCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeServiceCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeServiceCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeTestCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeTestCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MigrateCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MigrateCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MigrateCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MigrateCommand.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MigrateRollbackCommand\:\:parseStep\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MigrateRollbackCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MigrateRollbackCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MigrateStatusCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MigrateStatusCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MigrateStatusCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MigrateStatusCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\NewCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/NewCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\NewCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/NewCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\OptimizeCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/OptimizeCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\OptimizeCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/OptimizeCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\QueueFlushCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/QueueFlushCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\QueueRetryCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/QueueRetryCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\QueueStatusCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/QueueStatusCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\QueueWorkCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/QueueWorkCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\RateStatusCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/RateStatusCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\RateStatusCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/RateStatusCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\RouteListCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/RouteListCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\RouteListCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/RouteListCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\RouteRulesCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/RouteRulesCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\RouteRulesCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/RouteRulesCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\RouteSearchCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/RouteSearchCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\RouteSearchCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/RouteSearchCommand.php
+
+		-
+			message: '#^Offset ''cache_ttl'' on array\{method\: string, path\: string, handler\: string, middleware\: string, cache_ttl\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Commands/RouteSearchCommand.php
+
+		-
+			message: '#^Offset ''handler'' on array\{method\: string, path\: string, handler\: string, middleware\: string, cache_ttl\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: Commands/RouteSearchCommand.php
+
+		-
+			message: '#^Offset ''method'' on array\{method\: string, path\: string, handler\: string, middleware\: string, cache_ttl\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: Commands/RouteSearchCommand.php
+
+		-
+			message: '#^Offset ''middleware'' on array\{method\: string, path\: string, handler\: string, middleware\: string, cache_ttl\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Commands/RouteSearchCommand.php
+
+		-
+			message: '#^Offset ''path'' on array\{method\: string, path\: string, handler\: string, middleware\: string, cache_ttl\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: Commands/RouteSearchCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ScheduleRunCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ScheduleRunCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\SeedCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/SeedCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\SeedCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/SeedCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ServeCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ServeCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ServeCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ServeCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\SlowLogCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/SlowLogCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\SlowLogCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/SlowLogCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\StorageLinkCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/StorageLinkCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\TestRunCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/TestRunCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\TestRunCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/TestRunCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\UpCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/UpCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\UpCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/UpCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Console\:\:aliases\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Method Siro\\Core\\Console\:\:groupedCommands\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Method Siro\\Core\\Console\:\:printCommandHelp\(\) has parameter \$info with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Method Siro\\Core\\Console\:\:run\(\) has parameter \$argv with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Method Siro\\Core\\Console\:\:unknownCommand\(\) has parameter \$registry with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\Blueprint\:\:addColumn\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\Blueprint\:\:compileCommandAsSql\(\) has parameter \$cmd with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\Column\:\:__construct\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/Column.php
+
+		-
+			message: '#^Property Siro\\Core\\DB\\Column\:\:\$params type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/Column.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\ModelQueryBuilder\:\:__call\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\ModelQueryBuilder\:\:first\(\) never returns Siro\\Core\\Model so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\ModelQueryBuilder\:\:first\(\) should return Siro\\Core\\Model\|null but returns array\<string, mixed\>\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
+			message: '#^Return type \(array\<int, Siro\\Core\\Model\>\) of method Siro\\Core\\DB\\ModelQueryBuilder\:\:get\(\) should be compatible with return type \(array\<int, array\<string, mixed\>\>\) of method Siro\\Core\\DB\\QueryBuilder\:\:get\(\)$#'
+			identifier: method.childReturnType
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
+			message: '#^Return type \(array\{data\: array\<int, Siro\\Core\\Model\>, meta\: array\{page\: int, per_page\: int, total\: int, last_page\: int\}\}\) of method Siro\\Core\\DB\\ModelQueryBuilder\:\:paginate\(\) should be compatible with return type \(array\{data\: array\<int, array\<string, mixed\>\>, meta\: array\<string, int\>\}\) of method Siro\\Core\\DB\\QueryBuilder\:\:paginate\(\)$#'
+			identifier: method.childReturnType
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:addWhereIn\(\) has parameter \$values with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:groupBy\(\) has parameter \$columns with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:insert\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:orWhereIn\(\) has parameter \$values with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:select\(\) has parameter \$columns with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:update\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:whereBetween\(\) has parameter \$range with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:whereIn\(\) has parameter \$values with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:whereNotBetween\(\) has parameter \$range with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:whereNotIn\(\) has parameter \$values with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Undefined variable\: \$this$#'
+			identifier: variable.undefined
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\Relations\\BelongsTo\:\:__call\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/Relations/BelongsTo.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\Relations\\HasMany\:\:__call\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/Relations/HasMany.php
+
+		-
+			message: '#^Trait Siro\\Core\\DB\\SoftDeletes is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: DB/SoftDeletes.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 3
+			path: Database.php
+
+		-
+			message: '#^Instanceof between PDO and PDO will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:configure\(\) has parameter \$config with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:connections\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:execute\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:first\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:first\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:getCapturedQueries\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:prepareAndExecute\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:queryCacheKey\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:select\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:select\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:selectCached\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\Database\:\:selectCached\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Method Siro\\Core\\FormRequest\:\:all\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Method Siro\\Core\\FormRequest\:\:errors\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Method Siro\\Core\\FormRequest\:\:messages\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Method Siro\\Core\\FormRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Method Siro\\Core\\FormRequest\:\:validate\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Method Siro\\Core\\FormRequest\:\:validated\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Parameter \#1 \$errors of class Siro\\Core\\ValidationException constructor expects array\<string, array\<int, string\>\>, Siro\\Core\\Request given\.$#'
+			identifier: argument.type
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Parameter \#2 \$message of class Siro\\Core\\ValidationException constructor expects string, array\<string, array\<int, string\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Property Siro\\Core\\FormRequest\:\:\$errors type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Property Siro\\Core\\FormRequest\:\:\$validated type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: FormRequest.php
+
+		-
+			message: '#^Method Siro\\Core\\Hash\:\:info\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Hash.php
+
+		-
+			message: '#^Method Siro\\Core\\Hash\:\:make\(\) has parameter \$options with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Hash.php
+
+		-
+			message: '#^Method Siro\\Core\\Hash\:\:needsRehash\(\) has parameter \$options with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Hash.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Hash.php
+
+		-
+			message: '#^Method Siro\\Core\\Http\:\:delete\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\Http\:\:get\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\Http\:\:get\(\) has parameter \$query with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\Http\:\:patch\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\Http\:\:post\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\Http\:\:put\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\Http\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\Http\:\:withHeaders\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\HttpResponse\:\:headers\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\HttpResponse\:\:json\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Offset ''header_size'' on \(array\{url\: string, content_type\: string\|null, http_code\: int, header_size\: int, request_size\: int, filetime\: int, ssl_verify_result\: int, redirect_count\: int, \.\.\.\}\|false\) on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Offset ''http_code'' on array\{url\: string, content_type\: string\|null, http_code\: int, header_size\: int, request_size\: int, filetime\: int, ssl_verify_result\: int, redirect_count\: int, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Property Siro\\Core\\Http\:\:\$defaultHeaders type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Property Siro\\Core\\HttpResponse\:\:\$parsedJson type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Method Siro\\Core\\Lang\:\:replace\(\) has parameter \$replace with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Lang.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: Lang.php
+
+		-
+			message: '#^Method Siro\\Core\\Logger\:\:trace\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Method Siro\\Core\\Logger\:\:writeTrace\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Method Siro\\Core\\Mail\:\:smtpCommand\(\) has parameter \$socket with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: Mail.php
+
+		-
+			message: '#^Method Siro\\Core\\Mail\:\:smtpReadResponse\(\) has parameter \$socket with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: Mail.php
+
+		-
+			message: '#^Call to method load\(\) on an unknown class Siro\\Core\\EagerLoader\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Class Siro\\Core\\Model implements generic interface ArrayAccess but does not specify its types\: TKey, TValue$#'
+			identifier: missingType.generics
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Instantiated class Siro\\Core\\EagerLoader not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:all\(\) should return array\<int, static\(Siro\\Core\\Model\)\> but returns array\<int, Siro\\Core\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:first\(\) should return static\(Siro\\Core\\Model\)\|null but returns Siro\\Core\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:get\(\) should return array\<int, static\(Siro\\Core\\Model\)\> but returns array\<int, Siro\\Core\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:limit\(\) should return Siro\\Core\\DB\\ModelQueryBuilder but returns Siro\\Core\\DB\\QueryBuilder\.$#'
+			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:offset\(\) should return Siro\\Core\\DB\\ModelQueryBuilder but returns Siro\\Core\\DB\\QueryBuilder\.$#'
+			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:orderBy\(\) should return Siro\\Core\\DB\\ModelQueryBuilder but returns Siro\\Core\\DB\\QueryBuilder\.$#'
+			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:paginate\(\) should return array\{data\: array\<int, static\(Siro\\Core\\Model\)\>, meta\: array\{page\: int, per_page\: int, total\: int, last_page\: int\}\} but returns array\{data\: array\<int, array\<string, mixed\>\>, meta\: array\{page\: int\<1, max\>, per_page\: int\<1, max\>, total\: int, last_page\: int\}\}\.$#'
+			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:select\(\) has parameter \$columns with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:select\(\) should return Siro\\Core\\DB\\ModelQueryBuilder but returns Siro\\Core\\DB\\QueryBuilder\.$#'
+			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:where\(\) should return Siro\\Core\\DB\\ModelQueryBuilder but returns Siro\\Core\\DB\\QueryBuilder\.$#'
+			identifier: return.type
+			count: 2
+			path: Model.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 6
+			path: Model.php
+
+		-
+			message: '#^Static property Siro\\Core\\Queue\:\:\$pending is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: Queue.php
+
+		-
+			message: '#^Cannot cast array\<string, mixed\> to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Method Siro\\Core\\Request\:\:array\(\) has parameter \$default with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Method Siro\\Core\\Request\:\:parseNestedFiles\(\) has parameter \$file with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-falsy\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Instanceof between Siro\\Core\\Model and Siro\\Core\\Model will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: Resource.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: Resource.php
+
+		-
+			message: '#^Unsafe call to private method Siro\\Core\\Resource\:\:makeWithFields\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 2
+			path: Resource.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 2
+			path: Resource.php
+
+		-
+			message: '#^Method Siro\\Core\\Response\:\:download\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Response.php
+
+		-
+			message: '#^Method Siro\\Core\\Response\:\:file\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Response.php
+
+		-
+			message: '#^Method Siro\\Core\\Route\:\:delete\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Route.php
+
+		-
+			message: '#^Method Siro\\Core\\Route\:\:get\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Route.php
+
+		-
+			message: '#^Method Siro\\Core\\Route\:\:patch\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Route.php
+
+		-
+			message: '#^Method Siro\\Core\\Route\:\:post\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Route.php
+
+		-
+			message: '#^Method Siro\\Core\\Route\:\:put\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Route.php
+
+		-
+			message: '#^Method Siro\\Core\\Route\:\:registerRoute\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Route.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:add\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:delete\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:exportRoutes\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 2
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:get\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:getWhereConstraints\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:group\(\) has parameter \$arg2 with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:group\(\) has parameter \$arg3 with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:handlerToString\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:matchDynamicRoute\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:options\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:post\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:put\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Method Siro\\Core\\Router\:\:runHandler\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Offset ''cache_ttl'' on array\{path\: string, handler\: array\|\(callable\(\)\: mixed\)\|string, middleware\: array\<int, \(callable\(\)\: mixed\)\|string\>, cache_ttl\: int, params\?\: array\<string, string\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Property Siro\\Core\\Router\:\:\$dynamicRoutes type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Property Siro\\Core\\Router\:\:\$staticRoutes type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-falsy\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Schedule.php
+
+		-
+			message: '#^Property Siro\\Core\\ScheduleTask\:\:\$lastRun is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: ScheduleTask.php
+
+		-
+			message: '#^Method Siro\\Core\\Storage\:\:s3Config\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Storage.php
+
+		-
+			message: '#^Method Siro\\Core\\Storage\:\:s3Sign\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Storage.php
+
+		-
+			message: '#^Cannot cast array\<string, mixed\> to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: URL.php
+
+		-
+			message: '#^Method Siro\\Core\\URL\:\:signed\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: URL.php
+
+		-
+			message: '#^Method Siro\\Core\\URL\:\:validate\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: URL.php
+
+		-
+			message: '#^Method Siro\\Core\\URL\:\:validateRequest\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: URL.php
+
+		-
+			message: '#^Method Siro\\Core\\UploadedFile\:\:__construct\(\) has parameter \$file with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: UploadedFile.php
+
+		-
+			message: '#^Method Siro\\Core\\Validator\:\:fallback\(\) has parameter \$replace with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Validator.php
+
+		-
+			message: '#^Method Siro\\Core\\Validator\:\:msg\(\) has parameter \$replace with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Validator.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: Validator.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 3
+			path: Validator.php
+
+		-
+			message: '#^Comparison operation "\>" between 0 and 0 is always false\.$#'
+			identifier: greater.alwaysFalse
+			count: 1
+			path: verify_v076.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between 0 and 0 will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 1
+			path: verify_v076.php

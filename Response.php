@@ -200,7 +200,7 @@ final class Response
         return $this;
     }
 
-    /** @return array<string, string> */
+    /** @return array<int, string> */
     public function getHeaders(): array
     {
         $headers = [];
