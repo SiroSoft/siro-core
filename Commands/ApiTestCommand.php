@@ -100,7 +100,29 @@ final class ApiTestCommand
                 $loop = max(1, (int) substr($arg, 7));
             } elseif (str_starts_with($arg, '--collection-save=')) {
                 $collectionSave = substr($arg, 18);
-            } elseif (str_contains($arg, '=')) {
+            } elseif (str_starts_with($arg, '--body=')) {
+                // --body key=value format
+                $bodyArg = substr($arg, 7);
+                if (str_contains($bodyArg, '=')) {
+                    $parts = explode('=', $bodyArg, 2);
+                    $fields[$parts[0]] = $parts[1];
+                }
+            } elseif (str_starts_with($arg, "--body=")) {
+                // --body '{"json":"payload"}'
+                $bodyVal = substr($arg, 7);
+                if (str_starts_with($bodyVal, '{')) {
+                    $decoded = json_decode($bodyVal, true);
+                    if (is_array($decoded)) {
+                        $fields = array_merge($fields, $decoded);
+                    }
+                }
+            } elseif (str_starts_with($arg, '--json=')) {
+                $jsonStr = substr($arg, 7);
+                $decoded = json_decode($jsonStr, true);
+                if (is_array($decoded)) {
+                    $fields = array_merge($fields, $decoded);
+                }
+            } elseif (str_contains($arg, '=') && !str_starts_with($arg, '--')) {
                 $parts = explode('=', $arg, 2);
                 $fields[$parts[0]] = $parts[1];
             }

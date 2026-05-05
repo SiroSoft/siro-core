@@ -63,12 +63,23 @@ final class DebugLastCommand
                 if ($errors !== [] && is_array($errors)) {
                     $this->write('');
                     $this->write('  ❌ Validation failed:');
+                    $hasBodyKeys = false;
                     foreach ($errors as $field => $msgs) {
                         $fieldStr = is_array($msgs) ? implode(', ', $msgs) : (string) $msgs;
                         $this->write('    - ' . $field . ': ' . $fieldStr);
+                        if ($method !== 'GET') $hasBodyKeys = true;
                     }
                     $this->write('');
-                    $this->write('  💡 Fix: check request body for missing or invalid fields');
+                    if ($hasBodyKeys) {
+                        $this->write('  💡 Quick fix:');
+                        $setParts = [];
+                        foreach ($errors as $field => $msgs) {
+                            $setParts[] = $field . '=...';
+                        }
+                        $this->write('    php siro log:replay ' . $traceId . ' --set ' . implode(' ', $setParts));
+                    }
+                    $this->write('  💡 Or edit request body:');
+                    $this->write('    php siro log:replay ' . $traceId . ' --edit');
                 }
             }
         }

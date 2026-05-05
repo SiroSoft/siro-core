@@ -19,6 +19,50 @@ final class FixCommand
 
     public function run(array $args): int
     {
+        // --last or <trace_id> support
+        $targetTrace = null;
+        foreach ($args as $arg) {
+            if ($arg === '--last') {
+                $targetTrace = '__last__';
+            } elseif (!str_starts_with($arg, '--') && $arg !== '') {
+                $targetTrace = $arg;
+            }
+        }
+
+        // If trace_id provided, just replay it once
+        if ($targetTrace !== null && $targetTrace !== '__last__') {
+            $traceFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces' . DIRECTORY_SEPARATOR . $targetTrace . '.json';
+            if (!file_exists($traceFile)) {
+                $this->write('  ⚠ Trace not found: ' . $targetTrace);
+                return 1;
+            }
+            $data = json_decode((string) file_get_contents($traceFile), true);
+            if (!is_array($data)) {
+                $this->write('  ⚠ Invalid trace file.');
+                return 1;
+            }
+            $method = $data['method'] ?? 'GET';
+            $host = $data['host'] ?? 'localhost:8080';
+            $path = $data['path'] ?? '/';
+            $body = $data['request_body'] ?? '';
+
+            $ch = curl_init('http://' . $host . $path);
+            curl_setopt_array($ch, [
+                CURLOPT_CUSTOMREQUEST => $method,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_POSTFIELDS => $body,
+            ] + ($body ? [CURLOPT_HTTPHEADER => ['Content-Type: application/json']] : []));
+            $response = curl_exec($ch);
+            $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            $this->write('');
+            $this->write('  🔄 Replayed: ' . $method . ' ' . $path);
+            $this->write('  Status: ' . $status . ' ' . ($status >= 200 && $status < 300 ? '✅' : '❌'));
+            return $status >= 200 && $status < 300 ? 0 : 1;
+        }
+
         $dirs = [
             $this->basePath . DIRECTORY_SEPARATOR . 'app',
             $this->basePath . DIRECTORY_SEPARATOR . 'routes',

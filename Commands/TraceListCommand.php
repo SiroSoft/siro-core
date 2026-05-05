@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Siro\Core\Commands;
+
+final class TraceListCommand
+{
+    use CommandSupport;
+
+    public function __construct(private readonly string $basePath)
+    {
+    }
+
+    public function run(array $args): int
+    {
+        $limit = 20;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--limit=')) {
+                $limit = max(1, (int) substr($arg, 8));
+            }
+        }
+
+        $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+
+        if (!is_dir($traceDir)) {
+            $this->write('  No traces found.');
+            return 1;
+        }
+
+        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        if ($files === []) {
+            $this->write('  No traces found.');
+            return 1;
+        }
+
+        rsort($files);
+        $files = array_slice($files, 0, $limit);
+
+        $this->write('');
+        $this->write('  Latest traces:');
+        $this->write('  ' . str_repeat('-', 65));
+        $this->write('  #  Trace ID          Method   Status   Time     Path');
+        $this->write('  ' . str_repeat('-', 65));
+
+        $idx = 1;
+        foreach ($files as $file) {
+            $traceId = basename($file, '.json');
+            $data = json_decode((string) file_get_contents($file), true);
+            if (!is_array($data)) continue;
+
+            $method = str_pad($data['method'] ?? '?', 7);
+            $status = (int) ($data['status'] ?? 0);
+            $timeMs = round((float) ($data['time_ms'] ?? 0), 1);
+            $statusStr = str_pad((string) $status, 6);
+            $timeStr = str_pad($timeMs . 'ms', 8);
+            $path = $data['path'] ?? '/';
+
+            $this->write(sprintf('  %-2d %-18s %s %s %s %s', $idx, $traceId, $method, $statusStr, $timeStr, $path));
+            $idx++;
+        }
+
+        $this->write('  ' . str_repeat('-', 65));
+        $this->write('  php siro log:trace <trace_id>  — View full trace');
+        $this->write('  php siro log:replay <trace_id> — Replay request');
+
+        return 0;
+    }
+}

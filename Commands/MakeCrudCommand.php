@@ -112,10 +112,12 @@ final class MakeCrudCommand
             $step++;
             $this->write('  ' . $step . '. Test API:');
             $this->write('     php siro api:test GET /api/' . $resource);
+            $this->write('     php siro api:test POST /api/' . $resource . ' --body name="test"');
             $this->write('');
             $step++;
             $this->write('  ' . $step . '. Debug request:');
-            $this->write('     php siro log:trace');
+            $this->write('     php siro debug:last');
+            $this->write('     php siro log:trace <trace_id>');
             $this->write('     php siro log:replay <trace_id>');
             $this->write('');
             $this->write('  ' . str_repeat('-', 54));
