@@ -9,11 +9,17 @@ use RuntimeException;
 final class Http
 {
     private static int $timeout = 30;
+    private static bool $verifySsl = true;
     private static array $defaultHeaders = [];
 
     public static function timeout(int $seconds): void
     {
         self::$timeout = max(1, $seconds);
+    }
+
+    public static function verify(bool $verify = true): void
+    {
+        self::$verifySsl = $verify;
     }
 
     public static function withHeaders(array $headers): void
@@ -56,7 +62,7 @@ final class Http
         }
 
         $ch = curl_init();
-        curl_setopt_array($ch, [
+        $curlOpts = [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => self::$timeout,
@@ -64,7 +70,12 @@ final class Http
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS => 5,
             CURLOPT_HEADER => true,
-        ]);
+        ];
+        if (!self::$verifySsl) {
+            $curlOpts[CURLOPT_SSL_VERIFYPEER] = false;
+            $curlOpts[CURLOPT_SSL_VERIFYHOST] = 0;
+        }
+        curl_setopt_array($ch, $curlOpts);
 
         $allHeaders = array_merge(self::$defaultHeaders, $headers);
 

@@ -277,7 +277,7 @@ final class Console
             'Queue & Schedule'   => ['queue:work', 'queue:retry', 'queue:flush', 'queue:status', 'schedule:run'],
             'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link'],
             'System & Config'    => ['key:generate', 'config:cache', 'optimize', 'env:check',
-                'env:switch', 'doctor', 'route:list', 'route:search', 'route:rules', 'rate:status'],
+                'env:switch', 'doctor', 'down', 'up', 'route:list', 'route:search', 'route:rules', 'rate:status'],
         ];
 
         $result = [];

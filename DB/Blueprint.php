@@ -157,30 +157,36 @@ final class Blueprint
     /** @return array<int, string> */
     public function compileCreate(): array
     {
-        $colDefs = [];
+        $parts = [];
         foreach ($this->columns as $col) {
-            $colDefs[] = '  ' . $this->compileColumnDef($col);
+            $parts[] = '  ' . $this->compileColumnDef($col);
         }
 
+        $isMysql = $this->driver === 'mysql' || $this->driver === 'mariadb';
         $tableSql = $this->quote($this->table);
-        $sql = "CREATE TABLE IF NOT EXISTS {$tableSql} (\n" . implode(",\n", $colDefs);
-
-        if ($this->driver === 'mysql' || $this->driver === 'mariadb') {
-            $sql .= "\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-        } else {
-            $sql .= "\n)";
-        }
-
-        $statements = [$sql];
-        $allowInline = $this->driver === 'mysql' || $this->driver === 'mariadb';
+        $statements = [];
 
         foreach ($this->commands as $cmd) {
-            $extra = $this->compileCommandAsSql($cmd, $allowInline);
-            if ($extra !== null) {
-                $statements[] = $extra;
+            if ($cmd['type'] === 'foreign') {
+                $parts[] = '  ' . $this->compileCommandAsSql($cmd, true);
+            } elseif ($cmd['type'] === 'unique' || $cmd['type'] === 'index') {
+                if ($isMysql) {
+                    $parts[] = '  ' . $this->compileCommandAsSql($cmd, true);
+                } else {
+                    $stmts = $this->compileCommandAsSql($cmd, false);
+                    if ($stmts !== null) {
+                        $statements[] = $stmts;
+                    }
+                }
             }
         }
 
+        $sql = "CREATE TABLE IF NOT EXISTS {$tableSql} (\n" . implode(",\n", $parts) . "\n)";
+        if ($isMysql) {
+            $sql .= ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+        }
+
+        array_unshift($statements, $sql);
         return $statements;
     }
 
