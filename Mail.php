@@ -270,7 +270,11 @@ final class Mail
             $body = $this->buildMultipartBody($boundary);
         }
 
-        return mail($this->to, $this->subject, $body, implode("\r\n", $headers));
+        $result = @mail($this->to, $this->subject, $body, implode("\r\n", $headers));
+        if (!$result && error_get_last() !== null) {
+            error_clear_last();
+        }
+        return $result;
     }
 
     /**
