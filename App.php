@@ -178,6 +178,25 @@ final class App
     }
 
     /**
+     * Check if the application is in maintenance mode.
+     *
+     * @return array<string, mixed>|null null if not in maintenance, array of data if down
+     */
+    public static function isDown(): ?array
+    {
+        $file = defined('SIRO_BASE_PATH')
+            ? SIRO_BASE_PATH . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down'
+            : (defined('BASE_PATH')
+                ? BASE_PATH . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down'
+                : dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down');
+        if (!file_exists($file)) {
+            return null;
+        }
+        $data = json_decode((string) file_get_contents($file), true);
+        return is_array($data) ? $data : null;
+    }
+
+    /**
      * Process the incoming HTTP request and send the response.
      *
      * Captures trace ID, timing, SQL queries (debug mode),
@@ -201,6 +220,21 @@ final class App
             $request = Request::fromGlobals();
             $method = $request->method();
             $path = $request->path();
+
+            // Check maintenance mode
+            $maintenance = self::isDown();
+            if ($maintenance !== null) {
+                $allowed = $maintenance['allow'] ?? [];
+                $clientIp = $request->ip();
+                if (!in_array($clientIp, $allowed, true)) {
+                    $retry = max(0, (int) ($maintenance['retry'] ?? 60));
+                    $resp = Response::error($maintenance['message'] ?? 'Under maintenance', 503);
+                    $resp->header('Retry-After', (string) $retry);
+                    $resp->header('X-Siro-Trace-Id', $traceId)->send();
+                    $status = 503;
+                    return;
+                }
+            }
 
             // Auto-detect locale from request header
             $this->detectLocale($request);

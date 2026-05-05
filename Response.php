@@ -200,6 +200,16 @@ final class Response
         return $this;
     }
 
+    /** @return array<string, string> */
+    public function getHeaders(): array
+    {
+        $headers = [];
+        foreach ($this->extraHeaders as $name => $value) {
+            $headers[] = "{$name}: {$value}";
+        }
+        return $headers;
+    }
+
     /** @param array<string, string> $headers */
     public function withHeaders(array $headers): self
     {

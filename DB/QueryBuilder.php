@@ -41,10 +41,17 @@ class QueryBuilder
     private int $inCounter = 0;
     private int $cacheTtl = 0;
     private string $cacheTable = '';
+    private ?string $connectionName = null;
 
     public function __construct(string $table)
     {
         $this->table($table);
+    }
+
+    public function connection(?string $name): self
+    {
+        $this->connectionName = $name;
+        return $this;
     }
 
     public function table(string $table): self
@@ -182,7 +189,7 @@ class QueryBuilder
     {
         if (self::$driverName === null) {
             try {
-                self::$driverName = \Siro\Core\Database::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+                self::$driverName = \Siro\Core\Database::connection($this->connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
             } catch (\Throwable) {
                 self::$driverName = 'mysql';
             }
@@ -404,7 +411,7 @@ class QueryBuilder
     {
         $driver = 'mysql';
         try {
-            $driver = \Siro\Core\Database::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+            $driver = \Siro\Core\Database::connection($this->connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
         } catch (\Throwable) {
         }
 
@@ -491,18 +498,16 @@ class QueryBuilder
             $returning
         );
 
-        $stmt = Database::connection()->prepare($sql);
+        $stmt = Database::connection($this->connectionName)->prepare($sql);
         $stmt->execute($bindings);
         Cache::flushQueryBuilderTable($this->cacheTable);
 
-        // PostgreSQL: fetch id directly from RETURNING clause
         if ($returning !== '') {
             $row = $stmt->fetch(\PDO::FETCH_ASSOC);
             return $row !== false && isset($row['id']) ? (int) $row['id'] : $stmt->rowCount();
         }
 
-        // MySQL / SQLite: use lastInsertId
-        $lastId = Database::connection()->lastInsertId();
+        $lastId = Database::connection($this->connectionName)->lastInsertId();
         return $lastId !== false && $lastId !== '0' ? (int) $lastId : $stmt->rowCount();
     }
 
@@ -524,7 +529,7 @@ class QueryBuilder
         [$whereSql, $whereBindings] = $this->compileWhere();
         $sql = sprintf('UPDATE %s SET %s%s', $this->quoteIdentifier($this->table), implode(', ', $sets), $whereSql);
 
-        $stmt = Database::connection()->prepare($sql);
+        $stmt = Database::connection($this->connectionName)->prepare($sql);
         $stmt->execute([...$bindings, ...$whereBindings]);
         Cache::flushQueryBuilderTable($this->cacheTable);
 
@@ -536,7 +541,7 @@ class QueryBuilder
         [$whereSql, $whereBindings] = $this->compileWhere();
         $sql = sprintf('DELETE FROM %s%s', $this->quoteIdentifier($this->table), $whereSql);
 
-        $stmt = Database::connection()->prepare($sql);
+        $stmt = Database::connection($this->connectionName)->prepare($sql);
         $stmt->execute($whereBindings);
         Cache::flushQueryBuilderTable($this->cacheTable);
 

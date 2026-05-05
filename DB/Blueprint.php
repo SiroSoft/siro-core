@@ -118,6 +118,13 @@ final class Blueprint
         return $this->string($name, 100)->nullable();
     }
 
+    public function foreign(string $column): ForeignKey
+    {
+        $fk = new ForeignKey($column);
+        $this->commands[] = ['type' => 'foreign', 'fk' => $fk];
+        return $fk;
+    }
+
     /** @param array<int, string>|string $columns */
     public function unique(array|string $columns, ?string $name = null): void
     {
@@ -291,28 +298,39 @@ final class Blueprint
 
     private function compileCommandAsSql(array $cmd, bool $inline): ?string
     {
-        $cols = array_map(fn($c) => $this->quote($c), $cmd['columns']);
-        $colList = implode(', ', $cols);
+        if ($cmd['type'] === 'foreign') {
+            $fk = $cmd['fk'];
+            $col = $this->quote($fk->column);
+            $ref = $this->quote($fk->references);
+            $onTable = $this->quote($fk->onTable);
+            $parts = ["FOREIGN KEY ({$col}) REFERENCES {$onTable} ({$ref})"];
+            if ($fk->onDelete !== '') {
+                $parts[] = "ON DELETE {$fk->onDelete}";
+            }
+            if ($fk->onUpdate !== '') {
+                $parts[] = "ON UPDATE {$fk->onUpdate}";
+            }
+            return implode(' ', $parts);
+        }
 
         if ($cmd['type'] === 'unique') {
             if ($inline) {
                 $name = $cmd['name'] ?? ('uq_' . $this->table . '_' . implode('_', $cmd['columns']));
-                return "  CONSTRAINT {$name} UNIQUE (" . $colList . ")";
+                return "CONSTRAINT {$name} UNIQUE (" . implode(', ', array_map(fn($c) => $this->quote($c), $cmd['columns'])) . ")";
             }
-            // Separate CREATE UNIQUE INDEX for PgSQL/SQLite
             $name = $cmd['name'] ?? ('uq_' . $this->table . '_' . implode('_', $cmd['columns']));
             $tableSql = $this->quote($this->table);
-            return "CREATE UNIQUE INDEX {$name} ON {$tableSql} (" . $colList . ")";
+            return "CREATE UNIQUE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $cmd['columns'])) . ")";
         }
 
         if ($cmd['type'] === 'index') {
             if ($inline) {
                 $name = $cmd['name'] ?? ('idx_' . $this->table . '_' . implode('_', $cmd['columns']));
-                return "  INDEX {$name} (" . $colList . ")";
+                return "INDEX {$name} (" . implode(', ', array_map(fn($c) => $this->quote($c), $cmd['columns'])) . ")";
             }
             $name = $cmd['name'] ?? ('idx_' . $this->table . '_' . implode('_', $cmd['columns']));
             $tableSql = $this->quote($this->table);
-            return "CREATE INDEX {$name} ON {$tableSql} (" . $colList . ")";
+            return "CREATE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $cmd['columns'])) . ")";
         }
 
         return null;
