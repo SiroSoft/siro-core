@@ -107,6 +107,22 @@ final class Schema
         return in_array($column, self::getColumnListing($table), true);
     }
 
+    public static function hasDatabase(string $database): bool
+    {
+        $driver = self::driver();
+        $sql = match ($driver) {
+            'pgsql' => "SELECT EXISTS (SELECT FROM pg_database WHERE datname = :db)",
+            'sqlite' => null, // SQLite uses a file, not a database name
+            default => "SELECT EXISTS (SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = :db)",
+        };
+        if ($sql === null) {
+            return true; // SQLite: always available
+        }
+        $stmt = self::pdo()->prepare($sql);
+        $stmt->execute([':db' => $database]);
+        return (bool) $stmt->fetch(PDO::FETCH_COLUMN);
+    }
+
     private static function execute(string $sql): void
     {
         self::pdo()->exec($sql);

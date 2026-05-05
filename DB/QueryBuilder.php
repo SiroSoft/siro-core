@@ -481,24 +481,28 @@ class QueryBuilder
         }
 
         $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
+        $driver = self::detectDriver();
+        $returning = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? ' RETURNING id' : '';
         $sql = sprintf(
-            'INSERT INTO %s (%s) VALUES (%s)',
+            'INSERT INTO %s (%s) VALUES (%s)%s',
             $this->quoteIdentifier($this->table),
             implode(', ', $quotedColumns),
-            implode(', ', $holders)
+            implode(', ', $holders),
+            $returning
         );
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute($bindings);
         Cache::flushQueryBuilderTable($this->cacheTable);
 
-        $driver = self::detectDriver();
-        $sequence = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true)
-            ? "{$this->table}_id_seq"
-            : null;
-        $lastId = $sequence !== null
-            ? Database::connection()->lastInsertId($sequence)
-            : Database::connection()->lastInsertId();
+        // PostgreSQL: fetch id directly from RETURNING clause
+        if ($returning !== '') {
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $row !== false && isset($row['id']) ? (int) $row['id'] : $stmt->rowCount();
+        }
+
+        // MySQL / SQLite: use lastInsertId
+        $lastId = Database::connection()->lastInsertId();
         return $lastId !== false && $lastId !== '0' ? (int) $lastId : $stmt->rowCount();
     }
 
