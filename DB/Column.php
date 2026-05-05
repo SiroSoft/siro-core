@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core\DB;
 
+/**
+ * Column definition for Schema Builder Blueprint.
+ *
+ * Returned by Blueprint methods like $table->string('name').
+ * Provides chainable modifiers: nullable(), default(), useCurrent(), unique().
+ *
+ * @package Siro\Core\DB
+ */
 final class Column
 {
     public string $type;

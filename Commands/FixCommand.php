@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Watch code changes and auto-replay last API test.
+ *
+ * Monitors app/ and routes/ directories for file changes.
+ * When a change is detected, automatically replays the
+ * last api:test request and shows pass/fail status.
+ *
+ * @package Siro\Core\Commands
+ */
 final class FixCommand
 {
     use CommandSupport;

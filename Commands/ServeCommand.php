@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Start the PHP built-in development server.
+ *
+ * Launches php -S on the configured host and port, serving
+ * from the public/ directory. Shows quick test and debug
+ * commands after startup.
+ *
+ * @package Siro\Core\Commands
+ */
 final class ServeCommand
 {
     use CommandSupport;

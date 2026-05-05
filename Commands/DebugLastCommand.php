@@ -4,6 +4,16 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Show details of the last request trace.
+ *
+ * Displays method, path, status, timing, headers,
+ * request/response body, SQL queries, and validation
+ * errors with quick-fix suggestions.
+ * Alias: php siro why
+ *
+ * @package Siro\Core\Commands
+ */
 final class DebugLastCommand
 {
     use CommandSupport;

@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * List recent request traces.
+ *
+ * Shows the most recent trace files with method, status,
+ * response time, and path for quick browsing.
+ * Supports --limit=N to control how many traces to show.
+ *
+ * @package Siro\Core\Commands
+ */
 final class TraceListCommand
 {
     use CommandSupport;

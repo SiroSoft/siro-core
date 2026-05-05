@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Replay the last trace or a specific trace by ID.
+ *
+ * Delegates to LogReplayCommand. If no trace_id provided,
+ * automatically finds and replays the most recent trace.
+ * Supports --edit, --diff flags passed through to log:replay.
+ *
+ * @package Siro\Core\Commands
+ */
 final class ReplayCommand
 {
     use CommandSupport;

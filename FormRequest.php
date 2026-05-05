@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+/**
+ * Base form request for validated controller input.
+ *
+ * Extend this class, define rules() and authorize() methods,
+ * then type-hint in controller methods for automatic validation.
+ *
+ * @package Siro\Core
+ */
 abstract class FormRequest
 {
     protected Request $request;

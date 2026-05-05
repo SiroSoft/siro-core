@@ -6,6 +6,15 @@ namespace Siro\Core;
 
 use RuntimeException;
 
+/**
+ * Bcrypt password hashing facade.
+ *
+ * Wraps password_hash/password_verify with consistent bcrypt
+ * algorithm and testability support.
+ *
+ * @package Siro\Core
+ */
+
 final class Hash
 {
     public static function make(string $value, array $options = []): string

@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core\DB;
 
+/**
+ * Foreign key definition for Schema Builder Blueprint.
+ *
+ * Returned by $table->foreign('column') for chainable
+ * constraint definition: references()->on()->onDelete()->onUpdate().
+ *
+ * @package Siro\Core\DB
+ */
 final class ForeignKey
 {
     public string $column;

@@ -4,6 +4,16 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Replay a captured request trace.
+ *
+ * Generates curl/httpie commands or executes the request.
+ * Supports --edit (interactive body edit), --diff (before/after
+ * comparison), --dry-run (safe preview), --set (field override),
+ * and --force for production override with APP_ENV=local.
+ *
+ * @package Siro\Core\Commands
+ */
 final class LogReplayCommand
 {
     use CommandSupport;

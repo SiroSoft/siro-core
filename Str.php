@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+/**
+ * String manipulation utility class.
+ *
+ * Provides slug generation, case conversion, truncation,
+ * pluralization, and common string inspection methods.
+ * All methods are multibyte-safe (UTF-8).
+ *
+ * @package Siro\Core
+ */
 final class Str
 {
     public static function slug(string $value, string $separator = '-'): string

@@ -6,6 +6,15 @@ namespace Siro\Core;
 
 use RuntimeException;
 
+/**
+ * Zero-dependency HTTP client.
+ *
+ * Static methods for GET/POST/PUT/PATCH/DELETE requests via cURL.
+ * Returns HttpResponse objects with status, body, JSON parsing, and headers.
+ *
+ * @package Siro\Core
+ */
+
 final class Http
 {
     private static int $timeout = 30;
@@ -121,6 +130,11 @@ final class Http
     }
 }
 
+/**
+ * HTTP response wrapper returned by Http:: methods.
+ *
+ * @package Siro\Core
+ */
 final class HttpResponse
 {
     private int $status;

@@ -5,6 +5,17 @@ declare(strict_types=1);
 namespace Siro\Core\Commands;
 
 use Siro\Core\App;
+
+/**
+ * Test API endpoints from the command line.
+ *
+ * Sends HTTP requests to the local dev server and displays
+ * formatted response with status, timing, and body.
+ * Supports --body, --json, --as, --loop, --header, --watch.
+ * Alias: php siro t
+ *
+ * @package Siro\Core\Commands
+ */
 use Siro\Core\Request;
 use Siro\Core\Response;
 use Siro\Core\Router;

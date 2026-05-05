@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Disable maintenance mode.
+ *
+ * Removes the storage/framework/down marker file,
+ * restoring normal application access.
+ *
+ * @package Siro\Core\Commands
+ */
 class UpCommand
 {
     use CommandSupport;

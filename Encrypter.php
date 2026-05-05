@@ -6,6 +6,15 @@ namespace Siro\Core;
 
 use RuntimeException;
 
+/**
+ * AES-256-CBC encryption with HMAC integrity verification.
+ *
+ * Provides encrypt/decrypt with automatic key resolution from
+ * APP_KEY or JWT_SECRET environment variables.
+ *
+ * @package Siro\Core
+ */
+
 final class Encrypter
 {
     private const CIPHER = 'aes-256-cbc';

@@ -6,6 +6,16 @@ namespace Siro\Core;
 
 use RuntimeException;
 
+/**
+ * Signed URL generator and validator.
+ *
+ * Creates HMAC-signed URLs with optional expiration for secure
+ * one-time links (email verification, unsubscribe, etc.).
+ * Uses APP_KEY or JWT_SECRET as signing key.
+ *
+ * @package Siro\Core
+ */
+
 final class URL
 {
     public static function signed(string $route, array $params = [], ?int $expires = null): string

@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Enable maintenance mode.
+ *
+ * Creates storage/framework/down marker file with
+ * customizable message, retry-after duration, and
+ * IP allowlist for authorized access during maintenance.
+ *
+ * @package Siro\Core\Commands
+ */
 class DownCommand
 {
     use CommandSupport;
