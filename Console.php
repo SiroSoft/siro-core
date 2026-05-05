@@ -41,6 +41,7 @@ use Siro\Core\Commands\ServeCommand;
 use Siro\Core\Commands\StorageLinkCommand;
 use Siro\Core\Commands\DoctorCommand;
 use Siro\Core\Commands\DownCommand;
+use Siro\Core\Commands\FixCommand;
 use Siro\Core\Commands\UpCommand;
 use Siro\Core\Commands\ApiTestCommand;
 use Siro\Core\Commands\MakeCrudCommand;
@@ -129,6 +130,7 @@ final class Console
             'env:check'     => ['handler' => EnvCheckCommand::class, 'desc' => 'Check environment', 'usage' => 'php siro env:check'],
             'env:switch'    => ['handler' => EnvSwitchCommand::class, 'desc' => 'Switch environment', 'usage' => 'php siro env:switch <env>'],
             'doctor'        => ['handler' => DoctorCommand::class, 'desc' => 'System health check (--prod)', 'usage' => 'php siro doctor [--prod]'],
+            'fix'           => ['handler' => FixCommand::class, 'desc' => 'Watch code changes & auto-replay last test', 'usage' => 'php siro fix'],
             'down'          => ['handler' => DownCommand::class, 'desc' => 'Enable maintenance mode', 'usage' => 'php siro down [--message="..."] [--retry=60] [--allow=ip1,ip2]'],
             'up'            => ['handler' => UpCommand::class, 'desc' => 'Disable maintenance mode', 'usage' => 'php siro up'],
             'route:list'    => ['handler' => RouteListCommand::class, 'desc' => 'List all routes', 'usage' => 'php siro route:list'],
@@ -277,7 +279,7 @@ final class Console
             'Queue & Schedule'   => ['queue:work', 'queue:retry', 'queue:flush', 'queue:status', 'schedule:run'],
             'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link'],
             'System & Config'    => ['key:generate', 'config:cache', 'optimize', 'env:check',
-                'env:switch', 'doctor', 'down', 'up', 'route:list', 'route:search', 'route:rules', 'rate:status'],
+                'env:switch', 'doctor', 'fix', 'down', 'up', 'route:list', 'route:search', 'route:rules', 'rate:status'],
         ];
 
         $result = [];

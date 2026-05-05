@@ -17,6 +17,8 @@ final class LogReplayCommand
         $traceId = trim((string) ($args[0] ?? ''));
         $format = 'curl';
         $force = false;
+        $editMode = false;
+        $diffMode = false;
         $overrides = [];
 
         foreach ($args as $arg) {
@@ -26,6 +28,10 @@ final class LogReplayCommand
                 $force = true;
             } elseif ($arg === '--safe') {
                 $force = false;
+            } elseif ($arg === '--edit') {
+                $editMode = true;
+            } elseif ($arg === '--diff') {
+                $diffMode = true;
             } elseif (str_starts_with($arg, '--set=')) {
                 $parts = explode('=', substr($arg, 6), 2);
                 if (isset($parts[1])) {
@@ -46,12 +52,15 @@ final class LogReplayCommand
             $this->write('  --safe            Safe mode: warn on non-GET (default)');
             $this->write('  --set key=value   Override request field');
             $this->write('  --seed            Seed database from request data');
+            $this->write('  --edit            Interactive edit request before replay');
+            $this->write('  --diff            Compare before/after responses');
             $this->write('');
             $this->write('Examples:');
             $this->write('  php siro log:replay siro_a1b2');
             $this->write('  php siro log:replay siro_a1b2 --force');
             $this->write('  php siro log:replay siro_a1b2 --set user_id=1');
-            $this->write('  php siro log:replay siro_a1b2 --seed');
+            $this->write('  php siro log:replay siro_a1b2 --edit');
+            $this->write('  php siro log:replay siro_a1b2 --diff');
             return 1;
         }
 
@@ -81,7 +90,27 @@ final class LogReplayCommand
         $auth = $data['auth_header'] ?? '';
         $ct = $data['content_type'] ?? '';
 
-        // ─── Apply overrides ───
+        // --edit: interactive edit
+        if ($editMode) {
+            $this->write('');
+            $this->write('  ✏️  Edit request body:');
+            $this->write('  ' . str_repeat('-', 40));
+            $decoded = json_decode($body, true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $key => $value) {
+                    $this->write("  {$key}: \033[33m{$value}\033[0m");
+                    $input = readline("  New value (Enter to keep): ");
+                    if ($input !== '') {
+                        $decoded[$key] = is_numeric($input) ? $input : $input;
+                    }
+                }
+            }
+            $body = json_encode($decoded ?? [], JSON_UNESCAPED_UNICODE);
+            $this->write('  ' . str_repeat('-', 40));
+            $this->write('  Updated body: ' . $this->prettyPrint($body));
+        }
+
+        // Apply overrides
         $seedMode = false;
         foreach ($overrides as $key => $value) {
             if ($key === '_seed') {
@@ -94,118 +123,152 @@ final class LogReplayCommand
                 $body = json_encode($decoded);
             }
         }
+
         if ($seedMode) {
             $seedData = json_decode($body, true);
             if (is_array($seedData)) {
                 unset($seedData['id'], $seedData['created_at'], $seedData['updated_at']);
-                $json = json_encode($seedData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-                $seedFile = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeders' . DIRECTORY_SEPARATOR . 'ReplaySeeder.php';
-                file_put_contents($seedFile, <<<PHP
-<?php
-
-declare(strict_types=1);
-
-return new class {
-    public function run(\$db): void
-    {
-        // Seeded from replay: {$path}
-        \$data = {$json};
-        // TODO: adjust table name and insert logic
-        // \$db->exec("INSERT INTO ...");
-    }
-};
-
-PHP);
-                $this->write('  Generated: database/seeders/ReplaySeeder.php');
-                $this->write('  Run: php siro db:seed ReplaySeeder');
-                $this->write('');
-            } else {
-                $this->write('  Cannot seed: request body is not valid JSON.');
+                $this->write('Seed command:');
+                $this->write('  $db->table("' . ($data['table'] ?? 'table') . '")->insert(' . json_encode($seedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . ');');
+                $this->write('  Then run: php siro db:seed');
             }
+            return 0;
         }
 
-        // ─── Safe mode: warning for non-GET methods ───
-        if ($method !== 'GET' && !$force) {
+        // --diff mode
+        if ($diffMode) {
             $this->write('');
-            $this->write("  \033[1;31m⚠  DANGER: Replaying {$method} {$path}\033[0m");
-            $this->write('  This request has side effects (not a read-only GET).');
-            $this->write('  Replaying it may:');
-            $this->write('    • Charge user again (payment)');
-            $this->write('    • Create duplicate records (insert)');
-            $this->write('    • Modify data unexpectedly (update)');
-            $this->write('    • Delete data permanently (delete)');
-            $this->write('');
-            $this->write('  To confirm, re-run with: --force');
-            $this->write('  To see without executing, use: php siro log:export ' . $traceId . ' --postman');
-            $this->write('');
+            $this->write('  🔄 Replaying with diff...');
+            $this->write('  ' . str_repeat('=', 40));
 
-            $answer = $this->ask('  \033[1;33mAre you sure you want to replay this? (yes/no): \033[0m');
-            if (strtolower(trim($answer)) !== 'yes') {
-                $this->write('  Replay cancelled.');
-                return 1;
-            }
+            $beforeStatus = $data['status'] ?? 0;
+            $beforeBody = $data['response_body'] ?? '';
+
+            $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data);
+
             $this->write('');
+            $this->write('  === BEFORE ===');
+            $this->write('  Status: ' . $beforeStatus);
+            $decodedBefore = json_decode((string) $beforeBody, true);
+            $beforeErrors = $decodedBefore['errors'] ?? ($decodedBefore['data']['errors'] ?? []);
+            if ($beforeErrors !== [] && is_array($beforeErrors)) {
+                foreach ($beforeErrors as $f => $m) {
+                    $msgs = is_array($m) ? implode(', ', $m) : $m;
+                    $this->write('  ❌ ' . $f . ': ' . $msgs);
+                }
+            }
+
+            $this->write('');
+            $this->write('  === AFTER ===');
+            $this->write('  Status: ' . $result['status']);
+            $decodedAfter = json_decode((string) ($result['body'] ?? '{}'), true);
+            $afterErrors = $decodedAfter['errors'] ?? ($decodedAfter['data']['errors'] ?? []);
+            if ($afterErrors !== [] && is_array($afterErrors)) {
+                foreach ($afterErrors as $f => $m) {
+                    $msgs = is_array($m) ? implode(', ', $m) : $m;
+                    $this->write('  ❌ ' . $f . ': ' . $msgs);
+                }
+            } elseif ((int) $result['status'] >= 200 && (int) $result['status'] < 300) {
+                $this->write('  ✅ Fixed!');
+            }
+
+            return 0;
+        }
+
+        // Normal replay (curl output or execute)
+        if (!$force && $method !== 'GET') {
+            $this->write('⚠ Safe mode: not replaying ' . $method . ' request. Use --force to execute.');
+            $this->write('  (Or use --format=curl to see the curl command without executing)');
         }
 
         if ($format === 'httpie') {
-            return $this->outputHttpie($method, $url, $headers, $body, $auth, $ct);
-        }
-
-        return $this->outputCurl($method, $url, $headers, $body, $auth, $ct);
-    }
-
-    private function outputCurl(string $method, string $url, array $headers, string $body, string $auth, string $ct): int
-    {
-        $parts = ['curl', '-X', $method, escapeshellarg($url)];
-
-        if ($auth !== '') {
-            $parts[] = '-H';
-            $parts[] = escapeshellarg('Authorization: ' . $auth);
-        }
-
-        if ($ct !== '') {
-            $parts[] = '-H';
-            $parts[] = escapeshellarg('Content-Type: ' . $ct);
+            $this->outputHttpie($method, $url, $body, $headers, $auth);
         } else {
-            $parts[] = '-H';
-            $parts[] = escapeshellarg('Content-Type: application/json');
+            $this->outputCurl($method, $url, $body, $headers, $auth, $data);
         }
 
-        foreach ($headers as $key => $value) {
-            if (strtolower($key) === 'authorization' || strtolower($key) === 'content-type') {
-                continue;
-            }
-            $parts[] = '-H';
-            $parts[] = escapeshellarg($key . ': ' . $value);
-        }
-
-        if ($body !== '' && $body !== '[]' && $body !== '{}') {
-            $parts[] = '-d';
-            $parts[] = escapeshellarg($body);
-        }
-
-        $this->write(implode(" \\\n  ", $parts));
         return 0;
     }
 
-    private function outputHttpie(string $method, string $url, array $headers, string $body, string $auth, string $ct): int
+    private function executeReplay(string $method, string $url, string $body, array $headers, string $auth, string $ct, array $data): array
     {
-        $parts = ['http', $method, $url];
-
-        if ($auth !== '') {
-            $parts[] = escapeshellarg('Authorization:' . $auth);
-        }
-
-        if ($body !== '' && $body !== '[]' && $body !== '{}') {
-            $decoded = json_decode($body, true);
-            if (is_array($decoded)) {
-                foreach ($decoded as $key => $value) {
-                    $parts[] = escapeshellarg($key . '=' . (is_string($value) ? $value : json_encode($value)));
-                }
+        $ch = curl_init($url);
+        $curlHeaders = [];
+        foreach ($headers as $k => $v) {
+            if (strtolower((string) $k) !== 'host' && strtolower((string) $k) !== 'content-length') {
+                $curlHeaders[] = $k . ': ' . $v;
             }
         }
+        if ($auth !== '') $curlHeaders[] = 'Authorization: ' . $auth;
+        if ($ct !== '') $curlHeaders[] = 'Content-Type: ' . $ct;
 
-        $this->write(implode(" \\\n  ", $parts));
-        return 0;
+        curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => $curlHeaders,
+            CURLOPT_POSTFIELDS => $body,
+        ]);
+        $response = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return ['status' => $status, 'body' => $response];
+    }
+
+    private function outputCurl(string $method, string $url, string $body, array $headers, string $auth, array $data): void
+    {
+        $this->write('');
+        $this->write('curl \\');
+        $this->write('  -X \\');
+        $this->write('  ' . escapeshellarg($method) . ' \\');
+        $this->write('  ' . escapeshellarg($url) . ' \\');
+
+        $seen = [];
+        foreach ($headers as $k => $v) {
+            $lk = strtolower((string) $k);
+            if ($lk === 'host' || $lk === 'content-length' || isset($seen[$lk])) continue;
+            $seen[$lk] = true;
+            $this->write('  -H \\');
+            $this->write('  ' . escapeshellarg($k . ': ' . $v) . ' \\');
+        }
+
+        if ($auth !== '') {
+            $this->write('  -H \\');
+            $this->write('  ' . escapeshellarg('Authorization: ' . $auth) . ' \\');
+        }
+
+        if ($body !== '' && $body !== '{}') {
+            $this->write('  -d \\');
+            $this->write('  ' . escapeshellarg($body));
+        } else {
+            $this->write('');
+        }
+    }
+
+    private function outputHttpie(string $method, string $url, string $body, array $headers, string $auth): void
+    {
+        $this->write('');
+        $parts = ['http', strtolower($method === 'GET' ? '' : $method), $url];
+        foreach ($headers as $k => $v) {
+            $lk = strtolower((string) $k);
+            if ($lk === 'host' || $lk === 'content-length') continue;
+            $parts[] = $k . ':' . $v;
+        }
+        if ($auth !== '') {
+            $parts[] = 'Authorization:' . $auth;
+        }
+        if ($body !== '' && $body !== '{}') {
+            $parts[] = 'body=' . $body;
+        }
+        $this->write('  ' . implode(' ', $parts));
+    }
+
+    private function prettyPrint(string $json): string
+    {
+        $decoded = json_decode($json, true);
+        if (is_array($decoded)) {
+            return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        return $json;
     }
 }

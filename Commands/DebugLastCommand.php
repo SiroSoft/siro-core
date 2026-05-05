@@ -17,13 +17,13 @@ final class DebugLastCommand
         $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
 
         if (!is_dir($traceDir)) {
-            $this->write('No traces found. Enable APP_DEBUG=true to capture traces.');
+            $this->write('  ⚠ No traces found. Enable APP_DEBUG=true to capture traces.');
             return 1;
         }
 
         $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
         if ($files === []) {
-            $this->write('No traces found.');
+            $this->write('  No traces found.');
             return 1;
         }
 
@@ -31,37 +31,63 @@ final class DebugLastCommand
         $latest = $files[0];
         $data = json_decode((string) file_get_contents($latest), true);
         if (!is_array($data)) {
-            $this->write('Invalid trace file.');
+            $this->write('  Invalid trace file.');
             return 1;
         }
 
         $traceId = basename($latest, '.json');
+        $status = (int) ($data['status'] ?? 0);
+        $method = $data['method'] ?? 'GET';
+        $path = $data['path'] ?? '/';
+        $timeMs = $data['time_ms'] ?? 0;
+        $statusColor = $status >= 200 && $status < 300 ? 'green' : ($status >= 400 ? 'red' : 'yellow');
+        $statusText = $status >= 200 && $status < 300 ? 'OK' : ($status === 422 ? 'Unprocessable Entity' : ($status === 401 ? 'Unauthorized' : ($status === 404 ? 'Not Found' : ($status === 500 ? 'Server Error' : 'Unknown'))));
 
         $this->write('');
         $this->write('  ' . str_repeat('=', 56));
-        $this->write('  ⚡ LAST REQUEST — ' . ($data['method'] ?? '?') . ' ' . ($data['path'] ?? '?'));
+        $this->write('  ⚡ LAST REQUEST');
         $this->write('  ' . str_repeat('=', 56));
+        $this->write('  ' . $method . ' ' . $path);
+        $this->write('  Status:   ' . $status . ' ' . $statusText . ' (' . round((float) $timeMs, 1) . 'ms)');
         $this->write('  Trace ID: ' . $traceId);
         $this->write('  Time:     ' . ($data['timestamp'] ?? '?'));
-        $this->write('  Status:   ' . ($data['status'] ?? '?') . ' (' . ($data['time_ms'] ?? '?') . 'ms)');
         $this->write('  IP:       ' . ($data['ip'] ?? '?'));
-        $this->write('  Host:     ' . ($data['host'] ?? '?'));
         $this->write('  Memory:   ' . ($data['memory_mb'] ?? '?') . 'MB');
 
-        $headers = $data['request_headers'] ?? [];
-        if ($headers !== []) {
-            $this->write('');
-            $this->write('  --- Request Headers ---');
-            foreach ($headers as $key => $value) {
-                $k = strtolower((string) $key);
-                if ($k === 'authorization' || $k === 'cookie') {
-                    $this->write('  ' . $key . ': [REDACTED]');
-                } else {
-                    $this->write('  ' . $key . ': ' . $value);
+        // Parse response body for errors
+        $responseBody = $data['response_body'] ?? '';
+        if ($responseBody !== '' && $responseBody !== '{}') {
+            $decoded = json_decode($responseBody, true);
+            if (is_array($decoded)) {
+                $errors = $decoded['errors'] ?? ($decoded['data']['errors'] ?? []);
+                if ($errors !== [] && is_array($errors)) {
+                    $this->write('');
+                    $this->write('  ❌ Validation failed:');
+                    foreach ($errors as $field => $msgs) {
+                        $fieldStr = is_array($msgs) ? implode(', ', $msgs) : (string) $msgs;
+                        $this->write('    - ' . $field . ': ' . $fieldStr);
+                    }
+                    $this->write('');
+                    $this->write('  💡 Fix: check request body for missing or invalid fields');
                 }
             }
         }
 
+        // Show auth status
+        $headers = $data['request_headers'] ?? [];
+        $hasAuth = false;
+        foreach ($headers as $key => $value) {
+            if (strtolower((string) $key) === 'authorization') {
+                $hasAuth = true;
+                break;
+            }
+        }
+        if ($status === 401 && !$hasAuth) {
+            $this->write('');
+            $this->write('  🔐 Requires authentication: add --as=admin or login first');
+        }
+
+        // Show request body
         $requestBody = $data['request_body'] ?? '';
         if ($requestBody !== '' && $requestBody !== '[]' && $requestBody !== '{}') {
             $this->write('');
@@ -72,8 +98,8 @@ final class DebugLastCommand
             }
         }
 
-        $responseBody = $data['response_body'] ?? '';
-        if ($responseBody !== '' && $responseBody !== '[]' && $responseBody !== '{}') {
+        // Show response body
+        if ($responseBody !== '' && $responseBody !== '{}') {
             $this->write('');
             $this->write('  --- Response Body ---');
             $formatted = $this->prettyJson($responseBody);
@@ -82,6 +108,7 @@ final class DebugLastCommand
             }
         }
 
+        // SQL queries
         if (isset($data['queries']) && is_array($data['queries']) && $data['queries'] !== []) {
             $this->write('');
             $this->write('  --- SQL Queries (' . count($data['queries']) . ') ---');
@@ -101,8 +128,9 @@ final class DebugLastCommand
 
         $this->write('');
         $this->write('  ' . str_repeat('-', 56));
-        $this->write('  Replay:  php siro log:replay ' . $traceId);
-        $this->write('  Export:  php siro log:export ' . $traceId . ' --postman');
+        $this->write('  🔄 Replay:  php siro log:replay ' . $traceId);
+        $this->write('  📤 Export:  php siro log:export ' . $traceId . ' --postman');
+        $this->write('  🔧 Fix & auto-replay: edit code then: php siro fix');
         $this->write('  ' . str_repeat('=', 56));
 
         return 0;

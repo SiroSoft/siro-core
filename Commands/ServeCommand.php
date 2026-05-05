@@ -12,14 +12,6 @@ final class ServeCommand
     {
     }
 
-    /**
- * Start the PHP built-in development server.
- *
- * Launches php -S on the configured host and port, serving
- * from the public/ directory.
- *
- * @package Siro\Core\Commands
- */
     public function run(array $args): int
     {
         $host = (string) ($args[0] ?? 'localhost');
@@ -41,8 +33,20 @@ final class ServeCommand
             return 1;
         }
 
-        $this->write("Starting Siro server at http://{$host}:{$port}");
-        $this->write('Press Ctrl+C to stop.');
+        $this->write('');
+        $this->write('  ⚡ Siro dev server at http://' . $host . ':' . $port);
+        $this->write('  ' . str_repeat('-', 50));
+        $this->write('  Quick test:');
+        $this->write('    php siro api:test GET /api/users');
+        $this->write('    php siro api:test POST /api/auth/login email=admin@test.com password=secret');
+        $this->write('    php siro api:test POST /api/products name=Laptop price=999 --as=admin');
+        $this->write('');
+        $this->write('  Debug:');
+        $this->write('    php siro debug:last');
+        $this->write('    php siro log:tail');
+        $this->write('  ' . str_repeat('-', 50));
+        $this->write('  Press Ctrl+C to stop.');
+        $this->write('');
 
         $command = sprintf(
             '"%s" -S %s:%s -t "%s"',
