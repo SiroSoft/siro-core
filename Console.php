@@ -108,7 +108,7 @@ final class Console
             'log:tail'    => ['handler' => LogTailCommand::class, 'desc' => 'Tail log files in real-time', 'usage' => 'php siro log:tail [--type=request|error|slow] [--lines=N] [--follow|-f]'],
             'log:stats'   => ['handler' => LogStatsCommand::class, 'desc' => 'Request statistics with charts', 'usage' => 'php siro log:stats [--days=N]'],
             'log:top'     => ['handler' => LogTopCommand::class, 'desc' => 'Top slowest APIs by total time', 'usage' => 'php siro log:top [--limit=N] [--min=MS]'],
-            'debug:last'  => ['handler' => DebugLastCommand::class, 'desc' => 'Show last request details', 'usage' => 'php siro debug:last'],
+            'debug:last'  => ['handler' => DebugLastCommand::class, 'desc' => 'Show why last request failed (alias: why)', 'usage' => 'php siro debug:last'],
 
             'test'          => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite', 'usage' => 'php siro test'],
             'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API (--loop, --as=admin/guest)', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]'],
@@ -146,7 +146,9 @@ final class Console
     private function aliases(): array
     {
         return [
-            'slow' => 'log:slow',
+            'slow'   => 'log:slow',
+            'why'    => 'debug:last',
+            'traces' => 'trace:list',
         ];
     }
 

@@ -50,6 +50,9 @@ final class DebugLastCommand
         $this->write('  ' . $method . ' ' . $path);
         $this->write('  Status:   ' . $status . ' ' . $statusText . ' (' . round((float) $timeMs, 1) . 'ms)');
         $this->write('  Trace ID: ' . $traceId);
+        $this->write('  ' . str_repeat('-', 56));
+        $this->write('  💡 Replay: php siro log:replay ' . $traceId);
+        $this->write('  ' . str_repeat('-', 56));
         $this->write('  Time:     ' . ($data['timestamp'] ?? '?'));
         $this->write('  IP:       ' . ($data['ip'] ?? '?'));
         $this->write('  Memory:   ' . ($data['memory_mb'] ?? '?') . 'MB');
@@ -74,7 +77,7 @@ final class DebugLastCommand
                         $this->write('  💡 Quick fix:');
                         $setParts = [];
                         foreach ($errors as $field => $msgs) {
-                            $setParts[] = $field . '=...';
+                            $setParts[] = 'body.' . $field . '=...';
                         }
                         $this->write('    php siro log:replay ' . $traceId . ' --set ' . implode(' ', $setParts));
                     }

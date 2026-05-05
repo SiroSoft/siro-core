@@ -33,7 +33,12 @@ final class LogReplayCommand
             } elseif ($arg === '--diff') {
                 $diffMode = true;
             } elseif (str_starts_with($arg, '--set=')) {
-                $parts = explode('=', substr($arg, 6), 2);
+                $setArg = substr($arg, 6);
+                // Support --set body.field=value (strip 'body.' prefix)
+                if (str_starts_with($setArg, 'body.')) {
+                    $setArg = substr($setArg, 5);
+                }
+                $parts = explode('=', $setArg, 2);
                 if (isset($parts[1])) {
                     $overrides[$parts[0]] = $parts[1];
                 }
