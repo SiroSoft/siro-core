@@ -79,6 +79,61 @@ final class SeedCommand
             return 0;
         }
 
+        // Check for DatabaseSeeder with ordered calls
+        $dbSeederPath = $seedDir . DIRECTORY_SEPARATOR . 'DatabaseSeeder.php';
+        if (is_file($dbSeederPath)) {
+            require $dbSeederPath;
+            if (class_exists('DatabaseSeeder')) {
+                $dbSeeder = new \DatabaseSeeder();
+                if (property_exists($dbSeeder, 'calls') && is_array($dbSeeder->calls)) {
+                    $this->write('Running seeders (ordered)...');
+                    foreach ($dbSeeder->calls as $class) {
+                        $path = $seedDir . DIRECTORY_SEPARATOR . $class . '.php';
+                        if (is_file($path)) {
+                            require $path;
+                            if (class_exists($class) && method_exists($class, 'run')) {
+                                $this->write('Seeding: ' . $class);
+                                (new $class())->run();
+                            }
+                        }
+                    }
+                    $this->write('Seeding completed.');
+                    return 0;
+                }
+            }
+        }
+
+        // Fallback: run all seeder files
+        $files = glob($seedDir . DIRECTORY_SEPARATOR . '*.php');
+        if ($files === false || $files === []) {
+            $this->write('No seeders found in database/seeds/');
+            return 0;
+        }
+
+        $this->write('Running seeders...');
+
+        $count = 0;
+        foreach ($files as $file) {
+            $class = basename($file, '.php');
+            if ($class === 'DatabaseSeeder') {
+                continue; // Already handled above
+            }
+            require $file;
+
+            if (!class_exists($class) || !method_exists($class, 'run')) {
+                continue;
+            }
+
+            $seeder = new $class();
+            $this->write('Seeding: ' . $class);
+            $seeder->run();
+            $count++;
+        }
+
+        $this->write('Seeding completed. Ran ' . $count . ' seeder(s).');
+        return 0;
+    }
+
         $files = glob($seedDir . DIRECTORY_SEPARATOR . '*.php') ?: [];
         sort($files);
 

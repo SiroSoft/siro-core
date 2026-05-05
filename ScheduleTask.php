@@ -10,6 +10,8 @@ final class ScheduleTask
     public mixed $task;
     private string $expression = '* * * * *';
     private int $lastRun = 0;
+    private bool $withoutOverlapping = false;
+    private string $mutexKey = '';
 
     public function __construct(string $type, mixed $task)
     {
@@ -40,9 +42,37 @@ final class ScheduleTask
         return $this->matchesCron($now);
     }
 
+    public function withoutOverlapping(int $expires = 1440): self
+    {
+        $this->withoutOverlapping = true;
+        $this->mutexKey = 'schedule:' . sha1($this->expression . '_' . ($this->task instanceof \Closure ? spl_object_id($this->task) : (is_string($this->task) ? $this->task : get_class($this->task))));
+        if ($expires > 0) {
+            Cache::remember($this->mutexKey, $expires, fn() => true);
+        }
+        return $this;
+    }
+
+    public function isLocked(): bool
+    {
+        if (!$this->withoutOverlapping) {
+            return false;
+        }
+        return Cache::has($this->mutexKey);
+    }
+
+    public function unlock(): void
+    {
+        if ($this->mutexKey !== '') {
+            Cache::forget($this->mutexKey);
+        }
+    }
+
     public function markRun(int $now): void
     {
         $this->lastRun = $now;
+        if ($this->withoutOverlapping && $this->mutexKey !== '') {
+            Cache::remember($this->mutexKey, 1440, fn() => true);
+        }
     }
 
     private function matchesCron(int $now): bool

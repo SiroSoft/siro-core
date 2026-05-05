@@ -26,6 +26,80 @@ final class Queue
 {
     /** @var array<int, array{job: string, data: mixed}> */
     private static array $pending = [];
+    private static bool $faked = false;
+    /** @var array<int, array{job: string, data: mixed}> */
+    private static array $fakeJobs = [];
+
+    public static function fake(): void
+    {
+        self::$faked = true;
+        self::$fakeJobs = [];
+    }
+
+    /** @return array<int, array{job: string, data: mixed}> */
+    public static function getFakedJobs(): array
+    {
+        return self::$fakeJobs;
+    }
+
+    public static function assertPushed(string $job, ?callable $callback = null): void
+    {
+        $matched = array_filter(self::$fakeJobs, fn($j) => $j['job'] === $job && ($callback === null || $callback($j['data'])));
+        \PHPUnit\Framework\Assert::assertGreaterThan(0, count($matched), "Job {$job} was not pushed.");
+    }
+
+    public static function assertNotPushed(string $job): void
+    {
+        $matched = array_filter(self::$fakeJobs, fn($j) => $j['job'] === $job);
+        \PHPUnit\Framework\Assert::assertCount(0, $matched, "Job {$job} was pushed unexpectedly.");
+    }
+
+    public static function dashboardHtml(): string
+    {
+        $pending = 0;
+        $failed = 0;
+        $latest = [];
+        try {
+            $pending = Database::table('jobs')->where('locked_until', null)->count();
+            $failed = Database::table('failed_jobs')->count();
+            $latest = Database::table('jobs')->orderBy('id', 'desc')->limit(10)->get();
+        } catch (\Throwable) {
+        }
+
+        $rows = '';
+        foreach ($latest as $j) {
+            $rows .= '<tr><td>' . ($j['id'] ?? '') . '</td><td>' . ($j['job'] ?? '') . '</td>'
+                . '<td>' . ($j['attempts'] ?? 0) . '/' . ($j['max_attempts'] ?? 3) . '</td>'
+                . '<td>' . ($j['priority'] ?? 0) . '</td>'
+                . '<td>' . date('Y-m-d H:i:s', $j['available_at'] ?? 0) . '</td></tr>';
+        }
+
+        return '<!DOCTYPE html><html><head><title>Queue Dashboard - Siro</title>'
+            . '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            . '<style>body{font-family:-apple-system,sans-serif;max-width:960px;margin:0 auto;padding:20px;background:#f5f5f5}'
+            . '.stat{display:inline-block;background:#fff;border-radius:8px;padding:20px 30px;margin:10px;box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center}'
+            . '.stat h3{margin:0;font-size:14px;color:#666}'
+            . '.stat .num{font-size:32px;font-weight:700;color:#333}'
+            . 'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}'
+            . 'th,td{padding:12px 16px;text-align:left;border-bottom:1px solid #eee}'
+            . 'th{background:#fafafa;font-weight:600;color:#666;font-size:13px}'
+            . 'h1{color:#333}'
+            . '.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600}'
+            . '.badge-green{background:#e6ffe6;color:#0a0}'
+            . '.badge-red{background:#ffe6e6;color:#c00}</style></head><body>'
+            . '<h1>Queue Dashboard</h1>'
+            . '<div class="stat"><h3>Pending Jobs</h3><div class="num">' . $pending . '</div></div>'
+            . '<div class="stat"><h3>Failed Jobs</h3><div class="num">' . $failed . '</div></div>'
+            . '<div class="stat"><h3>Jobs / Table</h3><div class="num">jobs</div></div>'
+            . '<h2>Recent Jobs</h2>'
+            . '<table><thead><tr><th>ID</th><th>Job</th><th>Attempts</th><th>Priority</th><th>Available</th></tr></thead><tbody>'
+            . $rows . '</tbody></table>'
+            . '<p style="color:#999;font-size:12px;margin-top:20px">Siro Queue Dashboard</p></body></html>';
+    }
+    {
+        $matched = array_filter(self::$fakeJobs, fn($j) => $j['job'] === $job);
+        \PHPUnit\Framework\Assert::assertCount(0, $matched, "Job {$job} was pushed unexpectedly.");
+    }
     private const DEFAULT_MAX_ATTEMPTS = 3;
     private const DEFAULT_TIMEOUT = 120;
     private const DEFAULT_PRIORITY = 0;
@@ -48,6 +122,11 @@ final class Queue
         int $maxAttempts = self::DEFAULT_MAX_ATTEMPTS,
         int $timeout = self::DEFAULT_TIMEOUT,
     ): void {
+        if (self::$faked) {
+            self::$fakeJobs[] = ['job' => $job, 'data' => $data];
+            return;
+        }
+
         $payload = [
             'job' => $job,
             'data' => json_encode($data, JSON_UNESCAPED_UNICODE),

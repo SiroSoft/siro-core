@@ -32,6 +32,25 @@ final class Storage
 {
     private const LOCAL = 'local';
     private const S3 = 's3';
+    private static bool $faked = false;
+    /** @var array<string, string> */
+    private static array $fakeFiles = [];
+
+    public static function fake(): void
+    {
+        self::$faked = true;
+        self::$fakeFiles = [];
+    }
+
+    public static function assertExists(string $path): void
+    {
+        \PHPUnit\Framework\Assert::assertArrayHasKey($path, self::$fakeFiles, "File '{$path}' was not stored.");
+    }
+
+    public static function assertMissing(string $path): void
+    {
+        \PHPUnit\Framework\Assert::assertArrayNotHasKey($path, self::$fakeFiles, "File '{$path}' was stored unexpectedly.");
+    }
 
     /** @var array<string, mixed> */
     private static array $config = [];
@@ -137,6 +156,10 @@ final class Storage
 
     private static function localPut(string $path, string $content): bool
     {
+        if (self::$faked) {
+            self::$fakeFiles[$path] = $content;
+            return true;
+        }
         $fullPath = self::localPath($path);
         $dir = dirname($fullPath);
 
@@ -149,6 +172,9 @@ final class Storage
 
     private static function localGet(string $path): ?string
     {
+        if (self::$faked) {
+            return self::$fakeFiles[$path] ?? null;
+        }
         $fullPath = self::localPath($path);
         if (!is_file($fullPath)) {
             return null;
@@ -160,6 +186,13 @@ final class Storage
 
     private static function localDelete(string $path): bool
     {
+        if (self::$faked) {
+            if (isset(self::$fakeFiles[$path])) {
+                unset(self::$fakeFiles[$path]);
+                return true;
+            }
+            return false;
+        }
         $fullPath = self::localPath($path);
         if (!is_file($fullPath)) {
             return false;
@@ -170,6 +203,9 @@ final class Storage
 
     private static function localExists(string $path): bool
     {
+        if (self::$faked) {
+            return isset(self::$fakeFiles[$path]);
+        }
         return is_file(self::localPath($path));
     }
 

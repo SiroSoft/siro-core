@@ -43,6 +43,28 @@ use RuntimeException;
  */
 final class Mail
 {
+    private static bool $faked = false;
+    /** @var array<int, array{to:string,subject:string,body:string}> */
+    private static array $fakeMails = [];
+
+    public static function fake(): void
+    {
+        self::$faked = true;
+        self::$fakeMails = [];
+    }
+
+    /** @return array<int, array{to:string,subject:string,body:string}> */
+    public static function getFakedMails(): array
+    {
+        return self::$fakeMails;
+    }
+
+    public static function assertSent(string $subject): void
+    {
+        $matched = array_filter(self::$fakeMails, fn($m) => $m['subject'] === $subject);
+        \PHPUnit\Framework\Assert::assertGreaterThan(0, count($matched), "Mail with subject '{$subject}' was not sent.");
+    }
+
     private string $to = '';
     private string $subject = '';
     private string $body = '';
@@ -157,6 +179,11 @@ final class Mail
     {
         if ($this->to === '' || $this->body === '') {
             throw new RuntimeException('Recipient and body are required.');
+        }
+
+        if (self::$faked) {
+            self::$fakeMails[] = ['to' => $this->to, 'subject' => $this->subject, 'body' => $this->body];
+            return true;
         }
 
         $driver = strtolower((string) Env::get('MAIL_DRIVER', 'sendmail'));
