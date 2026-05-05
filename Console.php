@@ -154,6 +154,9 @@ final class Console
         ];
     }
 
+    /** @var array<int, string> Core workflow commands shown on default */
+    private const CORE_FLOW = ['make:crud', 'serve', 'api:test', 'why', 'fix', 'replay', 'traces'];
+
     public function run(array $argv): int
     {
         $command = trim($argv[1] ?? '');
@@ -164,7 +167,19 @@ final class Console
             return 0;
         }
 
-        if ($command === '' || in_array($command, ['-h', '--help', 'help'], true)) {
+        // php siro → show core workflow
+        if ($command === '') {
+            $this->printWorkflow();
+            return 0;
+        }
+
+        // Alias: 't' → 'api:test', etc.
+        $shortcuts = ['t' => 'api:test'];
+        if (isset($shortcuts[$command])) {
+            $command = $shortcuts[$command];
+        }
+
+        if (in_array($command, ['-h', '--help', 'help'], true)) {
             $this->printHelp();
             return 0;
         }
@@ -174,6 +189,7 @@ final class Console
             return 0;
         }
 
+        // Alias resolution
         $aliases = $this->aliases();
         if (isset($aliases[$command])) {
             $command = $aliases[$command];
@@ -184,13 +200,16 @@ final class Console
             $args[] = '--with-swagger';
         }
 
-        // open:postman <trace_id> → log:export <trace_id> --postman
         if ($command === 'open:postman') {
             $command = 'log:export';
             $args[] = '--postman';
         }
 
         $registry = $this->commandRegistry();
+
+        if ($command === 'start') {
+            return $this->printStart();
+        }
 
         if (!isset($registry[$command])) {
             return $this->unknownCommand($command, $registry);
@@ -206,32 +225,100 @@ final class Console
         return (new $handlerClass($this->basePath))->run($args);
     }
 
+    private function printWorkflow(): void
+    {
+        $this->write('');
+        $this->write('  ⚡ SiroPHP v' . self::VERSION);
+        $this->write('  ' . str_repeat('-', 50));
+        $this->write('');
+        $this->write('  Core Workflow:');
+        $this->write('    make:crud     Create a full CRUD API in 2 seconds');
+        $this->write('    serve         Start development server');
+        $this->write('    api:test      Test any API endpoint from CLI');
+        $this->write('    why           Why did the last request fail?');
+        $this->write('    fix           Watch code changes & auto-replay');
+        $this->write('    replay        Replay any past request');
+        $this->write('    traces        Browse recent request traces');
+        $this->write('');
+        $this->write('  Quick start:');
+        $this->write('    php siro start');
+        $this->write('');
+        $this->write('  All commands:');
+        $this->write('    php siro list');
+        $this->write('    php siro <command> --help');
+        $this->write('  ' . str_repeat('-', 50));
+        $this->write('');
+    }
+
+    private function printStart(): int
+    {
+        $this->write('');
+        $this->write('  🚀 START — SiroPHP Quick Onboarding');
+        $this->write('  ' . str_repeat('=', 50));
+        $this->write('');
+        $this->write('  1. Generate your first CRUD:');
+        $this->write('     $ php siro make:crud products');
+        $this->write('');
+        $this->write('  2. Run migration:');
+        $this->write('     $ php siro migrate');
+        $this->write('');
+        $this->write('  3. Start dev server:');
+        $this->write('     $ php siro serve');
+        $this->write('');
+        $this->write('  4. Test your API:');
+        $this->write('     $ php siro t GET /api/products');
+        $this->write('     $ php siro t POST /api/products --body name=Laptop');
+        $this->write('');
+        $this->write('  5. Debug when it fails:');
+        $this->write('     $ php siro why');
+        $this->write('');
+        $this->write('  6. Fix & auto-replay:');
+        $this->write('     $ php siro fix');
+        $this->write('');
+        $this->write('  7. Browse traces:');
+        $this->write('     $ php siro traces');
+        $this->write('  ' . str_repeat('=', 50));
+        return 0;
+    }
+
     private function printHelp(): void
     {
-        $this->write('SiroPHP v' . self::VERSION . ' - PHP Micro-Framework for API Development');
         $this->write('');
-        $this->write('Usage:');
-        $this->write('  php siro <command> [options]');
+        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — PHP Micro-Framework');
+        $this->write('  ' . str_repeat('-', 50));
         $this->write('');
-        $this->write('  php siro list                Show all available commands');
-        $this->write('  php siro <command> --help    Show help for a specific command');
-        $this->write('  php siro --version           Show version');
+        $this->write('  Usage:');
+        $this->write('    php siro <command> [options]');
+        $this->write('    php siro list                  All 59 commands');
+        $this->write('    php siro <command> --help      Command details');
+        $this->write('    php siro --version             Version info');
         $this->write('');
 
         $groups = $this->groupedCommands();
-        foreach ($groups as $group => $commands) {
-            $this->write('  ' . $group . ':');
-            foreach ($commands as $cmd => $desc) {
-                $this->write('    ' . str_pad($cmd, 22, ' ') . $desc);
-            }
+        $layers = [
+            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'why', 'fix', 'replay', 'trace:list'],
+            '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
+                                    'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
+            '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
+                                    'queue:work', 'queue:status', 'schedule:run', 'deploy', 'optimize', 'config:cache',
+                                    'down', 'up', 'log:trace', 'log:replay', 'log:slow', 'debug:last'],
+            '⚙️ System'        => ['key:generate', 'doctor', 'env:check', 'env:switch', 'route:search', 'route:rules',
+                                    'rate:status', 'db:show', 'migrate:rollback', 'migrate:status', 'log:export',
+                                    'log:cleanup', 'log:tail', 'log:stats', 'log:top', 'storage:link', 'live', 'new'],
+        ];
+
+        foreach ($layers as $layer => $cmds) {
+            $this->write('  ' . $layer . ':');
+            $this->write('    ' . implode(', ', $cmds));
             $this->write('');
         }
     }
 
     private function printList(): void
     {
-        $this->write('SiroPHP v' . self::VERSION . ' - Available Commands');
-        $this->write(str_repeat('=', 60));
+        $this->write('');
+        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 59 Commands');
+        $this->write('  ' . str_repeat('=', 60));
         $this->write('');
 
         $registry = $this->commandRegistry();
@@ -254,7 +341,7 @@ final class Console
             $this->write('');
         }
 
-        $this->write('Run "php siro <command> --help" for detailed usage.');
+        $this->write('Run "php siro list" for all 59 commands with usage examples.');
     }
 
     private function printCommandHelp(string $command, array $info): void
