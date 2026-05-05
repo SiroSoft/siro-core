@@ -10,6 +10,7 @@ final class Str
     {
         $value = preg_replace('/[^\p{L}\p{N}\s\-_]/u', '', $value);
         $value = preg_replace('/[\s\-_]+/', $separator, $value);
+        $value = preg_replace('/' . preg_quote($separator, '/') . '+/', $separator, $value);
         return trim(mb_strtolower($value), $separator);
     }
 
@@ -18,7 +19,7 @@ final class Str
         if (mb_strwidth($value, 'UTF-8') <= $limit) {
             return $value;
         }
-        return rtrim(mb_strimwidth($value, 0, $limit, '', 'UTF-8')) . $end;
+        return rtrim(mb_strimwidth($value, 0, max(0, $limit - mb_strwidth($end)), '', 'UTF-8')) . $end;
     }
 
     public static function words(string $value, int $words = 100, string $end = '...'): string
