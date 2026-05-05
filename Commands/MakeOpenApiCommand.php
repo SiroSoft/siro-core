@@ -34,6 +34,32 @@ final class MakeOpenApiCommand
     public function run(array $args): int
     {
         $this->parseArgs($args);
+
+        // Fix 1: Production safety - disabled by default
+        $envFile = $this->basePath . '/.env';
+        $env = strtolower((string) getenv('APP_ENV'));
+        if ($env === '' && file_exists($envFile)) {
+            $content = file_get_contents($envFile);
+            if (preg_match('/^APP_ENV\s*=\s*(\w+)/m', (string) $content, $m)) {
+                $env = strtolower($m[1]);
+            }
+        }
+
+        $openApiEnabled = (bool) getenv('SIRO_OPENAPI_ENABLED');
+        if (!$openApiEnabled && file_exists($envFile)) {
+            $content = (string) file_get_contents($envFile);
+            if (preg_match('/^SIRO_OPENAPI_ENABLED\s*=\s*(true|1)/mi', $content)) {
+                $openApiEnabled = true;
+            }
+        }
+        $openApiEnabled = $openApiEnabled ?: ($env !== 'production' && $env !== 'prod');
+        if (!$openApiEnabled) {
+            $this->write('  ⚠ OpenAPI spec generation is disabled in production.');
+            $this->write('  Set SIRO_OPENAPI_ENABLED=true in .env to enable.');
+            $this->write('  Or use with explicit --force flag if you know what you are doing.');
+            return 1;
+        }
+
         $routes = $this->loadRoutes();
         $this->buildCoreSchemas();
 
@@ -273,7 +299,9 @@ final class MakeOpenApiCommand
     {
         foreach ($middleware as $m) {
             $mStr = is_string($m) ? $m : (is_array($m) ? implode(',', $m) : '');
-            if (str_contains($mStr, 'auth') || str_contains($mStr, 'Auth')) return true;
+            // Fix 4: Normalize auth detection - handle auth:api, auth:sanctum, custom auth middleware
+            if (preg_match('/\bauth\b/i', $mStr)) return true;
+            if (str_contains($mStr, 'AuthMiddleware') || str_contains($mStr, 'Auth:')) return true;
         }
         return false;
     }
@@ -355,21 +383,34 @@ final class MakeOpenApiCommand
         return $schemaName;
     }
 
+    /** @var array<int, string> Internal model fields that should never appear in API docs */
+    private array $internalModelFields = ['password', 'token_version', 'verification_token', 'password_reset_token', 'password_reset_expires_at', 'email_verified_at', 'deleted_at', 'remember_token'];
+
     private function extractDataSchema(string $handler): ?array
     {
-        // Try to find and parse the Resource class
-        if (preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) {
-            $resourceName = $m[1] . 'Resource';
-            $resourceFile = $this->basePath . '/app/Resources/' . $resourceName . '.php';
-            if (file_exists($resourceFile)) {
-                return $this->parseResourceFile($resourceFile);
-            }
-            // Try Model as fallback
-            $modelFile = $this->basePath . '/app/Models/' . $m[1] . '.php';
-            if (file_exists($modelFile)) {
-                return $this->parseModelFile($modelFile);
-            }
+        if (!preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) return null;
+
+        // Fix 3: Prefer Resource::toArray() over Model
+        $resourceName = $m[1] . 'Resource';
+        $resourceFile = $this->basePath . '/app/Resources/' . $resourceName . '.php';
+        if (file_exists($resourceFile)) {
+            return $this->parseResourceFile($resourceFile);
         }
+
+        // Fallback to Model only if Resource doesn't exist — strip internal fields
+        $modelFile = $this->basePath . '/app/Models/' . $m[1] . '.php';
+        if (file_exists($modelFile)) {
+            $schema = $this->parseModelFile($modelFile);
+            if ($schema !== null && isset($schema['properties'])) {
+                foreach ($schema['properties'] as $field => $prop) {
+                    if (in_array(strtolower($field), $this->internalModelFields, true)) {
+                        unset($schema['properties'][$field]);
+                    }
+                }
+            }
+            return $schema;
+        }
+
         return null;
     }
 
@@ -421,6 +462,12 @@ final class MakeOpenApiCommand
         return $properties !== [] ? ['type' => 'object', 'properties' => $properties] : null;
     }
 
+    /** @var array<int, string> Sensitive fields that should not be exposed in OpenAPI */
+    private array $sensitiveFields = ['is_admin', 'role', 'permissions', 'balance', 'credit', 'token_version', 'verification_token', 'password_reset_token', 'password_reset_expires_at', 'email_verified_at', 'deleted_at'];
+
+    /** @var array<int, string> Internal validation rules that should not be exposed */
+    private array $internalRules = ['unique:', 'exists:', 'confirmed', 'required_if:', 'prohibited_if:'];
+
     private function extractValidationRules(string $handler): array
     {
         if (!preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) return [];
@@ -430,17 +477,14 @@ final class MakeOpenApiCommand
 
         $content = (string) file_get_contents($controllerFile);
 
-        // Find the method body
         $method = $m[2];
         if (!preg_match('/function\s+' . preg_quote($method, '/') . '\s*\([^)]*\)\s*(?::\s*[^{]+)?\{/', $content, $methodMatch, PREG_OFFSET_CAPTURE)) return [];
         $startPos = $methodMatch[0][1];
         $body = $this->extractMethodBody($content, $startPos);
         if ($body === '') return [];
 
-        // Extract validation rules from $request->validate([...]) or Validator::make(...)
         $rules = [];
 
-        // Pattern 1: $request->validate([...]) or $request->validate([...], [...])
         if (preg_match('/\->validate\s*\(\s*\[([^\]]*\[[^\]]*\]\s*,*\s*)+\s*\)/s', $body, $vMatch)) {
             preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[0], $pairs);
             foreach ($pairs[1] as $i => $field) {
@@ -448,12 +492,26 @@ final class MakeOpenApiCommand
             }
         }
 
-        // Pattern 2: Validator::make($data, [...])
         if (preg_match('/Validator::make\s*\([^,]+,\s*\[([^\]]+)\]/s', $body, $vMatch)) {
             preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[1], $pairs);
             foreach ($pairs[1] as $i => $field) {
                 $rules[$field] = explode('|', $pairs[2][$i]);
             }
+        }
+
+        // Fix 2: Remove sensitive fields and internal rules from OpenAPI exposure
+        foreach ($rules as $field => $fieldRules) {
+            if (in_array(strtolower($field), $this->sensitiveFields, true)) {
+                unset($rules[$field]);
+                continue;
+            }
+            // Strip internal-only validation rules (don't expose logic through OpenAPI)
+            $rules[$field] = array_values(array_filter($fieldRules, function ($rule) {
+                foreach ($this->internalRules as $internal) {
+                    if (str_starts_with($rule, $internal)) return false;
+                }
+                return true;
+            }));
         }
 
         return $rules;
@@ -667,7 +725,13 @@ final class MakeOpenApiCommand
 
     private function buildFallbackRoutes(): array
     {
-        $this->write('  Using fallback: reading source files directly...');
+        // Fix 5: Explicit warning about fallback mode
+        $this->write('');
+        $this->write('  ⚠ WARNING: Running in fallback mode (static file parsing)');
+        $this->write('  ⚠ Could not boot application to read actual routes.');
+        $this->write('  ⚠ Generated spec may be incomplete or inaccurate.');
+        $this->write('  ⚠ Consider fixing the app bootstrap issue for accurate specs.');
+        $this->write('');
         $routes = [];
         $controllerDir = $this->basePath . '/app/Controllers';
         if (!is_dir($controllerDir)) return $routes;
