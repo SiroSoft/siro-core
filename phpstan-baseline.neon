@@ -283,6 +283,12 @@ parameters:
 			path: Commands/DoctorCommand.php
 
 		-
+			message: '#^Strict comparison using \!\=\= between non\-falsy\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: Commands/DoctorCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\DownCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -317,6 +323,48 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Commands/EnvSwitchCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\FixCommand\:\:getMaxMtime\(\) has parameter \$dirs with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\FixCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\FixCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Property Siro\\Core\\Commands\\FixCommand\:\:\$lastStatus is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Property Siro\\Core\\Commands\\FixCommand\:\:\$lastStatus type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Property Siro\\Core\\Commands\\FixCommand\:\:\$watchPid is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^While loop condition is always true\.$#'
+			identifier: while.alwaysTrue
+			count: 1
+			path: Commands/FixCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\KeyGenerateCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -385,6 +433,30 @@ parameters:
 			path: Commands/LogExportCommand.php
 
 		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:executeReplay\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:executeReplay\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:executeReplay\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:outputCurl\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:outputCurl\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -406,6 +478,12 @@ parameters:
 			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Ternary operator condition is always false\.$#'
+			identifier: ternary.alwaysFalse
+			count: 2
 			path: Commands/LogReplayCommand.php
 
 		-
@@ -541,25 +619,139 @@ parameters:
 			path: Commands/MakeModelCommand.php
 
 		-
+			message: '#^Match arm comparison between ''array''\|''object''\|''string'' and ''email'' is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:addRouteToPaths\(\) has parameter \$paths with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:addRouteToPaths\(\) has parameter \$route with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:buildFallbackRoutes\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:buildResponseSchema\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:buildResponses\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:buildTagsList\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:extractDataSchema\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:extractPathParams\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:extractValidationRules\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: Commands/MakeOpenApiCommand.php
 
 		-
-			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:inferSchemaFromPath\(\) return type has no value type specified in iterable type array\.$#'
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:hasAuthMiddleware\(\) has parameter \$middleware with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: Commands/MakeOpenApiCommand.php
 
 		-
-			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:ruleToSchemaProperty\(\) has parameter \$rules with no value type specified in iterable type array\.$#'
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:inferPropertyType\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: Commands/MakeOpenApiCommand.php
 
 		-
-			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:ruleToSchemaProperty\(\) return type has no value type specified in iterable type array\.$#'
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:isRequired\(\) has parameter \$rules with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:loadRoutes\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:parseArgs\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:parseModelFile\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:parseModelFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:parseResourceFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:passesFilter\(\) has parameter \$route with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:pathRequiresAuth\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:ruleToProperty\(\) has parameter \$rules with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:ruleToProperty\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:ruleToProperty\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: Commands/MakeOpenApiCommand.php
@@ -573,6 +765,30 @@ parameters:
 		-
 			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Offset ''Auth''\|''System'' on array\{Auth\: ''Authentication'', System\: ''System endpoints''\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$object of function get_class expects object, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-array\<non\-empty\-string, array\{type\: string, format\?\: ''date\-time''\}\> and array\{\} will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Variable \$resource on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
 			count: 1
 			path: Commands/MakeOpenApiCommand.php
 
@@ -787,6 +1003,18 @@ parameters:
 			path: Commands/RateStatusCommand.php
 
 		-
+			message: '#^Method Siro\\Core\\Commands\\ReplayCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ReplayCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ReplayCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ReplayCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\RouteListCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -913,6 +1141,18 @@ parameters:
 			path: Commands/TestRunCommand.php
 
 		-
+			message: '#^Method Siro\\Core\\Commands\\TraceListCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/TraceListCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\TraceListCommand\:\:table\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/TraceListCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\UpCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -923,6 +1163,12 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Commands/UpCommand.php
+
+		-
+			message: '#^Constant Siro\\Core\\Console\:\:CORE_FLOW is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: Console.php
 
 		-
 			message: '#^Method Siro\\Core\\Console\:\:aliases\(\) return type has no value type specified in iterable type array\.$#'
@@ -1355,6 +1601,42 @@ parameters:
 			identifier: nullCoalesce.offset
 			count: 2
 			path: Lang.php
+
+		-
+			message: '#^Method Siro\\Core\\Logger\:\:sanitizeHeaders\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Method Siro\\Core\\Logger\:\:sanitizeHeaders\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Method Siro\\Core\\Logger\:\:sanitizeRecursive\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Method Siro\\Core\\Logger\:\:sanitizeRecursive\(\) has parameter \$sensitiveFields with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Method Siro\\Core\\Logger\:\:sanitizeRecursive\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Method Siro\\Core\\Logger\:\:setSanitizeConfig\(\) has parameter \$config with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Logger.php
 
 		-
 			message: '#^Method Siro\\Core\\Logger\:\:trace\(\) has parameter \$data with no value type specified in iterable type array\.$#'
