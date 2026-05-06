@@ -33,6 +33,12 @@ final class Logger
         self::$retentionDays = max(1, (int) Env::get('LOG_RETENTION_DAYS', '30'));
         self::$slowThreshold = max(0, (int) Env::get('DB_SLOW_QUERY_THRESHOLD', '100'));
 
+        // Create app.log if it doesn't exist
+        $appLog = self::$logDir . DIRECTORY_SEPARATOR . 'app.log';
+        if (!file_exists($appLog)) {
+            @touch($appLog);
+        }
+
         // Protect log directory from web access
         self::protectLogDir();
     }

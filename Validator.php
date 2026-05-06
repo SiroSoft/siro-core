@@ -47,6 +47,16 @@ final class Validator
 
         foreach ($rules as $field => $ruleLine) {
             $value = $input[$field] ?? null;
+
+            // Reject arrays for non-file rules (type confusion)
+            if (is_array($value) && $value !== [] && $value !== null) {
+                $fieldRules = explode('|', $ruleLine);
+                if (!in_array('file', $fieldRules, true)) {
+                    $errors[$field][] = self::msg('validation.array', ['field' => self::label($field)]);
+                    continue;
+                }
+            }
+
             $fieldRules = explode('|', $ruleLine);
             $isNullable = in_array('nullable', $fieldRules, true);
             $isRequired = in_array('required', $fieldRules, true);
@@ -69,7 +79,8 @@ final class Validator
             }
 
             // Check required
-            if ($isRequired && ($value === null || $value === '')) {
+            $checkValue = is_string($value) ? trim($value) : $value;
+            if ($isRequired && ($checkValue === null || $checkValue === '')) {
                 $errors[$field][] = self::msg('validation.required', ['field' => self::label($field)]);
                 continue;
             }
@@ -129,6 +140,7 @@ final class Validator
 
                 if (str_starts_with($rule, 'min:')) {
                     $min = (int) substr($rule, 4);
+                    $strValue = is_string($value) ? trim($value) : $value;
                     
                     if ($value instanceof UploadedFile && $value->isValid()) {
                         $sizeInKb = (int) ceil($value->getSize() / 1024);
@@ -136,7 +148,7 @@ final class Validator
                             $errors[$field][] = self::msg('validation.min', ['field' => self::label($field), 'min' => (string) $min]);
                             continue;
                         }
-                    } elseif (is_string($value) && strlen($value) < $min) {
+                    } elseif (is_string($value) && strlen($strValue) < $min) {
                         $errors[$field][] = self::msg('validation.min', ['field' => self::label($field), 'min' => (string) $min]);
                         continue;
                     } elseif (is_numeric($value) && (float) $value < $min) {
@@ -147,6 +159,7 @@ final class Validator
 
                 if (str_starts_with($rule, 'max:')) {
                     $max = (int) substr($rule, 4);
+                    $strValue = is_string($value) ? trim($value) : $value;
                     
                     if ($value instanceof UploadedFile && $value->isValid()) {
                         $sizeInKb = (int) ceil($value->getSize() / 1024);
@@ -154,7 +167,7 @@ final class Validator
                             $errors[$field][] = self::msg('validation.max', ['field' => self::label($field), 'max' => (string) $max]);
                             continue;
                         }
-                    } elseif (is_string($value) && strlen($value) > $max) {
+                    } elseif (is_string($value) && strlen($strValue) > $max) {
                         $errors[$field][] = self::msg('validation.max', ['field' => self::label($field), 'max' => (string) $max]);
                         continue;
                     } elseif (is_numeric($value) && (float) $value > $max) {
@@ -277,6 +290,7 @@ final class Validator
             'validation.confirmed' => ':field confirmation does not match',
             'validation.in' => ':field must be one of: :values',
             'validation.file' => ':field must be a valid file',
+            'validation.array' => ':field must not be an array',
         ];
 
         $msg = $defaults[$key] ?? $key;

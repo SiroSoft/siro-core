@@ -66,10 +66,10 @@ class QueryBuilder
         return $this;
     }
 
-    public function select(array|string $columns): self
+    public function select(array|string ...$columns): self
     {
-        if (is_string($columns)) {
-            $columns = [$columns];
+        if (count($columns) === 1 && is_array($columns[0])) {
+            $columns = $columns[0];
         }
 
         $normalized = [];
@@ -81,6 +81,15 @@ class QueryBuilder
         }
 
         $this->columns = $normalized === [] ? ['*'] : $normalized;
+        return $this;
+    }
+
+    public function selectRaw(string $expression): self
+    {
+        $expression = trim($expression);
+        if ($expression !== '') {
+            $this->columns = [$expression];
+        }
         return $this;
     }
 
@@ -509,6 +518,11 @@ class QueryBuilder
 
         $lastId = Database::connection($this->connectionName)->lastInsertId();
         return $lastId !== false && $lastId !== '0' ? (int) $lastId : $stmt->rowCount();
+    }
+
+    public function insertGetId(array $data): int
+    {
+        return $this->insert($data);
     }
 
     public function update(array $data): int

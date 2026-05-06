@@ -63,6 +63,11 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this;
     }
 
+    public function onlyTrashed(): self
+    {
+        return $this->onlySoftDeleted();
+    }
+
     /** @return array<int, Model> */
     public function get(): array
     {

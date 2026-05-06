@@ -47,7 +47,11 @@ final class Request
         $this->method = strtoupper($method);
         $this->path = $path;
         $this->queryParams = $query;
-        $this->headerBag = $headers;
+        $normalizedHeaders = [];
+        foreach ($headers as $name => $value) {
+            $normalizedHeaders[strtolower((string) $name)] = (string) $value;
+        }
+        $this->headerBag = $normalizedHeaders;
         $this->bodyData = $jsonBody;
         $this->clientIp = $clientIp;
     }
@@ -207,7 +211,11 @@ final class Request
     /** @param array<string, string> $params */
     public function setParams(array $params): void
     {
-        $this->routeParams = $params;
+        $cleaned = [];
+        foreach ($params as $key => $value) {
+            $cleaned[$key] = str_replace(["\0", "\x00", '%00'], '', (string) $value);
+        }
+        $this->routeParams = $cleaned;
     }
 
     public function input(string $key, mixed $default = null): mixed
@@ -373,7 +381,7 @@ final class Request
     public function string(string $key, string $default = ''): string
     {
         $value = $this->input($key, $default);
-        return (string) $value;
+        return trim((string) $value);
     }
 
     /**
@@ -434,6 +442,9 @@ final class Request
 
     private static function normalizePath(string $path): string
     {
+        // Strip null bytes and URL-encoded null bytes
+        $path = str_replace(["\0", "\x00", '%00', '%0'], '', $path);
+
         if ($path === '') {
             return '/';
         }

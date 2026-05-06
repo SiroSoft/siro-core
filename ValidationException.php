@@ -38,6 +38,13 @@ final class ValidationException extends RuntimeException
 
     public function toResponse(): Response
     {
-        return Response::error($this->getMessage(), 422, $this->errors);
+        $payload = [
+            'success' => false,
+            'message' => $this->getMessage(),
+            'data' => null,
+            'errors' => $this->errors,
+            'meta' => [],
+        ];
+        return new Response($payload, 422);
     }
 }

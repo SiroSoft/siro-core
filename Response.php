@@ -59,14 +59,18 @@ final class Response
      */
     public static function error(string $message, int $statusCode = 400, array $errors = []): self
     {
-        return new self([
+        $payload = [
             'success' => false,
             'message' => $message,
             'data' => null,
             'meta' => [
                 'errors' => $errors,
             ],
-        ], $statusCode);
+        ];
+        if ($errors !== []) {
+            $payload['errors'] = $errors;
+        }
+        return new self($payload, $statusCode);
     }
 
     public static function created(mixed $data = null, string $message = 'Created'): self
