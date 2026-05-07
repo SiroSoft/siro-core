@@ -1,12 +1,12 @@
-# Siro Core Framework v0.15.0
+# Siro Core Framework v0.16.0
 
-**Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with Advanced Debugging
+**Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
-[![Tests](https://img.shields.io/badge/tests-136%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-162%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
 [![Security](https://img.shields.io/badge/security-log%20sanitized-brightgreen)](https://github.com/SiroSoft/siro-core)
@@ -30,10 +30,15 @@
 ## ✨ Key Features
 
 ### Core Components
+- 🧩 **DI Container** - Service Container with autowiring, singleton, interface binding
+- ⚙️ **Config Repository** - Centralized dot-notation config from `config/` files
 - ⚡ **Router & Middleware** - Fast routing with auto OPTIONS handling
 - 🗄️ **Database QueryBuilder** - PDO-based with automatic caching
 - 🎯 **Model Layer** - ORM-like with relationships, scopes, soft deletes
 - 🔐 **JWT Authentication** - Built-in token generation with refresh tokens
+- 👤 **Auth Guard / Provider** - Extensible auth with UserProvider interface
+- 🔑 **RBAC** - Role-based access control via middleware: `auth:admin`
+- 📝 **Session Manager** - File/Redis drivers with flash messages
 - ✅ **Smart Validation** - Automatic 422 responses with extended rules
 - 💾 **Cache System** - File and Redis drivers
 - 📦 **Resource Transformation** - Auto-mapping for API responses
@@ -63,8 +68,11 @@
 - 📈 **Slow Query Detection** - Auto-log queries exceeding threshold
 - ✅ **Environment Validation** - Pre-deployment checks
 
-### Testing & Quality (v0.13.0) 🏆
-- ✅ **136 PHPUnit Tests** - 100% pass rate
+### Testing & Quality (v0.16.0) 🏆
+- ✅ **162 PHPUnit Tests** - 100% pass rate (223 assertions)
+- ✅ **Container Test Suite** - 10 tests for DI Container
+- ✅ **Config Test Suite** - 11 tests for Config Repository
+- ✅ **Middleware Test Suite** - 5 tests for Cors, Json middleware
 - ✅ **PHPStan Level 6** - Zero errors, strict type checking
 - ✅ **Cross-Database Support** - SQLite and MySQL compatible
 - ✅ **Model ArrayAccess** - Array-style model access (`$model['field']`)
@@ -2494,6 +2502,7 @@ Special thanks to all contributors who help make SiroPHP better.
 
 ### Previous Versions
 
+**v0.16.0** — DI Container with autowiring/singleton/interface binding. Config Repository with dot-notation and caching. RBAC (auth:admin role check). Session Manager with file/redis drivers and flash messages. AuthGuard + UserProvider pattern. 4 middleware moved to core (Auth, Throttle, Cors, Json). CsrfMiddleware uses Session. Test helpers: actingAs, refreshDatabase, assertJsonStructure. **162 tests (+26 new)**  
 **v0.15.0** — Schema Builder with Blueprint, Multi-DB connections, AES-256 Encryption, HTTP Client, Maintenance mode (`php siro down/up`), Foreign Key constraints, PostgreSQL production support, Health endpoint, Test assertion helpers (`assertStatus`, `assertJson`, `assertDatabaseHas`)  
 **v0.14.1** — Service & Repository pattern, PHPUnit test generation, `make:service`, `make:repository`, `make:crud` with full layers  
 **v0.14.0** — `debug:last`, `log:top`, `route:search`, `doctor --prod`, `api:test --loop`, `--simple` CRUD flag  
@@ -2507,8 +2516,8 @@ Special thanks to all contributors who help make SiroPHP better.
 
 ---
 
-**Version:** 0.15.0  
+**Version:** 0.16.0  
 **Package:** sirosoft/core  
 **Type:** library  
-**Tests:** 136 ✅ (184 assertions)  
+**Tests:** 162 ✅ (223 assertions)  
 **PHPStan:** Level 6 ✅
