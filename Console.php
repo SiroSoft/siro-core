@@ -66,7 +66,7 @@ use Siro\Core\Commands\NewCommand;
 
 final class Console
 {
-    private const VERSION = '0.14.1';
+    private const VERSION = '0.16.0';
 
     public function __construct(private readonly string $basePath)
     {
@@ -254,10 +254,11 @@ final class Console
     {
         $this->write('');
         $this->write('  🚀 START — SiroPHP Quick Onboarding');
-        $this->write('  ' . str_repeat('=', 50));
+        $this->write('  ' . str_repeat('=', 58));
         $this->write('');
         $this->write('  1. Generate your first CRUD:');
         $this->write('     $ php siro make:crud products');
+        $this->write('     $ php siro make:crud orders --with-rbac  (RBAC version)');
         $this->write('');
         $this->write('  2. Run migration:');
         $this->write('     $ php siro migrate');
@@ -271,13 +272,20 @@ final class Console
         $this->write('');
         $this->write('  5. Debug when it fails:');
         $this->write('     $ php siro why');
+        $this->write('     $ php siro log:trace <trace_id>');
+        $this->write('     $ php siro replay <trace_id>');
         $this->write('');
         $this->write('  6. Fix & auto-replay:');
         $this->write('     $ php siro fix');
         $this->write('');
         $this->write('  7. Browse traces:');
         $this->write('     $ php siro traces');
-        $this->write('  ' . str_repeat('=', 50));
+        $this->write('');
+        $this->write('  8. Generate API docs:');
+        $this->write('     $ php siro make:openapi --with-swagger');
+        $this->write('');
+        $this->write('  Learn more: cat ONBOARDING.md');
+        $this->write('  ' . str_repeat('=', 58));
         return 0;
     }
 

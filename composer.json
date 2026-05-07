@@ -1,7 +1,7 @@
 {
   "name": "sirosoft/core",
-  "version": "0.15.1",
-  "description": "Siro API Framework Core - Lightweight PHP Micro-Framework with Advanced Debugging",
+  "version": "0.16.0",
+  "description": "Siro API Framework Core - Lightweight PHP Micro-Framework with Advanced Debugging and RBAC",
   "type": "library",
   "license": "MIT",
   "keywords": ["framework", "api", "micro-framework", "php", "core"],

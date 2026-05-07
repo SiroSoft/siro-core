@@ -40,7 +40,7 @@ final class App
      *
      * Loads .env, initializes Logger, validates security config,
      * checks required PHP extensions, connects to the database,
-     * and boots the cache system.
+     * boots the cache system, and registers core container bindings.
      *
      * @throws RuntimeException if APP_DEBUG is true in production
      * @throws RuntimeException if required PHP extensions are missing
@@ -69,12 +69,39 @@ final class App
             error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
         }
 
-        /** @var array<string, mixed> $dbConfig */
-        $dbConfig = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+        // Load config repository
+        Config::load($this->basePath . DIRECTORY_SEPARATOR . 'config');
+
+        // Register core container bindings
+        $container = Container::getInstance();
+        $container->instance('app', $this);
+        $container->instance(Router::class, $this->router);
+        $container->singleton(Container::class, fn () => $container);
+
+        // Load database config from Config repository
+        $dbConfig = Config::get('database', []);
+        if ($dbConfig === []) {
+            $dbConfig = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+        }
         Database::configure($dbConfig);
         Cache::boot($this->basePath);
         Lang::boot($this->basePath);
         Storage::boot();
+
+        // Register default middleware aliases
+        Router::registerMiddlewareAlias('auth', \Siro\Core\Middleware\AuthMiddleware::class);
+        Router::registerMiddlewareAlias('throttle', \Siro\Core\Middleware\ThrottleMiddleware::class);
+        Router::registerMiddlewareAlias('cors', \Siro\Core\Middleware\CorsMiddleware::class);
+        Router::registerMiddlewareAlias('json', \Siro\Core\Middleware\JsonMiddleware::class);
+
+        // Register default container bindings for auth
+        $userModelClass = 'App\\Models\\User';
+        if (class_exists($userModelClass)) {
+            $container->bind('auth.provider', function () use ($userModelClass) {
+                /** @var class-string $userModelClass */
+                return new \Siro\Core\Auth\ModelUserProvider($userModelClass);
+            });
+        }
     }
 
     /**

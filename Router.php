@@ -434,6 +434,14 @@ final class Router
             return $this->resolved[$class];
         }
 
+        $container = Container::getInstance();
+
+        // Try Container first (supports bindings, singletons, interfaces)
+        if ($container->has($class)) {
+            $this->resolved[$class] = $container->make($class);
+            return $this->resolved[$class];
+        }
+
         $ref = new \ReflectionClass($class);
         $ctor = $ref->getConstructor();
 
@@ -448,11 +456,16 @@ final class Router
             if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
                 $depClass = $type->getName();
                 if ($depClass === $class) {
-                    // Circular reference - skip
                     $deps[] = null;
                     continue;
                 }
-                $deps[] = $this->resolveController($depClass);
+
+                // Check Container first for each dependency
+                if ($container->has($depClass)) {
+                    $deps[] = $container->make($depClass);
+                } else {
+                    $deps[] = $this->resolveController($depClass);
+                }
             } else {
                 $deps[] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
             }
