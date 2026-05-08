@@ -8,7 +8,7 @@
          beStrictAboutOutputDuringTests="true"
          failOnRisky="true"
          failOnWarning="true">
-    
+
     <testsuites>
         <testsuite name="Unit">
             <directory suffix="Test.php">tests/unit</directory>
@@ -25,7 +25,6 @@
         <exclude>
             <directory>tests</directory>
             <directory>vendor</directory>
-            <directory suffix=".php">verify_v076.php</directory>
         </exclude>
     </source>
 

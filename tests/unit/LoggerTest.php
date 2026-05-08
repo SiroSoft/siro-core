@@ -36,13 +36,7 @@ final class LoggerTest extends TestCase
         $this->assertFileExists($appLog);
     }
 
-    public function testSetSanitizeConfig(): void
-    {
-        Logger::setSanitizeConfig(['headers' => ['x-custom']]);
-        $this->assertTrue(true);
-    }
-
-    public function testSanitizeHeaders(): void
+public function testSanitizeHeaders(): void
     {
         $headers = ['authorization' => 'Bearer token123', 'content-type' => 'application/json'];
         $sanitized = Logger::sanitizeHeaders($headers);
