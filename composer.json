@@ -1,6 +1,6 @@
 {
   "name": "sirosoft/core",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "description": "Siro API Framework Core - Lightweight PHP Micro-Framework with Advanced Debugging and RBAC",
   "type": "library",
   "license": "MIT",
@@ -26,5 +26,11 @@
   "require-dev": {
     "phpunit/phpunit": "11.0",
     "phpstan/phpstan": "*"
+  },
+  "suggest": {
+    "ext-redis": "Required for Redis cache, session, and rate limiter drivers",
+    "ext-openssl": "Required for Encrypter (AES-256 encryption)",
+    "ext-curl": "Required for HTTP Client",
+    "ext-fileinfo": "Required for UploadedFile MIME type detection"
   }
 }
