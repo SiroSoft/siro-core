@@ -306,8 +306,8 @@ final class App
                 'ip' => $ip,
                 'host' => $_SERVER['HTTP_HOST'] ?? 'localhost',
                 'content_type' => $_SERVER['CONTENT_TYPE'] ?? '',
-                'request_headers' => $request->headers(),
-                'request_body' => mb_substr((string) json_encode($request->body(), JSON_UNESCAPED_UNICODE), 0, 2000),
+                'request_headers' => isset($request) ? $request->headers() : [],
+                'request_body' => isset($request) ? mb_substr((string) json_encode($request->body(), JSON_UNESCAPED_UNICODE), 0, 2000) : '',
             ];
 
             if (isset($response)) {
@@ -318,7 +318,7 @@ final class App
                 );
             }
 
-            $authHeader = $request->header('authorization', '');
+            $authHeader = isset($request) ? $request->header('authorization', '') : '';
             if ($authHeader !== '') {
                 $traceData['auth_header'] = $authHeader;
             }

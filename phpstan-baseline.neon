@@ -7,12 +7,6 @@ parameters:
 			path: App.php
 
 		-
-			message: '#^Variable \$request might not be defined\.$#'
-			identifier: variable.undefined
-			count: 3
-			path: App.php
-
-		-
 			message: '#^PHPDoc tag @var with type class\-string is not subtype of native type ''App\\\\Models\\\\User''\.$#'
 			identifier: varTag.nativeType
 			count: 1
@@ -39,18 +33,6 @@ parameters:
 		-
 			message: '#^Class Siro\\Core\\Collection implements generic interface IteratorAggregate but does not specify its types\: TKey, TValue$#'
 			identifier: missingType.generics
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Function dd not found\.$#'
-			identifier: function.notFound
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Function dump not found\.$#'
-			identifier: function.notFound
 			count: 1
 			path: Collection.php
 
