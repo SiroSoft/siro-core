@@ -69,10 +69,10 @@ final class Request
         $isMultipart = str_contains($contentType, 'multipart/form-data');
 
         $maxBodySize = 2 * 1024 * 1024; // 2MB limit
-        
+
         // Validate request size using ACTUAL content length, not just header
         $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
-        
+
         // BLOCK: Content-Length header can be spoofed, validate actual body size
         if ($contentLength > 0 && $contentLength > $maxBodySize) {
             http_response_code(413);
@@ -80,19 +80,19 @@ final class Request
             echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
             exit(1);
         }
-        
+
         // For non-multipart requests, read and validate actual body size
         if (!$isMultipart && in_array($method, ['POST', 'PUT', 'PATCH'], true)) {
             $body = file_get_contents('php://input');
             $actualSize = strlen($body);
-            
+
             if ($actualSize > $maxBodySize) {
                 http_response_code(413);
                 header('Content-Type: application/json; charset=utf-8');
                 echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
                 exit(1);
             }
-            
+
             // Store body for later parsing
             $_SIRO_REQUEST_BODY = $body;
         }
@@ -317,7 +317,7 @@ final class Request
         foreach ($this->uploadedFiles as $key => $file) {
             $data[$key] = $file;
         }
-        
+
         $errors = Validator::make($data, $rules);
 
         if ($errors !== []) {
@@ -410,7 +410,7 @@ final class Request
     public function bool(string $key, bool $default = false): bool
     {
         $value = $this->input($key, $default);
-        
+
         if (is_bool($value)) {
             return $value;
         }

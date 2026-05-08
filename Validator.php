@@ -41,7 +41,7 @@ final class Validator
 
     /**
      * Register a built-in rule strategy.
-     * 
+     *
      * @param string $name Rule name (e.g., 'email', 'min')
      * @param callable $strategy Callback: function(mixed $value, ?string $param, array $input = [], string $field = ''): string|array|null
      *   Returns null if valid, error message string or [key, replacements] array if invalid
@@ -62,8 +62,8 @@ final class Validator
 
         // Email validation
         self::registerStrategy('email', function ($value): ?string {
-            return filter_var($value, FILTER_VALIDATE_EMAIL) === false 
-                ? 'validation.email' 
+            return filter_var($value, FILTER_VALIDATE_EMAIL) === false
+                ? 'validation.email'
                 : null;
         });
 
@@ -97,7 +97,7 @@ final class Validator
         self::registerStrategy('min', function ($value, ?string $param, array $input = [], string $field = ''): string|array|null {
             if ($param === null) return null;
             $min = (int) $param;
-            
+
             if ($value instanceof UploadedFile && $value->isValid()) {
                 $sizeInKb = (int) ceil($value->getSize() / 1024);
                 return $sizeInKb < $min ? ['validation.min', ['min' => (string) $min]] : null;
@@ -113,7 +113,7 @@ final class Validator
         self::registerStrategy('max', function ($value, ?string $param, array $input = [], string $field = ''): string|array|null {
             if ($param === null) return null;
             $max = (int) $param;
-            
+
             if ($value instanceof UploadedFile && $value->isValid()) {
                 $sizeInKb = (int) ceil($value->getSize() / 1024);
                 return $sizeInKb > $max ? ['validation.max', ['max' => (string) $max]] : null;
@@ -136,8 +136,8 @@ final class Validator
         self::registerStrategy('in', function ($value, ?string $param, array $input = [], string $field = ''): string|array|null {
             if ($param === null) return null;
             $allowedValues = array_map('trim', explode(',', $param));
-            return !in_array((string) $value, $allowedValues, true) 
-                ? ['validation.in', ['values' => implode(', ', $allowedValues)]] 
+            return !in_array((string) $value, $allowedValues, true)
+                ? ['validation.in', ['values' => implode(', ', $allowedValues)]]
                 : null;
         });
 
@@ -237,13 +237,13 @@ final class Validator
                 // Check built-in strategy rules
                 if (isset(self::$ruleStrategies[$ruleName])) {
                     $strategy = self::$ruleStrategies[$ruleName];
-                    
+
                     // Some strategies need extra context
                     $result = match ($ruleName) {
                         'confirmed' => $strategy($value, $ruleParam, $input, $field),
                         default => $strategy($value, $ruleParam)
                     };
-                    
+
                     if ($result !== null) {
                         // Result can be string key or [key, replacements]
                         if (is_array($result)) {

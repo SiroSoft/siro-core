@@ -1339,12 +1339,6 @@ parameters:
 			path: DB/QueryBuilder.php
 
 		-
-			message: '#^Undefined variable\: \$this$#'
-			identifier: variable.undefined
-			count: 1
-			path: DB/QueryBuilder.php
-
-		-
 			message: '#^Method Siro\\Core\\DB\\Relations\\BelongsTo\:\:__call\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2033,6 +2027,12 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: UploadedFile.php
+
+		-
+			message: '#^Anonymous function never returns string so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 3
+			path: Validator.php
 
 		-
 			message: '#^Method Siro\\Core\\Validator\:\:fallback\(\) has parameter \$replace with no value type specified in iterable type array\.$#'

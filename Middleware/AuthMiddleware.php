@@ -98,7 +98,7 @@ final class AuthMiddleware
         } catch (Throwable $e) {
             // Log authentication failures for security monitoring
             Logger::error('Authentication failed: ' . $e->getMessage() . ' | IP: ' . $request->ip() . ' | Path: ' . $request->path());
-            
+
             return Response::error('Unauthorized', 401, [
                 'token' => ['Invalid or expired token'],
             ]);

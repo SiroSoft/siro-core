@@ -81,7 +81,7 @@ final class UploadedFile
 
         // BLOCK path traversal attacks - sanitize directory parameter
         $directory = trim($directory, '/\\');
-        
+
         // Reject dangerous path components
         if (preg_match('/\.\.|^\/|^\\\\|:/', $directory)) {
             throw new RuntimeException('Invalid directory path: contains illegal characters');
@@ -108,7 +108,7 @@ final class UploadedFile
         if ($name !== null) {
             // Remove path components from filename to prevent traversal
             $name = basename($name);
-            
+
             // Only allow safe characters in filename
             if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $name)) {
                 throw new RuntimeException('Invalid filename: only alphanumeric, hyphens, underscores, and dots allowed');

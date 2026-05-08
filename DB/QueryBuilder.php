@@ -218,7 +218,7 @@ class QueryBuilder
         }
 
         // Prevent multi-statement injection
-        if (stripos($identifier, ';') !== false || 
+        if (stripos($identifier, ';') !== false ||
             stripos($identifier, '--') !== false ||
             stripos($identifier, '/*') !== false) {
             throw new \RuntimeException('Invalid identifier: SQL injection attempt detected');
