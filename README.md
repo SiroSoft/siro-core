@@ -6,7 +6,7 @@
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
-[![Tests](https://img.shields.io/badge/tests-162%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-244%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
 [![Security](https://img.shields.io/badge/security-log%20sanitized-brightgreen)](https://github.com/SiroSoft/siro-core)
@@ -69,10 +69,19 @@
 - ✅ **Environment Validation** - Pre-deployment checks
 
 ### Testing & Quality (v0.16.0) 🏆
-- ✅ **162 PHPUnit Tests** - 100% pass rate (223 assertions)
+- ✅ **244 PHPUnit Tests** - 100% pass rate (360 assertions)
 - ✅ **Container Test Suite** - 10 tests for DI Container
 - ✅ **Config Test Suite** - 11 tests for Config Repository
 - ✅ **Middleware Test Suite** - 5 tests for Cors, Json middleware
+- ✅ **Cache Test Suite** - 9 tests for Cache facade
+- ✅ **Event Test Suite** - 11 tests for Event dispatcher
+- ✅ **Session Test Suite** - 10 tests for Session manager
+- ✅ **Str Test Suite** - 16 tests for String helpers
+- ✅ **Hash Test Suite** - 6 tests for Bcrypt hashing
+- ✅ **Encrypter Test Suite** - 8 tests for AES-256 encryption
+- ✅ **Collection Test Suite** - 16 tests for Collection class
+- ✅ **Logger Test Suite** - 4 tests for Log sanitization
+- ✅ **Database Integration Test Suite** - 4 tests for Multi-DB connections
 - ✅ **PHPStan Level 6** - Zero errors, strict type checking
 - ✅ **Cross-Database Support** - SQLite and MySQL compatible
 - ✅ **Model ArrayAccess** - Array-style model access (`$model['field']`)
