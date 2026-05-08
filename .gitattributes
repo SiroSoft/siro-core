@@ -1,0 +1,34 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# PHP source files
+*.php text diff=php
+
+# Config files
+*.neon text
+*.xml text
+*.yml text
+*.yaml text
+*.json text
+
+# Markdown docs
+*.md text
+
+# Shell scripts
+*.sh text eol=lf
+
+# Batch scripts
+*.bat text eol=crlf
+
+# Binary files (keep as-is)
+*.phar binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+
+# Git files
+.gitattributes text
+.gitignore text

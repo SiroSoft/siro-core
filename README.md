@@ -1,4 +1,4 @@
-# Siro Core Framework v0.16.0
+# Siro Core Framework v0.16.2
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
@@ -2511,6 +2511,8 @@ Special thanks to all contributors who help make SiroPHP better.
 
 ### Previous Versions
 
+**v0.16.2** — CHANGELOG.md, .editorconfig, suggest section in composer.json  
+**v0.16.1** — +84 tests: Cache (9), Event (11), Session (10), Logger (4), Str (16), Hash (6), Encrypter (8), Collection (16), Database Integration (4). **244 tests total**  
 **v0.16.0** — DI Container with autowiring/singleton/interface binding. Config Repository with dot-notation and caching. RBAC (auth:admin role check). Session Manager with file/redis drivers and flash messages. AuthGuard + UserProvider pattern. 4 middleware moved to core (Auth, Throttle, Cors, Json). CsrfMiddleware uses Session. Test helpers: actingAs, refreshDatabase, assertJsonStructure. **162 tests (+26 new)**  
 **v0.15.0** — Schema Builder with Blueprint, Multi-DB connections, AES-256 Encryption, HTTP Client, Maintenance mode (`php siro down/up`), Foreign Key constraints, PostgreSQL production support, Health endpoint, Test assertion helpers (`assertStatus`, `assertJson`, `assertDatabaseHas`)  
 **v0.14.1** — Service & Repository pattern, PHPUnit test generation, `make:service`, `make:repository`, `make:crud` with full layers  
