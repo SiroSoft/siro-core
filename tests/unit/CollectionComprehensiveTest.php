@@ -185,7 +185,7 @@ final class CollectionComprehensiveTest extends TestCase
     {
         $collection = new Collection([1, 2, 3]);
         $sum = 0;
-        $result = $collection->each(fn($item) => $sum += $item);
+        $result = $collection->each(function ($item) use (&$sum) { $sum += $item; });
         $this->assertEquals(6, $sum);
         $this->assertSame($collection, $result);
     }
@@ -449,7 +449,9 @@ final class CollectionComprehensiveTest extends TestCase
     {
         $collection = new Collection([1, 2, 3]);
         $sideEffect = null;
-        $result = $collection->tap(fn($col) => $sideEffect = $col->sum());
+        $result = $collection->tap(function ($col) use (&$sideEffect) {
+            $sideEffect = $col->sum();
+        });
         $this->assertEquals(6, $sideEffect);
         $this->assertSame($collection, $result);
     }

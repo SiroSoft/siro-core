@@ -143,9 +143,10 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     public function where(string $key, mixed $operator, mixed $value = null): self
     {
-        return $this->filter(function ($item) use ($key, $operator, $value) {
+        $hasValue = func_num_args() === 3;
+        return $this->filter(function ($item) use ($key, $operator, $value, $hasValue) {
             $itemValue = is_array($item) ? ($item[$key] ?? null) : ($item->$key ?? null);
-            if (func_num_args() === 2) {
+            if (!$hasValue) {
                 return $itemValue == $operator;
             }
             return match ($operator) {
@@ -234,7 +235,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
         return new self($results);
     }
 
-    public function flatten(int $depth = INF): self
+    public function flatten(int|float $depth = INF): self
     {
         $result = [];
         foreach ($this->items as $item) {

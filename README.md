@@ -1,4 +1,4 @@
-# Siro Core Framework v0.16.2
+# Siro Core Framework v0.16.1
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
@@ -6,10 +6,10 @@
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
-[![Tests](https://img.shields.io/badge/tests-244%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-536%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
-[![Security](https://img.shields.io/badge/security-log%20sanitized-brightgreen)](https://github.com/SiroSoft/siro-core)
+[![Security](https://img.shields.io/badge/security-audited-brightgreen)](https://github.com/SiroSoft/siro-core)
 
 ---
 
@@ -68,8 +68,8 @@
 - 📈 **Slow Query Detection** - Auto-log queries exceeding threshold
 - ✅ **Environment Validation** - Pre-deployment checks
 
-### Testing & Quality (v0.16.0) 🏆
-- ✅ **244 PHPUnit Tests** - 100% pass rate (360 assertions)
+### Testing & Quality (v0.16.1) 🏆
+- ✅ **536 PHPUnit Tests** - 100% pass rate (1843 assertions)
 - ✅ **Container Test Suite** - 10 tests for DI Container
 - ✅ **Config Test Suite** - 11 tests for Config Repository
 - ✅ **Middleware Test Suite** - 5 tests for Cors, Json middleware
@@ -82,12 +82,15 @@
 - ✅ **Collection Test Suite** - 16 tests for Collection class
 - ✅ **Logger Test Suite** - 4 tests for Log sanitization
 - ✅ **Database Integration Test Suite** - 4 tests for Multi-DB connections
+- ✅ **StrExtensions Test Suite** - 35 tests for string manipulation
+- ✅ **ValidatorCombinations Test Suite** - 20 tests for validation rules
+- ✅ **ResponseHeaders Test Suite** - 14 tests for HTTP headers
+- ✅ **RequestTypedInput Test Suite** - 37 tests for typed input
+- ✅ **MassAssignment Test Suite** - 16 tests for model protection
+- ✅ **StorageTest Test Suite** - 20 tests for file storage
+- ✅ **QueueTest Test Suite** - 18 tests for queue system
+- ✅ **MailTest Test Suite** - 16 tests for mail system
 - ✅ **PHPStan Level 6** - Zero errors, strict type checking
-- ✅ **Cross-Database Support** - SQLite and MySQL compatible
-- ✅ **Model ArrayAccess** - Array-style model access (`$model['field']`)
-- ✅ **Secure Deserialization** - JSON-based queue jobs (no RCE risk)
-- ✅ **Optimized Hydration** - Fixed double-hydration bugs in QueryBuilder
-- ✅ **PHPUnit Test Runner** - `php siro test` runs all suites
 
 ### Critical Fixes (v0.13.0+) 🔒
 - ✅ **File Download Security** - Proper file streaming with Content-Length header

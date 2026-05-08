@@ -182,7 +182,16 @@ final class Mail
         }
 
         if (self::$faked) {
-            self::$fakeMails[] = ['to' => $this->to, 'subject' => $this->subject, 'body' => $this->body];
+            self::$fakeMails[] = [
+                'to' => $this->to,
+                'subject' => $this->subject,
+                'body' => $this->body,
+                'content_type' => $this->contentType,
+                'cc' => $this->cc,
+                'bcc' => $this->bcc,
+                'reply_to' => $this->replyTo,
+                'attachments' => $this->attachments,
+            ];
             return true;
         }
 

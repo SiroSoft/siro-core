@@ -3,10 +3,13 @@
 ## v0.16.1 (2026-05-08)
 
 ### 🧪 Testing
-- **+84 new tests** for Cache (9), Event (11), Session (10), Logger (4)
-- Str (16), Hash (6), Encrypter (8), Collection (16), Database Integration (4)
-- **244 tests total** — 360 assertions, 100% pass
-- New `tests/integration/` suite with multi-DB connection tests
+- **+292 new tests** for StrExtensions (35), ValidatorCombinations (20), ResponseHeaders (14)
+- RequestTypedInput (37), MassAssignment (16), Storage (20), Queue (18), Mail (16)
+- Cache (9), Event (11), Session (10), Logger (4), Hash (6), Encrypter (8)
+- Collection (16), Database Integration (4), and more
+- **536 tests total** — 1843 assertions, 100% pass
+- All HTTP tests skipped (require external network/SSL)
+- New `tests/unit/` suite with focused component tests
 
 ## v0.16.0 (2026-05-08)
 

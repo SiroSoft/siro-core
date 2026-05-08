@@ -43,12 +43,6 @@ parameters:
 			path: Collection.php
 
 		-
-			message: '#^Default value of the parameter \#1 \$depth \(float\) of method Siro\\Core\\Collection\:\:flatten\(\) is incompatible with type int\.$#'
-			identifier: parameter.defaultValue
-			count: 1
-			path: Collection.php
-
-		-
 			message: '#^Function dd not found\.$#'
 			identifier: function.notFound
 			count: 1
