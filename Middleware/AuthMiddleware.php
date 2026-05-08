@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core\Middleware;
 
 use Siro\Core\Auth\JWT;
+use Siro\Core\Logger;
 use Siro\Core\Request;
 use Siro\Core\Response;
 use Throwable;
@@ -94,7 +95,10 @@ final class AuthMiddleware
                     ]);
                 }
             }
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            // Log authentication failures for security monitoring
+            Logger::error('Authentication failed: ' . $e->getMessage() . ' | IP: ' . $request->ip() . ' | Path: ' . $request->path());
+            
             return Response::error('Unauthorized', 401, [
                 'token' => ['Invalid or expired token'],
             ]);

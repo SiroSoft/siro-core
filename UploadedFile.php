@@ -79,10 +79,40 @@ final class UploadedFile
             throw new RuntimeException('Cannot store an invalid uploaded file.');
         }
 
-        $publicDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . trim($directory, '/\\');
+        // BLOCK path traversal attacks - sanitize directory parameter
+        $directory = trim($directory, '/\\');
+        
+        // Reject dangerous path components
+        if (preg_match('/\.\.|^\/|^\\\\|:/', $directory)) {
+            throw new RuntimeException('Invalid directory path: contains illegal characters');
+        }
+
+        // Only allow alphanumeric, hyphens, underscores, and forward slashes
+        if (!preg_match('/^[a-zA-Z0-9_\-\/]+$/', $directory)) {
+            throw new RuntimeException('Invalid directory path: only alphanumeric, hyphens, underscores, and slashes allowed');
+        }
+
+        $publicDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . $directory;
+
+        // Validate final resolved path stays within allowed directory
+        $realPublicDir = realpath(dirname($publicDir));
+        if ($realPublicDir === false || strpos(realpath($publicDir) ?: '', $realPublicDir) !== 0) {
+            throw new RuntimeException('Directory path resolves outside allowed storage area');
+        }
 
         if (!is_dir($publicDir)) {
             mkdir($publicDir, 0775, true);
+        }
+
+        // Sanitize filename if provided
+        if ($name !== null) {
+            // Remove path components from filename to prevent traversal
+            $name = basename($name);
+            
+            // Only allow safe characters in filename
+            if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $name)) {
+                throw new RuntimeException('Invalid filename: only alphanumeric, hyphens, underscores, and dots allowed');
+            }
         }
 
         $filename = $name ?? $this->generateFilename();
@@ -92,7 +122,7 @@ final class UploadedFile
             throw new RuntimeException(sprintf('Failed to move uploaded file to %s', $destPath));
         }
 
-        return '/storage/' . trim($directory, '/') . '/' . $filename;
+        return '/storage/' . $directory . '/' . $filename;
     }
 
     public function storeAs(string $directory, string $name): string

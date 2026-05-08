@@ -194,11 +194,11 @@ class QueryBuilder
 
     private static ?string $driverName = null;
 
-    private static function detectDriver(): string
+    private static function detectDriver(?string $connectionName = null): string
     {
         if (self::$driverName === null) {
             try {
-                self::$driverName = \Siro\Core\Database::connection($this->connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
+                self::$driverName = \Siro\Core\Database::connection($connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
             } catch (\Throwable) {
                 self::$driverName = 'mysql';
             }
@@ -212,12 +212,24 @@ class QueryBuilder
             return $identifier;
         }
 
+        // BLOCK dangerous characters to prevent SQL injection
+        if (preg_match('/[^a-zA-Z0-9_.\s\-]/', $identifier)) {
+            throw new \RuntimeException('Invalid identifier: contains illegal characters');
+        }
+
+        // Prevent multi-statement injection
+        if (stripos($identifier, ';') !== false || 
+            stripos($identifier, '--') !== false ||
+            stripos($identifier, '/*') !== false) {
+            throw new \RuntimeException('Invalid identifier: SQL injection attempt detected');
+        }
+
         // Don't quote function calls or expressions with parentheses
         if (str_contains($identifier, '(')) {
             return $identifier;
         }
 
-        $driver = self::detectDriver();
+        $driver = self::detectDriver($this->connectionName);
         $char = match ($driver) {
             'pgsql', 'postgres', 'postgresql' => '"',
             default => '`',
@@ -497,7 +509,7 @@ class QueryBuilder
         }
 
         $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
-        $driver = self::detectDriver();
+        $driver = self::detectDriver($this->connectionName);
         $returning = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? ' RETURNING id' : '';
         $sql = sprintf(
             'INSERT INTO %s (%s) VALUES (%s)%s',

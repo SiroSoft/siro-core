@@ -18,6 +18,9 @@ final class Validator
 {
     /** @var array<string, callable> */
     private static array $customRules = [];
+
+    /** @var array<string, callable> */
+    private static array $ruleStrategies = [];
     /**
      * Register a custom validation rule.
      *
@@ -34,6 +37,116 @@ final class Validator
     public static function extend(string $name, callable $callback): void
     {
         self::$customRules[$name] = $callback;
+    }
+
+    /**
+     * Register a built-in rule strategy.
+     * 
+     * @param string $name Rule name (e.g., 'email', 'min')
+     * @param callable $strategy Callback: function(mixed $value, ?string $param, array $input = [], string $field = ''): string|array|null
+     *   Returns null if valid, error message string or [key, replacements] array if invalid
+     */
+    private static function registerStrategy(string $name, callable $strategy): void
+    {
+        self::$ruleStrategies[$name] = $strategy;
+    }
+
+    /**
+     * Initialize all validation strategies (lazy-loaded).
+     */
+    private static function initStrategies(): void
+    {
+        if (self::$ruleStrategies !== []) {
+            return; // Already initialized
+        }
+
+        // Email validation
+        self::registerStrategy('email', function ($value): ?string {
+            return filter_var($value, FILTER_VALIDATE_EMAIL) === false 
+                ? 'validation.email' 
+                : null;
+        });
+
+        // Numeric validation
+        self::registerStrategy('numeric', function ($value): ?string {
+            return !is_numeric($value) ? 'validation.numeric' : null;
+        });
+
+        // Integer validation
+        self::registerStrategy('integer', function ($value): ?string {
+            return filter_var($value, FILTER_VALIDATE_INT) === false ? 'validation.integer' : null;
+        });
+
+        // Date validation
+        self::registerStrategy('date', function ($value): ?string {
+            $ts = is_int($value) || is_float($value) ? $value : strtotime((string) $value);
+            return ($ts === false || $ts <= 0) ? 'validation.date' : null;
+        });
+
+        // URL validation
+        self::registerStrategy('url', function ($value): ?string {
+            return filter_var($value, FILTER_VALIDATE_URL) === false ? 'validation.url' : null;
+        });
+
+        // File validation
+        self::registerStrategy('file', function ($value): ?string {
+            return (!$value instanceof UploadedFile || !$value->isValid()) ? 'validation.file' : null;
+        });
+
+        // Min validation (handles strings, numbers, files)
+        self::registerStrategy('min', function ($value, ?string $param, array $input = [], string $field = ''): string|array|null {
+            if ($param === null) return null;
+            $min = (int) $param;
+            
+            if ($value instanceof UploadedFile && $value->isValid()) {
+                $sizeInKb = (int) ceil($value->getSize() / 1024);
+                return $sizeInKb < $min ? ['validation.min', ['min' => (string) $min]] : null;
+            } elseif (is_string($value)) {
+                return strlen(trim($value)) < $min ? ['validation.min', ['min' => (string) $min]] : null;
+            } elseif (is_numeric($value)) {
+                return (float) $value < $min ? ['validation.min', ['min' => (string) $min]] : null;
+            }
+            return null;
+        });
+
+        // Max validation (handles strings, numbers, files)
+        self::registerStrategy('max', function ($value, ?string $param, array $input = [], string $field = ''): string|array|null {
+            if ($param === null) return null;
+            $max = (int) $param;
+            
+            if ($value instanceof UploadedFile && $value->isValid()) {
+                $sizeInKb = (int) ceil($value->getSize() / 1024);
+                return $sizeInKb > $max ? ['validation.max', ['max' => (string) $max]] : null;
+            } elseif (is_string($value)) {
+                return strlen(trim($value)) > $max ? ['validation.max', ['max' => (string) $max]] : null;
+            } elseif (is_numeric($value)) {
+                return (float) $value > $max ? ['validation.max', ['max' => (string) $max]] : null;
+            }
+            return null;
+        });
+
+        // Confirmed validation
+        self::registerStrategy('confirmed', function ($value, ?string $param, array $input, string $field): ?string {
+            $confirmationField = $field . '_confirmation';
+            $confirmationValue = $input[$confirmationField] ?? null;
+            return $value !== $confirmationValue ? 'validation.confirmed' : null;
+        });
+
+        // In validation
+        self::registerStrategy('in', function ($value, ?string $param, array $input = [], string $field = ''): string|array|null {
+            if ($param === null) return null;
+            $allowedValues = array_map('trim', explode(',', $param));
+            return !in_array((string) $value, $allowedValues, true) 
+                ? ['validation.in', ['values' => implode(', ', $allowedValues)]] 
+                : null;
+        });
+
+        // Regex validation
+        self::registerStrategy('regex', function ($value, ?string $param): ?string {
+            if ($param === null) return null;
+            if (@preg_match($param, '') === false) return null; // Invalid pattern, skip
+            return !preg_match($param, (string) $value) ? 'validation.regex' : null;
+        });
     }
 
     /**
@@ -99,162 +212,87 @@ final class Validator
                     continue;
                 }
 
-                if ($rule === 'email' && filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
-                    $errors[$field][] = self::msg('validation.email', ['field' => self::label($field)]);
-                    continue;
-                }
+                // Initialize strategies on first use
+                self::initStrategies();
 
-                if ($rule === 'numeric' && !is_numeric($value)) {
-                    $errors[$field][] = self::msg('validation.numeric', ['field' => self::label($field)]);
-                    continue;
-                }
-
-                if ($rule === 'integer' && filter_var($value, FILTER_VALIDATE_INT) === false) {
-                    $errors[$field][] = self::msg('validation.integer', ['field' => self::label($field)]);
-                    continue;
-                }
-
-                if ($rule === 'date') {
-                    $ts = is_int($value) || is_float($value) ? $value : strtotime((string) $value);
-                    if ($ts === false || $ts <= 0) {
-                        $errors[$field][] = self::msg('validation.date', ['field' => self::label($field)]);
-                        continue;
-                    }
-                }
-
-                if ($rule === 'url' && filter_var($value, FILTER_VALIDATE_URL) === false) {
-                    $errors[$field][] = self::msg('validation.url', ['field' => self::label($field)]);
-                    continue;
-                }
-
-                if (str_starts_with($rule, 'regex:')) {
-                    $pattern = substr($rule, 6);
-                    if (@preg_match($pattern, '') === false) {
-                        continue;
-                    }
-                    if (!preg_match($pattern, (string) $value)) {
-                        $errors[$field][] = self::msg('validation.regex', ['field' => self::label($field)]);
-                        continue;
-                    }
-                }
-
-                if (str_starts_with($rule, 'min:')) {
-                    $min = (int) substr($rule, 4);
-                    $strValue = is_string($value) ? trim($value) : $value;
-                    
-                    if ($value instanceof UploadedFile && $value->isValid()) {
-                        $sizeInKb = (int) ceil($value->getSize() / 1024);
-                        if ($sizeInKb < $min) {
-                            $errors[$field][] = self::msg('validation.min', ['field' => self::label($field), 'min' => (string) $min]);
-                            continue;
-                        }
-                    } elseif (is_string($value) && strlen($strValue) < $min) {
-                        $errors[$field][] = self::msg('validation.min', ['field' => self::label($field), 'min' => (string) $min]);
-                        continue;
-                    } elseif (is_numeric($value) && (float) $value < $min) {
-                        $errors[$field][] = self::msg('validation.min', ['field' => self::label($field), 'min' => (string) $min]);
-                        continue;
-                    }
-                }
-
-                if (str_starts_with($rule, 'max:')) {
-                    $max = (int) substr($rule, 4);
-                    $strValue = is_string($value) ? trim($value) : $value;
-                    
-                    if ($value instanceof UploadedFile && $value->isValid()) {
-                        $sizeInKb = (int) ceil($value->getSize() / 1024);
-                        if ($sizeInKb > $max) {
-                            $errors[$field][] = self::msg('validation.max', ['field' => self::label($field), 'max' => (string) $max]);
-                            continue;
-                        }
-                    } elseif (is_string($value) && strlen($strValue) > $max) {
-                        $errors[$field][] = self::msg('validation.max', ['field' => self::label($field), 'max' => (string) $max]);
-                        continue;
-                    } elseif (is_numeric($value) && (float) $value > $max) {
-                        $errors[$field][] = self::msg('validation.max', ['field' => self::label($field), 'max' => (string) $max]);
-                        continue;
-                    }
-                }
-
-                if (str_starts_with($rule, 'unique:')) {
-                    $params = substr($rule, 7);
-                    $parts = explode(',', $params);
-                    $table = trim($parts[0] ?? '');
-                    $column = trim($parts[1] ?? $field);
-
-                    if ($table !== '') {
-                        $exists = Database::table($table)
-                            ->where($column, '=', $value)
-                            ->count();
-
-                        if ($exists > 0) {
-                            $errors[$field][] = self::msg('validation.unique', ['field' => self::label($field)]);
-                            continue;
-                        }
-                    }
-                }
-
-                if (str_starts_with($rule, 'exists:')) {
-                    $params = substr($rule, 7);
-                    $parts = explode(',', $params);
-                    $table = trim($parts[0] ?? '');
-                    $column = trim($parts[1] ?? $field);
-
-                    if ($table !== '') {
-                        $exists = Database::table($table)
-                            ->where($column, '=', $value)
-                            ->count();
-
-                        if ($exists === 0) {
-                            $errors[$field][] = self::msg('validation.exists', ['field' => self::label($field)]);
-                            continue;
-                        }
-                    }
-                }
-
-                if ($rule === 'confirmed') {
-                    $confirmationField = $field . '_confirmation';
-                    $confirmationValue = $input[$confirmationField] ?? null;
-
-                    if ($value !== $confirmationValue) {
-                        $errors[$field][] = self::msg('validation.confirmed', ['field' => self::label($field)]);
-                        continue;
-                    }
-                }
-
-                if ($rule === 'file') {
-                    if (!$value instanceof UploadedFile || !$value->isValid()) {
-                        $errors[$field][] = self::msg('validation.file', ['field' => self::label($field)]);
-                        continue;
-                    }
-                }
-
-                if (str_starts_with($rule, 'in:')) {
-                    $allowedValues = array_map('trim', explode(',', substr($rule, 3)));
-
-                    if (!in_array((string) $value, $allowedValues, true)) {
-                        $errors[$field][] = self::msg('validation.in', [
-                            'field' => self::label($field),
-                            'values' => implode(', ', $allowedValues),
-                        ]);
-                        continue;
-                    }
-                }
-
+                // Parse rule name and parameter
                 $ruleName = $rule;
                 $ruleParam = null;
                 if (str_contains($rule, ':')) {
                     $parts = explode(':', $rule, 2);
                     $ruleName = $parts[0];
-                    $ruleParam = $parts[1];
+                    $ruleParam = $parts[1] ?? null;
                 }
 
+                // Check custom rules first
                 if (isset(self::$customRules[$ruleName])) {
                     $result = (self::$customRules[$ruleName])($value, $field, $input, $ruleParam);
                     if ($result !== true) {
                         $msg = is_string($result) ? $result : self::label($field) . ' is invalid';
                         $errors[$field][] = str_replace(':field', self::label($field), $msg);
                         continue;
+                    }
+                }
+
+                // Check built-in strategy rules
+                if (isset(self::$ruleStrategies[$ruleName])) {
+                    $strategy = self::$ruleStrategies[$ruleName];
+                    
+                    // Some strategies need extra context
+                    $result = match ($ruleName) {
+                        'confirmed' => $strategy($value, $ruleParam, $input, $field),
+                        default => $strategy($value, $ruleParam)
+                    };
+                    
+                    if ($result !== null) {
+                        // Result can be string key or [key, replacements]
+                        if (is_array($result)) {
+                            [$key, $replacements] = $result;
+                            $replacements['field'] = self::label($field);
+                            $errors[$field][] = self::msg($key, $replacements);
+                        } else {
+                            $errors[$field][] = self::msg($result, ['field' => self::label($field)]);
+                        }
+                        continue;
+                    }
+                }
+
+                // Handle unique/exists rules (need database access)
+                if ($ruleName === 'unique') {
+                    if ($ruleParam !== null) {
+                        $parts = explode(',', $ruleParam);
+                        $table = trim($parts[0] ?? '');
+                        $column = trim($parts[1] ?? $field);
+
+                        if ($table !== '') {
+                            $exists = Database::table($table)
+                                ->where($column, '=', $value)
+                                ->count();
+
+                            if ($exists > 0) {
+                                $errors[$field][] = self::msg('validation.unique', ['field' => self::label($field)]);
+                                continue;
+                            }
+                        }
+                    }
+                }
+
+                if ($ruleName === 'exists') {
+                    if ($ruleParam !== null) {
+                        $parts = explode(',', $ruleParam);
+                        $table = trim($parts[0] ?? '');
+                        $column = trim($parts[1] ?? $field);
+
+                        if ($table !== '') {
+                            $exists = Database::table($table)
+                                ->where($column, '=', $value)
+                                ->count();
+
+                            if ($exists === 0) {
+                                $errors[$field][] = self::msg('validation.exists', ['field' => self::label($field)]);
+                                continue;
+                            }
+                        }
                     }
                 }
             }
