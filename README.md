@@ -6,7 +6,7 @@
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
-[![Tests](https://img.shields.io/badge/tests-536%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-604%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
 [![Security](https://img.shields.io/badge/security-audited-brightgreen)](https://github.com/SiroSoft/siro-core)
@@ -69,12 +69,14 @@
 - ✅ **Environment Validation** - Pre-deployment checks
 
 ### Testing & Quality (v0.16.1) 🏆
-- ✅ **536 PHPUnit Tests** - 100% pass rate (1843 assertions)
+- ✅ **604 PHPUnit Tests** - 100% pass rate (1924 assertions)
 - ✅ **Container Test Suite** - 10 tests for DI Container
 - ✅ **Config Test Suite** - 11 tests for Config Repository
+- ✅ **ConfigAdvanced Test Suite** - 17 tests for dot notation config
 - ✅ **Middleware Test Suite** - 5 tests for Cors, Json middleware
 - ✅ **Cache Test Suite** - 9 tests for Cache facade
 - ✅ **Event Test Suite** - 11 tests for Event dispatcher
+- ✅ **EventAdvanced Test Suite** - 17 tests for wildcards and halting
 - ✅ **Session Test Suite** - 10 tests for Session manager
 - ✅ **Str Test Suite** - 16 tests for String helpers
 - ✅ **Hash Test Suite** - 6 tests for Bcrypt hashing
@@ -90,6 +92,8 @@
 - ✅ **StorageTest Test Suite** - 20 tests for file storage
 - ✅ **QueueTest Test Suite** - 18 tests for queue system
 - ✅ **MailTest Test Suite** - 16 tests for mail system
+- ✅ **LangTest Test Suite** - 20 tests for translations and i18n
+- ✅ **UploadedFileTest Test Suite** - 14 tests for file uploads
 - ✅ **PHPStan Level 6** - Zero errors, strict type checking
 
 ### Critical Fixes (v0.13.0+) 🔒
