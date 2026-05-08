@@ -32,6 +32,9 @@ final class MakeCrudCommand
         }
 
         $this->forceOverwrite = in_array('--force', $args, true);
+        $isSimple = in_array('--simple', $args, true);
+        $withSeed = in_array('--seed', $args, true);
+        $withRbac = in_array('--with-rbac', $args, true);
         $this->withRbac = $withRbac;
         $model = ucfirst($this->studly($this->singular($resource)));
         $classBase = $model;

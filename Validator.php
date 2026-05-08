@@ -49,7 +49,7 @@ final class Validator
             $value = $input[$field] ?? null;
 
             // Reject arrays for non-file rules (type confusion)
-            if (is_array($value) && $value !== [] && $value !== null) {
+            if (is_array($value) && $value !== []) {
                 $fieldRules = explode('|', $ruleLine);
                 if (!in_array('file', $fieldRules, true)) {
                     $errors[$field][] = self::msg('validation.array', ['field' => self::label($field)]);

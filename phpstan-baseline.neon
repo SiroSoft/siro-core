@@ -1,16 +1,34 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^PHPDoc tag @var with type class\-string is not subtype of native type ''App\\\\Models\\\\User''\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: App.php
+
+		-
 			message: '#^Variable \$request might not be defined\.$#'
 			identifier: variable.undefined
 			count: 3
 			path: App.php
 
 		-
+			message: '#^PHPDoc tag @var with type class\-string is not subtype of native type ''App\\\\Models\\\\User''\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: Auth/AuthGuard.php
+
+		-
 			message: '#^Method Siro\\Core\\Auth\\JWT\:\:encode\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: Auth/JWT.php
+
+		-
+			message: '#^Method Siro\\Core\\Auth\\UserProvider\:\:retrieveByCredentials\(\) has parameter \$credentials with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Auth/UserProvider.php
 
 		-
 			message: '#^Class Siro\\Core\\Collection implements generic interface ArrayAccess but does not specify its types\: TKey, TValue$#'
@@ -1273,6 +1291,12 @@ parameters:
 			path: DB/QueryBuilder.php
 
 		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:insertGetId\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
 			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:orWhereIn\(\) has parameter \$values with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2023,19 +2047,8 @@ parameters:
 			path: Validator.php
 
 		-
-			message: '#^Negated boolean expression is always true\.$#'
-			identifier: booleanNot.alwaysTrue
-			count: 1
-			path: Validator.php
-
-		-
 			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 3
 			path: Validator.php
 
-		-
-			message: '#^Comparison operation "\>" between 0 and 0 is always false\.$#'
-			identifier: greater.alwaysFalse
-			count: 1
-			path: Validator.php
