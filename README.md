@@ -1,4 +1,4 @@
-# Siro Core Framework v0.16.1
+# Siro Core Framework v0.16.7
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
@@ -6,7 +6,7 @@
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
-[![Tests](https://img.shields.io/badge/tests-604%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-657%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
 [![Security](https://img.shields.io/badge/security-audited-brightgreen)](https://github.com/SiroSoft/siro-core)

@@ -110,12 +110,16 @@ class QueryBuilder
         return $this->addWhereIn('AND', $column, $values, false);
     }
 
-    public function whereRaw(string $sql, string $boolean = 'AND'): self
+    /**
+     * @param array<int, int|string> $bindings
+     */
+    public function whereRaw(string $sql, array $bindings = [], string $boolean = 'AND'): self
     {
         $this->wheres[] = [
             'type' => 'raw',
             'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
             'sql' => $sql,
+            'bindings' => array_values($bindings),
         ];
 
         return $this;
@@ -575,6 +579,190 @@ class QueryBuilder
     }
 
     /**
+     * Bulk update where ids in array.
+     *
+     * @param array<int, int|string> $ids
+     * @param array<string, mixed> $data
+     * @return int Number of affected rows
+     */
+    public function updateWhereIn(array $ids, array $data): int
+    {
+        if ($ids === [] || $data === []) {
+            return 0;
+        }
+
+        $sets = [];
+        $bindings = [];
+        foreach ($data as $column => $value) {
+            $name = 'u_' . preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $column);
+            $sets[] = sprintf('%s = :%s', $this->quoteIdentifier($column), $name);
+            $bindings[$name] = $value;
+        }
+
+        $placeholders = [];
+        $idBindings = [];
+        foreach ($ids as $i => $id) {
+            $key = 'id_' . $i;
+            $placeholders[] = ':' . $key;
+            $idBindings[$key] = $id;
+        }
+
+        $sql = sprintf(
+            'UPDATE %s SET %s WHERE id IN (%s)',
+            $this->quoteIdentifier($this->table),
+            implode(', ', $sets),
+            implode(', ', $placeholders)
+        );
+
+        $stmt = Database::connection($this->connectionName)->prepare($sql);
+        $stmt->execute([...$bindings, ...$idBindings]);
+        Cache::flushQueryBuilderTable($this->cacheTable);
+
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Bulk delete where ids in array.
+     *
+     * @param array<int, int|string> $ids
+     * @return int Number of deleted rows
+     */
+    public function deleteWhereIn(array $ids): int
+    {
+        if ($ids === []) {
+            return 0;
+        }
+
+        $placeholders = [];
+        $bindings = [];
+        foreach ($ids as $i => $id) {
+            $key = 'id_' . $i;
+            $placeholders[] = ':' . $key;
+            $bindings[$key] = $id;
+        }
+
+        $sql = sprintf(
+            'DELETE FROM %s WHERE id IN (%s)',
+            $this->quoteIdentifier($this->table),
+            implode(', ', $placeholders)
+        );
+
+        $stmt = Database::connection($this->connectionName)->prepare($sql);
+        $stmt->execute($bindings);
+        Cache::flushQueryBuilderTable($this->cacheTable);
+
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Bulk insert multiple rows.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @return int Number of inserted rows
+     */
+    public function insertMany(array $rows): int
+    {
+        if ($rows === []) {
+            return 0;
+        }
+
+        $columns = array_keys($rows[0]);
+        $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
+
+        $placeholders = [];
+        $allBindings = [];
+        foreach ($rows as $rowIndex => $row) {
+            $rowPlaceholders = [];
+            foreach ($columns as $colIndex => $col) {
+                $key = 'r' . $rowIndex . '_c' . $colIndex;
+                $rowPlaceholders[] = ':' . $key;
+                $allBindings[$key] = $row[$col] ?? null;
+            }
+            $placeholders[] = '(' . implode(', ', $rowPlaceholders) . ')';
+        }
+
+        $sql = sprintf(
+            'INSERT INTO %s (%s) VALUES %s',
+            $this->quoteIdentifier($this->table),
+            implode(', ', $quotedColumns),
+            implode(', ', $placeholders)
+        );
+
+        $stmt = Database::connection($this->connectionName)->prepare($sql);
+        $stmt->execute($allBindings);
+        Cache::flushQueryBuilderTable($this->cacheTable);
+
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Cursor-based pagination for large datasets.
+     *
+     * Uses (id, created_at) cursor for stable pagination.
+     * Pass cursor from previous response to get next page.
+     *
+     * @param int $perPage Items per page
+     * @param array<string, mixed>|null $cursor ['id' => int, 'created_at' => string] or null for first page
+     * @param string $order 'asc' or 'desc'
+     * @return array{data: array<int, array<string, mixed>>, meta: array<string, mixed>, next_cursor: array<string, mixed>|null}
+     */
+    public function cursorPaginate(int $perPage = 15, ?array $cursor = null, string $order = 'asc'): array
+    {
+        $perPage = max(1, $perPage);
+        $order = strtolower($order) === 'desc' ? 'DESC' : 'ASC';
+
+        $clone = clone $this;
+
+        if ($cursor !== null && isset($cursor['id'], $cursor['created_at'])) {
+            $cursorId = (int) $cursor['id'];
+            $cursorCreatedAt = (string) $cursor['created_at'];
+
+            if ($order === 'ASC') {
+                $clone = $clone->whereRaw(
+                    "(created_at > ? OR (created_at = ? AND id > ?))",
+                    [$cursorCreatedAt, $cursorCreatedAt, $cursorId]
+                );
+            } else {
+                $clone = $clone->whereRaw(
+                    "(created_at < ? OR (created_at = ? AND id < ?))",
+                    [$cursorCreatedAt, $cursorCreatedAt, $cursorId]
+                );
+            }
+        }
+
+        $countRows = $clone->limit($perPage + 1)->get();
+        $hasMore = count($countRows) > $perPage;
+
+        if ($hasMore) {
+            array_pop($countRows);
+        }
+
+        $lastRow = $countRows[count($countRows) - 1] ?? null;
+        $nextCursor = null;
+        if ($hasMore && $lastRow !== null) {
+            $nextCursor = [
+                'id' => (int) ($lastRow['id'] ?? 0),
+                'created_at' => (string) ($lastRow['created_at'] ?? date('Y-m-d H:i:s')),
+            ];
+        }
+
+        $rows = $countRows;
+        $total = $clone->count();
+
+        return [
+            'data' => $rows,
+            'meta' => [
+                'per_page' => $perPage,
+                'total' => $total,
+                'has_more' => $hasMore,
+                'order' => $order,
+                'cursor' => $cursor,
+            ],
+            'next_cursor' => $nextCursor,
+        ];
+    }
+
+    /**
      * @return array{data: array<int, array<string, mixed>>, meta: array<string, int>}
      */
     public function paginate(int $perPage, ?int $page = null): array
@@ -834,6 +1022,11 @@ class QueryBuilder
 
             if (($where['type'] ?? 'basic') === 'raw') {
                 $parts[] = $prefix . $where['sql'];
+                if (isset($where['bindings']) && is_array($where['bindings'])) {
+                    foreach ($where['bindings'] as $bv) {
+                        $bindings[] = $bv;
+                    }
+                }
                 continue;
             }
 

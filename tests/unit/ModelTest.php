@@ -95,11 +95,27 @@ final class ModelTest extends TestCase
     }
 
     /**
+     * Test Model has hasOne method
+     */
+    public function testModelHasHasOneMethod(): void
+    {
+        $this->assertTrue(method_exists(Model::class, 'hasOne'));
+    }
+
+    /**
      * Test Model has belongsTo method
      */
     public function testModelHasBelongsToMethod(): void
     {
         $this->assertTrue(method_exists(Model::class, 'belongsTo'));
+    }
+
+    /**
+     * Test Model has belongsToMany method
+     */
+    public function testModelHasBelongsToManyMethod(): void
+    {
+        $this->assertTrue(method_exists(Model::class, 'belongsToMany'));
     }
 
     /**

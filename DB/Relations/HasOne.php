@@ -1,0 +1,43 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Siro\Core\DB\Relations;
+
+use Siro\Core\DB\ModelQueryBuilder;
+use Siro\Core\Model;
+
+class HasOne
+{
+    public function __construct(
+        private readonly string $relatedClass,
+        private readonly string $foreignKey,
+        private readonly string $localKey,
+        private readonly int|string $localValue,
+    ) {
+    }
+
+    public function get(): ?Model
+    {
+        return $this->query()->first();
+    }
+
+    public function query(): ModelQueryBuilder
+    {
+        return (new $this->relatedClass())
+            ->query()
+            ->where($this->foreignKey, '=', $this->localValue);
+    }
+
+    public function getRelatedClass(): string { return $this->relatedClass; }
+    public function getForeignKey(): string { return $this->foreignKey; }
+    public function getLocalKey(): string { return $this->localKey; }
+
+    /**
+     * @param array<int, mixed> $parameters
+     */
+    public function __call(string $method, array $parameters): mixed
+    {
+        return $this->query()->{$method}(...$parameters);
+    }
+}

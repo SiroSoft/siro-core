@@ -19,7 +19,35 @@ trait CommandSupport
         echo $line . PHP_EOL;
     }
 
-    /** @param array<int, array<int, string>> $rows */
+    protected function info(string $message): void
+    {
+        $this->write('  ' . $message);
+    }
+
+    protected function success(string $message): void
+    {
+        $this->write('✓ ' . $message);
+    }
+
+    protected function error(string $message): void
+    {
+        $this->write('✗ ' . $message);
+    }
+
+    protected function warn(string $message): void
+    {
+        $this->write('⚠ ' . $message);
+    }
+
+    protected function comment(string $message): void
+    {
+        $this->write('# ' . $message);
+    }
+
+    /**
+     * @param array<string, string> $headers
+     * @param array<int, array<string, string>> $rows
+     */
     protected function table(array $headers, array $rows): void
     {
         if ($headers === [] || $rows === []) {

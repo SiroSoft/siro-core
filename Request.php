@@ -282,10 +282,71 @@ final class Request
         return $this->uploadedFiles[$key] ?? null;
     }
 
-    /** @return array<string, UploadedFile> */
+    /**
+     * @return array<string, UploadedFile>
+     */
     public function allFiles(): array
     {
         return $this->uploadedFiles;
+    }
+
+    /**
+     * @param array<int, string> $rules
+     */
+    public function validateFile(string $key, array $rules): ?UploadedFile
+    {
+        $file = $this->file($key);
+
+        if ($file === null) {
+            if (in_array('required', $rules, true)) {
+                throw new ValidationException([$key => ['The file field is required.']]);
+            }
+            return null;
+        }
+
+        $errors = [];
+
+        if (in_array('image', $rules, true) && !$file->isImage()) {
+            $errors[] = 'The file must be an image.';
+        }
+
+        if (in_array('pdf', $rules, true) && !$file->isPdf()) {
+            $errors[] = 'The file must be a PDF.';
+        }
+
+        if (($maxSize = $this->extractRuleValue($rules, 'max')) !== null) {
+            if ($file->getSize() > ((int) $maxSize) * 1024) {
+                $errors[] = "The file must be less than {$maxSize} KB.";
+            }
+        }
+
+        if (($extensions = $this->extractRuleValue($rules, 'extensions')) !== null) {
+            $allowed = array_map('trim', explode(',', $extensions));
+            $ext = $file->extension();
+            if (!in_array($ext, $allowed, true)) {
+                $errors[] = 'The file must have one of the following extensions: ' . $extensions;
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException([$key => $errors]);
+        }
+
+        return $file;
+    }
+
+    /**
+     * @param array<int, string> $rules
+     * @return string|null
+     */
+    private function extractRuleValue(array $rules, string $ruleName): ?string
+    {
+        foreach ($rules as $rule) {
+            if (str_starts_with($rule, $ruleName . ':')) {
+                return substr($rule, strlen($ruleName) + 1);
+            }
+        }
+        return null;
     }
 
     public function cacheKey(): string

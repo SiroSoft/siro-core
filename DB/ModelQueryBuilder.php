@@ -130,6 +130,33 @@ final class ModelQueryBuilder extends QueryBuilder
         return parent::count($column);
     }
 
+    /**
+     * Cursor-based pagination returning Model instances.
+     *
+     * @return array<string, mixed>
+     */
+    public function cursorPaginate(int $perPage = 15, ?array $cursor = null, string $order = 'asc'): array
+    {
+        $this->applySoftDeleteFilter();
+
+        $rawResult = parent::cursorPaginate($perPage, $cursor, $order);
+        $models = $this->hydrateModels($rawResult['data']);
+
+        if ($this->eagerLoads !== []) {
+            $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
+            $loader->loadBatch($models, $this->eagerLoads);
+        }
+
+        /** @var array<string, mixed> */
+        $result = [
+            'data' => $models,
+            'meta' => $rawResult['meta'],
+            'next_cursor' => $rawResult['next_cursor'],
+        ];
+
+        return $result;
+    }
+
     public function sum(string $column): float|int
     {
         $this->applySoftDeleteFilter();

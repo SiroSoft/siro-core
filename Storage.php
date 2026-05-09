@@ -143,9 +143,60 @@ final class Storage
         return self::localFiles($directory);
     }
 
+    /**
+     * Store an uploaded file with a unique filename.
+     */
+    public static function putFile(string $path, string $content, ?string $filename = null): string
+    {
+        if ($filename === null) {
+            $filename = bin2hex(random_bytes(16)) . '.' . pathinfo($path, PATHINFO_EXTENSION);
+        }
+
+        return self::put($path . '/' . $filename, $content) ? $path . '/' . $filename : '';
+    }
+
+    /**
+     * Copy a file from one location to another within storage.
+     */
+    public static function copy(string $source, string $dest): bool
+    {
+        $content = self::get($source);
+        if ($content === null) {
+            return false;
+        }
+
+        return self::put($dest, $content);
+    }
+
+    /**
+     * Get file size.
+     */
+    public static function size(string $path): int
+    {
+        if (self::$driver === self::S3) {
+            throw new RuntimeException('Storage::size() is not supported for S3 driver.');
+        }
+
+        $fullPath = self::localPath($path);
+        return is_file($fullPath) ? (int) filesize($fullPath) : 0;
+    }
+
+    /**
+     * Get file last modified time.
+     */
+    public static function lastModified(string $path): int
+    {
+        if (self::$driver === self::S3) {
+            throw new RuntimeException('Storage::lastModified() is not supported for S3 driver.');
+        }
+
+        $fullPath = self::localPath($path);
+        return is_file($fullPath) ? (int) filemtime($fullPath) : 0;
+    }
+
     // ─── Local Driver ─────────────────────────────────────
 
-    private static function localPath(string $path): string
+    public static function localPath(string $path): string
     {
         $base = defined('SIRO_BASE_PATH') ? SIRO_BASE_PATH : getcwd();
         $base = rtrim((string) $base, DIRECTORY_SEPARATOR);
@@ -209,7 +260,7 @@ final class Storage
         return is_file(self::localPath($path));
     }
 
-    private static function localUrl(string $path): string
+    public static function localUrl(string $path): string
     {
         return '/storage/' . ltrim($path, '/');
     }

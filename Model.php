@@ -7,15 +7,16 @@ namespace Siro\Core;
 use PDO;
 use RuntimeException;
 use Siro\Core\DB\ModelQueryBuilder;
-use Siro\Core\DB\QueryBuilder;
 use Siro\Core\DB\Relations\BelongsTo;
+use Siro\Core\DB\Relations\BelongsToMany;
 use Siro\Core\DB\Relations\HasMany;
+use Siro\Core\DB\Relations\HasOne;
 
 /**
  * Base Model class for Eloquent-style ORM operations.
  *
- * Provides CRUD, scopes, relationships (hasMany, belongsTo), soft deletes,
- * attribute casting, mass assignment protection, and automatic column
+ * Provides CRUD, scopes, relationships (hasMany, hasOne, belongsTo, belongsToMany),
+ * soft deletes, attribute casting, mass assignment protection, and automatic column
  * detection from the database schema.
  *
  * @package Siro\Core
@@ -759,6 +760,62 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             $foreignKey,
             $localKey,
             $this->getAttribute($localKey) ?? 0,
+        );
+    }
+
+    /**
+     * Define a one-to-one relationship.
+     */
+    protected function hasOne(string $relatedClass, string $foreignKey = '', string $localKey = 'id'): HasOne
+    {
+        $related = new $relatedClass();
+
+        if ($foreignKey === '') {
+            $foreignKey = $this->getForeignKeyName($relatedClass);
+        }
+
+        return new HasOne(
+            $relatedClass,
+            $foreignKey,
+            $localKey,
+            $this->getAttribute($localKey) ?? 0,
+        );
+    }
+
+    /**
+     * Define a many-to-many relationship.
+     *
+     * @param string $relatedClass The related model class
+     * @param string $pivotTable The pivot table name
+     * @param string $foreignKey The foreign key in pivot table referencing this model
+     * @param string $relatedKey The foreign key in pivot table referencing related model
+     */
+    protected function belongsToMany(
+        string $relatedClass,
+        string $pivotTable = '',
+        string $foreignKey = '',
+        string $relatedKey = 'id'
+    ): BelongsToMany {
+        $related = new $relatedClass();
+
+        if ($pivotTable === '') {
+            /** @var array{0: string, 1: string} $tables */
+            $tables = [$this->getTable(), $related->getTable()];
+            sort($tables);
+            $pivotTable = $tables[0] . '_' . $tables[1];
+        }
+
+        if ($foreignKey === '') {
+            $foreignKey = $this->getForeignKeyName(static::class);
+        }
+
+        return new BelongsToMany(
+            $relatedClass,
+            $pivotTable,
+            $foreignKey,
+            $relatedKey,
+            'id',
+            $this->getAttribute('id') ?? 0,
         );
     }
 

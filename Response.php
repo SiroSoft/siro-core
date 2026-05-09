@@ -126,11 +126,47 @@ final class Response
         $response->extraHeaders['Content-Disposition'] = $disposition;
         $response->extraHeaders['Content-Type'] = mime_content_type($filePath) ?: 'application/octet-stream';
         $response->extraHeaders['Content-Length'] = (string) filesize($filePath);
-        
+
         foreach ($headers as $name => $value) {
             $response->extraHeaders[$name] = $value;
         }
-        
+
+        return $response;
+    }
+
+    /**
+     * Create a file download response from storage path.
+     */
+    public static function downloadFromStorage(string $path, ?string $filename = null): self
+    {
+        $fullPath = Storage::localPath($path);
+
+        if (!file_exists($fullPath) || !is_readable($fullPath)) {
+            return self::error('File not found', 404);
+        }
+
+        return self::download($fullPath, $filename);
+    }
+
+    /**
+     * Create a stream response for large file downloads.
+     */
+    public static function stream(string $filePath, ?string $filename = null, int $chunkSize = 8192): self
+    {
+        if (!file_exists($filePath) || !is_readable($filePath)) {
+            return self::error('File not found', 404);
+        }
+
+        $response = new self([], 200);
+        $response->isFileResponse = true;
+        $response->filePath = $filePath;
+        $downloadFilename = $filename ?? basename($filePath);
+        $response->extraHeaders['Content-Disposition'] = 'attachment; filename="' . $downloadFilename . '"';
+        $response->extraHeaders['Content-Type'] = mime_content_type($filePath) ?: 'application/octet-stream';
+        $response->extraHeaders['Accept-Ranges'] = 'bytes';
+        $response->extraHeaders['Content-Length'] = (string) filesize($filePath);
+        $response->extraHeaders['X-Chunk-Size'] = (string) $chunkSize;
+
         return $response;
     }
 

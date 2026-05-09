@@ -73,7 +73,7 @@ final class UploadedFile
         return $this->path;
     }
 
-    public function store(string $directory, ?string $name = null): string
+    public function store(string $directory, ?string $name = null, bool $useStorage = false): string
     {
         if (!$this->isValid()) {
             throw new RuntimeException('Cannot store an invalid uploaded file.');
@@ -92,18 +92,6 @@ final class UploadedFile
             throw new RuntimeException('Invalid directory path: only alphanumeric, hyphens, underscores, and slashes allowed');
         }
 
-        $publicDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . $directory;
-
-        // Validate final resolved path stays within allowed directory
-        $realPublicDir = realpath(dirname($publicDir));
-        if ($realPublicDir === false || strpos(realpath($publicDir) ?: '', $realPublicDir) !== 0) {
-            throw new RuntimeException('Directory path resolves outside allowed storage area');
-        }
-
-        if (!is_dir($publicDir)) {
-            mkdir($publicDir, 0775, true);
-        }
-
         // Sanitize filename if provided
         if ($name !== null) {
             // Remove path components from filename to prevent traversal
@@ -116,6 +104,29 @@ final class UploadedFile
         }
 
         $filename = $name ?? $this->generateFilename();
+        $path = $directory . '/' . $filename;
+
+        if ($useStorage) {
+            $content = file_get_contents($this->path);
+            if ($content === false) {
+                throw new RuntimeException('Failed to read uploaded file content.');
+            }
+            Storage::put($path, $content);
+            return Storage::url($path);
+        }
+
+        $publicDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . $directory;
+
+        // Validate final resolved path stays within allowed directory
+        $realPublicDir = realpath(dirname($publicDir));
+        if ($realPublicDir === false || strpos(realpath($publicDir) ?: '', $realPublicDir) !== 0) {
+            throw new RuntimeException('Directory path resolves outside allowed storage area');
+        }
+
+        if (!is_dir($publicDir)) {
+            mkdir($publicDir, 0775, true);
+        }
+
         $destPath = $publicDir . DIRECTORY_SEPARATOR . $filename;
 
         if (!move_uploaded_file($this->path, $destPath)) {
@@ -128,6 +139,56 @@ final class UploadedFile
     public function storeAs(string $directory, string $name): string
     {
         return $this->store($directory, $name);
+    }
+
+    public function isImage(): bool
+    {
+        if (!$this->isValid()) {
+            return false;
+        }
+
+        $mime = $this->getMimeType();
+        return in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'], true);
+    }
+
+    public function isPdf(): bool
+    {
+        if (!$this->isValid()) {
+            return false;
+        }
+
+        return $this->getMimeType() === 'application/pdf';
+    }
+
+    public function hash(): ?string
+    {
+        if (!$this->isValid()) {
+            return null;
+        }
+
+        $path = $this->getPathname();
+        if (!is_file($path) || !is_readable($path)) {
+            return null;
+        }
+
+        return hash_file('sha256', $path);
+    }
+
+    public function extension(): string
+    {
+        return $this->getClientOriginalExtension();
+    }
+
+    public function name(): string
+    {
+        return pathinfo($this->originalName, PATHINFO_FILENAME) ?: $this->originalName;
+    }
+
+    public static function maxSize(): int
+    {
+        $maxUpload = (int) ini_get('upload_max_filesize');
+        $maxPost = (int) ini_get('post_max_size');
+        return min($maxUpload, $maxPost) * 1024 * 1024;
     }
 
     private function generateFilename(): string
