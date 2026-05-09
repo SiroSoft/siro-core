@@ -67,10 +67,11 @@ use Siro\Core\Commands\NewCommand;
 use Siro\Core\Commands\MakeIdempotencyTableCommand;
 use Siro\Core\Commands\MakeApiKeysTableCommand;
 use Siro\Core\Commands\MakeApiKeyCommand;
+use Siro\Core\Commands\BenchmarkCommand;
 
 final class Console
 {
-    private const VERSION = '0.9.0';
+    private const VERSION = '0.20.0';
 
     public function __construct(private readonly string $basePath)
     {
@@ -101,6 +102,7 @@ final class Console
             'make:idempotency-table' => ['handler' => MakeIdempotencyTableCommand::class, 'desc' => 'Create idempotency table', 'usage' => 'php siro make:idempotency-table'],
             'make:apikey-table' => ['handler' => MakeApiKeysTableCommand::class, 'desc' => 'Create API keys table', 'usage' => 'php siro make:apikey-table'],
             'make:apikey' => ['handler' => MakeApiKeyCommand::class, 'desc' => 'Generate API key', 'usage' => 'php siro make:apikey <name> [scopes] [expires_days]'],
+            'benchmark' => ['handler' => BenchmarkCommand::class, 'desc' => 'Performance benchmark', 'usage' => 'php siro benchmark [--iterations=N] [--json]'],
 
             'migrate'          => ['handler' => MigrateCommand::class, 'desc' => 'Run migrations', 'usage' => 'php siro migrate'],
             'migrate:rollback'  => ['handler' => MigrateRollbackCommand::class, 'desc' => 'Rollback migrations', 'usage' => 'php siro migrate:rollback [--step=N]'],
@@ -320,7 +322,8 @@ final class Console
                                     'down', 'up', 'log:trace', 'log:replay', 'log:slow', 'debug:last'],
             '⚙️ System'        => ['key:generate', 'doctor', 'env:check', 'env:switch', 'route:search', 'route:rules',
                                     'rate:status', 'db:show', 'migrate:rollback', 'migrate:status', 'log:export',
-                                    'log:cleanup', 'log:tail', 'log:stats', 'log:top', 'storage:link', 'live', 'new'],
+                                    'log:cleanup', 'log:tail', 'log:stats', 'log:top', 'storage:link', 'live', 'new',
+                                    'benchmark'],
         ];
 
         foreach ($layers as $layer => $cmds) {

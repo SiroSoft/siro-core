@@ -1,4 +1,4 @@
-# Siro Core Framework v0.9.0
+# Siro Core Framework v0.20.0
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
@@ -6,7 +6,7 @@
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
-[![Tests](https://img.shields.io/badge/tests-657%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-660%2B%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
 [![Security](https://img.shields.io/badge/security-audited-brightgreen)](https://github.com/SiroSoft/siro-core)
@@ -68,8 +68,10 @@
 - 📈 **Slow Query Detection** - Auto-log queries exceeding threshold
 - ✅ **Environment Validation** - Pre-deployment checks
 
-### Testing & Quality (v0.16.1) 🏆
-- ✅ **604 PHPUnit Tests** - 100% pass rate (1924 assertions)
+### Testing & Quality (v0.20.0) 🏆
+- ✅ **660+ PHPUnit Tests** - 100% pass rate
+- ✅ **SecurityTest Suite** - 30+ tests for SQL injection, XSS, CSRF, credential sanitization
+- ✅ **BenchmarkCommand** - Advanced performance benchmarking CLI
 - ✅ **Container Test Suite** - 10 tests for DI Container
 - ✅ **Config Test Suite** - 11 tests for Config Repository
 - ✅ **ConfigAdvanced Test Suite** - 17 tests for dot notation config
