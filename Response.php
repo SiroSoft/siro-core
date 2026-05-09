@@ -164,6 +164,7 @@ final class Response
         $response->isFileResponse = true;
         $response->filePath = $filePath;
         $downloadFilename = $filename ?? basename($filePath);
+        $downloadFilename = preg_replace('/\R/', '', $downloadFilename);
         $response->extraHeaders['Content-Disposition'] = 'attachment; filename="' . $downloadFilename . '"';
         $response->extraHeaders['Content-Type'] = mime_content_type($filePath) ?: 'application/octet-stream';
         $response->extraHeaders['Accept-Ranges'] = 'bytes';
