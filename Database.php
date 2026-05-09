@@ -42,7 +42,15 @@ final class Database
         $name ??= self::$defaultConnection;
 
         if (isset(self::$pdoInstances[$name]) && self::$pdoInstances[$name] instanceof PDO) {
-            return self::$pdoInstances[$name];
+            $pdo = self::$pdoInstances[$name];
+            try {
+                $pdo->query('SELECT 1');
+            } catch (\Throwable) {
+                unset(self::$pdoInstances[$name]);
+            }
+            if (isset(self::$pdoInstances[$name])) {
+                return $pdo;
+            }
         }
 
         $config = self::$configs[$name] ?? throw new RuntimeException("Database connection '{$name}' is not configured.");

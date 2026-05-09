@@ -155,7 +155,7 @@ final class UploadedFile
         }
 
         $mime = $this->getMimeType();
-        return in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'], true);
+        return in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true);
     }
 
     public function isPdf(): bool

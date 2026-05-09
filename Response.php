@@ -123,7 +123,8 @@ final class Response
         $response->isFileResponse = true;
         $response->filePath = $filePath;
         if ($filename !== null) {
-            $filename = preg_replace('/\R/', '', $filename);
+            $filename = (string) preg_replace('/\R/', '', $filename);
+            $filename = str_replace('"', '', $filename);
         }
         $disposition = $filename ? 'attachment; filename="' . $filename . '"' : 'attachment';
         $response->extraHeaders['Content-Disposition'] = $disposition;

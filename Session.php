@@ -63,9 +63,12 @@ final class Session
 
         // Set session cookie
         if (!headers_sent()) {
+            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
             setcookie('siro_session', $this->sessionId, [
                 'expires' => time() + 86400 * 30,
                 'path' => '/',
+                'secure' => $isHttps,
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
