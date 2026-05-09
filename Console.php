@@ -70,7 +70,7 @@ use Siro\Core\Commands\MakeApiKeyCommand;
 
 final class Console
 {
-    private const VERSION = '1.0.0';
+    private const VERSION = '0.9.0';
 
     public function __construct(private readonly string $basePath)
     {

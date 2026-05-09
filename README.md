@@ -1,4 +1,4 @@
-# Siro Core Framework v1.0.0
+# Siro Core Framework v0.9.0
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
