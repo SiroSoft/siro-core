@@ -168,6 +168,10 @@ final class Lang
             return self::$loaded[$cacheKey];
         }
 
+        if (self::$basePath === '' && defined('BASE_PATH')) {
+            self::boot(BASE_PATH);
+        }
+
         $path = self::$basePath . DIRECTORY_SEPARATOR . $locale
             . DIRECTORY_SEPARATOR . $file . '.php';
 

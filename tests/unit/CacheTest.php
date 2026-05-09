@@ -83,11 +83,15 @@ final class CacheTest extends TestCase
     public function testRequestStatus(): void
     {
         Cache::resetRequestState();
-        $this->assertSame('MISS', Cache::requestStatus());
+        $status = Cache::requestStatus();
+        $this->assertIsArray($status);
+        $this->assertSame('MISS', $status['status']);
 
         Cache::set('status_key', 'val', 60);
         Cache::get('status_key');
-        $this->assertSame('HIT', Cache::requestStatus());
+        $status = Cache::requestStatus();
+        $this->assertIsArray($status);
+        $this->assertSame('HIT', $status['status']);
     }
 
     public function testSetWithZeroTtl(): void

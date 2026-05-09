@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.21.0 (2026-05-10) — Security & Quality Release
+
+### 🐛 Bug Fixes
+- **CRITICAL**: Fixed `php://input` double-read (Request.php + JsonMiddleware.php) — JSON body was always empty
+- **CRITICAL**: Fixed JWT_SECRET excluded from env cache — cached env bypassed secret loading
+- **Fixed**: QueryBuilder cursor pagination — positional bindings (`?`) converted to named bindings (`:param`)
+- **Fixed**: QueryBuilder static `$driverName` — per-connection driver detection (multi-db support)
+- **Fixed**: CorsMiddleware + Router OPTIONS — respect `CORS_ALLOWED_ORIGINS` env, proper credentials header
+- **Fixed**: Response::download() — newline injection in Content-Disposition filename
+- **Fixed**: Validator min/max rules — proper type checking (is_int/is_string/is_float)
+- **Added**: Event::currentEvent() — track current event name during emit
+- **Added**: Lang::count() — count translations in a file
+- **Added**: Lang auto-boot — lazy init when BASE_PATH is defined
+
+### 🔧 Improvements
+- Env cache now loads excluded secrets (JWT_SECRET, APP_KEY) from .env file
+- Cache::requestStatus() now returns array instead of string
+
+### 📊 Testing
+- 804 tests, 2178 assertions — all passing
+- Added translation test fixtures (en/vi)
+- Fixed CacheTest for new requestStatus() return type
+
 ## v0.20.0 (2026-05-09) — Production-Ready Release
 
 ### 🚀 New Features

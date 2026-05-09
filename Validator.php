@@ -101,10 +101,18 @@ final class Validator
             if ($value instanceof UploadedFile && $value->isValid()) {
                 $sizeInKb = (int) ceil($value->getSize() / 1024);
                 return $sizeInKb < $min ? ['validation.min', ['min' => (string) $min]] : null;
-            } elseif (is_numeric($value)) {
-                return (float) $value < $min ? ['validation.min', ['min' => (string) $min]] : null;
-            } elseif (is_string($value)) {
+            }
+
+            if (is_int($value)) {
+                return $value < $min ? ['validation.min', ['min' => (string) $min]] : null;
+            }
+
+            if (is_string($value)) {
                 return strlen(trim($value)) < $min ? ['validation.min', ['min' => (string) $min]] : null;
+            }
+
+            if (is_float($value)) {
+                return $value < $min ? ['validation.min', ['min' => (string) $min]] : null;
             }
             return null;
         });
@@ -117,10 +125,18 @@ final class Validator
             if ($value instanceof UploadedFile && $value->isValid()) {
                 $sizeInKb = (int) ceil($value->getSize() / 1024);
                 return $sizeInKb > $max ? ['validation.max', ['max' => (string) $max]] : null;
-            } elseif (is_string($value)) {
+            }
+
+            if (is_int($value)) {
+                return $value > $max ? ['validation.max', ['max' => (string) $max]] : null;
+            }
+
+            if (is_string($value)) {
                 return strlen(trim($value)) > $max ? ['validation.max', ['max' => (string) $max]] : null;
-            } elseif (is_numeric($value)) {
-                return (float) $value > $max ? ['validation.max', ['max' => (string) $max]] : null;
+            }
+
+            if (is_float($value)) {
+                return $value > $max ? ['validation.max', ['max' => (string) $max]] : null;
             }
             return null;
         });
