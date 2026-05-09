@@ -32,18 +32,6 @@ final class ConfigClearCommand
             $this->write('  Routes cache cleared.');
         }
 
-        // Clear general cache
-        $cacheDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache';
-        if (is_dir($cacheDir)) {
-            $files = glob($cacheDir . DIRECTORY_SEPARATOR . '*.php');
-            if ($files !== false) {
-                foreach ($files as $file) {
-                    @unlink($file);
-                }
-            }
-            $this->write('  General cache cleared.');
-        }
-
         // Clear config repository cache
         \Siro\Core\Config::clearCache();
 

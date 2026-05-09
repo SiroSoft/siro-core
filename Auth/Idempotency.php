@@ -157,6 +157,19 @@ final class Idempotency
                 )
             ");
             Database::execute("CREATE INDEX IF NOT EXISTS idx_idempotency_hash_expires ON " . self::$table . " (hash, expires_at)");
+        } elseif ($driver === 'mysql') {
+            Database::execute("
+                CREATE TABLE IF NOT EXISTS " . self::$table . " (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    hash VARCHAR(64) UNIQUE NOT NULL,
+                    idempotency_key VARCHAR(255) NOT NULL,
+                    user_id INT DEFAULT 0,
+                    response_data TEXT,
+                    created_at INT NOT NULL,
+                    expires_at INT NOT NULL,
+                    INDEX idx_idempotency_hash_expires (hash, expires_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
         } else {
             Database::execute("
                 CREATE TABLE IF NOT EXISTS " . self::$table . " (

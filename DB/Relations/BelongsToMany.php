@@ -24,6 +24,50 @@ class BelongsToMany
     }
 
     /**
+     * Quote identifier for SQL safety.
+     */
+    private function quoteIdentifier(string $identifier): string
+    {
+        if ($identifier === '*') {
+            return $identifier;
+        }
+
+        // BLOCK dangerous characters to prevent SQL injection
+        if (preg_match('/[^a-zA-Z0-9_.\s\-]/', $identifier)) {
+            throw new \RuntimeException('Invalid identifier: contains illegal characters');
+        }
+
+        // Prevent multi-statement injection
+        if (stripos($identifier, ';') !== false ||
+            stripos($identifier, '--') !== false ||
+            stripos($identifier, '/*') !== false) {
+            throw new \RuntimeException('Invalid identifier: SQL injection attempt detected');
+        }
+
+        // Don't quote function calls or expressions with parentheses
+        if (str_contains($identifier, '(')) {
+            return $identifier;
+        }
+
+        $driver = Database::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        $char = match ($driver) {
+            'pgsql', 'postgres', 'postgresql' => '"',
+            default => '`',
+        };
+        $escaped = str_replace($char, $char . $char, $identifier);
+
+        $parts = explode('.', $escaped);
+        foreach ($parts as $i => $part) {
+            $part = trim($part);
+            if ($part !== '*' && $part !== '') {
+                $parts[$i] = $char . $part . $char;
+            }
+        }
+
+        return implode('.', $parts);
+    }
+
+    /**
      * @return array<int, Model>
      */
     public function get(): array
@@ -59,14 +103,18 @@ class BelongsToMany
 
     public function attach(int|string $relatedId): void
     {
+        $pivotTable = $this->quoteIdentifier($this->pivotTable);
+        $foreignKey = $this->quoteIdentifier($this->foreignKey);
+        $relatedKey = $this->quoteIdentifier($this->relatedKey);
+
         $exists = Database::select(
-            "SELECT COUNT(*) FROM {$this->pivotTable} WHERE {$this->foreignKey} = ? AND {$this->relatedKey} = ?",
+            "SELECT COUNT(*) FROM {$pivotTable} WHERE {$foreignKey} = ? AND {$relatedKey} = ?",
             [$this->localValue, $relatedId]
         );
 
         if (($exists[0]['COUNT(*)'] ?? 0) === 0) {
             Database::execute(
-                "INSERT INTO {$this->pivotTable} ({$this->foreignKey}, {$this->relatedKey}) VALUES (?, ?)",
+                "INSERT INTO {$pivotTable} ({$foreignKey}, {$relatedKey}) VALUES (?, ?)",
                 [$this->localValue, $relatedId]
             );
         }
@@ -74,16 +122,23 @@ class BelongsToMany
 
     public function detach(int|string $relatedId): void
     {
+        $pivotTable = $this->quoteIdentifier($this->pivotTable);
+        $foreignKey = $this->quoteIdentifier($this->foreignKey);
+        $relatedKey = $this->quoteIdentifier($this->relatedKey);
+
         Database::execute(
-            "DELETE FROM {$this->pivotTable} WHERE {$this->foreignKey} = ? AND {$this->relatedKey} = ?",
+            "DELETE FROM {$pivotTable} WHERE {$foreignKey} = ? AND {$relatedKey} = ?",
             [$this->localValue, $relatedId]
         );
     }
 
     public function detachAll(): void
     {
+        $pivotTable = $this->quoteIdentifier($this->pivotTable);
+        $foreignKey = $this->quoteIdentifier($this->foreignKey);
+
         Database::execute(
-            "DELETE FROM {$this->pivotTable} WHERE {$this->foreignKey} = ?",
+            "DELETE FROM {$pivotTable} WHERE {$foreignKey} = ?",
             [$this->localValue]
         );
     }
@@ -103,8 +158,12 @@ class BelongsToMany
 
     public function has(int|string $relatedId): bool
     {
+        $pivotTable = $this->quoteIdentifier($this->pivotTable);
+        $foreignKey = $this->quoteIdentifier($this->foreignKey);
+        $relatedKey = $this->quoteIdentifier($this->relatedKey);
+
         $exists = Database::select(
-            "SELECT COUNT(*) FROM {$this->pivotTable} WHERE {$this->foreignKey} = ? AND {$this->relatedKey} = ?",
+            "SELECT COUNT(*) FROM {$pivotTable} WHERE {$foreignKey} = ? AND {$relatedKey} = ?",
             [$this->localValue, $relatedId]
         );
 

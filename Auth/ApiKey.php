@@ -208,6 +208,20 @@ final class ApiKey
                     last_used_at INTEGER
                 )
             ");
+        } elseif ($driver === 'mysql') {
+            Database::execute("
+                CREATE TABLE IF NOT EXISTS " . self::$table . " (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    token_hash VARCHAR(64) UNIQUE NOT NULL,
+                    scopes VARCHAR(100) NOT NULL DEFAULT 'read',
+                    user_id INT DEFAULT 0,
+                    created_at INT NOT NULL,
+                    expires_at INT DEFAULT 0,
+                    last_used_at INT,
+                    INDEX idx_api_keys_token_hash (token_hash)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
         } else {
             Database::execute("
                 CREATE TABLE IF NOT EXISTS " . self::$table . " (

@@ -24,7 +24,7 @@ final class ConfigCacheCommand
  */
     public function run(array $args): int
     {
-        $cacheDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache';
+        $cacheDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework';
         if (!is_dir($cacheDir)) {
             mkdir($cacheDir, 0775, true);
         }

@@ -65,11 +65,12 @@ use Siro\Core\Commands\LiveCommand;
 use Siro\Core\Commands\DeployCommand;
 use Siro\Core\Commands\NewCommand;
 use Siro\Core\Commands\MakeIdempotencyTableCommand;
+use Siro\Core\Commands\MakeApiKeysTableCommand;
 use Siro\Core\Commands\MakeApiKeyCommand;
 
 final class Console
 {
-    private const VERSION = '0.16.0';
+    private const VERSION = '1.0.0';
 
     public function __construct(private readonly string $basePath)
     {
@@ -98,6 +99,7 @@ final class Console
             'make:service'    => ['handler' => MakeServiceCommand::class, 'desc' => 'Generate service class', 'usage' => 'php siro make:service <name>'],
             'make:repository' => ['handler' => MakeRepositoryCommand::class, 'desc' => 'Generate repository class', 'usage' => 'php siro make:repository <name>'],
             'make:idempotency-table' => ['handler' => MakeIdempotencyTableCommand::class, 'desc' => 'Create idempotency table', 'usage' => 'php siro make:idempotency-table'],
+            'make:apikey-table' => ['handler' => MakeApiKeysTableCommand::class, 'desc' => 'Create API keys table', 'usage' => 'php siro make:apikey-table'],
             'make:apikey' => ['handler' => MakeApiKeyCommand::class, 'desc' => 'Generate API key', 'usage' => 'php siro make:apikey <name> [scopes] [expires_days]'],
 
             'migrate'          => ['handler' => MigrateCommand::class, 'desc' => 'Run migrations', 'usage' => 'php siro migrate'],
