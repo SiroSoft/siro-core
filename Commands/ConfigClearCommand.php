@@ -35,6 +35,9 @@ final class ConfigClearCommand
         // Clear config repository cache
         \Siro\Core\Config::clearCache();
 
+        // Clear env cache
+        \Siro\Core\Env::clearCache($this->basePath);
+
         $this->write('Cache cleared successfully!');
         return 0;
     }

@@ -14,10 +14,34 @@ namespace Siro\Core;
  */
 final class Env
 {
+    private static bool $loaded = false;
+    private static string $cachedFile = '';
+
     public static function load(string $filePath): void
     {
-        if (!is_file($filePath)) {
+        if (self::$loaded) {
             return;
+        }
+
+        if (!is_file($filePath)) {
+            self::$loaded = true;
+            return;
+        }
+
+        // Check for cached env file
+        self::$cachedFile = dirname($filePath) . DIRECTORY_SEPARATOR
+            . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php';
+        if (is_file(self::$cachedFile)) {
+            $cached = require self::$cachedFile;
+            if (is_array($cached)) {
+                foreach ($cached as $key => $value) {
+                    $_ENV[$key] = $value;
+                    $_SERVER[$key] = $value;
+                    putenv("{$key}={$value}");
+                }
+                self::$loaded = true;
+                return;
+            }
         }
 
         $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -55,6 +79,40 @@ final class Env
             $_SERVER[$key] = $value;
             putenv(sprintf('%s=%s', $key, $value));
         }
+
+        self::$loaded = true;
+    }
+
+    public static function cache(string $filePath): bool
+    {
+        $cacheDir = dirname($filePath) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework';
+        if (!is_dir($cacheDir)) {
+            mkdir($cacheDir, 0775, true);
+        }
+
+        $data = [];
+        foreach ($_ENV as $key => $value) {
+            $data[$key] = $value;
+        }
+        unset($data['APP_KEY'], $data['JWT_SECRET']);
+
+        $export = var_export($data, true);
+        $content = "<?php return {$export};" . PHP_EOL;
+        $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'env.php';
+        return file_put_contents($cacheFile, $content) !== false;
+    }
+
+    public static function clearCache(string $basePath): void
+    {
+        $cacheFile = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php';
+        if (is_file($cacheFile)) {
+            @unlink($cacheFile);
+        }
+    }
+
+    public static function isLoaded(): bool
+    {
+        return self::$loaded;
     }
 
     public static function get(string $key, ?string $default = null): ?string

@@ -42,6 +42,7 @@ use Siro\Core\Commands\ServeCommand;
 use Siro\Core\Commands\StorageLinkCommand;
 use Siro\Core\Commands\DoctorCommand;
 use Siro\Core\Commands\DownCommand;
+use Siro\Core\Commands\EnvCacheCommand;
 use Siro\Core\Commands\FixCommand;
 use Siro\Core\Commands\ReplayCommand;
 use Siro\Core\Commands\TraceListCommand;
@@ -138,6 +139,7 @@ final class Console
             'key:generate'  => ['handler' => KeyGenerateCommand::class, 'desc' => 'Generate JWT secret', 'usage' => 'php siro key:generate'],
             'config:cache'  => ['handler' => ConfigCacheCommand::class, 'desc' => 'Cache config', 'usage' => 'php siro config:cache'],
             'config:clear'  => ['handler' => ConfigClearCommand::class, 'desc' => 'Clear cached config and routes', 'usage' => 'php siro config:clear'],
+            'env:cache'     => ['handler' => EnvCacheCommand::class, 'desc' => 'Cache env vars', 'usage' => 'php siro env:cache'],
             'optimize'      => ['handler' => OptimizeCommand::class, 'desc' => 'Optimize for production', 'usage' => 'php siro optimize'],
             'env:check'     => ['handler' => EnvCheckCommand::class, 'desc' => 'Check environment', 'usage' => 'php siro env:check'],
             'env:switch'    => ['handler' => EnvSwitchCommand::class, 'desc' => 'Switch environment', 'usage' => 'php siro env:switch <env>'],

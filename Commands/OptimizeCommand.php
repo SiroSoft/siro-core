@@ -25,6 +25,11 @@ final class OptimizeCommand
         $this->write('Optimizing SiroPHP...');
         $this->write('');
 
+        // Cache env
+        $this->write('  Caching env...');
+        \Siro\Core\Env::cache($this->basePath . DIRECTORY_SEPARATOR . '.env');
+        $this->write('  Env cached.');
+
         // Cache config
         $this->write('  Caching config...');
         $configCmd = new ConfigCacheCommand($this->basePath);
