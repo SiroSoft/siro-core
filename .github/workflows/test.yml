@@ -19,7 +19,7 @@ jobs:
 
   static-analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -34,12 +34,12 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
-      - name: PHPStan
-        run: php vendor/bin/phpstan analyse --level 6 --no-progress 2>&1 | head -50
+      - name: PHPStan Level max
+        run: php -d memory_limit=512M vendor/bin/phpstan analyse --level=max --no-progress
 
   phpunit:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -55,4 +55,4 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
       - name: PHPUnit tests
-        run: php vendor/bin/phpunit
+        run: php vendor/bin/phpunit --no-progress
