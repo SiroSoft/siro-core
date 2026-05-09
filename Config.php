@@ -19,6 +19,24 @@ final class Config
         self::$items = [];
         self::$cache = [];
 
+        $cacheFile = dirname(self::$configPath) . DIRECTORY_SEPARATOR
+            . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'config.php';
+
+        // Check cache first - avoid reading all config files if cache exists and is fresh
+        if (is_file($cacheFile)) {
+            $cacheModified = filemtime($cacheFile);
+            $configModified = self::getConfigDirMtime(self::$configPath);
+
+            if ($cacheModified !== false && $configModified !== false && $cacheModified >= $configModified) {
+                $cached = require $cacheFile;
+                if (is_array($cached)) {
+                    self::$items = $cached;
+                    self::$loaded = true;
+                    return;
+                }
+            }
+        }
+
         if (!is_dir(self::$configPath)) {
             self::$loaded = true;
             return;
@@ -38,8 +56,7 @@ final class Config
             }
         }
 
-        $cacheFile = self::$configPath . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR
-            . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'config.php';
+        // Merge cached config if exists
         if (is_file($cacheFile)) {
             $cached = require $cacheFile;
             if (is_array($cached)) {
@@ -48,6 +65,21 @@ final class Config
         }
 
         self::$loaded = true;
+    }
+
+    private static function getConfigDirMtime(string $configPath): int|false
+    {
+        $mtime = false;
+        $files = glob($configPath . DIRECTORY_SEPARATOR . '*.php');
+        if ($files !== false) {
+            foreach ($files as $file) {
+                $fileMtime = filemtime($file);
+                if ($fileMtime !== false && ($mtime === false || $fileMtime > $mtime)) {
+                    $mtime = $fileMtime;
+                }
+            }
+        }
+        return $mtime;
     }
 
     public static function get(string $key, mixed $default = null): mixed

@@ -13,13 +13,13 @@ final class OptimizeCommand
     }
 
     /**
- * Optimize the application for production.
- *
- * Runs config:cache and composer dump-autoload to improve
- * boot time and autoloading performance.
- *
- * @package Siro\Core\Commands
- */
+     * Optimize the application for production.
+     *
+     * Runs config:cache and composer dump-autoload to improve
+     * boot time and autoloading performance.
+     *
+     * @package Siro\Core\Commands
+     */
     public function run(array $args): int
     {
         $this->write('Optimizing SiroPHP...');
@@ -29,6 +29,10 @@ final class OptimizeCommand
         $this->write('  Caching config...');
         $configCmd = new ConfigCacheCommand($this->basePath);
         $configCmd->run([]);
+
+        // Cache routes
+        $this->write('  Caching routes...');
+        $this->cacheRoutes();
 
         // Dump autoloader
         $this->write('  Optimizing autoloader...');
@@ -45,5 +49,15 @@ final class OptimizeCommand
         $this->write('');
         $this->write('Optimization complete!');
         return 0;
+    }
+
+    private function cacheRoutes(): void
+    {
+        $cacheFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR
+            . 'framework' . DIRECTORY_SEPARATOR . 'routes.php';
+
+        $app = new \Siro\Core\App($this->basePath);
+        $app->router()->saveToCache($cacheFile);
+        $this->write('  Routes cached to: storage/framework/routes.php');
     }
 }

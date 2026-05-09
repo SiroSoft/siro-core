@@ -27,6 +27,7 @@ final class Router
     private string $groupPrefix = '';
     /** @var array<int, callable|string> */
     private array $groupMiddleware = [];
+    private bool $routesLoadedFromCache = false;
 
     /** @param array<int, callable|string> $middleware */
     public function get(string $path, callable|array|string $handler, array $middleware = []): Route
@@ -244,6 +245,41 @@ final class Router
         }
 
         return ['static' => $static, 'dynamic' => $dynamic];
+    }
+
+    public function loadFromCache(string $cacheFile): bool
+    {
+        if (!is_file($cacheFile)) {
+            return false;
+        }
+
+        $data = require $cacheFile;
+        if (!is_array($data) || !isset($data['static'], $data['dynamic'])) {
+            return false;
+        }
+
+        $this->staticRoutes = $data['static'];
+        $this->dynamicRoutes = $data['dynamic'];
+        $this->routesLoadedFromCache = true;
+        return true;
+    }
+
+    public function saveToCache(string $cacheFile): bool
+    {
+        $dir = dirname($cacheFile);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+
+        $data = $this->exportRoutes();
+        $content = '<?php return ' . var_export($data, true) . ';' . PHP_EOL;
+
+        return file_put_contents($cacheFile, $content) !== false;
+    }
+
+    public function isCached(): bool
+    {
+        return $this->routesLoadedFromCache;
     }
 
     private function handlerToString(callable|array|string $handler): string

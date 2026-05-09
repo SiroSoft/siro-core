@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core;
 
 use Siro\Core\Commands\ConfigCacheCommand;
+use Siro\Core\Commands\ConfigClearCommand;
 use Siro\Core\Commands\EnvCheckCommand;
 use Siro\Core\Commands\LogExportCommand;
 use Siro\Core\Commands\LogReplayCommand;
@@ -132,6 +133,7 @@ final class Console
 
             'key:generate'  => ['handler' => KeyGenerateCommand::class, 'desc' => 'Generate JWT secret', 'usage' => 'php siro key:generate'],
             'config:cache'  => ['handler' => ConfigCacheCommand::class, 'desc' => 'Cache config', 'usage' => 'php siro config:cache'],
+            'config:clear'  => ['handler' => ConfigClearCommand::class, 'desc' => 'Clear cached config and routes', 'usage' => 'php siro config:clear'],
             'optimize'      => ['handler' => OptimizeCommand::class, 'desc' => 'Optimize for production', 'usage' => 'php siro optimize'],
             'env:check'     => ['handler' => EnvCheckCommand::class, 'desc' => 'Check environment', 'usage' => 'php siro env:check'],
             'env:switch'    => ['handler' => EnvSwitchCommand::class, 'desc' => 'Switch environment', 'usage' => 'php siro env:switch <env>'],

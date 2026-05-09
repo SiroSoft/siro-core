@@ -69,7 +69,7 @@ final class App
             error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
         }
 
-        // Load config repository
+        // Load config repository (with cache support)
         Config::load($this->basePath . DIRECTORY_SEPARATOR . 'config');
 
         // Register core container bindings
@@ -78,7 +78,7 @@ final class App
         $container->instance(Router::class, $this->router);
         $container->singleton(Container::class, fn () => $container);
 
-        // Load database config from Config repository
+        // Load database config from Config repository (lazy - no connection yet)
         $dbConfig = Config::get('database', []);
         if ($dbConfig === []) {
             $dbConfig = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
@@ -201,6 +201,14 @@ final class App
     {
         $app = $this;
         $router = $this->router;
+
+        // Try to load cached routes first
+        $cacheFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR
+            . 'framework' . DIRECTORY_SEPARATOR . 'routes.php';
+        if (is_file($cacheFile) && $router->loadFromCache($cacheFile)) {
+            return;
+        }
+
         require $routesFile;
     }
 
