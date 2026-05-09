@@ -90,14 +90,17 @@ final class DeployCommand
     {
         $postDeploy = $env['post_deploy'] ?? [];
         $repoDir = $env['repo_dir'] ?? $this->basePath;
+        $safeRemote = escapeshellarg($remote);
+        $safeBranch = escapeshellarg($branch);
+        $safeRepoDir = escapeshellarg($repoDir);
 
         $this->write('  Step 1: Pushing to remote...');
-        passthru("cd \"{$repoDir}\" && git push {$remote} {$branch} 2>&1", $code1);
+        passthru("cd {$safeRepoDir} && git push {$safeRemote} {$safeBranch} 2>&1", $code1);
 
         $this->write('  Step 2: Running post-deploy commands...');
         foreach ($postDeploy as $cmd) {
             $this->write("    Running: {$cmd}");
-            passthru("cd \"{$repoDir}\" && {$cmd} 2>&1", $code2);
+            passthru("cd {$safeRepoDir} && {$cmd} 2>&1", $code2);
         }
 
         $this->write("  \033[32mDone\033[0m");
@@ -116,13 +119,18 @@ final class DeployCommand
             return;
         }
 
+        $safeHost = escapeshellarg($host);
+        $safeUser = escapeshellarg($user);
+        $safeTarget = escapeshellarg($target);
+        $safeBasePath = escapeshellarg($this->basePath);
+
         $excludeArgs = '';
         foreach ($exclude as $pattern) {
-            $excludeArgs .= " --exclude='{$pattern}'";
+            $excludeArgs .= " --exclude=" . escapeshellarg($pattern);
         }
 
         $this->write("  Syncing to {$user}@{$host}:{$target}...");
-        passthru("rsync -avz{$excludeArgs} {$this->basePath}/ {$user}@{$host}:{$target} 2>&1", $code);
+        passthru("rsync -avz{$excludeArgs} {$safeBasePath}/ {$safeUser}@{$safeHost}:{$safeTarget} 2>&1", $code);
     }
 
     /** @param array<string, mixed> $env */
@@ -135,7 +143,8 @@ final class DeployCommand
         }
 
         $this->write("  Running custom script: {$script}");
-        passthru("cd \"{$this->basePath}\" && {$script} 2>&1", $code);
+        $safeBasePath = escapeshellarg($this->basePath);
+        passthru("cd {$safeBasePath} && {$script} 2>&1", $code);
     }
 
     private function loadConfig(): array

@@ -32,20 +32,30 @@ final class TestRunCommand
         $verbose = false;
         $passthru = [];
 
-        // Parse known flags, forward rest to PHPUnit
+        $allowedPassthruFlags = ['--filter=', '--testsuite=', '--stop-on-failure', '--stop-on-error', '--group=', '--exclude-group=', '--colors=', '--testdox', '--prepend=', '--coverage-html=', '--coverage-text=', '--coverage-clover=', '--log-junit=', '--debug', '--no-configuration', '--bootstrap=', '-c', '--configuration='];
+
+        // Parse flags, forward only whitelisted ones to PHPUnit
         foreach ($args as $arg) {
-            if (str_starts_with($arg, '--filter=')) {
-                $hasFilter = true;
-                $passthru[] = $arg;
-            } elseif (str_starts_with($arg, '--testsuite=')) {
-                $hasSuite = true;
-                $passthru[] = $arg;
-            } elseif ($arg === '-v' || $arg === '--verbose') {
+            if ($arg === '-v' || $arg === '--verbose') {
                 $verbose = true;
-            } elseif ($arg === '--stop-on-failure' || $arg === '--stop-on-error') {
-                $passthru[] = $arg;
-            } else {
+                continue;
+            }
+            // Non-flag args (file paths, etc.) are allowed (escaped for safety)
+            if (!str_starts_with($arg, '-')) {
                 $passthru[] = escapeshellarg($arg);
+                continue;
+            }
+            $matched = false;
+            foreach ($allowedPassthruFlags as $flag) {
+                if ($arg === $flag || str_starts_with($arg, $flag)) {
+                    $passthru[] = $arg;
+                    $matched = true;
+                    break;
+                }
+            }
+            if ($matched) {
+                if (str_starts_with($arg, '--filter=')) $hasFilter = true;
+                if (str_starts_with($arg, '--testsuite=')) $hasSuite = true;
             }
         }
 
