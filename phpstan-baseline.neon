@@ -4587,7 +4587,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 5
+			count: 4
 			path: DB/QueryBuilder.php
 
 		-

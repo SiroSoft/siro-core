@@ -772,8 +772,7 @@ class QueryBuilder
     public function paginate(int $perPage, ?int $page = null): array
     {
         $perPage = max(1, $perPage);
-        $page = $page ?? (isset($_GET['page']) ? (int) $_GET['page'] : 1);
-        $page = max(1, $page);
+        $page = max(1, $page ?? 1);
         $offset = ($page - 1) * $perPage;
 
         [$countSql, $countBindings] = $this->buildCountQuery();
