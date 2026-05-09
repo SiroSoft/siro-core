@@ -13,8 +13,20 @@ parameters:
 			path: App.php
 
 		-
+			message: '#^Method Siro\\Core\\Auth\\AuthGuard\:\:getUserProvider\(\) should return Siro\\Core\\Auth\\UserProvider\|null but returns object\.$#'
+			identifier: return.type
+			count: 1
+			path: Auth/AuthGuard.php
+
+		-
 			message: '#^PHPDoc tag @var with type class\-string is not subtype of native type ''App\\\\Models\\\\User''\.$#'
 			identifier: varTag.nativeType
+			count: 1
+			path: Auth/AuthGuard.php
+
+		-
+			message: '#^Trying to invoke object but it might not be a callable\.$#'
+			identifier: callable.nonCallable
 			count: 1
 			path: Auth/AuthGuard.php
 
@@ -91,8 +103,32 @@ parameters:
 			path: Collection.php
 
 		-
+			message: '#^Method Siro\\Core\\Collection\:\:toJson\(\) should return string but returns string\|false\.$#'
+			identifier: return.type
+			count: 1
+			path: Collection.php
+
+		-
 			message: '#^Method Siro\\Core\\Collection\:\:whereIn\(\) has parameter \$values with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Parameter \#1 \.\.\.\$arg1 of function max expects non\-empty\-array, array\<int\|string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Collection.php
+
+		-
+			message: '#^Parameter \#1 \.\.\.\$arg1 of function min expects non\-empty\-array, array\<int\|string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Collection.php
+
+		-
+			message: '#^Parameter \#2 \$length of function array_chunk expects int\<1, max\>, int given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Collection.php
 
@@ -229,9 +265,21 @@ parameters:
 			path: Commands/ApiTestCommand.php
 
 		-
+			message: '#^Parameter \#1 \$line of method Siro\\Core\\Commands\\ApiTestCommand\:\:write\(\) expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
 			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\ApiTestCommand\:\:table\(\) expects array\<int, array\<string, string\>\>, list\<array\<int, mixed\>\> given\.$#'
 			identifier: argument.type
 			count: 2
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#3 \$query of class Siro\\Core\\Request constructor expects array\<string, mixed\>, array\<int\|string, array\<mixed\>\|string\> given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Commands/ApiTestCommand.php
 
 		-
@@ -331,6 +379,12 @@ parameters:
 			path: Commands/BenchmarkCommand.php
 
 		-
+			message: '#^Parameter \#1 \$line of method Siro\\Core\\Commands\\BenchmarkCommand\:\:write\(\) expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/BenchmarkCommand.php
+
+		-
 			message: '#^Property Siro\\Core\\Commands\\BenchmarkCommand\:\:\$basePath is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
@@ -341,6 +395,12 @@ parameters:
 			identifier: property.onlyWritten
 			count: 1
 			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Argument of an invalid type list\<string\>\|false supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: Commands/ConfigCacheCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\ConfigCacheCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -419,6 +479,12 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\DebugLastCommand\:\:prettyJson\(\) should return string but returns string\|false\.$#'
+			identifier: return.type
+			count: 1
+			path: Commands/DebugLastCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\DebugLastCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -595,6 +661,12 @@ parameters:
 			path: Commands/FixCommand.php
 
 		-
+			message: '#^Parameter \#2 \$string of function explode expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
 			message: '#^Property Siro\\Core\\Commands\\FixCommand\:\:\$lastStatus is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
@@ -661,6 +733,12 @@ parameters:
 			path: Commands/LiveCommand.php
 
 		-
+			message: '#^Parameter \#1 \$handle of function pclose expects resource, resource\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
 			message: '#^While loop condition is always true\.$#'
 			identifier: while.alwaysTrue
 			count: 1
@@ -709,6 +787,36 @@ parameters:
 			path: Commands/LogExportCommand.php
 
 		-
+			message: '#^Parameter \#1 \$line of method Siro\\Core\\Commands\\LogExportCommand\:\:write\(\) expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Parameter \#1 \$stream of function fclose expects resource, resource\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Parameter \#1 \$stream of function fputcsv expects resource, resource\|false given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Parameter \#1 \$stream of function rewind expects resource, resource\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Parameter \#1 \$stream of function stream_get_contents expects resource, resource\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:executeReplay\(\) has parameter \$data with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -745,6 +853,12 @@ parameters:
 			path: Commands/LogReplayCommand.php
 
 		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:prettyPrint\(\) should return string but returns string\|false\.$#'
+			identifier: return.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -760,6 +874,18 @@ parameters:
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
 			identifier: argument.type
 			count: 2
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#1 \$json of method Siro\\Core\\Commands\\LogReplayCommand\:\:prettyPrint\(\) expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#2 \$options of function curl_setopt_array expects array\{10036\: non\-empty\-string\|null, 19913\: bool, 13\: int, 10023\: array\<int, string\>, 10015\: array\|string\}, array\{10036\: string, 19913\: true, 13\: 10, 10023\: list\<non\-falsy\-string\>, 10015\: string\} given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Commands/LogReplayCommand.php
 
 		-
@@ -790,6 +916,12 @@ parameters:
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
 			identifier: argument.type
 			count: 2
+			path: Commands/LogTailCommand.php
+
+		-
+			message: '#^Parameter \#2 \$offset of function fseek expects int, int\<0, max\>\|false given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Commands/LogTailCommand.php
 
 		-
@@ -842,6 +974,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#2 \$string of function explode expects string, string\|false given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/LogTraceCommand.php
@@ -1363,6 +1501,18 @@ parameters:
 			path: Commands/MakeTestCommand.php
 
 		-
+			message: '#^Cannot call method fetch\(\) on PDOStatement\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/MigrateCommand.php
+
+		-
+			message: '#^Cannot call method fetchAll\(\) on PDOStatement\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/MigrateCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\MigrateCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1423,6 +1573,12 @@ parameters:
 			path: Commands/MigrateRollbackCommand.php
 
 		-
+			message: '#^Cannot call method fetchAll\(\) on PDOStatement\|false\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/MigrateStatusCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\MigrateStatusCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1468,6 +1624,12 @@ parameters:
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
 			identifier: argument.type
 			count: 2
+			path: Commands/NewCommand.php
+
+		-
+			message: '#^Parameter \#3 \$subject of function str_replace expects array\<string\>\|string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Commands/NewCommand.php
 
 		-
@@ -1849,6 +2011,12 @@ parameters:
 			path: Commands/UpCommand.php
 
 		-
+			message: '#^Call to an undefined method object\:\:run\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Console.php
+
+		-
 			message: '#^Constant Siro\\Core\\Console\:\:CORE_FLOW is unused\.$#'
 			identifier: classConstant.unused
 			count: 1
@@ -1885,6 +2053,30 @@ parameters:
 			path: Console.php
 
 		-
+			message: '#^Parameter \#1 \$objectOrClass of class ReflectionClass constructor expects class\-string\<T of object\>\|T of object, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Container.php
+
+		-
+			message: '#^Property Siro\\Core\\Container\:\:\$bindings \(array\<string, \(callable\(\)\: mixed\)\|class\-string\>\) does not accept non\-empty\-array\<string, \(callable\(\)\: mixed\)\|string\>\.$#'
+			identifier: assign.propertyType
+			count: 2
+			path: Container.php
+
+		-
+			message: '#^Method Siro\\Core\\Controller\:\:error\(\) has parameter \$errors with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Controller.php
+
+		-
+			message: '#^Parameter \#2 \$meta of static method Siro\\Core\\Response\:\:paginated\(\) expects array\{page\: int, per_page\: int, total\: int, last_page\: int\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller.php
+
+		-
 			message: '#^Method Siro\\Core\\DB\\Blueprint\:\:addColumn\(\) has parameter \$params with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1907,6 +2099,12 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: DB/Column.php
+
+		-
+			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: DB/EagerLoader.php
 
 		-
 			message: '#^Method Siro\\Core\\DB\\ModelQueryBuilder\:\:__call\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
@@ -2005,16 +2203,46 @@ parameters:
 			path: DB/QueryBuilder.php
 
 		-
+			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: DB/Relations/BelongsTo.php
+
+		-
 			message: '#^Method Siro\\Core\\DB\\Relations\\BelongsTo\:\:__call\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: DB/Relations/BelongsTo.php
 
 		-
+			message: '#^Call to an undefined method object\:\:getTable\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: DB/Relations/BelongsToMany.php
+
+		-
+			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: DB/Relations/BelongsToMany.php
+
+		-
+			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: DB/Relations/HasMany.php
+
+		-
 			message: '#^Method Siro\\Core\\DB\\Relations\\HasMany\:\:__call\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: DB/Relations/HasMany.php
+
+		-
+			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: DB/Relations/HasOne.php
 
 		-
 			message: '#^Trait Siro\\Core\\DB\\SoftDeletes is used zero times and is not analysed\.$#'
@@ -2105,6 +2333,12 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Database.php
+
+		-
+			message: '#^Parameter \#1 \$length of function random_bytes expects int\<1, max\>, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Encrypter.php
 
 		-
 			message: '#^Method Siro\\Core\\FormRequest\:\:all\(\) return type has no value type specified in iterable type array\.$#'
@@ -2263,6 +2497,18 @@ parameters:
 			path: Http.php
 
 		-
+			message: '#^Parameter \#2 \$options of function curl_setopt_array expects array\{10002\: non\-empty\-string, 19913\: bool, 13\: int, 78\: int, 52\: bool, 68\: int, 42\: bool, 64\?\: bool, \.\.\.\}, array\{10002\: string, 19913\: true, 13\: int, 78\: 10, 52\: true, 68\: 5, 42\: true, 64\: false, \.\.\.\}\|array\{10002\: string, 19913\: true, 13\: int, 78\: 10, 52\: true, 68\: 5, 42\: true\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Parameter \#3 \$value of function curl_setopt expects non\-empty\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Http.php
+
+		-
 			message: '#^Property Siro\\Core\\Http\:\:\$defaultHeaders type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2295,6 +2541,12 @@ parameters:
 		-
 			message: '#^Method Siro\\Core\\Logger\:\:sanitizeHeaders\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Method Siro\\Core\\Logger\:\:sanitizeJsonBody\(\) should return string but returns string\|false\.$#'
+			identifier: return.type
 			count: 1
 			path: Logger.php
 
@@ -2345,6 +2597,18 @@ parameters:
 			identifier: missingType.parameter
 			count: 1
 			path: Mail.php
+
+		-
+			message: '#^Call to an undefined method object\:\:find\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getTable\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Model.php
 
 		-
 			message: '#^Call to method load\(\) on an unknown class Siro\\Core\\EagerLoader\.$#'
@@ -2425,10 +2689,22 @@ parameters:
 			path: Model.php
 
 		-
+			message: '#^Parameter \#2 \$columns of method Siro\\Core\\DB\\ModelQueryBuilder\:\:eagerLoad\(\) expects array\<int, string\>, array\<int\|string, array\<int, string\>\|string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
 			message: '#^Unsafe usage of new static\(\)\.$#'
 			identifier: new.static
 			count: 6
 			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Queue\:\:calculateBackoff\(\) should return int but returns float\|int\<min, 300\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Queue.php
 
 		-
 			message: '#^Static property Siro\\Core\\Queue\:\:\$pending is never read, only written\.$#'
@@ -2617,6 +2893,18 @@ parameters:
 			path: Router.php
 
 		-
+			message: '#^Parameter \#1 \$objectOrClass of class ReflectionClass constructor expects class\-string\<T of object\>\|T of object, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Parameter \#2 \$string of function explode expects string, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Router.php
+
+		-
 			message: '#^Property Siro\\Core\\Router\:\:\$dynamicRoutes type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2665,6 +2953,18 @@ parameters:
 			path: Storage.php
 
 		-
+			message: '#^Parameter \#1 \$array of function array_slice expects array, list\<string\>\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Str.php
+
+		-
+			message: '#^Parameter \#1 \$value of function count expects array\|Countable, list\<string\>\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Str.php
+
+		-
 			message: '#^Cannot cast array\<string, mixed\> to string\.$#'
 			identifier: cast.string
 			count: 2
@@ -2689,8 +2989,32 @@ parameters:
 			path: URL.php
 
 		-
+			message: '#^Parameter \#1 \$string of function base64_encode expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: URL.php
+
+		-
 			message: '#^Method Siro\\Core\\UploadedFile\:\:__construct\(\) has parameter \$file with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: UploadedFile.php
+
+		-
+			message: '#^Method Siro\\Core\\UploadedFile\:\:hash\(\) should return string\|null but returns string\|false\.$#'
+			identifier: return.type
+			count: 1
+			path: UploadedFile.php
+
+		-
+			message: '#^Parameter \#1 \$finfo of function finfo_close expects finfo, finfo\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: UploadedFile.php
+
+		-
+			message: '#^Parameter \#1 \$finfo of function finfo_file expects finfo, finfo\|false given\.$#'
+			identifier: argument.type
 			count: 1
 			path: UploadedFile.php
 
@@ -2717,4 +3041,10 @@ parameters:
 			identifier: nullCoalesce.offset
 			count: 3
 			path: Validator.php
+
+		-
+			message: '#^Argument of an invalid type list\<string\>\|false supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 2
+			path: preload.php
 

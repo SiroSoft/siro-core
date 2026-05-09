@@ -9,7 +9,7 @@ use Siro\Core\Request;
 use Siro\Core\Response;
 use Throwable;
 
-final class ThrottleMiddleware
+final class ThrottleMiddleware implements MiddlewareInterface
 {
     private const FALLBACK_DISABLED = 'disabled';
     private const FALLBACK_FAIL_CLOSED = 'fail_closed';

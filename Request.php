@@ -85,7 +85,7 @@ final class Request
 
         // For non-multipart requests, read and validate actual body size
         if (!$isMultipart && in_array($method, ['POST', 'PUT', 'PATCH'], true)) {
-            $body = file_get_contents('php://input');
+            $body = (string) file_get_contents('php://input');
             $actualSize = strlen($body);
 
             if ($actualSize > $maxBodySize) {
@@ -96,7 +96,7 @@ final class Request
             }
 
             // Cache body for reuse (JsonMiddleware etc.)
-            self::$rawBodyCache = $body;
+            self::$rawBodyCache = $body !== '' ? $body : null;
         }
 
         $jsonBody = [];

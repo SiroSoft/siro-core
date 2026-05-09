@@ -8,11 +8,11 @@ use Siro\Core\Request;
 use Siro\Core\Response;
 use Siro\Core\Session;
 
-final class CsrfMiddleware
+final class CsrfMiddleware implements MiddlewareInterface
 {
     private const TOKEN_LENGTH = 32;
 
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): mixed
     {
         if (in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true)) {
             return $next($request);

@@ -6,6 +6,7 @@ namespace Siro\Core;
 
 use Closure;
 use RuntimeException;
+use Siro\Core\Middleware\MiddlewareInterface;
 
 /**
  * HTTP request router and middleware pipeline.
@@ -432,6 +433,10 @@ final class Router
                 throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
             }
 
+            if ($controller instanceof Controller) {
+                $controller->setRequest($request);
+            }
+
             try {
                 return $this->normalizeHandlerResult($controller->{$method}($request));
             } catch (\ArgumentCountError) {
@@ -451,6 +456,10 @@ final class Router
         $controller = $this->resolveController($class);
         if (!method_exists($controller, $method)) {
             throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
+        }
+
+        if ($controller instanceof Controller) {
+            $controller->setRequest($request);
         }
 
         try {
@@ -675,8 +684,8 @@ final class Router
         }
 
         $instance = new $middlewareClass();
-        if (!method_exists($instance, 'handle')) {
-            throw new RuntimeException(sprintf('Middleware %s must have handle() method.', $middlewareClass));
+        if (!$instance instanceof MiddlewareInterface) {
+            throw new RuntimeException(sprintf('Middleware %s must implement MiddlewareInterface.', $middlewareClass));
         }
 
         if ($params === []) {

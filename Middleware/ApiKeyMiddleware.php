@@ -24,7 +24,7 @@ use Siro\Core\Response;
  * Client sends:
  *   curl -H "X-Api-Key: abc123..." /api/external/data
  */
-final class ApiKeyMiddleware
+final class ApiKeyMiddleware implements MiddlewareInterface
 {
     public function handle(Request $request, callable $next, string $requiredScope = ''): mixed
     {

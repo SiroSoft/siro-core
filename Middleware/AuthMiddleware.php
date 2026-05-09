@@ -10,7 +10,7 @@ use Siro\Core\Request;
 use Siro\Core\Response;
 use Throwable;
 
-final class AuthMiddleware
+final class AuthMiddleware implements MiddlewareInterface
 {
     public function handle(Request $request, callable $next, string ...$roles): mixed
     {

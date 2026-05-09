@@ -56,14 +56,6 @@ final class Config
             }
         }
 
-        // Merge cached config if exists
-        if (is_file($cacheFile)) {
-            $cached = require $cacheFile;
-            if (is_array($cached)) {
-                self::$items = array_merge(self::$items, $cached);
-            }
-        }
-
         self::$loaded = true;
     }
 

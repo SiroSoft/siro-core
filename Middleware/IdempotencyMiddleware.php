@@ -27,7 +27,7 @@ use Siro\Core\ValidationException;
  *     -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
  *     -d '{"product_id": 1, "quantity": 2}'
  */
-final class IdempotencyMiddleware
+final class IdempotencyMiddleware implements MiddlewareInterface
 {
     /** Default TTL: 24 hours */
     private const DEFAULT_TTL = 86400;

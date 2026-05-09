@@ -8,7 +8,7 @@ use Siro\Core\Env;
 use Siro\Core\Request;
 use Siro\Core\Response;
 
-final class CorsMiddleware
+final class CorsMiddleware implements MiddlewareInterface
 {
     public function handle(Request $request, callable $next): mixed
     {

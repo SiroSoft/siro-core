@@ -7,7 +7,7 @@ namespace Siro\Core\Middleware;
 use Siro\Core\Request;
 use Siro\Core\Response;
 
-final class JsonMiddleware
+final class JsonMiddleware implements MiddlewareInterface
 {
     public function handle(Request $request, callable $next): mixed
     {
