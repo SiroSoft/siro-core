@@ -47,9 +47,11 @@ final class Cache
         self::$requestHadCacheHit = false;
     }
 
-    public static function requestStatus(): string
+    public static function requestStatus(): array
     {
-        return self::$requestHadCacheHit ? 'HIT' : 'MISS';
+        return [
+            'status' => self::$requestHadCacheHit ? 'HIT' : 'MISS',
+        ];
     }
 
     public static function get(string $key): mixed

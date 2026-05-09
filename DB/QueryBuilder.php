@@ -111,7 +111,7 @@ class QueryBuilder
     }
 
     /**
-     * @param array<int, int|string> $bindings
+     * @param array<int|string, int|string> $bindings
      */
     public function whereRaw(string $sql, array $bindings = [], string $boolean = 'AND'): self
     {
@@ -196,18 +196,20 @@ class QueryBuilder
         return $this;
     }
 
-    private static ?string $driverName = null;
+    /** @var array<string, string> */
+    private static array $driverNames = [];
 
-    private static function detectDriver(?string $connectionName = null): string
+    private function detectDriver(?string $connectionName = null): string
     {
-        if (self::$driverName === null) {
+        $key = $connectionName ?? 'default';
+        if (!isset(self::$driverNames[$key])) {
             try {
-                self::$driverName = \Siro\Core\Database::connection($connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
+                self::$driverNames[$key] = \Siro\Core\Database::connection($connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
             } catch (\Throwable) {
-                self::$driverName = 'mysql';
+                self::$driverNames[$key] = 'mysql';
             }
         }
-        return self::$driverName;
+        return self::$driverNames[$key];
     }
 
     private function quoteIdentifier(string $identifier): string
@@ -233,7 +235,7 @@ class QueryBuilder
             return $identifier;
         }
 
-        $driver = self::detectDriver($this->connectionName);
+        $driver = $this->detectDriver($this->connectionName);
         $char = match ($driver) {
             'pgsql', 'postgres', 'postgresql' => '"',
             default => '`',
@@ -513,7 +515,7 @@ class QueryBuilder
         }
 
         $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
-        $driver = self::detectDriver($this->connectionName);
+        $driver = $this->detectDriver($this->connectionName);
         $returning = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? ' RETURNING id' : '';
         $sql = sprintf(
             'INSERT INTO %s (%s) VALUES (%s)%s',
@@ -719,13 +721,13 @@ class QueryBuilder
 
             if ($order === 'ASC') {
                 $clone = $clone->whereRaw(
-                    "(created_at > ? OR (created_at = ? AND id > ?))",
-                    [$cursorCreatedAt, $cursorCreatedAt, $cursorId]
+                    "(created_at > :cursor_created_at_1 OR (created_at = :cursor_created_at_2 AND id > :cursor_id_3))",
+                    ['cursor_created_at_1' => $cursorCreatedAt, 'cursor_created_at_2' => $cursorCreatedAt, 'cursor_id_3' => $cursorId]
                 );
             } else {
                 $clone = $clone->whereRaw(
-                    "(created_at < ? OR (created_at = ? AND id < ?))",
-                    [$cursorCreatedAt, $cursorCreatedAt, $cursorId]
+                    "(created_at < :cursor_created_at_1 OR (created_at = :cursor_created_at_2 AND id < :cursor_id_3))",
+                    ['cursor_created_at_1' => $cursorCreatedAt, 'cursor_created_at_2' => $cursorCreatedAt, 'cursor_id_3' => $cursorId]
                 );
             }
         }
@@ -1023,8 +1025,12 @@ class QueryBuilder
             if (($where['type'] ?? 'basic') === 'raw') {
                 $parts[] = $prefix . $where['sql'];
                 if (isset($where['bindings']) && is_array($where['bindings'])) {
-                    foreach ($where['bindings'] as $bv) {
-                        $bindings[] = $bv;
+                    foreach ($where['bindings'] as $bk => $bv) {
+                        if (is_string($bk)) {
+                            $bindings[$bk] = $bv;
+                        } else {
+                            $bindings[] = $bv;
+                        }
                     }
                 }
                 continue;

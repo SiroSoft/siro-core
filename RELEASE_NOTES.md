@@ -1,10 +1,10 @@
 # Release Notes
 
-## v0.9.0 — Pre-Stable Release (2026-05-09)
+## v0.20.0 — Production-Ready Release (2026-05-09)
 
-### 🚀 SiroPHP v0.9 - Approaching Stability
+### 🚀 SiroPHP v0.20.0 - Production Ready with Advanced Features
 
-After 9 months of development and 872 tests, SiroPHP reaches v0.9 - approaching stable release.
+After extensive development and comprehensive testing, SiroPHP reaches v0.20.0 with production-ready stability.
 
 ### Philosophy
 
@@ -15,7 +15,7 @@ SiroPHP is built on five principles:
 4. **Debug Fast** — CLI-first debugging for API developers
 5. **Test Fast** — Built-in testing with replay capabilities
 
-### What's Ready in v0.9
+### What's Production-Ready in v0.20.0
 
 | Component | Status | Notes |
 |-----------|--------|-------|
@@ -27,7 +27,7 @@ SiroPHP is built on five principles:
 | CLI (59 commands) | ✅ Stable | Scaffolding, debugging, deployment |
 | Testing | ✅ Stable | 872 tests, HTTP assertions, DB assertions |
 
-### New in v0.9
+### New in v0.20.0
 
 #### Model Relations
 ```php
@@ -78,9 +78,9 @@ User::insertMany([
 $users = User::cursorPaginate(20, after: ['id' => 100, 'created_at' => '2026-01-01']);
 ```
 
-### Breaking Changes (v0.x → v0.9)
+### Breaking Changes (v0.x → v0.20.0)
 
-**None.** v0.9 maintains full backward compatibility with v0.16.x.
+**None.** v0.20.0 maintains full backward compatibility with v0.16.x.
 
 ### Deprecations
 
@@ -130,7 +130,7 @@ Benchmark comparing with other micro-frameworks available in `benchmark/` direct
 
 ### Migrating from v0.x
 
-All v0.16.x code works unchanged in v0.9. See [MIGRATION.md](MIGRATION.md) for detailed guide.
+All v0.16.x code works unchanged in v0.20.0. See [MIGRATION.md](MIGRATION.md) for detailed guide.
 
 ### Support
 

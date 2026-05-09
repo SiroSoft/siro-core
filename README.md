@@ -216,7 +216,7 @@ $app = new App();
 Route::get('/', function() {
     return Response::json([
         'message' => 'Welcome to Siro API',
-        'version' => '0.8.2'
+        'version' => '0.20.0'
     ]);
 });
 

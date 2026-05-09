@@ -31,6 +31,8 @@ final class Request
     private array $uploadedFiles = [];
     private readonly string $clientIp;
 
+    private static ?string $rawBodyCache = null;
+
     /**
      * @param array<string, mixed> $query
      * @param array<string, string> $headers
@@ -93,8 +95,8 @@ final class Request
                 exit(1);
             }
 
-            // Store body for later parsing
-            $_SIRO_REQUEST_BODY = $body;
+            // Cache body for reuse (JsonMiddleware etc.)
+            self::$rawBodyCache = $body;
         }
 
         $jsonBody = [];
@@ -106,8 +108,8 @@ final class Request
             // For form submissions, use $_POST
             $jsonBody = $_POST;
         } else {
-            // For JSON API requests, use pre-read body or read from php://input
-            $rawBody = $_SIRO_REQUEST_BODY ?? file_get_contents('php://input') ?: '';
+            // For JSON API requests, use cached body or read from php://input
+            $rawBody = self::$rawBodyCache ?? file_get_contents('php://input') ?: '';
 
             if ($rawBody !== '') {
                 $decoded = json_decode($rawBody, true);

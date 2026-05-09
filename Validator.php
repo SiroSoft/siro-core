@@ -101,10 +101,10 @@ final class Validator
             if ($value instanceof UploadedFile && $value->isValid()) {
                 $sizeInKb = (int) ceil($value->getSize() / 1024);
                 return $sizeInKb < $min ? ['validation.min', ['min' => (string) $min]] : null;
-            } elseif (is_string($value)) {
-                return strlen(trim($value)) < $min ? ['validation.min', ['min' => (string) $min]] : null;
             } elseif (is_numeric($value)) {
                 return (float) $value < $min ? ['validation.min', ['min' => (string) $min]] : null;
+            } elseif (is_string($value)) {
+                return strlen(trim($value)) < $min ? ['validation.min', ['min' => (string) $min]] : null;
             }
             return null;
         });

@@ -76,7 +76,7 @@ final class {$className}
      */
     public function handle(array \$data = []): void
     {
-        // TODO: implement job logic
+        // Implement your job logic here
         // Example: Mail::to(\$data['email'])->subject('Welcome')->html(\$body)->send();
     }
 }

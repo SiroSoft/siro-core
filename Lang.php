@@ -110,6 +110,23 @@ final class Lang
     }
 
     /**
+     * Count translations in a file.
+     *
+     * @param string $file File name without extension (e.g. 'validation')
+     * @param string|null $locale Locale to count from (null = current)
+     * @return int Number of translation entries
+     */
+    public static function count(string $file, ?string $locale = null): int
+    {
+        $locale = $locale ?? self::$locale;
+        $lines = self::load($file, $locale);
+        if ($lines === null) {
+            $lines = self::load($file, self::$fallbackLocale);
+        }
+        return $lines !== null ? count($lines) : 0;
+    }
+
+    /**
      * Check if a translation key exists.
      */
     public static function has(string $key, ?string $locale = null): bool

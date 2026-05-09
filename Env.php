@@ -40,6 +40,31 @@ final class Env
                     putenv("{$key}={$value}");
                 }
                 self::$loaded = true;
+                // Cache excludes secrets (JWT_SECRET, APP_KEY), load them from .env
+                $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                if ($lines !== false) {
+                    foreach ($lines as $line) {
+                        $line = trim($line);
+                        if ($line === '' || str_starts_with($line, '#')) continue;
+                        $pos = strpos($line, '=');
+                        if ($pos === false) continue;
+                        $key = trim(substr($line, 0, $pos));
+                        $value = trim(substr($line, $pos + 1));
+                        if ($key === 'JWT_SECRET' || $key === 'APP_KEY') {
+                            if (!array_key_exists($key, $_ENV)) {
+                                if (
+                                    (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                                    (str_starts_with($value, "'") && str_ends_with($value, "'"))
+                                ) {
+                                    $value = substr($value, 1, -1);
+                                }
+                                $_ENV[$key] = $value;
+                                $_SERVER[$key] = $value;
+                                putenv(sprintf('%s=%s', $key, $value));
+                            }
+                        }
+                    }
+                }
                 return;
             }
         }

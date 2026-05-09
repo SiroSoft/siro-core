@@ -761,10 +761,18 @@ final class Router
             return Response::error('Route not found', 404);
         }
 
+        $allowedOrigins = (string) \Siro\Core\Env::get('CORS_ALLOWED_ORIGINS', '*');
+        $allowedMethods = (string) \Siro\Core\Env::get('CORS_ALLOWED_METHODS', 'GET,POST,PUT,DELETE,OPTIONS');
+        $allowedHeaders = (string) \Siro\Core\Env::get('CORS_ALLOWED_HEADERS', 'Content-Type,Authorization,X-Requested-With');
+        $parts = explode(',', $allowedOrigins);
+        $origin = $allowedOrigins === '*' ? '*' : $parts[0];
+        $allowCredentials = $allowedOrigins !== '*' ? 'true' : 'false';
+
         return Response::noContent()
-            ->header('Access-Control-Allow-Origin', '*')
-            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+            ->header('Access-Control-Allow-Origin', $origin)
+            ->header('Access-Control-Allow-Methods', $allowedMethods)
+            ->header('Access-Control-Allow-Headers', $allowedHeaders)
+            ->header('Access-Control-Allow-Credentials', $allowCredentials)
             ->header('Access-Control-Max-Age', '86400');
     }
 }

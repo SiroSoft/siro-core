@@ -122,6 +122,9 @@ final class Response
         $response = new self([], 200);
         $response->isFileResponse = true;
         $response->filePath = $filePath;
+        if ($filename !== null) {
+            $filename = preg_replace('/\R/', '', $filename);
+        }
         $disposition = $filename ? 'attachment; filename="' . $filename . '"' : 'attachment';
         $response->extraHeaders['Content-Disposition'] = $disposition;
         $response->extraHeaders['Content-Type'] = mime_content_type($filePath) ?: 'application/octet-stream';

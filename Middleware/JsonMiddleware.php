@@ -19,11 +19,13 @@ final class JsonMiddleware
                 return Response::error('Content-Type must be application/json', 415);
             }
 
-            $rawBody = file_get_contents('php://input') ?: '';
-            if ($rawBody !== '') {
-                json_decode($rawBody);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    return Response::error('Invalid JSON format: ' . json_last_error_msg(), 400);
+            // Read body from the already-parsed Request object
+            // php://input cannot be read twice, Request caches it internally
+            $body = $request->body();
+            if ($body !== []) {
+                $rawBody = json_encode($body);
+                if ($rawBody === false || json_decode($rawBody, true) === null) {
+                    return Response::error('Invalid JSON format', 400);
                 }
             }
         }

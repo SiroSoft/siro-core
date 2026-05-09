@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.20.0 (2026-05-09) — Production-Ready Release
+
+### 🚀 New Features
+- **BenchmarkCommand** - Performance benchmarking CLI tool with iterations and JSON output
+- **EnvCacheCommand** - Environment variable caching for production optimization
+- **SecurityTest Suite** - Comprehensive security testing (30+ tests)
+- **HTML Homepage** - Browser-friendly landing page at root path with content negotiation
+
+### 🔧 Improvements
+- Version synchronization across all files (composer.json, Console.php, README, RELEASE_NOTES)
+- Enhanced root route with better browser/API client detection
+- Added .htaccess for Apache web server support
+- Improved documentation with version consistency
+
+### 📊 Testing
+- Security test suite added (30+ security scenarios)
+- Benchmark command with configurable iterations
+- All existing tests maintained (604+ unit tests)
+
+### 🐛 Bug Fixes
+- Fixed version inconsistencies in RELEASE_NOTES.md
+- Fixed missing strict_types declarations in application controllers
+- Fixed API response version references
+
 ## v0.16.1 (2026-05-08)
 
 ### 🧪 Testing

@@ -21,6 +21,7 @@ final class Event
 {
     /** @var array<string, array<int, array{callback: callable, once: bool}>> */
     private static array $listeners = [];
+    private static string $currentEvent = '';
 
     /**
      * Register an event listener.
@@ -74,6 +75,7 @@ final class Event
      */
     public static function emit(string $event, mixed $payload = null): bool
     {
+        self::$currentEvent = $event;
         $matched = self::getListeners($event);
 
         foreach ($matched as $index => $listener) {
@@ -122,6 +124,14 @@ final class Event
     public static function hasListeners(string $event): bool
     {
         return self::getListeners($event) !== [];
+    }
+
+    /**
+     * Get the current event name being emitted.
+     */
+    public static function currentEvent(): string
+    {
+        return self::$currentEvent;
     }
 
     /**
