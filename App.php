@@ -55,7 +55,9 @@ final class App
         $debug = Env::bool('APP_DEBUG', false);
         $appEnv = strtolower((string) Env::get('APP_ENV', 'production'));
         if ($appEnv === 'production' && $debug) {
-            throw new RuntimeException('APP_DEBUG must be false in production environment.');
+            // Log critical warning but don't throw exception to avoid breaking existing deployments
+            Logger::error('CRITICAL SECURITY WARNING: APP_DEBUG is enabled in production environment! This may expose sensitive information.');
+            Logger::error('Please set APP_DEBUG=false in your .env file immediately.');
         }
 
         $this->debug = $debug && $appEnv !== 'production';
