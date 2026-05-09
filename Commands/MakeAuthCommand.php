@@ -503,7 +503,7 @@ $app->router->get('/', function (): array {
         'message' => 'Siro API Framework is running',
         'data' => [
             'name' => 'Siro API Framework',
-            'version' => '0.20.0',
+            'version' => '0.21.0',
             'php' => PHP_VERSION,
         ],
         'meta' => [],
