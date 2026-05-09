@@ -7,10 +7,9 @@
 [![Tests](https://github.com/SiroSoft/siro-core/actions/workflows/test.yml/badge.svg)](https://github.com/SiroSoft/siro-core/actions/workflows/test.yml)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20max-brightgreen.svg)](https://phpstan.org)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
-[![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Tests](https://img.shields.io/badge/tests-660%2B%20passing-brightgreen.svg)](tests/)
-[![PHPStan](https://img.shields.io/badge/phpstan-level%206-brightgreen.svg)](phpstan.neon)
+[![PHPStan](https://img.shields.io/badge/phpstan-level%20max-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
 [![Security](https://img.shields.io/badge/security-audited-brightgreen)](https://github.com/SiroSoft/siro-core)
 
