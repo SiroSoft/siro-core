@@ -81,15 +81,16 @@ final class BenchmarkCommand
     private function benchmarkContainer(): array
     {
         $start = hrtime(true);
-        $container = new \Siro\Core\Container();
-
+        $testKeys = [];
         for ($i = 0; $i < $this->iterations; $i++) {
-            $container->singleton('test.' . $i, fn() => new \stdClass());
-            $container->make('test.' . ($i % 100));
+            $key = 'test.key.' . ($i % 50);
+            \Siro\Core\Container::getInstance()->singleton($key, fn() => new \stdClass());
+            \Siro\Core\Container::getInstance()->make($key);
+            $testKeys[] = $key;
         }
         $end = hrtime(true);
 
-        $nsPerOp = ($end - $start) / $this->iterations;
+        $nsPerOp = ($end - $start) / ($this->iterations * 2);
         return $this->formatResult('Container (DI)', $nsPerOp);
     }
 
@@ -128,12 +129,12 @@ final class BenchmarkCommand
 
     private function benchmarkHash(): array
     {
-        $hash = new \Siro\Core\Hash();
+        $password = 'test_password_123';
 
         $start = hrtime(true);
         for ($i = 0; $i < $this->iterations; $i++) {
-            $hash->make('password123');
-            $hash->verify('password123', $hash->make('password123'));
+            $hash = \Siro\Core\Hash::make($password);
+            \Siro\Core\Hash::check($password, $hash);
         }
         $end = hrtime(true);
 
@@ -143,14 +144,12 @@ final class BenchmarkCommand
 
     private function benchmarkValidation(): array
     {
-        $validator = new \Siro\Core\Validator();
+        $input = ['email' => 'test@example.com', 'password' => 'secret123'];
+        $rules = ['email' => 'required|email', 'password' => 'required|min:6'];
 
         $start = hrtime(true);
         for ($i = 0; $i < $this->iterations; $i++) {
-            $validator->validate(
-                ['email' => 'test@example.com', 'password' => 'secret123'],
-                ['email' => 'required|email', 'password' => 'required|min:6']
-            );
+            \Siro\Core\Validator::make($input, $rules);
         }
         $end = hrtime(true);
 
@@ -176,15 +175,17 @@ final class BenchmarkCommand
     private function benchmarkRouter(): array
     {
         $router = new \Siro\Core\Router();
+        $iterations = min($this->iterations, 50);
 
         $start = hrtime(true);
-        for ($i = 0; $i < $this->iterations; $i++) {
-            $router->get('/users/{id}', fn() => 'ok');
-            $router->match(['GET', 'POST'], '/api/test', fn() => 'ok');
+        for ($i = 0; $i < $iterations; $i++) {
+            $router->get('/users/' . $i, fn() => 'ok');
+            $router->post('/api/test', fn() => 'ok');
+            $router->get('/products/' . $i, fn() => 'ok');
         }
         $end = hrtime(true);
 
-        $nsPerOp = ($end - $start) / ($this->iterations * 2);
+        $nsPerOp = ($end - $start) / ($iterations * 3);
         return $this->formatResult('Router', $nsPerOp);
     }
 
