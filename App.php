@@ -81,9 +81,9 @@ final class App
         $container->singleton(Container::class, fn () => $container);
 
         // Load database config from Config repository (lazy - no connection yet)
-        $dbConfig = Config::get('database', []);
+        $dbConfig = (array) Config::get('database', []);
         if ($dbConfig === []) {
-            $dbConfig = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+            $dbConfig = (array) require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
         }
         Database::configure($dbConfig);
         Cache::boot($this->basePath);
@@ -100,7 +100,6 @@ final class App
         $userModelClass = 'App\\Models\\User';
         if (class_exists($userModelClass)) {
             $container->bind('auth.provider', function () use ($userModelClass) {
-                /** @var class-string $userModelClass */
                 return new \Siro\Core\Auth\ModelUserProvider($userModelClass);
             });
         }
@@ -221,11 +220,8 @@ final class App
      */
     public static function isDown(): ?array
     {
-        $file = defined('SIRO_BASE_PATH')
-            ? SIRO_BASE_PATH . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down'
-            : (defined('BASE_PATH')
-                ? BASE_PATH . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down'
-                : dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down');
+        $basePath = defined('SIRO_BASE_PATH') ? SIRO_BASE_PATH : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__));
+        $file = (string) $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down';
         if (!file_exists($file)) {
             return null;
         }
@@ -261,11 +257,11 @@ final class App
             // Check maintenance mode
             $maintenance = self::isDown();
             if ($maintenance !== null) {
-                $allowed = $maintenance['allow'] ?? [];
+                $allowed = (array) ($maintenance['allow'] ?? []);
                 $clientIp = $request->ip();
                 if (!in_array($clientIp, $allowed, true)) {
                     $retry = max(0, (int) ($maintenance['retry'] ?? 60));
-                    $resp = Response::error($maintenance['message'] ?? 'Under maintenance', 503);
+                    $resp = Response::error((string) ($maintenance['message'] ?? 'Under maintenance'), 503);
                     $resp->header('Retry-After', (string) $retry);
                     $resp->header('X-Siro-Trace-Id', $traceId)->send();
                     $status = 503;
@@ -303,8 +299,8 @@ final class App
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } finally {
             $timeMs = (microtime(true) - $requestStartedAt) * 1000;
-            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+            $userAgent = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
             Logger::request($method, $path, $status, $timeMs, $ip, $traceId, $userAgent);
             Logger::slowRequest($method, $path, $status, $timeMs);
 
@@ -352,14 +348,14 @@ final class App
     private function detectLocale(Request $request): void
     {
         // X-Locale header overrides everything (for testing)
-        $xLocale = $request->header('x-locale', '');
+        $xLocale = (string) $request->header('x-locale', '');
         if ($xLocale !== '' && preg_match('/^[a-z]{2}([_-][a-z]{2})?$/i', $xLocale)) {
             Lang::setLocale(strtolower(substr($xLocale, 0, 2)));
             return;
         }
 
         // Parse Accept-Language header
-        $acceptLang = $request->header('accept-language', '');
+        $acceptLang = (string) $request->header('accept-language', '');
         if ($acceptLang !== '' && preg_match('/^([a-z]+)/i', $acceptLang, $matches)) {
             $locale = strtolower($matches[1]);
             $langDir = Lang::basePath() . DIRECTORY_SEPARATOR . $locale;
@@ -382,10 +378,11 @@ final class App
         $executionTimeMs = (microtime(true) - $this->startedAt) * 1000;
         $memoryUsageMb = memory_get_peak_usage(true) / 1024 / 1024;
 
+        $cacheStatus = Cache::requestStatus();
         Response::setDebugMeta([
             'execution_time_ms' => round($executionTimeMs, 2),
             'memory_usage_mb' => round($memoryUsageMb, 2),
-            'cache' => Cache::requestStatus(),
+            'cache' => is_array($cacheStatus) ? $cacheStatus : [],
         ]);
     }
 }

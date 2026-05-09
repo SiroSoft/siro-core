@@ -1,16 +1,64 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^PHPDoc tag @var with type class\-string is not subtype of native type ''App\\\\Models\\\\User''\.$#'
-			identifier: varTag.nativeType
+			message: '#^Call to function is_array\(\) with array\<string, string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
 			count: 1
 			path: App.php
 
 		-
-			message: '#^Parameter \#1 \$meta of static method Siro\\Core\\Response\:\:setDebugMeta\(\) expects array\<string, bool\|float\|int\|string\|null\>, array\<string, array\|float\> given\.$#'
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: App.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: App.php
+
+		-
+			message: '#^Method Siro\\Core\\App\:\:isDown\(\) should return array\<string, mixed\>\|null but returns array\<mixed, mixed\>\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: App.php
+
+		-
+			message: '#^Parameter \#1 \$meta of static method Siro\\Core\\Response\:\:setDebugMeta\(\) expects array\<string, bool\|float\|int\|string\|null\>, array\<string, array\<string, string\>\|float\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: App.php
+
+		-
+			message: '#^Parameter \#1 \$modelClass of class Siro\\Core\\Auth\\ModelUserProvider constructor expects class\-string, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: App.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 6
+			path: Auth/ApiKey.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 9
+			path: Auth/ApiKey.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Auth/AuthGuard.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Auth/AuthGuard.php
 
 		-
 			message: '#^Method Siro\\Core\\Auth\\AuthGuard\:\:getUserProvider\(\) should return Siro\\Core\\Auth\\UserProvider\|null but returns object\.$#'
@@ -19,22 +67,64 @@ parameters:
 			path: Auth/AuthGuard.php
 
 		-
+			message: '#^Method Siro\\Core\\Auth\\AuthGuard\:\:resolve\(\) should return array\<string, mixed\>\|null but returns array\<mixed, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: Auth/AuthGuard.php
+
+		-
 			message: '#^PHPDoc tag @var with type class\-string is not subtype of native type ''App\\\\Models\\\\User''\.$#'
 			identifier: varTag.nativeType
 			count: 1
 			path: Auth/AuthGuard.php
 
 		-
-			message: '#^Trying to invoke object but it might not be a callable\.$#'
-			identifier: callable.nonCallable
+			message: '#^Property Siro\\Core\\Auth\\AuthGuard\:\:\$userData \(array\<string, mixed\>\|null\) does not accept array\<mixed, mixed\>\.$#'
+			identifier: assign.propertyType
 			count: 1
 			path: Auth/AuthGuard.php
 
 		-
-			message: '#^Method Siro\\Core\\Auth\\JWT\:\:encode\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
+			message: '#^Cannot access offset ''id'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Auth/Idempotency.php
+
+		-
+			message: '#^Cannot access offset ''response_data'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Auth/Idempotency.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 4
+			path: Auth/JWT.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
 			count: 1
 			path: Auth/JWT.php
+
+		-
+			message: '#^Method Siro\\Core\\Auth\\JWT\:\:signRs256\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Auth/JWT.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Auth/ModelUserProvider.php
+
+		-
+			message: '#^Method Siro\\Core\\Auth\\ModelUserProvider\:\:retrieveByCredentials\(\) has parameter \$credentials with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Auth/ModelUserProvider.php
 
 		-
 			message: '#^Method Siro\\Core\\Auth\\UserProvider\:\:retrieveByCredentials\(\) has parameter \$credentials with no value type specified in iterable type array\.$#'
@@ -43,68 +133,26 @@ parameters:
 			path: Auth/UserProvider.php
 
 		-
-			message: '#^Method Siro\\Core\\Cache\:\:requestStatus\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 1
-			path: Cache.php
+			path: Cache/Drivers/FileDriver.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Cache/Drivers/RedisDriver.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Collection.php
 
 		-
 			message: '#^Class Siro\\Core\\Collection implements generic interface ArrayAccess but does not specify its types\: TKey, TValue$#'
 			identifier: missingType.generics
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Class Siro\\Core\\Collection implements generic interface IteratorAggregate but does not specify its types\: TKey, TValue$#'
-			identifier: missingType.generics
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Method Siro\\Core\\Collection\:\:all\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Method Siro\\Core\\Collection\:\:combine\(\) has parameter \$values with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Method Siro\\Core\\Collection\:\:jsonSerialize\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Method Siro\\Core\\Collection\:\:make\(\) has parameter \$items with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Method Siro\\Core\\Collection\:\:merge\(\) has parameter \$items with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Method Siro\\Core\\Collection\:\:merge\(\) has parameter \$items with no value type specified in iterable type array\|Siro\\Core\\Collection\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Method Siro\\Core\\Collection\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Collection.php
-
-		-
-			message: '#^Method Siro\\Core\\Collection\:\:toJson\(\) should return string but returns string\|false\.$#'
-			identifier: return.type
 			count: 1
 			path: Collection.php
 
@@ -115,22 +163,160 @@ parameters:
 			path: Collection.php
 
 		-
-			message: '#^Parameter \#1 \.\.\.\$arg1 of function max expects non\-empty\-array, array\<int\|string, mixed\> given\.$#'
-			identifier: argument.type
-			count: 2
-			path: Collection.php
-
-		-
-			message: '#^Parameter \#1 \.\.\.\$arg1 of function min expects non\-empty\-array, array\<int\|string, mixed\> given\.$#'
-			identifier: argument.type
-			count: 2
-			path: Collection.php
-
-		-
-			message: '#^Parameter \#2 \$length of function array_chunk expects int\<1, max\>, int given\.$#'
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''strval'' given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Collection.php
+
+		-
+			message: '#^Parameter \#1 \$key of function array_key_exists expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Collection.php
+
+		-
+			message: '#^Possibly invalid array key type mixed\.$#'
+			identifier: offsetAccess.invalidOffset
+			count: 4
+			path: Collection.php
+
+		-
+			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Binary operation "\+" between mixed and 1 results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Binary operation "\." between mixed and '' '' results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Binary operation "\." between mixed and ''MB'' results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Binary operation "\." between mixed and ''ms'' results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access an offset on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''access_token'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''as'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''content_type'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''duration_ms'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''fields'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''headers'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''memory_mb'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''method'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 4
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''name'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''path'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 4
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''requests'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 4
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''status'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''time'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''token'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot access offset int\<\-1, max\> on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/ApiTestCommand.php
 
 		-
 			message: '#^Class App\\Middleware\\AuthMiddleware not found\.$#'
@@ -159,6 +345,12 @@ parameters:
 		-
 			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:addFilesRecursive\(\) has parameter \$files with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\ApiTestCommand\:\:getToken\(\) should return string\|null but returns mixed\.$#'
+			identifier: return.type
 			count: 1
 			path: Commands/ApiTestCommand.php
 
@@ -259,6 +451,18 @@ parameters:
 			path: Commands/ApiTestCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_contains expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 11
+			path: Commands/ApiTestCommand.php
+
+		-
 			message: '#^Parameter \#1 \$headers of method Siro\\Core\\Commands\\ApiTestCommand\:\:table\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
 			identifier: argument.type
 			count: 2
@@ -271,9 +475,75 @@ parameters:
 			path: Commands/ApiTestCommand.php
 
 		-
+			message: '#^Parameter \#1 \$method of method Siro\\Core\\Commands\\ApiTestCommand\:\:sendInternal\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtoupper expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 10
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#1 \$value of function count expects array\|Countable, mixed given\.$#'
+			identifier: argument.type
+			count: 4
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#2 \$path of method Siro\\Core\\Commands\\ApiTestCommand\:\:sendInternal\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#2 \$path of method Siro\\Core\\Commands\\ApiTestCommand\:\:testCors\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#2 \$path of method Siro\\Core\\Commands\\ApiTestCommand\:\:watchMode\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
 			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\ApiTestCommand\:\:table\(\) expects array\<int, array\<string, string\>\>, list\<array\<int, mixed\>\> given\.$#'
 			identifier: argument.type
 			count: 2
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#2 \$string of function explode expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#3 \$fields of method Siro\\Core\\Commands\\ApiTestCommand\:\:sendInternal\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#3 \$path of method Siro\\Core\\Commands\\ApiTestCommand\:\:saveToCollection\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Commands/ApiTestCommand.php
 
 		-
@@ -283,10 +553,82 @@ parameters:
 			path: Commands/ApiTestCommand.php
 
 		-
+			message: '#^Parameter \#4 \$customHeaders of method Siro\\Core\\Commands\\ApiTestCommand\:\:sendInternal\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#5 \$contentType of method Siro\\Core\\Commands\\ApiTestCommand\:\:sendInternal\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#5 \$jsonBody of class Siro\\Core\\Request constructor expects array\<string, mixed\>, array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Parameter \#6 \$as of method Siro\\Core\\Commands\\ApiTestCommand\:\:sendInternal\(\) expects string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Part \$path \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Part \$req\[''method''\] \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Part \$req\[''path''\] \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/ApiTestCommand.php
+
+		-
 			message: '#^While loop condition is always true\.$#'
 			identifier: while.alwaysTrue
 			count: 2
 			path: Commands/ApiTestCommand.php
+
+		-
+			message: '#^Binary operation "\." between mixed and '' μs'' results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Cannot access offset ''microseconds'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Cannot access offset ''name'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Cannot access offset ''ops_per_second'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Cannot access offset ''rating'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/BenchmarkCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\BenchmarkCommand\:\:benchmarkConfig\(\) return type has no value type specified in iterable type array\.$#'
@@ -379,7 +721,43 @@ parameters:
 			path: Commands/BenchmarkCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Commands/BenchmarkCommand.php
+
+		-
 			message: '#^Parameter \#1 \$line of method Siro\\Core\\Commands\\BenchmarkCommand\:\:write\(\) expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Parameter \#1 \$num of function number_format expects float, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/BenchmarkCommand.php
+
+		-
+			message: '#^Parameter \#5 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Commands/BenchmarkCommand.php
@@ -421,6 +799,12 @@ parameters:
 			path: Commands/ConfigCacheCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/ConfigCacheCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\ConfigClearCommand\:\:run\(\) has parameter \$_args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -439,6 +823,72 @@ parameters:
 			path: Commands/ConfigClearCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/ConfigClearCommand.php
+
+		-
+			message: '#^Cannot access offset ''COLUMN_DEFAULT'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Cannot access offset ''COLUMN_NAME'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Cannot access offset ''COLUMN_TYPE'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Cannot access offset ''IS_NULLABLE'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Cannot access offset ''default'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Cannot access offset ''name'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Cannot access offset ''nullable'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Cannot access offset ''type'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Commands/DbShowCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\DbShowCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -451,9 +901,27 @@ parameters:
 			path: Commands/DbShowCommand.php
 
 		-
+			message: '#^Parameter \#1 \$array of function array_keys expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Parameter \#1 \$array of function array_values expects array\<T\>, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
 			identifier: argument.type
 			count: 2
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Commands/DbShowCommand.php
 
 		-
@@ -469,6 +937,18 @@ parameters:
 			path: Commands/DbShowCommand.php
 
 		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/DbShowCommand.php
+
+		-
 			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\DbShowCommand\:\:table\(\) expects array\<int, array\<string, string\>\>, list\<array\<int, mixed\>\> given\.$#'
 			identifier: argument.type
 			count: 1
@@ -479,6 +959,84 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Commands/DbShowCommand.php
+
+		-
+			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  IP\:       '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  Memory\:   '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  Time\:     '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Cannot access offset ''errors'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Cannot access offset ''rows'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Cannot access offset ''sql'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Cannot access offset ''time_ms'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 2
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Commands/DebugLastCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\DebugLastCommand\:\:prettyJson\(\) should return string but returns string\|false\.$#'
@@ -505,6 +1063,96 @@ parameters:
 			path: Commands/DebugLastCommand.php
 
 		-
+			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Parameter \#1 \$json of method Siro\\Core\\Commands\\DebugLastCommand\:\:prettyJson\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Parameter \#2 \$array of function implode expects array\<string\>, array\<mixed, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Parameter \#3 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Parameter \#4 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Parameter \#5 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DebugLastCommand.php
+
+		-
+			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 3
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Binary operation "\." between mixed and '' / '' results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Cannot access offset ''branch'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Cannot access offset ''method'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Cannot access offset ''remote'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Cannot access offset mixed on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\DeployCommand\:\:loadConfig\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -523,6 +1171,18 @@ parameters:
 			path: Commands/DeployCommand.php
 
 		-
+			message: '#^Parameter \#1 \$arg of function escapeshellarg expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 5
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Parameter \#1 \$array of function array_keys expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
 			identifier: argument.type
 			count: 2
@@ -535,8 +1195,86 @@ parameters:
 			path: Commands/DeployCommand.php
 
 		-
+			message: '#^Parameter \#1 \$name of method Siro\\Core\\Commands\\DeployCommand\:\:deploy\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Parameter \#1 \$remote of method Siro\\Core\\Commands\\DeployCommand\:\:deployGit\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Parameter \#2 \$branch of method Siro\\Core\\Commands\\DeployCommand\:\:deployGit\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Parameter \#2 \$env of method Siro\\Core\\Commands\\DeployCommand\:\:deploy\(\) expects array\<string, mixed\>, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/DeployCommand.php
+
+		-
 			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\DeployCommand\:\:table\(\) expects array\<int, array\<string, string\>\>, list\<array\<int, mixed\>\> given\.$#'
 			identifier: argument.type
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Part \$branch \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Part \$cmd \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 2
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Part \$environment \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Part \$host \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Part \$method \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 2
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Part \$script \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 2
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Part \$target \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/DeployCommand.php
+
+		-
+			message: '#^Part \$user \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
 			count: 1
 			path: Commands/DeployCommand.php
 
@@ -554,6 +1292,18 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/DoctorCommand.php
+
+		-
+			message: '#^Parameter \#2 \$detail of method Siro\\Core\\Commands\\DoctorCommand\:\:printCheck\(\) expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/DoctorCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/DoctorCommand.php
@@ -583,6 +1333,24 @@ parameters:
 			path: Commands/DownCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Commands/DownCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Commands/DownCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/DownCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\EnvCacheCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -601,6 +1369,18 @@ parameters:
 			path: Commands/EnvCacheCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/EnvCacheCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/EnvCheckCommand.php
+
+		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 2
@@ -608,6 +1388,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/EnvCheckCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/EnvCheckCommand.php
@@ -637,8 +1423,80 @@ parameters:
 			path: Commands/EnvSwitchCommand.php
 
 		-
+			message: '#^Parameter \#1 \$string of function trim expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/EnvSwitchCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/EnvSwitchCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  ⚠ Trace not found…'' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  🔄 Replayed\: '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''http\://'' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 3
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Cannot access offset ''command'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Cannot call method getExtension\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Cannot call method getMTime\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Cannot call method isFile\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\FixCommand\:\:getLastApiTest\(\) should return string\|null but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\FixCommand\:\:getMaxMtime\(\) has parameter \$dirs with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\FixCommand\:\:getMaxMtime\(\) should return int but returns mixed\.$#'
+			identifier: return.type
 			count: 1
 			path: Commands/FixCommand.php
 
@@ -658,6 +1516,36 @@ parameters:
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
 			identifier: argument.type
 			count: 2
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Parameter \#1 \$directory of class RecursiveDirectoryIterator constructor expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Parameter \#1 \$filename of function is_dir expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Parameter \#2 \$options of function curl_setopt_array expects array\{10023\?\: array\<int, string\>, 10036\: non\-empty\-string\|null, 19913\: bool, 13\: int, 10015\: array\|string\}, array\{10023\?\: array\{''Content\-Type\:…''\}, 10036\: mixed, 19913\: true, 13\: 10, 10015\: mixed\} given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Commands/FixCommand.php
 
 		-
@@ -709,8 +1597,44 @@ parameters:
 			path: Commands/KeyGenerateCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/KeyGenerateCommand.php
+
+		-
+			message: '#^Cannot call method getExtension\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Cannot call method getFilename\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Cannot call method getMTime\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Cannot call method isFile\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\LiveCommand\:\:checkChanges\(\) has parameter \$dirs with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\LiveCommand\:\:checkChanges\(\) should return string but returns mixed\.$#'
+			identifier: return.type
 			count: 1
 			path: Commands/LiveCommand.php
 
@@ -733,9 +1657,39 @@ parameters:
 			path: Commands/LiveCommand.php
 
 		-
+			message: '#^Parameter \#1 \$directory of class RecursiveDirectoryIterator constructor expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Parameter \#1 \$filename of function is_dir expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LiveCommand.php
+
+		-
 			message: '#^Parameter \#1 \$handle of function pclose expects resource, resource\|false given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LiveCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
 			path: Commands/LiveCommand.php
 
 		-
@@ -761,6 +1715,78 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/LogCleanupCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogCleanupCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogCleanupCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogCleanupCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''\-H \\''Authorization\: '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Cannot access offset ''ip'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Cannot access offset ''method'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Cannot access offset ''path'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Cannot access offset ''status'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Cannot access offset ''time_ms'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Cannot access offset ''timestamp'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Commands/LogExportCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\LogExportCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -815,6 +1841,108 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtoupper expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function trim expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Parameter \#2 \$fields of function fputcsv expects array\<int\|string, bool\|float\|int\|string\|null\>, array\<int, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Parameter \#3 \$subject of function str_replace expects array\<string\>\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Part \$method \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Part \$path \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Part \$v \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Commands/LogExportCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  \$db\-\>table\("'' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  Body\:   '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  Status\: '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 2
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''http\://'' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 7
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Cannot access offset ''data'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Cannot access offset ''errors'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 4
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
+			path: Commands/LogReplayCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:executeReplay\(\) has parameter \$data with no value type specified in iterable type array\.$#'
@@ -877,14 +2005,122 @@ parameters:
 			path: Commands/LogReplayCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Commands/LogReplayCommand.php
+
+		-
 			message: '#^Parameter \#1 \$json of method Siro\\Core\\Commands\\LogReplayCommand\:\:prettyPrint\(\) expects string, string\|false given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Commands/LogReplayCommand.php
 
 		-
+			message: '#^Parameter \#1 \$string of function strtoupper expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#2 \$array of function implode expects array\<string\>, array\<mixed, mixed\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogReplayCommand.php
+
+		-
 			message: '#^Parameter \#2 \$options of function curl_setopt_array expects array\{10036\: non\-empty\-string\|null, 19913\: bool, 13\: int, 10023\: array\<int, string\>, 10015\: array\|string\}, array\{10036\: string, 19913\: true, 13\: 10, 10023\: list\<non\-falsy\-string\>, 10015\: string\} given\.$#'
 			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#3 \$body of method Siro\\Core\\Commands\\LogReplayCommand\:\:executeReplay\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#3 \$body of method Siro\\Core\\Commands\\LogReplayCommand\:\:outputCurl\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#3 \$body of method Siro\\Core\\Commands\\LogReplayCommand\:\:outputHttpie\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#3 \$path of method Siro\\Core\\Commands\\LogReplayCommand\:\:auditReplay\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#4 \$headers of method Siro\\Core\\Commands\\LogReplayCommand\:\:executeReplay\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#4 \$headers of method Siro\\Core\\Commands\\LogReplayCommand\:\:outputCurl\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#4 \$headers of method Siro\\Core\\Commands\\LogReplayCommand\:\:outputHttpie\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#5 \$auth of method Siro\\Core\\Commands\\LogReplayCommand\:\:executeReplay\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#5 \$auth of method Siro\\Core\\Commands\\LogReplayCommand\:\:outputCurl\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#5 \$auth of method Siro\\Core\\Commands\\LogReplayCommand\:\:outputHttpie\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Parameter \#6 \$ct of method Siro\\Core\\Commands\\LogReplayCommand\:\:executeReplay\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
+			message: '#^Part \$value \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
 			count: 1
 			path: Commands/LogReplayCommand.php
 
@@ -907,6 +2143,12 @@ parameters:
 			path: Commands/LogStatsCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogStatsCommand.php
+
+		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 2
@@ -919,9 +2161,21 @@ parameters:
 			path: Commands/LogTailCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogTailCommand.php
+
+		-
 			message: '#^Parameter \#2 \$offset of function fseek expects int, int\<0, max\>\|false given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Commands/LogTailCommand.php
+
+		-
+			message: '#^Parameter \#3 \$subject of function preg_replace expects array\<float\|int\|string\>\|string, string\|null given\.$#'
+			identifier: argument.type
+			count: 2
 			path: Commands/LogTailCommand.php
 
 		-
@@ -929,6 +2183,18 @@ parameters:
 			identifier: while.alwaysTrue
 			count: 1
 			path: Commands/LogTailCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogTopCommand.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Commands/LogTopCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\LogTopCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -949,9 +2215,33 @@ parameters:
 			path: Commands/LogTopCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogTopCommand.php
+
+		-
 			message: '#^Parameter \#1 \$headers of method Siro\\Core\\Commands\\LogTopCommand\:\:table\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Commands/LogTopCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtoupper expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogTopCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogTopCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
 			path: Commands/LogTopCommand.php
 
 		-
@@ -959,6 +2249,96 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Commands/LogTopCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''    '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 4
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  Host\:    '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  IP\:      '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  Memory\:  '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  Method\:  '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  Status\:  '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Binary operation "\." between ''  Time\:    '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Binary operation "\." between mixed and ''ms'' results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 4
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Cannot access offset ''rows'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Cannot access offset ''sql'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Cannot access offset ''time_ms'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 2
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/LogTraceCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\LogTraceCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -979,10 +2359,88 @@ parameters:
 			path: Commands/LogTraceCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function mb_strlen expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function mb_substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 4
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function str_pad expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtoupper expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#1 \$traceId of method Siro\\Core\\Commands\\LogTraceCommand\:\:showTrace\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/LogTraceCommand.php
+
+		-
 			message: '#^Parameter \#2 \$string of function explode expects string, string\|false given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#3 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#4 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Parameter \#5 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/LogTraceCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Commands/MakeApiKeyCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\MakeApiKeyCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -998,6 +2456,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeApiKeyCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeApiKeyCommand.php
@@ -1021,6 +2485,12 @@ parameters:
 			path: Commands/MakeApiKeysTableCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeApiKeysTableCommand.php
+
+		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 2
@@ -1028,6 +2498,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeAuthCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeAuthCommand.php
@@ -1043,6 +2519,18 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeControllerCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeControllerCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/MakeCrudCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\MakeCrudCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1058,6 +2546,30 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeCrudCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function strrpos expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeCrudCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function rtrim expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeCrudCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr_replace expects array\|string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeCrudCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeCrudCommand.php
@@ -1081,6 +2593,12 @@ parameters:
 			path: Commands/MakeDocsCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeDocsCommand.php
+
+		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 2
@@ -1091,6 +2609,24 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeEventCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeEventCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeEventCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/MakeFactoryCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\MakeFactoryCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1106,6 +2642,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeFactoryCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeFactoryCommand.php
@@ -1129,6 +2671,12 @@ parameters:
 			path: Commands/MakeIdempotencyTableCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeIdempotencyTableCommand.php
+
+		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 2
@@ -1136,6 +2684,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeJobCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeJobCommand.php
@@ -1153,6 +2707,12 @@ parameters:
 			path: Commands/MakeLangCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeLangCommand.php
+
+		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 2
@@ -1160,6 +2720,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeMailCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeMailCommand.php
@@ -1177,6 +2743,12 @@ parameters:
 			path: Commands/MakeMigrationCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeMigrationCommand.php
+
+		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 2
@@ -1187,6 +2759,54 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeModelCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeModelCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeModelCommand.php
+
+		-
+			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 2
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Cannot access offset ''method'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Cannot access offset ''path'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Cannot access offset mixed on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Cannot access offset string on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
 
 		-
 			message: '#^Match arm comparison between ''array''\|''object''\|''string'' and ''email'' is always false\.$#'
@@ -1351,8 +2971,140 @@ parameters:
 			path: Commands/MakeOpenApiCommand.php
 
 		-
+			message: '#^Parameter \#1 \$handler of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:buildRequestSchema\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$handler of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:buildResponseSchema\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$handler of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:deriveTag\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_contains expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 5
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 12
+			path: Commands/MakeOpenApiCommand.php
+
+		-
 			message: '#^Parameter \#1 \$object of function get_class expects object, mixed given\.$#'
 			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$path of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:extractPathParams\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$route of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:passesFilter\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$rules of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:isRequired\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtolower expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtoupper expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 12
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#2 \$array of function implode expects array\<string\>, array\<mixed, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#2 \$path of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:deriveSummary\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#2 \$path of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:deriveTag\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#2 \$route of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:addRouteToPaths\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#2 \$rules of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:ruleToProperty\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#2 \$string of function explode expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#3 \$path of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:buildResponseSchema\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#3 \$path of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:buildResponses\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Possibly invalid array key type mixed\.$#'
+			identifier: offsetAccess.invalidOffset
 			count: 1
 			path: Commands/MakeOpenApiCommand.php
 
@@ -1399,6 +3151,24 @@ parameters:
 			path: Commands/MakePostmanCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 6
+			path: Commands/MakePostmanCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 6
+			path: Commands/MakePostmanCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakePostmanCommand.php
+
+		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 2
@@ -1409,6 +3179,18 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeQueueTableCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeQueueTableCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/MakeRepositoryCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\MakeRepositoryCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1429,6 +3211,18 @@ parameters:
 			path: Commands/MakeRepositoryCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeRepositoryCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/MakeResourceCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\MakeResourceCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1445,6 +3239,18 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeResourceCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeResourceCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/MakeSeederCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\MakeSeederCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1465,6 +3271,18 @@ parameters:
 			path: Commands/MakeSeederCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeSeederCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/MakeServiceCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\MakeServiceCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1481,6 +3299,18 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/MakeServiceCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeServiceCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/MakeTestCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\MakeTestCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1501,6 +3331,24 @@ parameters:
 			path: Commands/MakeTestCommand.php
 
 		-
+			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeTestCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeTestCommand.php
+
+		-
+			message: '#^Cannot access offset ''max_batch'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/MigrateCommand.php
+
+		-
 			message: '#^Cannot call method fetch\(\) on PDOStatement\|false\.$#'
 			identifier: method.nonObject
 			count: 1
@@ -1510,6 +3358,18 @@ parameters:
 			message: '#^Cannot call method fetchAll\(\) on PDOStatement\|false\.$#'
 			identifier: method.nonObject
 			count: 1
+			path: Commands/MigrateCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Commands/MigrateCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
 			path: Commands/MigrateCommand.php
 
 		-
@@ -1531,6 +3391,12 @@ parameters:
 			path: Commands/MigrateCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MigrateCommand.php
+
+		-
 			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -1546,6 +3412,12 @@ parameters:
 			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
 			path: Commands/MigrateRollbackCommand.php
 
 		-
@@ -1573,9 +3445,51 @@ parameters:
 			path: Commands/MigrateRollbackCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MigrateRollbackCommand.php
+
+		-
+			message: '#^Cannot access offset ''batch'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/MigrateStatusCommand.php
+
+		-
+			message: '#^Cannot access offset ''migration'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Commands/MigrateStatusCommand.php
+
+		-
 			message: '#^Cannot call method fetchAll\(\) on PDOStatement\|false\.$#'
 			identifier: method.nonObject
 			count: 1
+			path: Commands/MigrateStatusCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Commands/MigrateStatusCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
 			path: Commands/MigrateStatusCommand.php
 
 		-
@@ -1603,10 +3517,22 @@ parameters:
 			path: Commands/MigrateStatusCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MigrateStatusCommand.php
+
+		-
 			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\MigrateStatusCommand\:\:table\(\) expects array\<int, array\<string, string\>\>, list\<array\<int, string\>\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Commands/MigrateStatusCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/NewCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\NewCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1627,9 +3553,27 @@ parameters:
 			path: Commands/NewCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/NewCommand.php
+
+		-
+			message: '#^Parameter \#2 \$replace of function str_replace expects array\<string\>\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/NewCommand.php
+
+		-
 			message: '#^Parameter \#3 \$subject of function str_replace expects array\<string\>\|string, string\|false given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Commands/NewCommand.php
+
+		-
+			message: '#^Part \$name \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 5
 			path: Commands/NewCommand.php
 
 		-
@@ -1651,6 +3595,12 @@ parameters:
 			path: Commands/OptimizeCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/OptimizeCommand.php
+
+		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 2
@@ -1658,6 +3608,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/QueueFlushCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/QueueFlushCommand.php
@@ -1673,6 +3629,18 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/QueueRetryCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/QueueRetryCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Commands/QueueStatusCommand.php
 
 		-
 			message: '#^Offset int does not exist on non\-empty\-array\<string, int\<0, max\>\>\.$#'
@@ -1693,6 +3661,12 @@ parameters:
 			path: Commands/QueueStatusCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/QueueStatusCommand.php
+
+		-
 			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\QueueStatusCommand\:\:table\(\) expects array\<int, array\<string, string\>\>, array\<int, array\<int, mixed\>\> given\.$#'
 			identifier: argument.type
 			count: 1
@@ -1709,6 +3683,18 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/QueueWorkCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/QueueWorkCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Commands/RateStatusCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\RateStatusCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1735,6 +3721,12 @@ parameters:
 			path: Commands/RateStatusCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/RateStatusCommand.php
+
+		-
 			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\RateStatusCommand\:\:table\(\) expects array\<int, array\<string, string\>\>, list\<array\<int, string\>\> given\.$#'
 			identifier: argument.type
 			count: 1
@@ -1754,6 +3746,18 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/ReplayCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/ReplayCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/ReplayCommand.php
@@ -1783,6 +3787,12 @@ parameters:
 			path: Commands/RouteListCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/RouteListCommand.php
+
+		-
 			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\RouteListCommand\:\:table\(\) expects array\<int, array\<string, string\>\>, list\<array\<int, string\>\> given\.$#'
 			identifier: argument.type
 			count: 1
@@ -1805,6 +3815,18 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/RouteRulesCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/RouteRulesCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/RouteSearchCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\RouteSearchCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1861,6 +3883,12 @@ parameters:
 			path: Commands/RouteSearchCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/RouteSearchCommand.php
+
+		-
 			message: '#^Parameter \#2 \$rows of method Siro\\Core\\Commands\\RouteSearchCommand\:\:table\(\) expects array\<int, array\<string, string\>\>, list\<array\<int, string\>\> given\.$#'
 			identifier: argument.type
 			count: 1
@@ -1877,6 +3905,24 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/ScheduleRunCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/ScheduleRunCommand.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Commands/SeedCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/SeedCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\SeedCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1897,6 +3943,24 @@ parameters:
 			path: Commands/SeedCommand.php
 
 		-
+			message: '#^Parameter \#1 \$class of function class_exists expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/SeedCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/SeedCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Commands/ServeCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\ServeCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1913,6 +3977,24 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/ServeCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/ServeCommand.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Commands/SlowLogCommand.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Commands/SlowLogCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\SlowLogCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1933,9 +4015,33 @@ parameters:
 			path: Commands/SlowLogCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/SlowLogCommand.php
+
+		-
 			message: '#^Parameter \#1 \$headers of method Siro\\Core\\Commands\\SlowLogCommand\:\:table\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Commands/SlowLogCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/SlowLogCommand.php
+
+		-
+			message: '#^Parameter \#1 \$value of function count expects array\|Countable, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/SlowLogCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
 			path: Commands/SlowLogCommand.php
 
 		-
@@ -1957,6 +4063,12 @@ parameters:
 			path: Commands/StorageLinkCommand.php
 
 		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/StorageLinkCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\TestRunCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1969,10 +4081,52 @@ parameters:
 			path: Commands/TestRunCommand.php
 
 		-
+			message: '#^Parameter \#1 \$arg of function escapeshellarg expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/TestRunCommand.php
+
+		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, string\)\: mixed\)\|null, Closure\(int, string\)\: string given\.$#'
 			identifier: argument.type
 			count: 2
 			path: Commands/TestRunCommand.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 6
+			path: Commands/TestRunCommand.php
+
+		-
+			message: '#^Parameter \#2 \$array of function implode expects array\<string\>, array given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/TestRunCommand.php
+
+		-
+			message: '#^Parameter \#2 \$array of function implode expects array\<string\>, list given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/TestRunCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/TestRunCommand.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Commands/TraceListCommand.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Commands/TraceListCommand.php
 
 		-
 			message: '#^Method Siro\\Core\\Commands\\TraceListCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
@@ -1993,6 +4147,36 @@ parameters:
 			path: Commands/TraceListCommand.php
 
 		-
+			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/TraceListCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function str_pad expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/TraceListCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/TraceListCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/TraceListCommand.php
+
+		-
+			message: '#^Parameter \#7 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/TraceListCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\UpCommand\:\:run\(\) has parameter \$args with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2009,6 +4193,42 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: Commands/UpCommand.php
+
+		-
+			message: '#^Parameter \#2 \$length of function str_pad expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/UpCommand.php
+
+		-
+			message: '#^Static property Siro\\Core\\Config\:\:\$items \(array\<string, mixed\>\) does not accept array\<mixed, mixed\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Config.php
+
+		-
+			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Binary operation "\." between ''    '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Binary operation "\." between ''php siro '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Console.php
 
 		-
 			message: '#^Call to an undefined method object\:\:run\(\)\.$#'
@@ -2047,10 +4267,58 @@ parameters:
 			path: Console.php
 
 		-
+			message: '#^Method Siro\\Core\\Console\:\:run\(\) should return int but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Console.php
+
+		-
 			message: '#^Method Siro\\Core\\Console\:\:unknownCommand\(\) has parameter \$registry with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: Console.php
+
+		-
+			message: '#^Parameter \#1 \$command of method Siro\\Core\\Console\:\:printCommandHelp\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Parameter \#1 \$command of method Siro\\Core\\Console\:\:unknownCommand\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Parameter \#1 \$string of function str_pad expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Parameter \#1 \$string of function trim expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Console.php
+
+		-
+			message: '#^Possibly invalid array key type mixed\.$#'
+			identifier: offsetAccess.invalidOffset
+			count: 4
+			path: Console.php
+
+		-
+			message: '#^Method Siro\\Core\\Container\:\:make\(\) should return object but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Container.php
+
+		-
+			message: '#^Parameter \#1 \$abstract of method Siro\\Core\\Container\:\:make\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Container.php
 
 		-
 			message: '#^Parameter \#1 \$objectOrClass of class ReflectionClass constructor expects class\-string\<T of object\>\|T of object, string given\.$#'
@@ -2065,8 +4333,20 @@ parameters:
 			path: Container.php
 
 		-
+			message: '#^Property Siro\\Core\\Container\:\:\$resolved \(array\<string, object\>\) does not accept array\<string, mixed\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Container.php
+
+		-
 			message: '#^Method Siro\\Core\\Controller\:\:error\(\) has parameter \$errors with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Controller.php
+
+		-
+			message: '#^Parameter \#1 \$data of static method Siro\\Core\\Response\:\:success\(\) expects array\<string, mixed\>\|null, mixed given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Controller.php
 
@@ -2075,6 +4355,54 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: Controller.php
+
+		-
+			message: '#^Parameter \#3 \$errors of static method Siro\\Core\\Response\:\:error\(\) expects array\<string, mixed\>, array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Controller.php
+
+		-
+			message: '#^Cannot access property \$column on mixed\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Cannot access property \$onDelete on mixed\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Cannot access property \$onTable on mixed\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Cannot access property \$onUpdate on mixed\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Cannot access property \$references on mixed\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 4
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 5
+			path: DB/Blueprint.php
 
 		-
 			message: '#^Method Siro\\Core\\DB\\Blueprint\:\:addColumn\(\) has parameter \$params with no value type specified in iterable type array\.$#'
@@ -2089,20 +4417,98 @@ parameters:
 			path: DB/Blueprint.php
 
 		-
+			message: '#^Method Siro\\Core\\DB\\Blueprint\:\:detectDriver\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Parameter \#1 \$identifier of method Siro\\Core\\DB\\Blueprint\:\:quote\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 7
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Parameter \#1 \$name of method Siro\\Core\\DB\\Blueprint\:\:timestamp\(\) expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Parameter \#2 \$array of function implode expects array\<string\>, array given\.$#'
+			identifier: argument.type
+			count: 4
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Parameter \#2 \$haystack of function in_array expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Part \$fk\-\>onDelete \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: DB/Blueprint.php
+
+		-
+			message: '#^Part \$fk\-\>onUpdate \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: DB/Blueprint.php
+
+		-
 			message: '#^Method Siro\\Core\\DB\\Column\:\:__construct\(\) has parameter \$params with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: DB/Column.php
 
 		-
-			message: '#^Property Siro\\Core\\DB\\Column\:\:\$params type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
+			message: '#^Property Siro\\Core\\DB\\Column\:\:\$params \(array\<string, mixed\>\) does not accept array\.$#'
+			identifier: assign.propertyType
 			count: 1
 			path: DB/Column.php
 
 		-
+			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 2
+			path: DB/EagerLoader.php
+
+		-
 			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
 			identifier: method.notFound
+			count: 2
+			path: DB/EagerLoader.php
+
+		-
+			message: '#^Cannot call method get\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: DB/EagerLoader.php
+
+		-
+			message: '#^Cannot call method select\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: DB/EagerLoader.php
+
+		-
+			message: '#^Cannot call method whereIn\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: DB/EagerLoader.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 4
+			path: DB/EagerLoader.php
+
+		-
+			message: '#^Parameter \#1 \$array of function array_unique expects an array of values castable to string, list\<mixed\> given\.$#'
+			identifier: argument.type
 			count: 2
 			path: DB/EagerLoader.php
 
@@ -2125,6 +4531,12 @@ parameters:
 			path: DB/ModelQueryBuilder.php
 
 		-
+			message: '#^Method Siro\\Core\\DB\\ModelQueryBuilder\:\:hydrateModel\(\) should return Siro\\Core\\Model but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
 			message: '#^Return type \(array\<int, Siro\\Core\\Model\>\) of method Siro\\Core\\DB\\ModelQueryBuilder\:\:get\(\) should be compatible with return type \(array\<int, array\<string, mixed\>\>\) of method Siro\\Core\\DB\\QueryBuilder\:\:get\(\)$#'
 			identifier: method.childReturnType
 			count: 1
@@ -2137,8 +4549,74 @@ parameters:
 			path: DB/ModelQueryBuilder.php
 
 		-
+			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Binary operation "\." between '' '' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 2
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Binary operation "\." between ''\:'' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 4
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Binary operation "\." between string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Cannot access offset ''id'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 5
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 6
+			path: DB/QueryBuilder.php
+
+		-
 			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:addWhereIn\(\) has parameter \$values with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:compileHaving\(\) should return array\{string, array\<string, mixed\>\} but returns array\{non\-falsy\-string, non\-empty\-array\<mixed\>\}\.$#'
+			identifier: return.type
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:compileWhere\(\) should return array\{string, array\<string, mixed\>\} but returns array\{non\-falsy\-string, array\<mixed\>\}\.$#'
+			identifier: return.type
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:detectDriver\(\) should return string but returns mixed\.$#'
+			identifier: return.type
 			count: 1
 			path: DB/QueryBuilder.php
 
@@ -2163,6 +4641,18 @@ parameters:
 		-
 			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:orWhereIn\(\) has parameter \$values with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:pluck\(\) should return array\<int, mixed\> but returns array\<int\|string, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\QueryBuilder\:\:runSelect\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
 			count: 1
 			path: DB/QueryBuilder.php
 
@@ -2203,44 +4693,50 @@ parameters:
 			path: DB/QueryBuilder.php
 
 		-
-			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
-			identifier: method.notFound
+			message: '#^Parameter \#1 \$identifier of method Siro\\Core\\DB\\QueryBuilder\:\:quoteIdentifier\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 3
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Possibly invalid array key type mixed\.$#'
+			identifier: offsetAccess.invalidOffset
+			count: 6
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Static property Siro\\Core\\DB\\QueryBuilder\:\:\$driverNames \(array\<string, string\>\) does not accept array\<string, mixed\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Method Siro\\Core\\DB\\Relations\\BelongsTo\:\:query\(\) should return Siro\\Core\\DB\\ModelQueryBuilder but returns Siro\\Core\\DB\\QueryBuilder\.$#'
+			identifier: return.type
 			count: 1
 			path: DB/Relations/BelongsTo.php
 
 		-
-			message: '#^Method Siro\\Core\\DB\\Relations\\BelongsTo\:\:__call\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: DB/Relations/BelongsTo.php
+			message: '#^Cannot access offset ''COUNT\(\*\)'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: DB/Relations/BelongsToMany.php
 
 		-
-			message: '#^Call to an undefined method object\:\:getTable\(\)\.$#'
-			identifier: method.notFound
+			message: '#^Method Siro\\Core\\DB\\Relations\\BelongsToMany\:\:query\(\) should return Siro\\Core\\DB\\ModelQueryBuilder but returns Siro\\Core\\DB\\QueryBuilder\.$#'
+			identifier: return.type
 			count: 1
 			path: DB/Relations/BelongsToMany.php
 
 		-
-			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: DB/Relations/BelongsToMany.php
-
-		-
-			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
-			identifier: method.notFound
+			message: '#^Method Siro\\Core\\DB\\Relations\\HasMany\:\:query\(\) should return Siro\\Core\\DB\\ModelQueryBuilder but returns Siro\\Core\\DB\\QueryBuilder\.$#'
+			identifier: return.type
 			count: 1
 			path: DB/Relations/HasMany.php
 
 		-
-			message: '#^Method Siro\\Core\\DB\\Relations\\HasMany\:\:__call\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: DB/Relations/HasMany.php
-
-		-
-			message: '#^Call to an undefined method object\:\:query\(\)\.$#'
-			identifier: method.notFound
+			message: '#^Method Siro\\Core\\DB\\Relations\\HasOne\:\:query\(\) should return Siro\\Core\\DB\\ModelQueryBuilder but returns Siro\\Core\\DB\\QueryBuilder\.$#'
+			identifier: return.type
 			count: 1
 			path: DB/Relations/HasOne.php
 
@@ -2254,6 +4750,18 @@ parameters:
 			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 3
+			path: Database.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: Database.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 6
 			path: Database.php
 
 		-
@@ -2335,10 +4843,46 @@ parameters:
 			path: Database.php
 
 		-
+			message: '#^Parameter \#1 \$string of function rtrim expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Static property Siro\\Core\\Database\:\:\$capturedQueries \(array\<int, array\{sql\: string, bindings\: array\<string, mixed\>, time_ms\: float, rows\: int, connection\: string\}\>\) does not accept non\-empty\-array\<int, array\{sql\: string, bindings\: array, time_ms\: float, rows\: int, connection\: string\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Database.php
+
+		-
+			message: '#^Static property Siro\\Core\\Database\:\:\$configs \(array\<string, array\<string, mixed\>\>\) does not accept array\<string, array\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Database.php
+
+		-
 			message: '#^Parameter \#1 \$length of function random_bytes expects int\<1, max\>, int given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Encrypter.php
+
+		-
+			message: '#^Parameter \#2 \$data of function hash expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Encrypter.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Env.php
+
+		-
+			message: '#^Method Siro\\Core\\Env\:\:get\(\) should return string\|null but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Env.php
 
 		-
 			message: '#^Method Siro\\Core\\FormRequest\:\:all\(\) return type has no value type specified in iterable type array\.$#'
@@ -2383,6 +4927,12 @@ parameters:
 			path: FormRequest.php
 
 		-
+			message: '#^Parameter \#1 \$rules of method Siro\\Core\\Request\:\:validate\(\) expects array\<string, string\>, array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: FormRequest.php
+
+		-
 			message: '#^Parameter \#2 \$message of class Siro\\Core\\ValidationException constructor expects string, array\<string, array\<int, string\>\> given\.$#'
 			identifier: argument.type
 			count: 1
@@ -2399,6 +4949,12 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: FormRequest.php
+
+		-
+			message: '#^Cannot access offset ''cost'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Hash.php
 
 		-
 			message: '#^Method Siro\\Core\\Hash\:\:info\(\) return type has no value type specified in iterable type array\.$#'
@@ -2503,8 +5059,20 @@ parameters:
 			path: Http.php
 
 		-
+			message: '#^Parameter \#3 \$value of function curl_setopt expects array\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Http.php
+
+		-
 			message: '#^Parameter \#3 \$value of function curl_setopt expects non\-empty\-string\|null, string given\.$#'
 			identifier: argument.type
+			count: 1
+			path: Http.php
+
+		-
+			message: '#^Part \$v \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
 			count: 1
 			path: Http.php
 
@@ -2515,10 +5083,28 @@ parameters:
 			path: Http.php
 
 		-
+			message: '#^Property Siro\\Core\\HttpResponse\:\:\$parsedJson \(array\|null\) does not accept mixed\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Http.php
+
+		-
 			message: '#^Property Siro\\Core\\HttpResponse\:\:\$parsedJson type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: Http.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Lang.php
+
+		-
+			message: '#^Method Siro\\Core\\Lang\:\:load\(\) should return array\<string, mixed\>\|null but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Lang.php
 
 		-
 			message: '#^Method Siro\\Core\\Lang\:\:replace\(\) has parameter \$replace with no value type specified in iterable type array\.$#'
@@ -2530,6 +5116,18 @@ parameters:
 			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
+			path: Lang.php
+
+		-
+			message: '#^Parameter \#1 \$basePath of static method Siro\\Core\\Lang\:\:boot\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Lang.php
+
+		-
+			message: '#^Static property Siro\\Core\\Lang\:\:\$loaded \(array\<string, array\<string, mixed\>\>\) does not accept array\<string, array\>\.$#'
+			identifier: assign.propertyType
+			count: 1
 			path: Lang.php
 
 		-
@@ -2587,6 +5185,30 @@ parameters:
 			path: Logger.php
 
 		-
+			message: '#^Parameter \#2 \$needle of function str_contains expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Static property Siro\\Core\\Logger\:\:\$sanitizeConfig \(array\{headers\: array\<int, string\>, body\: array\<int, string\>, query\: array\<int, string\>\}\) does not accept array\{headers\: array\<int, string\>, body\: array\<int, string\>, query\: mixed\}\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Static property Siro\\Core\\Logger\:\:\$sanitizeConfig \(array\{headers\: array\<int, string\>, body\: array\<int, string\>, query\: array\<int, string\>\}\) does not accept array\{headers\: array\<int, string\>, body\: mixed, query\: array\<int, string\>\}\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Logger.php
+
+		-
+			message: '#^Static property Siro\\Core\\Logger\:\:\$sanitizeConfig \(array\{headers\: array\<int, string\>, body\: array\<int, string\>, query\: array\<int, string\>\}\) does not accept array\{headers\: mixed, body\: array\<int, string\>, query\: array\<int, string\>\}\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Logger.php
+
+		-
 			message: '#^Method Siro\\Core\\Mail\:\:smtpCommand\(\) has parameter \$socket with no type specified\.$#'
 			identifier: missingType.parameter
 			count: 1
@@ -2599,10 +5221,148 @@ parameters:
 			path: Mail.php
 
 		-
+			message: '#^Parameter \#1 \$stream of function fgets expects resource, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Mail.php
+
+		-
+			message: '#^Parameter \#1 \$stream of function fwrite expects resource, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Mail.php
+
+		-
+			message: '#^Parameter \#2 \$string of function explode expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Middleware/ApiKeyMiddleware.php
+
+		-
+			message: '#^Part \$keyData\[''scopes''\] \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Middleware/ApiKeyMiddleware.php
+
+		-
 			message: '#^Call to an undefined method object\:\:find\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot access offset ''created_at'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot access offset ''email'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot access offset ''id'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot access offset ''name'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot access offset ''role'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot access offset ''status'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot access offset ''token_version'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot access property \$status on mixed\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot call method toArray\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 7
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 5
+			path: Middleware/AuthMiddleware.php
+
+		-
+			message: '#^Method Siro\\Core\\Middleware\\CsrfMiddleware\:\:getToken\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Middleware/CsrfMiddleware.php
+
+		-
+			message: '#^Method Siro\\Core\\Middleware\\CsrfMiddleware\:\:getTokenFromRequest\(\) should return string\|null but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Middleware/CsrfMiddleware.php
+
+		-
+			message: '#^Parameter \#1 \$known_string of function hash_equals expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Middleware/CsrfMiddleware.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Middleware/IdempotencyMiddleware.php
+
+		-
+			message: '#^Parameter \#2 \$statusCode of static method Siro\\Core\\Response\:\:json\(\) expects int, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Middleware/IdempotencyMiddleware.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Middleware/JsonMiddleware.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 4
+			path: Middleware/ThrottleMiddleware.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Middleware/ThrottleMiddleware.php
 
 		-
 			message: '#^Call to an undefined method object\:\:getTable\(\)\.$#'
@@ -2613,6 +5373,24 @@ parameters:
 		-
 			message: '#^Call to method load\(\) on an unknown class Siro\\Core\\EagerLoader\.$#'
 			identifier: class.notFound
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
 			count: 1
 			path: Model.php
 
@@ -2689,8 +5467,68 @@ parameters:
 			path: Model.php
 
 		-
+			message: '#^Parameter \#1 \$key of function array_key_exists expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#1 \$key of method Siro\\Core\\Model\:\:getAttribute\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#1 \$key of method Siro\\Core\\Model\:\:setAttribute\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Model.php
+
+		-
+			message: '#^Parameter \#1 \.\.\.\$columns of method Siro\\Core\\DB\\QueryBuilder\:\:select\(\) expects array\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
 			message: '#^Parameter \#2 \$columns of method Siro\\Core\\DB\\ModelQueryBuilder\:\:eagerLoad\(\) expects array\<int, string\>, array\<int\|string, array\<int, string\>\|string\> given\.$#'
 			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#4 \$foreignValue of class Siro\\Core\\DB\\Relations\\BelongsTo constructor expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#4 \$localValue of class Siro\\Core\\DB\\Relations\\HasMany constructor expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#4 \$localValue of class Siro\\Core\\DB\\Relations\\HasOne constructor expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#6 \$localValue of class Siro\\Core\\DB\\Relations\\BelongsToMany constructor expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Possibly invalid array key type mixed\.$#'
+			identifier: offsetAccess.invalidOffset
 			count: 1
 			path: Model.php
 
@@ -2701,8 +5539,74 @@ parameters:
 			path: Model.php
 
 		-
+			message: '#^Binary operation "\." between ''\<tr\>\<td\>'' and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Queue.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 4
+			path: Queue.php
+
+		-
+			message: '#^Cannot access offset ''data'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Queue.php
+
+		-
+			message: '#^Cannot access offset ''id'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Queue.php
+
+		-
+			message: '#^Cannot access offset ''job'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Queue.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 5
+			path: Queue.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Queue.php
+
+		-
 			message: '#^Method Siro\\Core\\Queue\:\:calculateBackoff\(\) should return int but returns float\|int\<min, 300\>\.$#'
 			identifier: return.type
+			count: 1
+			path: Queue.php
+
+		-
+			message: '#^Method Siro\\Core\\Queue\:\:getFailedJobs\(\) should return array\<int, array\<string, mixed\>\> but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Queue.php
+
+		-
+			message: '#^Parameter \#1 \$class of function class_exists expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Queue.php
+
+		-
+			message: '#^Parameter \#1 \$job of static method Siro\\Core\\Queue\:\:push\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Queue.php
+
+		-
+			message: '#^Parameter \#2 \$timestamp of function date expects int\|null, mixed given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Queue.php
 
@@ -2719,6 +5623,24 @@ parameters:
 			path: Request.php
 
 		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 3
+			path: Request.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 9
+			path: Request.php
+
+		-
 			message: '#^Method Siro\\Core\\Request\:\:array\(\) has parameter \$default with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2727,6 +5649,42 @@ parameters:
 		-
 			message: '#^Method Siro\\Core\\Request\:\:parseNestedFiles\(\) has parameter \$file with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Method Siro\\Core\\Request\:\:query\(\) should return array\<string, mixed\> but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Method Siro\\Core\\Request\:\:queryString\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Parameter \#1 \$file of class Siro\\Core\\UploadedFile constructor expects array\<string, mixed\>, array\<mixed, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Parameter \#3 \$query of class Siro\\Core\\Request constructor expects array\<string, mixed\>, array\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Parameter \#5 \$jsonBody of class Siro\\Core\\Request constructor expects array\<string, mixed\>, array\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Request.php
+
+		-
+			message: '#^Property Siro\\Core\\Request\:\:\$uploadedFiles \(array\<string, Siro\\Core\\UploadedFile\>\) does not accept array\<Siro\\Core\\UploadedFile\>\.$#'
+			identifier: assign.propertyType
 			count: 1
 			path: Request.php
 
@@ -2773,6 +5731,24 @@ parameters:
 			path: Response.php
 
 		-
+			message: '#^Parameter \#1 \$data of static method Siro\\Core\\Response\:\:success\(\) expects array\<string, mixed\>\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Response.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_contains expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Response.php
+
+		-
+			message: '#^Property Siro\\Core\\Response\:\:\$extraHeaders \(array\<string, string\>\) does not accept array\.$#'
+			identifier: assign.propertyType
+			count: 2
+			path: Response.php
+
+		-
 			message: '#^Method Siro\\Core\\Route\:\:delete\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2807,6 +5783,42 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: Route.php
+
+		-
+			message: '#^Method Siro\\Core\\Route\:\:registerRoute\(\) should return Siro\\Core\\Route but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Route.php
+
+		-
+			message: '#^Parameter \#3 \$middleware of method Siro\\Core\\Router\:\:setRouteMiddleware\(\) expects array\<int, \(callable\(\)\: mixed\)\|string\>, array\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Route.php
+
+		-
+			message: '#^Binary operation "\." between mixed and ''@'' results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Cannot access constant class on mixed\.$#'
+			identifier: classConstant.nonObject
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Router.php
 
 		-
 			message: '#^Method Siro\\Core\\Router\:\:add\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
@@ -2899,14 +5911,50 @@ parameters:
 			path: Router.php
 
 		-
+			message: '#^Parameter \#1 \$pattern of function preg_match expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Parameter \#1 \$payload of static method Siro\\Core\\Response\:\:json\(\) expects array\<string, mixed\>, array\<mixed, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Parameter \#1 \$payload of static method Siro\\Core\\Response\:\:json\(\) expects array\<string, mixed\>, array\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Router.php
+
+		-
 			message: '#^Parameter \#2 \$string of function explode expects string, array\|string given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Router.php
 
 		-
+			message: '#^Property Siro\\Core\\Router\:\:\$dynamicRoutes \(array\<string, array\<int, array\{path\: string, segments\: array\<int, string\>, handler\: array\|\(callable\(\)\: mixed\)\|string, middleware\: array\<int, \(callable\(\)\: mixed\)\|string\>, cache_ttl\: int\}\>\>\) does not accept mixed\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Router.php
+
+		-
 			message: '#^Property Siro\\Core\\Router\:\:\$dynamicRoutes type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Property Siro\\Core\\Router\:\:\$groupMiddleware \(array\<int, \(callable\(\)\: mixed\)\|string\>\) does not accept array\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Router.php
+
+		-
+			message: '#^Property Siro\\Core\\Router\:\:\$staticRoutes \(array\<string, array\<string, array\{path\: string, handler\: array\|\(callable\(\)\: mixed\)\|string, middleware\: array\<int, \(callable\(\)\: mixed\)\|string\>, cache_ttl\: int\}\>\>\) does not accept mixed\.$#'
+			identifier: assign.propertyType
 			count: 1
 			path: Router.php
 
@@ -2929,10 +5977,22 @@ parameters:
 			path: Router.php
 
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: Schedule.php
+
+		-
 			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: Schedule.php
+
+		-
+			message: '#^Parameter \#1 \$object of function get_class expects object, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ScheduleTask.php
 
 		-
 			message: '#^Property Siro\\Core\\ScheduleTask\:\:\$lastRun is never read, only written\.$#'
@@ -2941,8 +6001,80 @@ parameters:
 			path: ScheduleTask.php
 
 		-
+			message: '#^Method Siro\\Core\\Schema\:\:driver\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: Schema.php
+
+		-
+			message: '#^Method Siro\\Core\\Schema\:\:getColumnListing\(\) should return array\<int, string\> but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: Schema.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 9
+			path: SendMailJob.php
+
+		-
+			message: '#^Cannot access offset string on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: Session.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Session.php
+
+		-
+			message: '#^Parameter \#1 \.\.\.\$arrays of function array_merge expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Session.php
+
+		-
+			message: '#^Property Siro\\Core\\Session\:\:\$data \(array\<string, mixed\>\) does not accept array\<mixed, mixed\>\.$#'
+			identifier: assign.propertyType
+			count: 2
+			path: Session.php
+
+		-
+			message: '#^Property Siro\\Core\\Session\:\:\$driver \(string\) does not accept string\|null\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Session.php
+
+		-
+			message: '#^Property Siro\\Core\\Session\:\:\$flash \(array\<string, mixed\>\) does not accept mixed\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Session.php
+
+		-
+			message: '#^Property Siro\\Core\\Session\:\:\$sessionId \(string\) does not accept mixed\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: Session.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Storage.php
+
+		-
 			message: '#^Method Siro\\Core\\Storage\:\:s3Config\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: Storage.php
+
+		-
+			message: '#^Method Siro\\Core\\Storage\:\:s3Config\(\) should return array but returns mixed\.$#'
+			identifier: return.type
 			count: 1
 			path: Storage.php
 
@@ -2953,9 +6085,69 @@ parameters:
 			path: Storage.php
 
 		-
+			message: '#^Parameter \#1 \$secret of static method Siro\\Core\\Storage\:\:s3SigningKey\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Storage.php
+
+		-
+			message: '#^Parameter \#1 \$string of function rtrim expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Storage.php
+
+		-
+			message: '#^Parameter \#2 \$string of function explode expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Storage.php
+
+		-
+			message: '#^Parameter \#3 \$region of static method Siro\\Core\\Storage\:\:s3SigningKey\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Storage.php
+
+		-
+			message: '#^Part \$bucket \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Storage.php
+
+		-
+			message: '#^Part \$key \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: Storage.php
+
+		-
+			message: '#^Part \$region \(mixed\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 2
+			path: Storage.php
+
+		-
+			message: '#^Method Siro\\Core\\Str\:\:plural\(\) should return string but returns string\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: Str.php
+
+		-
+			message: '#^Method Siro\\Core\\Str\:\:singular\(\) should return string but returns string\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: Str.php
+
+		-
 			message: '#^Parameter \#1 \$array of function array_slice expects array, list\<string\>\|false given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Str.php
+
+		-
+			message: '#^Parameter \#1 \$string of function mb_strtolower expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 2
 			path: Str.php
 
 		-
@@ -2965,9 +6157,27 @@ parameters:
 			path: Str.php
 
 		-
+			message: '#^Parameter \#2 \$array of function implode expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Str.php
+
+		-
+			message: '#^Parameter \#3 \$subject of function preg_replace expects array\<float\|int\|string\>\|string, string\|null given\.$#'
+			identifier: argument.type
+			count: 3
+			path: Str.php
+
+		-
 			message: '#^Cannot cast array\<string, mixed\> to string\.$#'
 			identifier: cast.string
 			count: 2
+			path: URL.php
+
+		-
+			message: '#^Method Siro\\Core\\URL\:\:secret\(\) should return string but returns string\|null\.$#'
+			identifier: return.type
+			count: 1
 			path: URL.php
 
 		-
@@ -2989,39 +6199,57 @@ parameters:
 			path: URL.php
 
 		-
+			message: '#^Parameter \#1 \$payload of static method Siro\\Core\\URL\:\:validate\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: URL.php
+
+		-
 			message: '#^Parameter \#1 \$string of function base64_encode expects string, string\|false given\.$#'
 			identifier: argument.type
 			count: 1
 			path: URL.php
 
 		-
-			message: '#^Method Siro\\Core\\UploadedFile\:\:__construct\(\) has parameter \$file with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: UploadedFile.php
-
-		-
-			message: '#^Method Siro\\Core\\UploadedFile\:\:hash\(\) should return string\|null but returns string\|false\.$#'
-			identifier: return.type
-			count: 1
-			path: UploadedFile.php
-
-		-
-			message: '#^Parameter \#1 \$finfo of function finfo_close expects finfo, finfo\|false given\.$#'
+			message: '#^Parameter \#1 \$string of function rtrim expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 1
+			path: URL.php
+
+		-
+			message: '#^Parameter \#2 \$signature of static method Siro\\Core\\URL\:\:validate\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: URL.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
 			path: UploadedFile.php
 
 		-
-			message: '#^Parameter \#1 \$finfo of function finfo_file expects finfo, finfo\|false given\.$#'
-			identifier: argument.type
-			count: 1
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 3
 			path: UploadedFile.php
 
 		-
 			message: '#^Anonymous function never returns string so it can be removed from the return type\.$#'
 			identifier: return.unusedType
 			count: 3
+			path: Validator.php
+
+		-
+			message: '#^Cannot access offset ''field'' on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: Validator.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
 			path: Validator.php
 
 		-
@@ -3040,6 +6268,24 @@ parameters:
 			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 3
+			path: Validator.php
+
+		-
+			message: '#^Parameter \#1 \$key of static method Siro\\Core\\Validator\:\:msg\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Validator.php
+
+		-
+			message: '#^Parameter \#2 \$replace of static method Siro\\Core\\Lang\:\:get\(\) expects array\<string, mixed\>, array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Validator.php
+
+		-
+			message: '#^Parameter \#2 \$replace of static method Siro\\Core\\Validator\:\:msg\(\) expects array, mixed given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Validator.php
 
 		-

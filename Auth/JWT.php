@@ -23,6 +23,7 @@ final class JWT
         return $alg;
     }
 
+    /** @param array<string, mixed> $payload */
     public static function encode(array $payload): string
     {
         $alg = self::algorithm();
@@ -81,14 +82,16 @@ final class JWT
         $payloadJson = self::base64UrlDecode($payloadB64);
         $signature = self::base64UrlDecode($signatureB64);
 
+        /** @var array<string, mixed>|null $header */
         $header = json_decode($headerJson, true);
+        /** @var array<string, mixed>|null $payload */
         $payload = json_decode($payloadJson, true);
 
         if (!is_array($header) || !is_array($payload)) {
             throw new RuntimeException('Invalid token payload.');
         }
 
-        $alg = $header['alg'] ?? '';
+        $alg = (string) ($header['alg'] ?? '');
         if (!in_array($alg, [self::ALG_HS256, self::ALG_RS256], true)) {
             throw new RuntimeException('Unsupported token algorithm: ' . $alg);
         }
@@ -155,6 +158,7 @@ final class JWT
             throw new RuntimeException('Invalid RSA private key.');
         }
 
+        $signature = '';
         $result = openssl_sign($data, $signature, $key, OPENSSL_ALGO_SHA256);
         openssl_free_key($key);
 

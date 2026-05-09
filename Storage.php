@@ -198,9 +198,9 @@ final class Storage
 
     public static function localPath(string $path): string
     {
-        $base = defined('SIRO_BASE_PATH') ? SIRO_BASE_PATH : getcwd();
-        $base = rtrim((string) $base, DIRECTORY_SEPARATOR);
-        $storagePath = str_replace('/', DIRECTORY_SEPARATOR, self::$config['path']);
+        $base = defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd();
+        $base = rtrim($base, DIRECTORY_SEPARATOR);
+        $storagePath = str_replace('/', DIRECTORY_SEPARATOR, (string) (self::$config['path'] ?? ''));
 
         return $base . DIRECTORY_SEPARATOR . $storagePath . DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR);
     }

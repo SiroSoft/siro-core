@@ -386,9 +386,10 @@ class QueryBuilder
         $result = [];
 
         foreach ($rows as $row) {
+            /** @var array<string, mixed> $row */
             $value = $row[$column] ?? null;
             if ($key !== null && isset($row[$key])) {
-                $result[$row[$key]] = $value;
+                $result[(string) ($row[$key] ?? '')] = $value;
             } else {
                 $result[] = $value;
             }
@@ -400,6 +401,7 @@ class QueryBuilder
     public function value(string $column): mixed
     {
         $row = $this->select([$column])->first();
+        /** @var array<string, mixed> $row */
         return $row[$column] ?? null;
     }
 
@@ -1089,8 +1091,9 @@ class QueryBuilder
             return 'default';
         }
 
-        $parts = preg_split('/\s+/', $normalized) ?: [];
-        $first = (string) ($parts[0] ?? '');
+        /** @var list<string>|false $parts */
+        $parts = preg_split('/\s+/', $normalized);
+        $first = (string) ($parts !== false ? ($parts[0] ?? '') : '');
         $first = trim($first, "`\" ");
 
         if ($first === '') {

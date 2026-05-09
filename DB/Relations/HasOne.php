@@ -24,7 +24,9 @@ class HasOne
 
     public function query(): ModelQueryBuilder
     {
-        return (new $this->relatedClass())
+        /** @var Model $instance */
+        $instance = new $this->relatedClass();
+        return $instance
             ->query()
             ->where($this->foreignKey, '=', $this->localValue);
     }

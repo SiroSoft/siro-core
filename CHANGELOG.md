@@ -18,10 +18,23 @@
 - Env cache now loads excluded secrets (JWT_SECRET, APP_KEY) from .env file
 - Cache::requestStatus() now returns array instead of string
 
+### 🔧 Improvements
+- MiddlewareInterface contract — all middleware now implement typed interface
+- Controller base class with `success()`, `error()`, `created()`, `validate()`, `paginated()` helpers
+- Config cache no longer merges stale data after fresh file load
+- PHPStan raised to Level 7 (core: 0 errors, baseline 672)
+- PHPStan raised to Level max (core: 0 errors, baseline 1580)
+- Docker: non-root user (siro:siro), HEALTHCHECK added
+- CI: PHP lint + PHPUnit + PHPStan on push/PR
+
 ### 📊 Testing
-- 804 tests, 2178 assertions — all passing
-- Added translation test fixtures (en/vi)
-- Fixed CacheTest for new requestStatus() return type
+- 863 tests, 2242 assertions — all passing
+- AuthMiddleware tests: missing/invalid/expired token, wrong scheme, tampered payload (8 tests)
+- ThrottleMiddleware tests: under/over limit, per-IP/per-route isolation, disabled fallback (6 tests)
+- CsrfMiddleware tests: GET/HEAD/OPTIONS skip, POST/PUT/DELETE/PATCH block, token gen/verification (13 tests)
+- IdempotencyMiddleware tests: duplicate request replay, key validation, header verification (10 tests)
+- JWT tests: encode/decode, expiry, tampering, refresh token, versioning, unique jti (20 tests)
+- DB integration tests: MySQL + PostgreSQL connection and query (7 tests)
 
 ## v0.20.0 (2026-05-09) — Production-Ready Release
 

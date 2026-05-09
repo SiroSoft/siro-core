@@ -36,7 +36,9 @@ class BelongsTo
 
     public function query(): ModelQueryBuilder
     {
-        return (new $this->relatedClass())
+        /** @var Model $instance */
+        $instance = new $this->relatedClass();
+        return $instance
             ->query()
             ->where($this->ownerKey, '=', $this->foreignValue);
     }
@@ -45,6 +47,7 @@ class BelongsTo
     public function getForeignKey(): string { return $this->foreignKey; }
     public function getOwnerKey(): string { return $this->ownerKey; }
 
+    /** @param array<int, mixed> $parameters */
     public function __call(string $method, array $parameters): mixed
     {
         return $this->query()->{$method}(...$parameters);

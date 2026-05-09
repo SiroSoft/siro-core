@@ -33,10 +33,12 @@ final class AuthGuard
 
         if ($container->has('auth.resolver')) {
             $resolver = $container->make('auth.resolver');
-            $user = $resolver($request);
-            if ($user !== null) {
-                $this->userData = $user;
-                return $user;
+            if (is_callable($resolver)) {
+                $user = $resolver($request);
+                if (is_array($user)) {
+                    $this->userData = $user;
+                    return $user;
+                }
             }
         }
 
@@ -72,7 +74,7 @@ final class AuthGuard
 
     public function id(): ?int
     {
-        return $this->userData['id'] ?? null;
+        return isset($this->userData['id']) ? (int) $this->userData['id'] : null;
     }
 
     public function check(): bool
@@ -88,7 +90,7 @@ final class AuthGuard
     public function hasRole(string ...$roles): bool
     {
         if ($this->userData === null) return false;
-        $userRole = $this->userData['role'] ?? 'user';
+        $userRole = (string) ($this->userData['role'] ?? 'user');
         foreach ($roles as $role) {
             if (strtolower($userRole) === strtolower(trim($role))) {
                 return true;

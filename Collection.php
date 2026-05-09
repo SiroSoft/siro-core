@@ -11,6 +11,8 @@ use IteratorAggregate;
 use JsonSerializable;
 use Traversable;
 
+/** @implements \ArrayAccess<int|string, mixed> */
+/** @implements \IteratorAggregate<int|string, mixed> */
 class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
 {
     /** @var array<int|string, mixed> */
@@ -22,11 +24,13 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
         $this->items = $items;
     }
 
+    /** @param array<int|string, mixed> $items */
     public static function make(array $items = []): self
     {
         return new self($items);
     }
 
+    /** @return array<int|string, mixed> */
     public function all(): array
     {
         return $this->items;
@@ -202,7 +206,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
     public function chunk(int $size): self
     {
         $chunks = [];
-        foreach (array_chunk($this->items, $size, true) as $chunk) {
+        foreach (array_chunk($this->items, max(1, $size), true) as $chunk) {
             $chunks[] = new self($chunk);
         }
         return new self($chunks);
@@ -252,9 +256,14 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
         return new self($result);
     }
 
+    /** @param array<int|string, mixed> $values */
     public function combine(array $values): self
     {
-        return new self(array_combine($this->items, $values));
+        $keys = [];
+        foreach ($this->items as $key) {
+            $keys[] = (string) $key;
+        }
+        return new self(array_combine($keys, array_values($values)));
     }
 
     public function keys(): self
@@ -267,6 +276,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
         return new self(array_values($this->items));
     }
 
+    /** @param array<int|string, mixed>|self $items */
     public function merge(array|self $items): self
     {
         $items = $items instanceof self ? $items->all() : $items;
@@ -275,14 +285,16 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     public function toJson(int $options = 0): string
     {
-        return json_encode($this->items, $options | JSON_UNESCAPED_UNICODE);
+        return (string) json_encode($this->items, $options | JSON_UNESCAPED_UNICODE);
     }
 
+    /** @return array<int|string, mixed> */
     public function jsonSerialize(): array
     {
         return $this->items;
     }
 
+    /** @return array<int|string, mixed> */
     public function toArray(): array
     {
         return $this->items;
@@ -290,7 +302,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     public function implode(string $glue = ','): string
     {
-        return implode($glue, $this->items);
+        return implode($glue, array_map('strval', $this->items));
     }
 
     public function sum(?string $column = null): float|int
@@ -309,6 +321,9 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     public function min(?string $column = null): mixed
     {
+        if ($this->items === []) {
+            return null;
+        }
         if ($column === null) {
             return min($this->items);
         }
@@ -317,6 +332,9 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     public function max(?string $column = null): mixed
     {
+        if ($this->items === []) {
+            return null;
+        }
         if ($column === null) {
             return max($this->items);
         }
@@ -364,11 +382,17 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     public function offsetExists(mixed $offset): bool
     {
-        return isset($this->items[$offset]);
+        if ($offset === null) {
+            return false;
+        }
+        return array_key_exists($offset, $this->items);
     }
 
     public function offsetGet(mixed $offset): mixed
     {
+        if ($offset === null) {
+            return null;
+        }
         return $this->items[$offset] ?? null;
     }
 

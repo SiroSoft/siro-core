@@ -24,8 +24,8 @@ final class Session
     public function __construct(?string $driver = null)
     {
         $this->driver = $driver ?? Env::get('SESSION_DRIVER', self::DRIVER_FILE);
-        $basePath = defined('BASE_PATH') ? BASE_PATH
-            : (defined('SIRO_BASE_PATH') ? SIRO_BASE_PATH : getcwd());
+        $basePath = defined('BASE_PATH') ? (string) BASE_PATH
+            : (defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd());
         $this->filePath = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'sessions';
     }
 

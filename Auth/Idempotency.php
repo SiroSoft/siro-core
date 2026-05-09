@@ -66,12 +66,13 @@ final class Idempotency
             $this->isDuplicate = true;
             $data = Database::select(
                 "SELECT response_data FROM " . self::$table . " WHERE id = ?",
-                [$existing[0]['id']]
+                [isset($existing[0]['id']) ? $existing[0]['id'] : 0]
             );
-            $storedRaw = $data[0]['response_data'] ?? '';
-            if (is_string($storedRaw) && $storedRaw !== '') {
+            $storedRaw = isset($data[0]['response_data']) && is_string($data[0]['response_data']) ? $data[0]['response_data'] : '';
+            if ($storedRaw !== '') {
                 $decoded = json_decode($storedRaw, true);
                 if (is_array($decoded)) {
+                    /** @var array<string, mixed> $decoded */
                     $this->storedResponse = $decoded;
                 }
             }

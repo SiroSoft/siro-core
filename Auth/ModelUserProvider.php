@@ -12,21 +12,24 @@ final class ModelUserProvider implements UserProvider
     /** @param class-string $modelClass */
     public function __construct(string $modelClass)
     {
-        /** @var class-string $modelClass */
         $this->modelClass = $modelClass;
     }
 
+    /** @return array<string, mixed>|null */
     public function retrieveById(int $id): ?array
     {
         $model = $this->modelClass;
+        /** @var \Siro\Core\Model|null $user */
         $user = $model::find($id);
         return $user !== null ? $user->toArray() : null;
     }
 
     /** @param array<string, mixed> $credentials */
+    /** @return array<string, mixed>|null */
     public function retrieveByCredentials(array $credentials): ?array
     {
         $model = $this->modelClass;
+        /** @var \Siro\Core\DB\ModelQueryBuilder $query */
         $query = $model::query();
 
         foreach ($credentials as $key => $value) {
@@ -34,6 +37,7 @@ final class ModelUserProvider implements UserProvider
             $query = $query->where($key, $value);
         }
 
+        /** @var \Siro\Core\Model|null $user */
         $user = $query->first();
         return $user !== null ? $user->toArray() : null;
     }
@@ -41,7 +45,7 @@ final class ModelUserProvider implements UserProvider
     /** @param array<string, mixed> $user */
     public function validateCredentials(array $user, string $password): bool
     {
-        $hash = $user['password'] ?? '';
+        $hash = (string) ($user['password'] ?? '');
         return password_verify($password, $hash);
     }
 }

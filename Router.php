@@ -664,7 +664,7 @@ final class Router
         if (str_contains($middleware, ':')) {
             [$name, $paramString] = explode(':', $middleware, 2);
             $middlewareClass = $this->resolveMiddlewareAlias(trim($name));
-            $rawParams = $paramString === '' ? [] : array_map('trim', explode(',', $paramString));
+            $rawParams = $paramString === '' ? [] : array_map('trim', explode(',', (string) $paramString));
             $params = array_map(function (string $p): mixed {
                 if (is_numeric($p)) {
                     return str_contains($p, '.') ? (float) $p : (int) $p;

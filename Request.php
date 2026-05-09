@@ -60,14 +60,14 @@ final class Request
 
     public static function fromGlobals(): self
     {
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        $uri = $_SERVER['REQUEST_URI'] ?? '/';
-        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+        $method = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+        $path = parse_url((string) $uri, PHP_URL_PATH) ?: '/';
         $path = self::normalizePath($path);
 
         $query = $_GET;
         $headers = self::parseHeaders();
-        $contentType = $headers['content-type'] ?? '';
+        $contentType = (string) ($headers['content-type'] ?? '');
         $isMultipart = str_contains($contentType, 'multipart/form-data');
 
         $maxBodySize = 2 * 1024 * 1024; // 2MB limit

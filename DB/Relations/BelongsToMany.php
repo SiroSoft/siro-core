@@ -81,6 +81,7 @@ class BelongsToMany
 
     public function query(): ModelQueryBuilder
     {
+        /** @var Model $related */
         $related = new $this->relatedClass();
         $relatedTable = $related->getTable();
         $pivotTable = $this->pivotTable;
@@ -88,7 +89,9 @@ class BelongsToMany
         $relatedKey = $this->relatedKey;
         $localValue = $this->localValue;
 
-        return (new $this->relatedClass())
+        /** @var Model $relatedInstance */
+        $relatedInstance = new $this->relatedClass();
+        return $relatedInstance
             ->query()
             ->select("{$relatedTable}.*")
             ->join("{$pivotTable}", "{$pivotTable}.{$relatedKey}", '=', "{$relatedTable}.id")

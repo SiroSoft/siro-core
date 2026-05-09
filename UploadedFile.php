@@ -22,6 +22,7 @@ final class UploadedFile
     private readonly int $size;
     private readonly int $error;
 
+    /** @param array<string, mixed> $file */
     public function __construct(array $file)
     {
         $this->path = (string) ($file['tmp_name'] ?? '');
@@ -46,13 +47,19 @@ final class UploadedFile
         return strtolower(pathinfo($this->originalName, PATHINFO_EXTENSION));
     }
 
+    /**
+     * Get MIME type using finfo.
+     */
     public function getMimeType(): string
     {
         if ($this->isValid()) {
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo === false) {
+                return $this->mimeType;
+            }
             $type = finfo_file($finfo, $this->path);
             finfo_close($finfo);
-            return $type ?: $this->mimeType;
+            return $type !== false ? $type : $this->mimeType;
         }
 
         return $this->mimeType;
@@ -171,7 +178,8 @@ final class UploadedFile
             return null;
         }
 
-        return hash_file('sha256', $path);
+        $hash = hash_file('sha256', $path);
+        return $hash !== false ? $hash : null;
     }
 
     public function extension(): string

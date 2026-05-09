@@ -1,0 +1,1688 @@
+﻿php : Note: Using configuration file D:\VietVang\SiroSoft\siro-core\phpstan.neon.
+At line:10 char:32
++ ... pstan.neon; php -d memory_limit=512M vendor/bin/phpstan analyse --no- ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Note: Using con...e\phpstan.neon.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Instructions for interpreting errors
+---------
+
+Each error has an associated identifier, like `argument.type`
+or `return.missing`.
+
+Each error identifier has documentation at URL https://phpstan.org/error-identifiers/<identifier>
+This page contains code example, explanation why is this an error
+and instruction how to fix it.
+Before fixing the error, fetch the documentation page for its identifier.
+
+The error usually indicates a real bug or incorrect type in the code. Fix the underlying cause, do not just make the 
+error go away.
+Do not add `@phpstan-ignore` comments, `@phpstan-ignore-next-line` comments, or baseline entries to suppress the error.
+Do not use assert() or inline @var PHPDoc tag to override PHPStan's inferred type.
+Do not add type casts just to silence errors.
+Do not widen parameter or return types just to make the error go away.
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   App.php                                                                                                        
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :103   Parameter #1 $modelClass of class Siro\Core\Auth\ModelUserProvider constructor expects class-string, string    
+         given.                                                                                                         
+         ≡ƒ¬¬  argument.type                                                                                              
+  :224   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :229   Method Siro\Core\App::isDown() should return array<string, mixed>|null but returns array<mixed, mixed>|null.   
+         ≡ƒ¬¬  return.type                                                                                                
+  :263   Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :264   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :302   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :303   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :382   Parameter #1 $meta of static method Siro\Core\Response::setDebugMeta() expects array<string, bool|float|int|s  
+         tring|null>, array<string, array<string, string>|float> given.                                                 
+         ≡ƒ¬¬  argument.type                                                                                              
+  :385   Call to function is_array() with array<string, string> will always evaluate to true.                           
+         ≡ƒ¬¬  function.alreadyNarrowedType                                                                               
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------ 
+  Line   Auth\ApiKey.php               
+ ------ ------------------------------ 
+  :80    Cannot cast mixed to int.     
+         ≡ƒ¬¬  cast.int                  
+  :92    Cannot cast mixed to int.     
+         ≡ƒ¬¬  cast.int                  
+  :93    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :94    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :95    Cannot cast mixed to int.     
+         ≡ƒ¬¬  cast.int                  
+  :96    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :155   Cannot cast mixed to int.     
+         ≡ƒ¬¬  cast.int                  
+  :156   Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :157   Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :158   Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :159   Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :160   Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :161   Cannot cast mixed to int.     
+         ≡ƒ¬¬  cast.int                  
+  :161   Cannot cast mixed to int.     
+         ≡ƒ¬¬  cast.int                  
+  :183   Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+ ------ ------------------------------ 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Auth\AuthGuard.php                                                                                             
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :39    Property Siro\Core\Auth\AuthGuard::$userData (array<string, mixed>|null) does not accept array<mixed, mixed>.  
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :40    Method Siro\Core\Auth\AuthGuard::resolve() should return array<string, mixed>|null but returns array<mixed, m  
+         ixed>.                                                                                                         
+         ≡ƒ¬¬  return.type                                                                                                
+  :54    Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :77    Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :93    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :112   Method Siro\Core\Auth\AuthGuard::getUserProvider() should return Siro\Core\Auth\UserProvider|null but returns  
+         object.                                                                                                        
+         ≡ƒ¬¬  return.type                                                                                                
+  :118   PHPDoc tag @var with type class-string is not subtype of native type 'App\\Models\\User'.                      
+         ≡ƒ¬¬  varTag.nativeType                                                                                          
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------ 
+  Line   Auth\Idempotency.php                            
+ ------ ------------------------------------------------ 
+  :69    Cannot access offset 'id' on mixed.             
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :71    Cannot access offset 'response_data' on mixed.  
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+ ------ ------------------------------------------------ 
+
+ ------ -------------------------------------------------------------------------------- 
+  Line   Auth\JWT.php                                                                    
+ ------ -------------------------------------------------------------------------------- 
+  :94    Cannot cast mixed to string.                                                    
+         ≡ƒ¬¬  cast.string                                                                 
+  :110   Cannot cast mixed to int.                                                       
+         ≡ƒ¬¬  cast.int                                                                    
+  :115   Cannot cast mixed to int.                                                       
+         ≡ƒ¬¬  cast.int                                                                    
+  :120   Cannot cast mixed to int.                                                       
+         ≡ƒ¬¬  cast.int                                                                    
+  :125   Cannot cast mixed to int.                                                       
+         ≡ƒ¬¬  cast.int                                                                    
+  :169   Method Siro\Core\Auth\JWT::signRs256() should return string but returns mixed.  
+         ≡ƒ¬¬  return.type                                                                 
+ ------ -------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  Line   Auth\ModelUserProvider.php                                                                                 
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  :29    Method Siro\Core\Auth\ModelUserProvider::retrieveByCredentials() has parameter $credentials with no value  
+         type specified in iterable type array.                                                                     
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :48    Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+ ------ ----------------------------------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  Line   Auth\UserProvider.php                                                                                      
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  :14    Method Siro\Core\Auth\UserProvider::retrieveByCredentials() has parameter $credentials with no value type  
+         specified in iterable type array.                                                                          
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+ ------ ----------------------------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------ 
+  Line   Cache\Drivers\FileDriver.php  
+ ------ ------------------------------ 
+  :127   Cannot cast mixed to int.     
+         ≡ƒ¬¬  cast.int                  
+ ------ ------------------------------ 
+
+ ------ ------------------------------- 
+  Line   Cache\Drivers\RedisDriver.php  
+ ------ ------------------------------- 
+  :28    Cannot cast mixed to string.   
+         ≡ƒ¬¬  cast.string                
+ ------ ------------------------------- 
+
+ ------ ------------------------------------------------------------------------------------------------------------ 
+  Line   Collection.php                                                                                              
+ ------ ------------------------------------------------------------------------------------------------------------ 
+  :16    Class Siro\Core\Collection implements generic interface ArrayAccess but does not specify its types: TKey,   
+         TValue                                                                                                      
+         ≡ƒ¬¬  missingType.generics                                                                                    
+  :107   Possibly invalid array key type mixed.                                                                      
+         ≡ƒ¬¬  offsetAccess.invalidOffset                                                                              
+  :170   Method Siro\Core\Collection::whereIn() has parameter $values with no value type specified in iterable type  
+         array.                                                                                                      
+         ≡ƒ¬¬  missingType.iterableValue                                                                               
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                  
+  :264   Cannot cast mixed to string.                                                                                
+         ≡ƒ¬¬  cast.string                                                                                             
+  :305   Parameter #1 $callback of function array_map expects (callable(mixed): mixed)|null, 'strval' given.         
+         ≡ƒ¬¬  argument.type                                                                                           
+         ≡ƒÆí  Type #1 from the union: Type bool|float|GMP|int|resource|string|null of parameter #1 $value of passed   
+         callable needs to be same or wider than parameter type mixed of accepting callable.                         
+  :388   Parameter #1 $key of function array_key_exists expects int|string, mixed given.                             
+         ≡ƒ¬¬  argument.type                                                                                           
+  :396   Possibly invalid array key type mixed.                                                                      
+         ≡ƒ¬¬  offsetAccess.invalidOffset                                                                              
+  :404   Possibly invalid array key type mixed.                                                                      
+         ≡ƒ¬¬  offsetAccess.invalidOffset                                                                              
+  :410   Possibly invalid array key type mixed.                                                                      
+         ≡ƒ¬¬  offsetAccess.invalidOffset                                                                              
+ ------ ------------------------------------------------------------------------------------------------------------ 
+
+ ------ ------------------------------------------------------------------------------------------------------ 
+  Line   Config.php                                                                                            
+ ------ ------------------------------------------------------------------------------------------------------ 
+  :33    Static property Siro\Core\Config::$items (array<string, mixed>) does not accept array<mixed, mixed>.  
+         ≡ƒ¬¬  assign.propertyType                                                                               
+ ------ ------------------------------------------------------------------------------------------------------ 
+
+ ------ ------------------------------------------------------------------------------------------------------------- 
+  Line   Console.php                                                                                                  
+ ------ ------------------------------------------------------------------------------------------------------------- 
+  :160   Method Siro\Core\Console::aliases() return type has no value type specified in iterable type array.          
+         ≡ƒ¬¬  missingType.iterableValue                                                                                
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                   
+  :170   Constant Siro\Core\Console::CORE_FLOW is unused.                                                             
+         ≡ƒ¬¬  classConstant.unused                                                                                     
+         ≡ƒÆí  See: https://phpstan.org/developing-extensions/always-used-class-constants                               
+  :172   Method Siro\Core\Console::run() has parameter $argv with no value type specified in iterable type array.     
+         ≡ƒ¬¬  missingType.iterableValue                                                                                
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                   
+  :174   Parameter #1 $string of function trim expects string, mixed given.                                           
+         ≡ƒ¬¬  argument.type                                                                                            
+  :226   Possibly invalid array key type mixed.                                                                       
+         ≡ƒ¬¬  offsetAccess.invalidOffset                                                                               
+  :227   Parameter #1 $command of method Siro\Core\Console::unknownCommand() expects string, mixed given.             
+         ≡ƒ¬¬  argument.type                                                                                            
+  :231   Parameter #1 $command of method Siro\Core\Console::printCommandHelp() expects string, mixed given.           
+         ≡ƒ¬¬  argument.type                                                                                            
+  :231   Possibly invalid array key type mixed.                                                                       
+         ≡ƒ¬¬  offsetAccess.invalidOffset                                                                               
+  :236   Possibly invalid array key type mixed.                                                                       
+         ≡ƒ¬¬  offsetAccess.invalidOffset                                                                               
+  :237   Call to an undefined method object::run().                                                                   
+         ≡ƒ¬¬  method.notFound                                                                                          
+  :237   Method Siro\Core\Console::run() should return int but returns mixed.                                         
+         ≡ƒ¬¬  return.type                                                                                              
+  :350   Argument of an invalid type mixed supplied for foreach, only iterables are supported.                        
+         ≡ƒ¬¬  foreach.nonIterable                                                                                      
+  :351   Binary operation "." between 'php siro ' and mixed results in an error.                                      
+         ≡ƒ¬¬  binaryOp.invalid                                                                                         
+  :351   Possibly invalid array key type mixed.                                                                       
+         ≡ƒ¬¬  offsetAccess.invalidOffset                                                                               
+  :352   Parameter #1 $string of function str_pad expects string, mixed given.                                        
+         ≡ƒ¬¬  argument.type                                                                                            
+  :368   Method Siro\Core\Console::printCommandHelp() has parameter $info with no value type specified in iterable    
+         type array.                                                                                                  
+         ≡ƒ¬¬  missingType.iterableValue                                                                                
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                   
+  :372   Binary operation "." between non-falsy-string and mixed results in an error.                                 
+         ≡ƒ¬¬  binaryOp.invalid                                                                                         
+  :375   Binary operation "." between '    ' and mixed results in an error.                                           
+         ≡ƒ¬¬  binaryOp.invalid                                                                                         
+  :380   Method Siro\Core\Console::groupedCommands() return type has no value type specified in iterable type array.  
+         ≡ƒ¬¬  missingType.iterableValue                                                                                
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                   
+  :414   Method Siro\Core\Console::unknownCommand() has parameter $registry with no value type specified in iterable  
+         type array.                                                                                                  
+         ≡ƒ¬¬  missingType.iterableValue                                                                                
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                   
+ ------ ------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Container.php                                                                                                  
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :39    Property Siro\Core\Container::$bindings (array<string, (callable(): mixed)|class-string>) does not accept non  
+         -empty-array<string, (callable(): mixed)|string>.                                                              
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :44    Property Siro\Core\Container::$bindings (array<string, (callable(): mixed)|class-string>) does not accept non  
+         -empty-array<string, (callable(): mixed)|string>.                                                              
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :75    Property Siro\Core\Container::$resolved (array<string, object>) does not accept array<string, mixed>.          
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :78    Method Siro\Core\Container::make() should return object but returns mixed.                                     
+         ≡ƒ¬¬  return.type                                                                                                
+  :106   Parameter #1 $abstract of method Siro\Core\Container::make() expects string, mixed given.                      
+         ≡ƒ¬¬  argument.type                                                                                              
+  :123   Parameter #1 $objectOrClass of class ReflectionClass constructor expects class-string<T of object>|T of objec  
+         t, string given.                                                                                               
+         ≡ƒ¬¬  argument.type                                                                                              
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Controller.php                                                                                                 
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :21    Parameter #1 $data of static method Siro\Core\Response::success() expects array<string, mixed>|null, mixed gi  
+         ven.                                                                                                           
+         ≡ƒ¬¬  argument.type                                                                                              
+  :24    Method Siro\Core\Controller::error() has parameter $errors with no value type specified in iterable type       
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :26    Parameter #3 $errors of static method Siro\Core\Response::error() expects array<string, mixed>, array given.   
+         ≡ƒ¬¬  argument.type                                                                                              
+  :45    Parameter #2 $meta of static method Siro\Core\Response::paginated() expects array{page: int, per_page: int,    
+         total: int, last_page: int}, array<string, mixed> given.                                                       
+         ≡ƒ¬¬  argument.type                                                                                              
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  Line   DB\Blueprint.php                                                                                           
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  :32    Method Siro\Core\DB\Blueprint::detectDriver() should return string but returns mixed.                      
+         ≡ƒ¬¬  return.type                                                                                            
+  :107   Parameter #1 $name of method Siro\Core\DB\Blueprint::timestamp() expects string, string|null given.        
+         ≡ƒ¬¬  argument.type                                                                                          
+  :108   Parameter #1 $name of method Siro\Core\DB\Blueprint::timestamp() expects string, string|null given.        
+         ≡ƒ¬¬  argument.type                                                                                          
+  :206   Method Siro\Core\DB\Blueprint::addColumn() has parameter $params with no value type specified in iterable  
+         type array.                                                                                                
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :228   Parameter #2 $haystack of function in_array expects array, mixed given.                                    
+         ≡ƒ¬¬  argument.type                                                                                          
+  :248   Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :261   Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :274   Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :274   Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :277   Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :305   Method Siro\Core\DB\Blueprint::compileCommandAsSql() has parameter $cmd with no value type specified in    
+         iterable type array.                                                                                       
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :309   Cannot access property $column on mixed.                                                                   
+         ≡ƒ¬¬  property.nonObject                                                                                     
+  :309   Parameter #1 $identifier of method Siro\Core\DB\Blueprint::quote() expects string, mixed given.            
+         ≡ƒ¬¬  argument.type                                                                                          
+  :310   Cannot access property $references on mixed.                                                               
+         ≡ƒ¬¬  property.nonObject                                                                                     
+  :310   Parameter #1 $identifier of method Siro\Core\DB\Blueprint::quote() expects string, mixed given.            
+         ≡ƒ¬¬  argument.type                                                                                          
+  :311   Cannot access property $onTable on mixed.                                                                  
+         ≡ƒ¬¬  property.nonObject                                                                                     
+  :311   Parameter #1 $identifier of method Siro\Core\DB\Blueprint::quote() expects string, mixed given.            
+         ≡ƒ¬¬  argument.type                                                                                          
+  :313   Cannot access property $onDelete on mixed.                                                                 
+         ≡ƒ¬¬  property.nonObject                                                                                     
+  :314   Cannot access property $onDelete on mixed.                                                                 
+         ≡ƒ¬¬  property.nonObject                                                                                     
+  :314   Part $fk->onDelete (mixed) of encapsed string cannot be cast to string.                                    
+         ≡ƒ¬¬  encapsedStringPart.nonString                                                                           
+  :316   Cannot access property $onUpdate on mixed.                                                                 
+         ≡ƒ¬¬  property.nonObject                                                                                     
+  :317   Cannot access property $onUpdate on mixed.                                                                 
+         ≡ƒ¬¬  property.nonObject                                                                                     
+  :317   Part $fk->onUpdate (mixed) of encapsed string cannot be cast to string.                                    
+         ≡ƒ¬¬  encapsedStringPart.nonString                                                                           
+  :325   Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :325   Parameter #2 $array of function implode expects array<string>, array given.                                
+         ≡ƒ¬¬  argument.type                                                                                          
+  :326   Parameter #1 $identifier of method Siro\Core\DB\Blueprint::quote() expects string, mixed given.            
+         ≡ƒ¬¬  argument.type                                                                                          
+  :328   Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :328   Parameter #2 $array of function implode expects array<string>, array given.                                
+         ≡ƒ¬¬  argument.type                                                                                          
+  :330   Parameter #1 $identifier of method Siro\Core\DB\Blueprint::quote() expects string, mixed given.            
+         ≡ƒ¬¬  argument.type                                                                                          
+  :336   Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :336   Parameter #2 $array of function implode expects array<string>, array given.                                
+         ≡ƒ¬¬  argument.type                                                                                          
+  :337   Parameter #1 $identifier of method Siro\Core\DB\Blueprint::quote() expects string, mixed given.            
+         ≡ƒ¬¬  argument.type                                                                                          
+  :339   Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :339   Parameter #2 $array of function implode expects array<string>, array given.                                
+         ≡ƒ¬¬  argument.type                                                                                          
+  :341   Parameter #1 $identifier of method Siro\Core\DB\Blueprint::quote() expects string, mixed given.            
+         ≡ƒ¬¬  argument.type                                                                                          
+ ------ ----------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   DB\Column.php                                                                                                  
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :27    Method Siro\Core\DB\Column::__construct() has parameter $params with no value type specified in iterable type  
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :31    Property Siro\Core\DB\Column::$params (array<string, mixed>) does not accept array.                            
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   DB\EagerLoader.php                                                                                             
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :87    Parameter #1 $array of function array_unique expects an array of values castable to string, list<mixed> given  
+         .                                                                                                              
+         ≡ƒ¬¬  argument.type                                                                                              
+  :89    Call to an undefined method object::query().                                                                   
+         ≡ƒ¬¬  method.notFound                                                                                            
+  :92    Cannot call method select() on mixed.                                                                          
+         ≡ƒ¬¬  method.nonObject                                                                                           
+  :94    Cannot call method get() on mixed.                                                                             
+         ≡ƒ¬¬  method.nonObject                                                                                           
+  :94    Cannot call method whereIn() on mixed.                                                                         
+         ≡ƒ¬¬  method.nonObject                                                                                           
+  :97    Argument of an invalid type mixed supplied for foreach, only iterables are supported.                          
+         ≡ƒ¬¬  foreach.nonIterable                                                                                        
+  :99    Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :105   Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :131   Parameter #1 $array of function array_unique expects an array of values castable to string, list<mixed> given  
+         .                                                                                                              
+         ≡ƒ¬¬  argument.type                                                                                              
+  :135   Call to an undefined method object::query().                                                                   
+         ≡ƒ¬¬  method.notFound                                                                                            
+  :138   Cannot call method select() on mixed.                                                                          
+         ≡ƒ¬¬  method.nonObject                                                                                           
+  :140   Cannot call method get() on mixed.                                                                             
+         ≡ƒ¬¬  method.nonObject                                                                                           
+  :140   Cannot call method whereIn() on mixed.                                                                         
+         ≡ƒ¬¬  method.nonObject                                                                                           
+  :143   Argument of an invalid type mixed supplied for foreach, only iterables are supported.                          
+         ≡ƒ¬¬  foreach.nonIterable                                                                                        
+  :145   Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :150   Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   DB\ModelQueryBuilder.php                                                                                       
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :35    Method Siro\Core\DB\ModelQueryBuilder::__call() has parameter $parameters with no value type specified in      
+         iterable type array.                                                                                           
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :72    Return type (array<int, Siro\Core\Model>) of method Siro\Core\DB\ModelQueryBuilder::get() should be compatibl  
+         e with return type (array<int, array<string, mixed>>) of method Siro\Core\DB\QueryBuilder::get()               
+         ≡ƒ¬¬  method.childReturnType                                                                                     
+  :87    Method Siro\Core\DB\ModelQueryBuilder::first() never returns Siro\Core\Model so it can be removed from the     
+         return type.                                                                                                   
+         ≡ƒ¬¬  return.unusedType                                                                                          
+  :91    Method Siro\Core\DB\ModelQueryBuilder::first() should return Siro\Core\Model|null but returns array<string, m  
+         ixed>|null.                                                                                                    
+         ≡ƒ¬¬  return.type                                                                                                
+  :95    Return type (array{data: array<int, Siro\Core\Model>, meta: array{page: int, per_page: int, total: int, last_  
+         page: int}}) of method Siro\Core\DB\ModelQueryBuilder::paginate() should be compatible with return type        
+         (array{data: array<int, array<string, mixed>>, meta: array<string, int>}) of method Siro\Core\DB\QueryBuilder  
+         ::paginate()                                                                                                   
+         ≡ƒ¬¬  method.childReturnType                                                                                     
+  :202   Method Siro\Core\DB\ModelQueryBuilder::hydrateModel() should return Siro\Core\Model but returns mixed.         
+         ≡ƒ¬¬  return.type                                                                                                
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------- -------------------------------------------------------------------------------------------------------------- 
+  Line    DB\QueryBuilder.php                                                                                           
+ ------- -------------------------------------------------------------------------------------------------------------- 
+  :69     Method Siro\Core\DB\QueryBuilder::select() has parameter $columns with no value type specified in iterable    
+          type array.                                                                                                   
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :77     Cannot cast mixed to string.                                                                                  
+          ≡ƒ¬¬  cast.string                                                                                               
+  :108    Method Siro\Core\DB\QueryBuilder::whereIn() has parameter $values with no value type specified in iterable    
+          type array.                                                                                                   
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :128    Method Siro\Core\DB\QueryBuilder::orWhereIn() has parameter $values with no value type specified in iterable  
+          type array.                                                                                                   
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :133    Method Siro\Core\DB\QueryBuilder::whereNotIn() has parameter $values with no value type specified in          
+          iterable type array.                                                                                          
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :164    Method Siro\Core\DB\QueryBuilder::groupBy() has parameter $columns with no value type specified in iterable   
+          type array.                                                                                                   
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :171    Cannot cast mixed to string.                                                                                  
+          ≡ƒ¬¬  cast.string                                                                                               
+  :207    Static property Siro\Core\DB\QueryBuilder::$driverNames (array<string, string>) does not accept array<string  
+          , mixed>.                                                                                                     
+          ≡ƒ¬¬  assign.propertyType                                                                                       
+  :212    Method Siro\Core\DB\QueryBuilder::detectDriver() should return string but returns mixed.                      
+          ≡ƒ¬¬  return.type                                                                                               
+  :300    Method Siro\Core\DB\QueryBuilder::whereBetween() has parameter $range with no value type specified in         
+          iterable type array.                                                                                          
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :319    Method Siro\Core\DB\QueryBuilder::whereNotBetween() has parameter $range with no value type specified in      
+          iterable type array.                                                                                          
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :392    Cannot cast mixed to string.                                                                                  
+          ≡ƒ¬¬  cast.string                                                                                               
+  :398    Method Siro\Core\DB\QueryBuilder::pluck() should return array<int, mixed> but returns array<int|string, mixe  
+          d>.                                                                                                           
+          ≡ƒ¬¬  return.type                                                                                               
+  :502    Method Siro\Core\DB\QueryBuilder::insert() has parameter $data with no value type specified in iterable type  
+          array.                                                                                                        
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :536    Cannot access offset 'id' on mixed.                                                                           
+          ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                                          
+  :536    Cannot cast mixed to int.                                                                                     
+          ≡ƒ¬¬  cast.int                                                                                                  
+  :543    Method Siro\Core\DB\QueryBuilder::insertGetId() has parameter $data with no value type specified in iterable  
+          type array.                                                                                                   
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :548    Method Siro\Core\DB\QueryBuilder::update() has parameter $data with no value type specified in iterable type  
+          array.                                                                                                        
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :721    Cannot cast mixed to int.                                                                                     
+          ≡ƒ¬¬  cast.int                                                                                                  
+  :722    Cannot cast mixed to string.                                                                                  
+          ≡ƒ¬¬  cast.string                                                                                               
+  :748    Cannot cast mixed to int.                                                                                     
+          ≡ƒ¬¬  cast.int                                                                                                  
+  :749    Cannot cast mixed to string.                                                                                  
+          ≡ƒ¬¬  cast.string                                                                                               
+  :775    Cannot cast mixed to int.                                                                                     
+          ≡ƒ¬¬  cast.int                                                                                                  
+  :781    Cannot cast mixed to int.                                                                                     
+          ≡ƒ¬¬  cast.int                                                                                                  
+  :830    Method Siro\Core\DB\QueryBuilder::addWhereIn() has parameter $values with no value type specified in          
+          iterable type array.                                                                                          
+          ≡ƒ¬¬  missingType.iterableValue                                                                                 
+          ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                    
+  :886    Cannot cast mixed to string.                                                                                  
+          ≡ƒ¬¬  cast.string                                                                                               
+  :1025   Binary operation "." between ' ' and mixed results in an error.                                               
+          ≡ƒ¬¬  binaryOp.invalid                                                                                          
+  :1028   Binary operation "." between string and mixed results in an error.                                            
+          ≡ƒ¬¬  binaryOp.invalid                                                                                          
+  :1043   Argument of an invalid type mixed supplied for foreach, only iterables are supported.                         
+          ≡ƒ¬¬  foreach.nonIterable                                                                                       
+  :1044   Binary operation "." between ':' and mixed results in an error.                                               
+          ≡ƒ¬¬  binaryOp.invalid                                                                                          
+  :1045   Possibly invalid array key type mixed.                                                                        
+          ≡ƒ¬¬  offsetAccess.invalidOffset                                                                                
+  :1045   Possibly invalid array key type mixed.                                                                        
+          ≡ƒ¬¬  offsetAccess.invalidOffset                                                                                
+  :1048   Parameter #1 $identifier of method Siro\Core\DB\QueryBuilder::quoteIdentifier() expects string, mixed given.  
+          ≡ƒ¬¬  argument.type                                                                                             
+  :1052   Binary operation "." between non-falsy-string and mixed results in an error.                                  
+          ≡ƒ¬¬  binaryOp.invalid                                                                                          
+  :1052   Binary operation "." between non-falsy-string and mixed results in an error.                                  
+          ≡ƒ¬¬  binaryOp.invalid                                                                                          
+  :1052   Parameter #1 $identifier of method Siro\Core\DB\QueryBuilder::quoteIdentifier() expects string, mixed given.  
+          ≡ƒ¬¬  argument.type                                                                                             
+  :1053   Possibly invalid array key type mixed.                                                                        
+          ≡ƒ¬¬  offsetAccess.invalidOffset                                                                                
+  :1053   Possibly invalid array key type mixed.                                                                        
+          ≡ƒ¬¬  offsetAccess.invalidOffset                                                                                
+  :1056   Method Siro\Core\DB\QueryBuilder::compileWhere() should return array{string, array<string, mixed>} but retur  
+          ns array{non-falsy-string, array<mixed>}.                                                                     
+          ≡ƒ¬¬  return.type                                                                                               
+          ≡ƒÆí  Offset 1 (array<string, mixed>) does not accept type array<int|string, mixed>.                            
+  :1070   Binary operation "." between ' ' and mixed results in an error.                                               
+          ≡ƒ¬¬  binaryOp.invalid                                                                                          
+  :1071   Binary operation "." between non-falsy-string and mixed results in an error.                                  
+          ≡ƒ¬¬  binaryOp.invalid                                                                                          
+  :1071   Binary operation "." between non-falsy-string and mixed results in an error.                                  
+          ≡ƒ¬¬  binaryOp.invalid                                                                                          
+  :1071   Parameter #1 $identifier of method Siro\Core\DB\QueryBuilder::quoteIdentifier() expects string, mixed given.  
+          ≡ƒ¬¬  argument.type                                                                                             
+  :1072   Possibly invalid array key type mixed.                                                                        
+          ≡ƒ¬¬  offsetAccess.invalidOffset                                                                                
+  :1072   Possibly invalid array key type mixed.                                                                        
+          ≡ƒ¬¬  offsetAccess.invalidOffset                                                                                
+  :1075   Method Siro\Core\DB\QueryBuilder::compileHaving() should return array{string, array<string, mixed>} but retu  
+          rns array{non-falsy-string, non-empty-array<mixed>}.                                                          
+          ≡ƒ¬¬  return.type                                                                                               
+          ≡ƒÆí  Offset 1 (array<string, mixed>) does not accept type array<int|string, mixed>.                            
+  :1084   Method Siro\Core\DB\QueryBuilder::runSelect() should return array<int, array<string, mixed>> but returns arr  
+          ay.                                                                                                           
+          ≡ƒ¬¬  return.type                                                                                               
+ ------- -------------------------------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------------------------------------------------------------------- 
+  Line   DB\Relations\BelongsTo.php                                                                                   
+ ------ ------------------------------------------------------------------------------------------------------------- 
+  :39    Method Siro\Core\DB\Relations\BelongsTo::query() should return Siro\Core\DB\ModelQueryBuilder but returns    
+         mixed.                                                                                                       
+         ≡ƒ¬¬  return.type                                                                                              
+  :40    Call to an undefined method object::query().                                                                 
+         ≡ƒ¬¬  method.notFound                                                                                          
+  :41    Cannot call method where() on mixed.                                                                         
+         ≡ƒ¬¬  method.nonObject                                                                                         
+  :48    Method Siro\Core\DB\Relations\BelongsTo::__call() has parameter $parameters with no value type specified in  
+         iterable type array.                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                   
+ ------ ------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   DB\Relations\BelongsToMany.php                                                                                 
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :85    Call to an undefined method object::getTable().                                                                
+         ≡ƒ¬¬  method.notFound                                                                                            
+  :91    Method Siro\Core\DB\Relations\BelongsToMany::query() should return Siro\Core\DB\ModelQueryBuilder but returns  
+         mixed.                                                                                                         
+         ≡ƒ¬¬  return.type                                                                                                
+  :92    Call to an undefined method object::query().                                                                   
+         ≡ƒ¬¬  method.notFound                                                                                            
+  :93    Cannot call method select() on mixed.                                                                          
+         ≡ƒ¬¬  method.nonObject                                                                                           
+  :93    Part $relatedTable (mixed) of encapsed string cannot be cast to string.                                        
+         ≡ƒ¬¬  encapsedStringPart.nonString                                                                               
+  :94    Cannot call method join() on mixed.                                                                            
+         ≡ƒ¬¬  method.nonObject                                                                                           
+  :94    Part $relatedTable (mixed) of encapsed string cannot be cast to string.                                        
+         ≡ƒ¬¬  encapsedStringPart.nonString                                                                               
+  :95    Cannot call method where() on mixed.                                                                           
+         ≡ƒ¬¬  method.nonObject                                                                                           
+  :115   Cannot access offset 'COUNT(*)' on mixed.                                                                      
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                                           
+  :170   Cannot access offset 'COUNT(*)' on mixed.                                                                      
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                                           
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  Line   DB\Relations\HasMany.php                                                                                   
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  :28    Method Siro\Core\DB\Relations\HasMany::query() should return Siro\Core\DB\ModelQueryBuilder but returns    
+         mixed.                                                                                                     
+         ≡ƒ¬¬  return.type                                                                                            
+  :29    Call to an undefined method object::query().                                                               
+         ≡ƒ¬¬  method.notFound                                                                                        
+  :30    Cannot call method where() on mixed.                                                                       
+         ≡ƒ¬¬  method.nonObject                                                                                       
+  :37    Method Siro\Core\DB\Relations\HasMany::__call() has parameter $parameters with no value type specified in  
+         iterable type array.                                                                                       
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+ ------ ----------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   DB\Relations\HasOne.php                                                                                        
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :27    Method Siro\Core\DB\Relations\HasOne::query() should return Siro\Core\DB\ModelQueryBuilder but returns mixed.  
+         ≡ƒ¬¬  return.type                                                                                                
+  :28    Call to an undefined method object::query().                                                                   
+         ≡ƒ¬¬  method.notFound                                                                                            
+  :29    Cannot call method where() on mixed.                                                                           
+         ≡ƒ¬¬  method.nonObject                                                                                           
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------------------------------ 
+  Line   DB\SoftDeletes.php                                                      
+ ------ ------------------------------------------------------------------------ 
+  :16    Trait Siro\Core\DB\SoftDeletes is used zero times and is not analysed.  
+         ≡ƒ¬¬  trait.unused                                                        
+         ≡ƒÆí  See: https://phpstan.org/blog/how-phpstan-analyses-traits           
+ ------ ------------------------------------------------------------------------ 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Database.php                                                                                                   
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :25    Method Siro\Core\Database::configure() has parameter $config with no value type specified in iterable type     
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :27    Static property Siro\Core\Database::$configs (array<string, array<string, mixed>>) does not accept array<stri  
+         ng, array>.                                                                                                    
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :28    Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :44    Instanceof between PDO and PDO will always evaluate to true.                                                   
+         ≡ƒ¬¬  instanceof.alwaysTrue                                                                                      
+         ≡ƒÆí  Because the type is coming from a PHPDoc, you can turn off this check by setting treatPhpDocTypesAsCertain  
+         : false in your phpstan.neon.                                                                                  
+  :50    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :51    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :52    Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :57    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :58    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :59    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :60    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :98    Method Siro\Core\Database::connections() return type has no value type specified in iterable type array.       
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :112   Parameter #1 $string of function rtrim expects string, mixed given.                                            
+         ≡ƒ¬¬  argument.type                                                                                              
+  :115   Method Siro\Core\Database::getCapturedQueries() return type has no value type specified in iterable type       
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :125   Method Siro\Core\Database::select() has parameter $params with no value type specified in iterable type        
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :125   Method Siro\Core\Database::select() return type has no value type specified in iterable type array.            
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :133   Call to function is_array() with array will always evaluate to true.                                           
+         ≡ƒ¬¬  function.alreadyNarrowedType                                                                               
+         ≡ƒÆí  Because the type is coming from a PHPDoc, you can turn off this check by setting treatPhpDocTypesAsCertain  
+         : false in your phpstan.neon.                                                                                  
+  :139   Call to function is_array() with array will always evaluate to true.                                           
+         ≡ƒ¬¬  function.alreadyNarrowedType                                                                               
+         ≡ƒÆí  Because the type is coming from a PHPDoc, you can turn off this check by setting treatPhpDocTypesAsCertain  
+         : false in your phpstan.neon.                                                                                  
+  :142   Method Siro\Core\Database::first() has parameter $params with no value type specified in iterable type array.  
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :142   Method Siro\Core\Database::first() return type has no value type specified in iterable type array.             
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :159   Method Siro\Core\Database::execute() has parameter $params with no value type specified in iterable type       
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :211   Method Siro\Core\Database::selectCached() has parameter $params with no value type specified in iterable type  
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :211   Method Siro\Core\Database::selectCached() return type has no value type specified in iterable type array.      
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :222   Call to function is_array() with array will always evaluate to true.                                           
+         ≡ƒ¬¬  function.alreadyNarrowedType                                                                               
+         ≡ƒÆí  Because the type is coming from a PHPDoc, you can turn off this check by setting treatPhpDocTypesAsCertain  
+         : false in your phpstan.neon.                                                                                  
+  :227   Method Siro\Core\Database::prepareAndExecute() has parameter $params with no value type specified in iterable  
+         type array.                                                                                                    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :241   Static property Siro\Core\Database::$capturedQueries (array<int, array{sql: string, bindings: array<string, m  
+         ixed>, time_ms: float, rows: int, connection: string}>) does not accept non-empty-array<int, array{sql: strin  
+         g, bindings: array, time_ms: float, rows: int, connection: string}>.                                           
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+         ≡ƒÆí  Offset 'bindings' (array<string, mixed>) does not accept type array<int|string, mixed>.                    
+  :269   Method Siro\Core\Database::queryCacheKey() has parameter $params with no value type specified in iterable      
+         type array.                                                                                                    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------------------------------------- 
+  Line   Encrypter.php                                                                  
+ ------ ------------------------------------------------------------------------------- 
+  :26    Parameter #1 $length of function random_bytes expects int<1, max>, int given.  
+         ≡ƒ¬¬  argument.type                                                              
+  :65    Parameter #2 $data of function hash expects string, string|null given.         
+         ≡ƒ¬¬  argument.type                                                              
+ ------ ------------------------------------------------------------------------------- 
+
+ ------ -------------------------------------------------------------------------- 
+  Line   Env.php                                                                   
+ ------ -------------------------------------------------------------------------- 
+  :40    Cannot cast mixed to string.                                              
+         ≡ƒ¬¬  cast.string                                                           
+  :152   Method Siro\Core\Env::get() should return string|null but returns mixed.  
+         ≡ƒ¬¬  return.type                                                           
+ ------ -------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   FormRequest.php                                                                                                
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :18    Property Siro\Core\FormRequest::$validated type has no value type specified in iterable type array.            
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :19    Property Siro\Core\FormRequest::$errors type has no value type specified in iterable type array.               
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :26    Method Siro\Core\FormRequest::rules() return type has no value type specified in iterable type array.          
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :33    Method Siro\Core\FormRequest::messages() return type has no value type specified in iterable type array.       
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :38    Method Siro\Core\FormRequest::validated() return type has no value type specified in iterable type array.      
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :46    Method Siro\Core\FormRequest::errors() return type has no value type specified in iterable type array.         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :59    Method Siro\Core\FormRequest::validate() return type has no value type specified in iterable type array.       
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :66    Parameter #1 $errors of class Siro\Core\ValidationException constructor expects array<string, array<int, stri  
+         ng>>, Siro\Core\Request given.                                                                                 
+         ≡ƒ¬¬  argument.type                                                                                              
+  :66    Parameter #2 $message of class Siro\Core\ValidationException constructor expects string, array<string, array<  
+         int, string>> given.                                                                                           
+         ≡ƒ¬¬  argument.type                                                                                              
+  :69    Parameter #1 $rules of method Siro\Core\Request::validate() expects array<string, string>, array given.        
+         ≡ƒ¬¬  argument.type                                                                                              
+  :78    Method Siro\Core\FormRequest::all() return type has no value type specified in iterable type array.            
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  Line   Hash.php                                                                                                   
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  :20    Method Siro\Core\Hash::make() has parameter $options with no value type specified in iterable type array.  
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :23    Strict comparison using === between non-empty-string and false will always evaluate to false.              
+         ≡ƒ¬¬  identical.alwaysFalse                                                                                  
+  :34    Method Siro\Core\Hash::needsRehash() has parameter $options with no value type specified in iterable type  
+         array.                                                                                                     
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :39    Method Siro\Core\Hash::info() return type has no value type specified in iterable type array.              
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :44    Cannot access offset 'cost' on mixed.                                                                      
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                                       
+ ------ ----------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Http.php                                                                                                       
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :22    Property Siro\Core\Http::$defaultHeaders type has no value type specified in iterable type array.              
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :34    Method Siro\Core\Http::withHeaders() has parameter $headers with no value type specified in iterable type      
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :39    Method Siro\Core\Http::get() has parameter $headers with no value type specified in iterable type array.       
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :39    Method Siro\Core\Http::get() has parameter $query with no value type specified in iterable type array.         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :47    Method Siro\Core\Http::post() has parameter $headers with no value type specified in iterable type array.      
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :52    Method Siro\Core\Http::put() has parameter $headers with no value type specified in iterable type array.       
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :57    Method Siro\Core\Http::patch() has parameter $headers with no value type specified in iterable type array.     
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :62    Method Siro\Core\Http::delete() has parameter $headers with no value type specified in iterable type array.    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :67    Method Siro\Core\Http::request() has parameter $headers with no value type specified in iterable type array.   
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :87    Parameter #2 $options of function curl_setopt_array expects array{10002: non-empty-string, 19913: bool, 13:    
+         int, 78: int, 52: bool, 68: int, 42: bool, 64?: bool, ...}, array{10002: string, 19913: true, 13: int, 78:     
+         10, 52: true, 68: 5, 42: true, 64: false, ...}|array{10002: string, 19913: true, 13: int, 78: 10, 52: true,    
+         68: 5, 42: true} given.                                                                                        
+         ≡ƒ¬¬  argument.type                                                                                              
+         ≡ƒÆí  Offset 10002 (non-empty-string) does not accept type string.                                               
+  :92    Parameter #3 $value of function curl_setopt expects non-empty-string|null, string given.                       
+         ≡ƒ¬¬  argument.type                                                                                              
+  :101   Parameter #3 $value of function curl_setopt expects array|string, mixed given.                                 
+         ≡ƒ¬¬  argument.type                                                                                              
+  :107   Part $v (mixed) of encapsed string cannot be cast to string.                                                   
+         ≡ƒ¬¬  encapsedStringPart.nonString                                                                               
+  :121   Offset 'header_size' on (array{url: string, content_type: string|null, http_code: int, header_size: int,       
+         request_size: int, filetime: int, ssl_verify_result: int, redirect_count: int, ...}|false) on left side of ??  
+         always exists and is not nullable.                                                                             
+         ≡ƒ¬¬  nullCoalesce.offset                                                                                        
+  :126   Offset 'http_code' on array{url: string, content_type: string|null, http_code: int, header_size: int,          
+         request_size: int, filetime: int, ssl_verify_result: int, redirect_count: int, ...} on left side of ?? always  
+         exists and is not nullable.                                                                                    
+         ≡ƒ¬¬  nullCoalesce.offset                                                                                        
+  :143   Property Siro\Core\HttpResponse::$parsedJson type has no value type specified in iterable type array.          
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :162   Method Siro\Core\HttpResponse::json() return type has no value type specified in iterable type array.          
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :165   Property Siro\Core\HttpResponse::$parsedJson (array|null) does not accept mixed.                               
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :187   Method Siro\Core\HttpResponse::headers() return type has no value type specified in iterable type array.       
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Lang.php                                                                                                       
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :172   Parameter #1 $basePath of static method Siro\Core\Lang::boot() expects string, mixed given.                    
+         ≡ƒ¬¬  argument.type                                                                                              
+  :183   Static property Siro\Core\Lang::$loaded (array<string, array<string, mixed>>) does not accept array<string, a  
+         rray>.                                                                                                         
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :184   Method Siro\Core\Lang::load() should return array<string, mixed>|null but returns array.                       
+         ≡ƒ¬¬  return.type                                                                                                
+  :194   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :213   Method Siro\Core\Lang::replace() has parameter $replace with no value type specified in iterable type array.   
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :224   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :246   Offset 0 on non-empty-list<string> on left side of ?? always exists and is not nullable.                       
+         ≡ƒ¬¬  nullCoalesce.offset                                                                                        
+  :246   Offset 0 on non-empty-list<string> on left side of ?? always exists and is not nullable.                       
+         ≡ƒ¬¬  nullCoalesce.offset                                                                                        
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Logger.php                                                                                                     
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :46    Method Siro\Core\Logger::setSanitizeConfig() has parameter $config with no value type specified in iterable    
+         type array.                                                                                                    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :48    Static property Siro\Core\Logger::$sanitizeConfig (array{headers: array<int, string>, body: array<int, string  
+         >, query: array<int, string>}) does not accept array{headers: mixed, body: array<int, string>, query: array<i  
+         nt, string>}.                                                                                                  
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+         ≡ƒÆí  Offset 'headers' (array<int, string>) does not accept type mixed.                                          
+  :49    Static property Siro\Core\Logger::$sanitizeConfig (array{headers: array<int, string>, body: array<int, string  
+         >, query: array<int, string>}) does not accept array{headers: array<int, string>, body: mixed, query: array<i  
+         nt, string>}.                                                                                                  
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+         ≡ƒÆí  Offset 'body' (array<int, string>) does not accept type mixed.                                             
+  :50    Static property Siro\Core\Logger::$sanitizeConfig (array{headers: array<int, string>, body: array<int, string  
+         >, query: array<int, string>}) does not accept array{headers: array<int, string>, body: array<int, string>, q  
+         uery: mixed}.                                                                                                  
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+         ≡ƒÆí  Offset 'query' (array<int, string>) does not accept type mixed.                                            
+  :114   Method Siro\Core\Logger::trace() has parameter $data with no value type specified in iterable type array.      
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :169   Method Siro\Core\Logger::sanitizeHeaders() has parameter $headers with no value type specified in iterable     
+         type array.                                                                                                    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :169   Method Siro\Core\Logger::sanitizeHeaders() return type has no value type specified in iterable type array.     
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :187   Method Siro\Core\Logger::sanitizeJsonBody() should return string but returns string|false.                     
+         ≡ƒ¬¬  return.type                                                                                                
+  :190   Method Siro\Core\Logger::sanitizeRecursive() has parameter $data with no value type specified in iterable      
+         type array.                                                                                                    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :190   Method Siro\Core\Logger::sanitizeRecursive() has parameter $sensitiveFields with no value type specified in    
+         iterable type array.                                                                                           
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :190   Method Siro\Core\Logger::sanitizeRecursive() return type has no value type specified in iterable type array.   
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :198   Parameter #2 $needle of function str_contains expects string, mixed given.                                     
+         ≡ƒ¬¬  argument.type                                                                                              
+  :251   Method Siro\Core\Logger::writeTrace() has parameter $data with no value type specified in iterable type        
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------- 
+  Line   Mail.php                                                                                 
+ ------ ----------------------------------------------------------------------------------------- 
+  :399   Method Siro\Core\Mail::smtpCommand() has parameter $socket with no type specified.       
+         ≡ƒ¬¬  missingType.parameter                                                                
+  :402   Parameter #1 $stream of function fwrite expects resource, mixed given.                   
+         ≡ƒ¬¬  argument.type                                                                        
+  :411   Method Siro\Core\Mail::smtpReadResponse() has parameter $socket with no type specified.  
+         ≡ƒ¬¬  missingType.parameter                                                                
+  :414   Parameter #1 $stream of function fgets expects resource, mixed given.                    
+         ≡ƒ¬¬  argument.type                                                                        
+ ------ ----------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------------------------------------ 
+  Line   Middleware\ApiKeyMiddleware.php                                               
+ ------ ------------------------------------------------------------------------------ 
+  :44    Parameter #2 $string of function explode expects string, mixed given.         
+         ≡ƒ¬¬  argument.type                                                             
+  :51    Part $keyData['scopes'] (mixed) of encapsed string cannot be cast to string.  
+         ≡ƒ¬¬  encapsedStringPart.nonString                                              
+ ------ ------------------------------------------------------------------------------ 
+
+ ------ ------------------------------------------------ 
+  Line   Middleware\AuthMiddleware.php                   
+ ------ ------------------------------------------------ 
+  :34    Cannot cast mixed to int.                       
+         ≡ƒ¬¬  cast.int                                    
+  :35    Cannot cast mixed to int.                       
+         ≡ƒ¬¬  cast.int                                    
+  :56    Call to an undefined method object::find().     
+         ≡ƒ¬¬  method.notFound                             
+  :59    Cannot access property $status on mixed.        
+         ≡ƒ¬¬  property.nonObject                          
+  :59    Cannot cast mixed to int.                       
+         ≡ƒ¬¬  cast.int                                    
+  :65    Cannot call method toArray() on mixed.          
+         ≡ƒ¬¬  method.nonObject                            
+  :66    Cannot access offset 'token_version' on mixed.  
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :66    Cannot cast mixed to int.                       
+         ≡ƒ¬¬  cast.int                                    
+  :73    Cannot access offset 'id' on mixed.             
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :73    Cannot cast mixed to int.                       
+         ≡ƒ¬¬  cast.int                                    
+  :74    Cannot access offset 'name' on mixed.           
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :74    Cannot cast mixed to string.                    
+         ≡ƒ¬¬  cast.string                                 
+  :75    Cannot access offset 'email' on mixed.          
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :75    Cannot cast mixed to string.                    
+         ≡ƒ¬¬  cast.string                                 
+  :76    Cannot access offset 'role' on mixed.           
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :76    Cannot cast mixed to string.                    
+         ≡ƒ¬¬  cast.string                                 
+  :77    Cannot access offset 'status' on mixed.         
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :77    Cannot cast mixed to int.                       
+         ≡ƒ¬¬  cast.int                                    
+  :78    Cannot access offset 'token_version' on mixed.  
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :78    Cannot cast mixed to int.                       
+         ≡ƒ¬¬  cast.int                                    
+  :79    Cannot access offset 'created_at' on mixed.     
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :79    Cannot cast mixed to string.                    
+         ≡ƒ¬¬  cast.string                                 
+  :84    Cannot access offset 'role' on mixed.           
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible            
+  :84    Cannot cast mixed to string.                    
+         ≡ƒ¬¬  cast.string                                 
+ ------ ------------------------------------------------ 
+
+ ------ --------------------------------------------------------------------------------------------------------- 
+  Line   Middleware\CsrfMiddleware.php                                                                            
+ ------ --------------------------------------------------------------------------------------------------------- 
+  :56    Method Siro\Core\Middleware\CsrfMiddleware::getToken() should return string but returns mixed.           
+         ≡ƒ¬¬  return.type                                                                                          
+  :80    Method Siro\Core\Middleware\CsrfMiddleware::getTokenFromRequest() should return string|null but returns  
+         mixed.                                                                                                   
+         ≡ƒ¬¬  return.type                                                                                          
+  :96    Parameter #1 $known_string of function hash_equals expects string, mixed given.                          
+         ≡ƒ¬¬  argument.type                                                                                        
+ ------ --------------------------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------------------------------------------------------ 
+  Line   Middleware\IdempotencyMiddleware.php                                                            
+ ------ ------------------------------------------------------------------------------------------------ 
+  :56    Cannot cast mixed to int.                                                                       
+         ≡ƒ¬¬  cast.int                                                                                    
+  :69    Parameter #2 $statusCode of static method Siro\Core\Response::json() expects int, mixed given.  
+         ≡ƒ¬¬  argument.type                                                                               
+ ------ ------------------------------------------------------------------------------------------------ 
+
+ ------ -------------------------------------------------------------------------------- 
+  Line   Middleware\JsonMiddleware.php                                                   
+ ------ -------------------------------------------------------------------------------- 
+  :18    Parameter #1 $string of function strtolower expects string, string|null given.  
+         ≡ƒ¬¬  argument.type                                                               
+ ------ -------------------------------------------------------------------------------- 
+
+ ------ ---------------------------------------------------------------------- 
+  Line   Middleware\ThrottleMiddleware.php                                     
+ ------ ---------------------------------------------------------------------- 
+  :48    Cannot cast mixed to int.                                             
+         ≡ƒ¬¬  cast.int                                                          
+  :49    Cannot cast mixed to int.                                             
+         ≡ƒ¬¬  cast.int                                                          
+  :105   Binary operation "." between mixed and '/'|'\\' results in an error.  
+         ≡ƒ¬¬  binaryOp.invalid                                                  
+  :135   Cannot cast mixed to int.                                             
+         ≡ƒ¬¬  cast.int                                                          
+  :136   Cannot cast mixed to int.                                             
+         ≡ƒ¬¬  cast.int                                                          
+ ------ ---------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Model.php                                                                                                      
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :24    Class Siro\Core\Model implements generic interface ArrayAccess but does not specify its types: TKey, TValue    
+         ≡ƒ¬¬  missingType.generics                                                                                       
+  :74    Parameter #1 $string of function strtolower expects string, string|null given.                                 
+         ≡ƒ¬¬  argument.type                                                                                              
+  :177   Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :178   Cannot cast mixed to float.                                                                                    
+         ≡ƒ¬¬  cast.double                                                                                                
+  :179   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :211   Parameter #1 $key of function array_key_exists expects int|string, mixed given.                                
+         ≡ƒ¬¬  argument.type                                                                                              
+  :216   Parameter #1 $key of method Siro\Core\Model::getAttribute() expects string, mixed given.                       
+         ≡ƒ¬¬  argument.type                                                                                              
+  :221   Parameter #1 $key of method Siro\Core\Model::setAttribute() expects string, mixed given.                       
+         ≡ƒ¬¬  argument.type                                                                                              
+  :226   Possibly invalid array key type mixed.                                                                         
+         ≡ƒ¬¬  offsetAccess.invalidOffset                                                                                 
+  :264   Unsafe usage of new static().                                                                                  
+         ≡ƒ¬¬  new.static                                                                                                 
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static                             
+  :281   Unsafe usage of new static().                                                                                  
+         ≡ƒ¬¬  new.static                                                                                                 
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static                             
+  :293   Method Siro\Core\Model::where() should return Siro\Core\DB\ModelQueryBuilder but returns                       
+         Siro\Core\DB\QueryBuilder.                                                                                     
+         ≡ƒ¬¬  return.type                                                                                                
+  :296   Method Siro\Core\Model::where() should return Siro\Core\DB\ModelQueryBuilder but returns                       
+         Siro\Core\DB\QueryBuilder.                                                                                     
+         ≡ƒ¬¬  return.type                                                                                                
+  :306   Method Siro\Core\Model::all() should return array<int, static(Siro\Core\Model)> but returns array<int, Siro\C  
+         ore\Model>.                                                                                                    
+         ≡ƒ¬¬  return.type                                                                                                
+  :324   Method Siro\Core\Model::orderBy() should return Siro\Core\DB\ModelQueryBuilder but returns                     
+         Siro\Core\DB\QueryBuilder.                                                                                     
+         ≡ƒ¬¬  return.type                                                                                                
+  :332   Method Siro\Core\Model::limit() should return Siro\Core\DB\ModelQueryBuilder but returns                       
+         Siro\Core\DB\QueryBuilder.                                                                                     
+         ≡ƒ¬¬  return.type                                                                                                
+  :340   Method Siro\Core\Model::offset() should return Siro\Core\DB\ModelQueryBuilder but returns                      
+         Siro\Core\DB\QueryBuilder.                                                                                     
+         ≡ƒ¬¬  return.type                                                                                                
+  :346   Method Siro\Core\Model::select() has parameter $columns with no type specified.                                
+         ≡ƒ¬¬  missingType.parameter                                                                                      
+  :348   Method Siro\Core\Model::select() should return Siro\Core\DB\ModelQueryBuilder but returns                      
+         Siro\Core\DB\QueryBuilder.                                                                                     
+         ≡ƒ¬¬  return.type                                                                                                
+  :348   Parameter #1 ...$columns of method Siro\Core\DB\QueryBuilder::select() expects array|string, mixed given.      
+         ≡ƒ¬¬  argument.type                                                                                              
+  :366   Method Siro\Core\Model::first() should return static(Siro\Core\Model)|null but returns Siro\Core\Model|null.   
+         ≡ƒ¬¬  return.type                                                                                                
+  :376   Method Siro\Core\Model::get() should return array<int, static(Siro\Core\Model)> but returns array<int, Siro\C  
+         ore\Model>.                                                                                                    
+         ≡ƒ¬¬  return.type                                                                                                
+  :398   Method Siro\Core\Model::paginate() should return array{data: array<int, static(Siro\Core\Model)>, meta: array  
+         {page: int, per_page: int, total: int, last_page: int}} but returns array{data: array<int, array<string, mixe  
+         d>>, meta: array{page: int<1, max>, per_page: int<1, max>, total: int, last_page: int}}.                       
+         ≡ƒ¬¬  return.type                                                                                                
+         ≡ƒÆí  Offset 'data' (array<int, static(Siro\Core\Model)>) does not accept type array<int, array<string, mixed>>.  
+  :417   Unsafe usage of new static().                                                                                  
+         ≡ƒ¬¬  new.static                                                                                                 
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static                             
+  :471   Unsafe usage of new static().                                                                                  
+         ≡ƒ¬¬  new.static                                                                                                 
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static                             
+  :633   Parameter #2 $columns of method Siro\Core\DB\ModelQueryBuilder::eagerLoad() expects array<int, string>, array  
+         <int|string, array<int, string>|string> given.                                                                 
+         ≡ƒ¬¬  argument.type                                                                                              
+  :659   Instantiated class Siro\Core\EagerLoader not found.                                                            
+         ≡ƒ¬¬  class.notFound                                                                                             
+         ≡ƒÆí  Learn more at https://phpstan.org/user-guide/discovering-symbols                                           
+  :660   Call to method load() on an unknown class Siro\Core\EagerLoader.                                               
+         ≡ƒ¬¬  class.notFound                                                                                             
+         ≡ƒÆí  Learn more at https://phpstan.org/user-guide/discovering-symbols                                           
+  :725   Unsafe usage of new static().                                                                                  
+         ≡ƒ¬¬  new.static                                                                                                 
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static                             
+  :762   Parameter #4 $localValue of class Siro\Core\DB\Relations\HasMany constructor expects int|string, mixed given.  
+         ≡ƒ¬¬  argument.type                                                                                              
+  :781   Parameter #4 $localValue of class Siro\Core\DB\Relations\HasOne constructor expects int|string, mixed given.   
+         ≡ƒ¬¬  argument.type                                                                                              
+  :803   Call to an undefined method object::getTable().                                                                
+         ≡ƒ¬¬  method.notFound                                                                                            
+  :818   Parameter #6 $localValue of class Siro\Core\DB\Relations\BelongsToMany constructor expects int|string, mixed   
+         given.                                                                                                         
+         ≡ƒ¬¬  argument.type                                                                                              
+  :835   Parameter #4 $foreignValue of class Siro\Core\DB\Relations\BelongsTo constructor expects int|string, mixed     
+         given.                                                                                                         
+         ≡ƒ¬¬  argument.type                                                                                              
+  :845   Parameter #1 $string of function strtolower expects string, string|null given.                                 
+         ≡ƒ¬¬  argument.type                                                                                              
+  :855   Unsafe usage of new static().                                                                                  
+         ≡ƒ¬¬  new.static                                                                                                 
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static                             
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  Line   Queue.php                                                                                                  
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  :28    Static property Siro\Core\Queue::$pending is never read, only written.                                     
+         ≡ƒ¬¬  property.onlyWritten                                                                                   
+         ≡ƒÆí  See: https://phpstan.org/developing-extensions/always-read-written-properties                          
+  :71    Binary operation "." between '<tr><td>' and mixed results in an error.                                     
+         ≡ƒ¬¬  binaryOp.invalid                                                                                       
+  :71    Binary operation "." between non-falsy-string and mixed results in an error.                               
+         ≡ƒ¬¬  binaryOp.invalid                                                                                       
+  :71    Binary operation "." between non-falsy-string and mixed results in an error.                               
+         ≡ƒ¬¬  binaryOp.invalid                                                                                       
+  :71    Binary operation "." between non-falsy-string and mixed results in an error.                               
+         ≡ƒ¬¬  binaryOp.invalid                                                                                       
+  :71    Binary operation "." between non-falsy-string and mixed results in an error.                               
+         ≡ƒ¬¬  binaryOp.invalid                                                                                       
+  :74    Parameter #2 $timestamp of function date expects int|null, mixed given.                                    
+         ≡ƒ¬¬  argument.type                                                                                          
+  :183   Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :187   Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :190   Parameter #1 $class of function class_exists expects string, mixed given.                                  
+         ≡ƒ¬¬  argument.type                                                                                          
+  :210   Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :211   Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :246   Method Siro\Core\Queue::calculateBackoff() should return int but returns float|int<min, 300>.              
+         ≡ƒ¬¬  return.type                                                                                            
+  :297   Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :306   Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :318   Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :329   Cannot access offset 'job' on mixed.                                                                       
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                                       
+  :329   Parameter #1 $job of static method Siro\Core\Queue::push() expects string, mixed given.                    
+         ≡ƒ¬¬  argument.type                                                                                          
+  :330   Cannot access offset 'data' on mixed.                                                                      
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                                       
+  :335   Cannot access offset 'id' on mixed.                                                                        
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                                       
+  :347   Parameter #1 $job of static method Siro\Core\Queue::push() expects string, mixed given.                    
+         ≡ƒ¬¬  argument.type                                                                                          
+  :372   Method Siro\Core\Queue::getFailedJobs() should return array<int, array<string, mixed>> but returns array.  
+         ≡ƒ¬¬  return.type                                                                                            
+ ------ ----------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Request.php                                                                                                    
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :63    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :64    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :76    Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :125   Parameter #3 $query of class Siro\Core\Request constructor expects array<string, mixed>, array<mixed> given.   
+         ≡ƒ¬¬  argument.type                                                                                              
+  :125   Parameter #5 $jsonBody of class Siro\Core\Request constructor expects array<string, mixed>, array<mixed> give  
+         n.                                                                                                             
+         ≡ƒ¬¬  argument.type                                                                                              
+  :144   Property Siro\Core\Request::$uploadedFiles (array<string, Siro\Core\UploadedFile>) does not accept array<Siro  
+         \Core\UploadedFile>.                                                                                           
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :149   Method Siro\Core\Request::parseNestedFiles() has parameter $file with no value type specified in iterable      
+         type array.                                                                                                    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :158   Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :201   Method Siro\Core\Request::query() should return array<string, mixed> but returns mixed.                        
+         ≡ƒ¬¬  return.type                                                                                                
+  :458   Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :467   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :493   Method Siro\Core\Request::array() has parameter $default with no value type specified in iterable type array.  
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :505   Cannot cast mixed to float.                                                                                    
+         ≡ƒ¬¬  cast.double                                                                                                
+  :523   Cannot cast array<string, mixed> to string.                                                                    
+         ≡ƒ¬¬  cast.string                                                                                                
+  :523   Method Siro\Core\Request::queryString() should return string but returns mixed.                                
+         ≡ƒ¬¬  return.type                                                                                                
+  :536   Strict comparison using === between non-falsy-string and '' will always evaluate to false.                     
+         ≡ƒ¬¬  identical.alwaysFalse                                                                                      
+  :596   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :608   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :612   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :616   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :621   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :621   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Resource.php                                                                                                   
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :43    Unsafe call to private method Siro\Core\Resource::makeWithFields() through static::.                           
+         ≡ƒ¬¬  staticClassAccess.privateMethod                                                                            
+  :46    Unsafe usage of new static().                                                                                  
+         ≡ƒ¬¬  new.static                                                                                                 
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static                             
+  :58    Instanceof between Siro\Core\Model and Siro\Core\Model will always evaluate to true.                           
+         ≡ƒ¬¬  instanceof.alwaysTrue                                                                                      
+         ≡ƒÆí  Because the type is coming from a PHPDoc, you can turn off this check by setting treatPhpDocTypesAsCertain  
+         : false in your phpstan.neon.                                                                                  
+  :58    Result of && is always false.                                                                                  
+         ≡ƒ¬¬  booleanAnd.alwaysFalse                                                                                     
+         ≡ƒÆí  Because the type is coming from a PHPDoc, you can turn off this check by setting treatPhpDocTypesAsCertain  
+         : false in your phpstan.neon.                                                                                  
+  :62    Unsafe usage of new static().                                                                                  
+         ≡ƒ¬¬  new.static                                                                                                 
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static                             
+  :76    Unsafe call to private method Siro\Core\Resource::makeWithFields() through static::.                           
+         ≡ƒ¬¬  staticClassAccess.privateMethod                                                                            
+  :77    Instanceof between Siro\Core\Model and Siro\Core\Model will always evaluate to true.                           
+         ≡ƒ¬¬  instanceof.alwaysTrue                                                                                      
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Response.php                                                                                                   
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :78    Parameter #1 $data of static method Siro\Core\Response::success() expects array<string, mixed>|null, mixed gi  
+         ven.                                                                                                           
+         ≡ƒ¬¬  argument.type                                                                                              
+  :116   Method Siro\Core\Response::download() has parameter $headers with no value type specified in iterable type     
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :134   Property Siro\Core\Response::$extraHeaders (array<string, string>) does not accept array.                      
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :180   Method Siro\Core\Response::file() has parameter $headers with no value type specified in iterable type array.  
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :194   Property Siro\Core\Response::$extraHeaders (array<string, string>) does not accept array.                      
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :318   Parameter #1 $haystack of function str_contains expects string, mixed given.                                   
+         ≡ƒ¬¬  argument.type                                                                                              
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Route.php                                                                                                      
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :54    Method Siro\Core\Route::get() has parameter $handler with no value type specified in iterable type array.      
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :65    Method Siro\Core\Route::post() has parameter $handler with no value type specified in iterable type array.     
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :76    Method Siro\Core\Route::put() has parameter $handler with no value type specified in iterable type array.      
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :87    Method Siro\Core\Route::delete() has parameter $handler with no value type specified in iterable type array.   
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :98    Method Siro\Core\Route::patch() has parameter $handler with no value type specified in iterable type array.    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :122   Parameter #3 $middleware of method Siro\Core\Router::setRouteMiddleware() expects array<int, (callable(): mix  
+         ed)|string>, array<mixed> given.                                                                               
+         ≡ƒ¬¬  argument.type                                                                                              
+  :167   Method Siro\Core\Route::registerRoute() has parameter $handler with no value type specified in iterable type   
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :180   Method Siro\Core\Route::registerRoute() should return Siro\Core\Route but returns mixed.                       
+         ≡ƒ¬¬  return.type                                                                                                
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Router.php                                                                                                     
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :23    Property Siro\Core\Router::$staticRoutes type has no value type specified in iterable type array.              
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :25    Property Siro\Core\Router::$dynamicRoutes type has no value type specified in iterable type array.             
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :34    Method Siro\Core\Router::get() has parameter $handler with no value type specified in iterable type array.     
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :40    Method Siro\Core\Router::post() has parameter $handler with no value type specified in iterable type array.    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :46    Method Siro\Core\Router::put() has parameter $handler with no value type specified in iterable type array.     
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :52    Method Siro\Core\Router::delete() has parameter $handler with no value type specified in iterable type array.  
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :58    Method Siro\Core\Router::options() has parameter $handler with no value type specified in iterable type        
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :74    Method Siro\Core\Router::group() has parameter $arg2 with no value type specified in iterable type array.      
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :74    Method Siro\Core\Router::group() has parameter $arg3 with no value type specified in iterable type array.      
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :95    Property Siro\Core\Router::$groupMiddleware (array<int, (callable(): mixed)|string>) does not accept array.    
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :122   Right side of && is always true.                                                                               
+         ≡ƒ¬¬  booleanAnd.rightAlwaysTrue                                                                                 
+         ≡ƒÆí  Because the type is coming from a PHPDoc, you can turn off this check by setting treatPhpDocTypesAsCertain  
+         : false in your phpstan.neon.                                                                                  
+  :126   Offset 'cache_ttl' on array{path: string, handler: array|(callable(): mixed)|string, middleware: array<int, (  
+         callable(): mixed)|string>, cache_ttl: int, params?: array<string, string>} on left side of ?? always exists   
+         and is not nullable.                                                                                           
+         ≡ƒ¬¬  nullCoalesce.offset                                                                                        
+  :134   Parameter #1 $payload of static method Siro\Core\Response::json() expects array<string, mixed>, array<mixed>   
+         given.                                                                                                         
+         ≡ƒ¬¬  argument.type                                                                                              
+  :135   Cannot cast mixed to int.                                                                                      
+         ≡ƒ¬¬  cast.int                                                                                                   
+  :218   Method Siro\Core\Router::exportRoutes() return type has no value type specified in iterable type array.        
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :218   Method Siro\Core\Router::exportRoutes() return type has no value type specified in iterable type array.        
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :262   Property Siro\Core\Router::$staticRoutes (array<string, array<string, array{path: string, handler:             
+         array|(callable(): mixed)|string, middleware: array<int, (callable(): mixed)|string>, cache_ttl: int}>>) does  
+          not accept mixed.                                                                                             
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :263   Property Siro\Core\Router::$dynamicRoutes (array<string, array<int, array{path: string, segments: array<int,   
+         string>, handler: array|(callable(): mixed)|string, middleware: array<int, (callable(): mixed)|string>, cache  
+         _ttl: int}>>) does not accept mixed.                                                                           
+         ≡ƒ¬¬  assign.propertyType                                                                                        
+  :286   Method Siro\Core\Router::handlerToString() has parameter $handler with no value type specified in iterable     
+         type array.                                                                                                    
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :293   Cannot access constant class on mixed.                                                                         
+         ≡ƒ¬¬  classConstant.nonObject                                                                                    
+  :294   Binary operation "." between mixed and '@' results in an error.                                                
+         ≡ƒ¬¬  binaryOp.invalid                                                                                           
+  :294   Binary operation "." between non-falsy-string and mixed results in an error.                                   
+         ≡ƒ¬¬  binaryOp.invalid                                                                                           
+  :316   Method Siro\Core\Router::add() has parameter $handler with no value type specified in iterable type array.     
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :411   Strict comparison using === between non-falsy-string and '' will always evaluate to false.                     
+         ≡ƒ¬¬  identical.alwaysFalse                                                                                      
+  :414   Method Siro\Core\Router::runHandler() has parameter $handler with no value type specified in iterable type     
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :447   Parameter #2 $string of function explode expects string, array|string given.                                   
+         ≡ƒ¬¬  argument.type                                                                                              
+  :490   Parameter #1 $objectOrClass of class ReflectionClass constructor expects class-string<T of object>|T of objec  
+         t, string given.                                                                                               
+         ≡ƒ¬¬  argument.type                                                                                              
+  :530   Parameter #1 $payload of static method Siro\Core\Response::json() expects array<string, mixed>, array<mixed,   
+         mixed> given.                                                                                                  
+         ≡ƒ¬¬  argument.type                                                                                              
+  :541   Method Siro\Core\Router::matchDynamicRoute() return type has no value type specified in iterable type array.   
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :560   Parameter #1 $pattern of function preg_match expects string, mixed given.                                      
+         ≡ƒ¬¬  argument.type                                                                                              
+  :635   Method Siro\Core\Router::getWhereConstraints() return type has no value type specified in iterable type        
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------------------------------------------------ 
+  Line   Schedule.php                                                                              
+ ------ ------------------------------------------------------------------------------------------ 
+  :47    Cannot cast mixed to string.                                                              
+         ≡ƒ¬¬  cast.string                                                                           
+  :63    Offset 0 on non-empty-list<string> on left side of ?? always exists and is not nullable.  
+         ≡ƒ¬¬  nullCoalesce.offset                                                                   
+ ------ ------------------------------------------------------------------------------------------ 
+
+ ------ ----------------------------------------------------------------------------------- 
+  Line   ScheduleTask.php                                                                   
+ ------ ----------------------------------------------------------------------------------- 
+  :12    Property Siro\Core\ScheduleTask::$lastRun is never read, only written.             
+         ≡ƒ¬¬  property.onlyWritten                                                           
+         ≡ƒÆí  See: https://phpstan.org/developing-extensions/always-read-written-properties  
+  :48    Parameter #1 $object of function get_class expects object, mixed given.            
+         ≡ƒ¬¬  argument.type                                                                  
+ ------ ----------------------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------------------------------------------------------- 
+  Line   Schema.php                                                                                       
+ ------ ------------------------------------------------------------------------------------------------- 
+  :102   Method Siro\Core\Schema::getColumnListing() should return array<int, string> but returns array.  
+         ≡ƒ¬¬  return.type                                                                                  
+  :141   Method Siro\Core\Schema::driver() should return string but returns mixed.                        
+         ≡ƒ¬¬  return.type                                                                                  
+ ------ ------------------------------------------------------------------------------------------------- 
+
+ ------ ------------------------------ 
+  Line   SendMailJob.php               
+ ------ ------------------------------ 
+  :25    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :26    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :28    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :29    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :38    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :42    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :46    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :52    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+  :53    Cannot cast mixed to string.  
+         ≡ƒ¬¬  cast.string               
+ ------ ------------------------------ 
+
+ ------ ----------------------------------------------------------------------------------------------- 
+  Line   Session.php                                                                                    
+ ------ ----------------------------------------------------------------------------------------------- 
+  :26    Property Siro\Core\Session::$driver (string) does not accept string|null.                      
+         ≡ƒ¬¬  assign.propertyType                                                                        
+  :27    Cannot cast mixed to string.                                                                   
+         ≡ƒ¬¬  cast.string                                                                                
+  :28    Cannot cast mixed to string.                                                                   
+         ≡ƒ¬¬  cast.string                                                                                
+  :49    Property Siro\Core\Session::$sessionId (string) does not accept mixed.                         
+         ≡ƒ¬¬  assign.propertyType                                                                        
+  :60    Property Siro\Core\Session::$flash (array<string, mixed>) does not accept mixed.               
+         ≡ƒ¬¬  assign.propertyType                                                                        
+  :161   Cannot access offset string on mixed.                                                          
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                           
+  :176   Parameter #1 ...$arrays of function array_merge expects array, mixed given.                    
+         ≡ƒ¬¬  argument.type                                                                              
+  :183   Cannot access offset string on mixed.                                                          
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                           
+  :223   Property Siro\Core\Session::$data (array<string, mixed>) does not accept array<mixed, mixed>.  
+         ≡ƒ¬¬  assign.propertyType                                                                        
+  :248   Property Siro\Core\Session::$data (array<string, mixed>) does not accept array<mixed, mixed>.  
+         ≡ƒ¬¬  assign.propertyType                                                                        
+ ------ ----------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------- 
+  Line   Storage.php                                                                                              
+ ------ --------------------------------------------------------------------------------------------------------- 
+  :201   Cannot cast mixed to string.                                                                             
+         ≡ƒ¬¬  cast.string                                                                                          
+  :203   Cannot cast mixed to string.                                                                             
+         ≡ƒ¬¬  cast.string                                                                                          
+  :292   Method Siro\Core\Storage::s3Config() return type has no value type specified in iterable type array.     
+         ≡ƒ¬¬  missingType.iterableValue                                                                            
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type               
+  :294   Method Siro\Core\Storage::s3Config() should return array but returns mixed.                              
+         ≡ƒ¬¬  return.type                                                                                          
+  :407   Parameter #1 $string of function rtrim expects string, mixed given.                                      
+         ≡ƒ¬¬  argument.type                                                                                        
+  :410   Part $bucket (mixed) of encapsed string cannot be cast to string.                                        
+         ≡ƒ¬¬  encapsedStringPart.nonString                                                                         
+  :410   Part $region (mixed) of encapsed string cannot be cast to string.                                        
+         ≡ƒ¬¬  encapsedStringPart.nonString                                                                         
+  :418   Method Siro\Core\Storage::s3Sign() has parameter $headers with no value type specified in iterable type  
+         array.                                                                                                   
+         ≡ƒ¬¬  missingType.iterableValue                                                                            
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type               
+  :430   Part $region (mixed) of encapsed string cannot be cast to string.                                        
+         ≡ƒ¬¬  encapsedStringPart.nonString                                                                         
+  :435   Parameter #2 $string of function explode expects string, mixed given.                                    
+         ≡ƒ¬¬  argument.type                                                                                        
+  :456   Parameter #1 $secret of static method Siro\Core\Storage::s3SigningKey() expects string, mixed given.     
+         ≡ƒ¬¬  argument.type                                                                                        
+  :456   Parameter #3 $region of static method Siro\Core\Storage::s3SigningKey() expects string, mixed given.     
+         ≡ƒ¬¬  argument.type                                                                                        
+  :459   Part $key (mixed) of encapsed string cannot be cast to string.                                           
+         ≡ƒ¬¬  encapsedStringPart.nonString                                                                         
+ ------ --------------------------------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  Line   Str.php                                                                                                    
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  :21    Parameter #3 $subject of function preg_replace expects array<float|int|string>|string, string|null given.  
+         ≡ƒ¬¬  argument.type                                                                                          
+  :22    Parameter #3 $subject of function preg_replace expects array<float|int|string>|string, string|null given.  
+         ≡ƒ¬¬  argument.type                                                                                          
+  :23    Parameter #1 $string of function mb_strtolower expects string, string|null given.                          
+         ≡ƒ¬¬  argument.type                                                                                          
+  :37    Parameter #1 $value of function count expects array|Countable, list<string>|false given.                   
+         ≡ƒ¬¬  argument.type                                                                                          
+  :40    Parameter #1 $array of function array_slice expects array, list<string>|false given.                       
+         ≡ƒ¬¬  argument.type                                                                                          
+  :40    Parameter #2 $array of function implode expects array, mixed given.                                        
+         ≡ƒ¬¬  argument.type                                                                                          
+  :56    Parameter #3 $subject of function preg_replace expects array<float|int|string>|string, string|null given.  
+         ≡ƒ¬¬  argument.type                                                                                          
+  :57    Parameter #1 $string of function mb_strtolower expects string, string|null given.                          
+         ≡ƒ¬¬  argument.type                                                                                          
+  :167   Method Siro\Core\Str::plural() should return string but returns string|null.                               
+         ≡ƒ¬¬  return.type                                                                                            
+  :203   Method Siro\Core\Str::singular() should return string but returns string|null.                             
+         ≡ƒ¬¬  return.type                                                                                            
+ ------ ----------------------------------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  Line   URL.php                                                                                                    
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  :21    Method Siro\Core\URL::signed() has parameter $params with no value type specified in iterable type array.  
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :28    Parameter #1 $string of function base64_encode expects string, string|false given.                         
+         ≡ƒ¬¬  argument.type                                                                                          
+  :32    Parameter #1 $string of function rtrim expects string, mixed given.                                        
+         ≡ƒ¬¬  argument.type                                                                                          
+  :35    Method Siro\Core\URL::validate() return type has no value type specified in iterable type array.           
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :55    Method Siro\Core\URL::validateRequest() return type has no value type specified in iterable type array.    
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :57    Cannot cast array<string, mixed> to string.                                                                
+         ≡ƒ¬¬  cast.string                                                                                            
+  :58    Cannot cast array<string, mixed> to string.                                                                
+         ≡ƒ¬¬  cast.string                                                                                            
+  :63    Parameter #1 $payload of static method Siro\Core\URL::validate() expects string, mixed given.              
+         ≡ƒ¬¬  argument.type                                                                                          
+  :63    Parameter #2 $signature of static method Siro\Core\URL::validate() expects string, mixed given.            
+         ≡ƒ¬¬  argument.type                                                                                          
+  :75    Method Siro\Core\URL::secret() should return string but returns string|null.                               
+         ≡ƒ¬¬  return.type                                                                                            
+ ------ ----------------------------------------------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  Line   UploadedFile.php                                                                                           
+ ------ ----------------------------------------------------------------------------------------------------------- 
+  :25    Method Siro\Core\UploadedFile::__construct() has parameter $file with no value type specified in iterable  
+         type array.                                                                                                
+         ≡ƒ¬¬  missingType.iterableValue                                                                              
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                 
+  :27    Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :28    Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :29    Cannot cast mixed to string.                                                                               
+         ≡ƒ¬¬  cast.string                                                                                            
+  :30    Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :31    Cannot cast mixed to int.                                                                                  
+         ≡ƒ¬¬  cast.int                                                                                               
+  :53    Parameter #1 $finfo of function finfo_file expects finfo, finfo|false given.                               
+         ≡ƒ¬¬  argument.type                                                                                          
+  :54    Parameter #1 $finfo of function finfo_close expects finfo, finfo|false given.                              
+         ≡ƒ¬¬  argument.type                                                                                          
+  :174   Method Siro\Core\UploadedFile::hash() should return string|null but returns string|false.                  
+         ≡ƒ¬¬  return.type                                                                                            
+ ------ ----------------------------------------------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  Line   Validator.php                                                                                                  
+ ------ --------------------------------------------------------------------------------------------------------------- 
+  :82    Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :97    Anonymous function never returns string so it can be removed from the return type.                             
+         ≡ƒ¬¬  return.unusedType                                                                                          
+  :121   Anonymous function never returns string so it can be removed from the return type.                             
+         ≡ƒ¬¬  return.unusedType                                                                                          
+  :152   Anonymous function never returns string so it can be removed from the return type.                             
+         ≡ƒ¬¬  return.unusedType                                                                                          
+  :155   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :164   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+  :203   Offset 0 on non-empty-list<string> on left side of ?? always exists and is not nullable.                       
+         ≡ƒ¬¬  nullCoalesce.offset                                                                                        
+  :267   Cannot access offset 'field' on mixed.                                                                         
+         ≡ƒ¬¬  offsetAccess.nonOffsetAccessible                                                                           
+  :268   Parameter #1 $key of static method Siro\Core\Validator::msg() expects string, mixed given.                     
+         ≡ƒ¬¬  argument.type                                                                                              
+  :268   Parameter #2 $replace of static method Siro\Core\Validator::msg() expects array, mixed given.                  
+         ≡ƒ¬¬  argument.type                                                                                              
+  :270   Parameter #1 $key of static method Siro\Core\Validator::msg() expects string, mixed given.                     
+         ≡ƒ¬¬  argument.type                                                                                              
+  :280   Offset 0 on non-empty-list<string> on left side of ?? always exists and is not nullable.                       
+         ≡ƒ¬¬  nullCoalesce.offset                                                                                        
+  :299   Offset 0 on non-empty-list<string> on left side of ?? always exists and is not nullable.                       
+         ≡ƒ¬¬  nullCoalesce.offset                                                                                        
+  :320   Method Siro\Core\Validator::msg() has parameter $replace with no value type specified in iterable type array.  
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :322   Parameter #2 $replace of static method Siro\Core\Lang::get() expects array<string, mixed>, array given.        
+         ≡ƒ¬¬  argument.type                                                                                              
+  :330   Method Siro\Core\Validator::fallback() has parameter $replace with no value type specified in iterable type    
+         array.                                                                                                         
+         ≡ƒ¬¬  missingType.iterableValue                                                                                  
+         ≡ƒÆí  See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type                     
+  :353   Cannot cast mixed to string.                                                                                   
+         ≡ƒ¬¬  cast.string                                                                                                
+ ------ --------------------------------------------------------------------------------------------------------------- 
+
+ ------ ---------------------------------------------------------------------------------------------------- 
+  Line   preload.php                                                                                         
+ ------ ---------------------------------------------------------------------------------------------------- 
+  :102   Argument of an invalid type list<string>|false supplied for foreach, only iterables are supported.  
+         ≡ƒ¬¬  foreach.nonIterable                                                                             
+  :112   Argument of an invalid type list<string>|false supplied for foreach, only iterables are supported.  
+         ≡ƒ¬¬  foreach.nonIterable                                                                             
+ ------ ---------------------------------------------------------------------------------------------------- 
+
+ [ERROR] Found 558 errors                                                                                              
+

@@ -95,13 +95,14 @@ final class EagerLoader
 
         $grouped = [];
         foreach ($rows as $row) {
-            $fk = (int) $row->{$foreignKey};
+            /** @var Model $row */
+            $fk = (int) ($row->{$foreignKey} ?? 0);
             $grouped[$fk][] = $row;
         }
 
         foreach ($models as $m) {
             $id = $m->{$localKey};
-            $m->setRelation($relation, $grouped[(int) $id] ?? []);
+            $m->setRelation($relation, $grouped[(int) ($id ?? 0)] ?? []);
         }
     }
 
@@ -140,12 +141,13 @@ final class EagerLoader
 
         $indexed = [];
         foreach ($rows as $row) {
-            $indexed[(int) $row->{$ownerKeyCol}] = $row;
+            /** @var Model $row */
+            $indexed[(int) ($row->{$ownerKeyCol} ?? 0)] = $row;
         }
 
         foreach ($models as $m) {
             $fk = $m->{$foreignKey};
-            $m->setRelation($relation, $indexed[(int) $fk] ?? null);
+            $m->setRelation($relation, $indexed[(int) ($fk ?? 0)] ?? null);
         }
     }
 }

@@ -320,23 +320,25 @@ final class Blueprint
         }
 
         if ($cmd['type'] === 'unique') {
+            $columns = (array) ($cmd['columns'] ?? []);
             if ($inline) {
-                $name = $cmd['name'] ?? ('uq_' . $this->table . '_' . implode('_', $cmd['columns']));
-                return "CONSTRAINT {$name} UNIQUE (" . implode(', ', array_map(fn($c) => $this->quote($c), $cmd['columns'])) . ")";
+                $name = (string) ($cmd['name'] ?? ('uq_' . $this->table . '_' . implode('_', $columns)));
+                return "CONSTRAINT {$name} UNIQUE (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
             }
-            $name = $cmd['name'] ?? ('uq_' . $this->table . '_' . implode('_', $cmd['columns']));
+            $name = (string) ($cmd['name'] ?? ('uq_' . $this->table . '_' . implode('_', $columns)));
             $tableSql = $this->quote($this->table);
-            return "CREATE UNIQUE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $cmd['columns'])) . ")";
+            return "CREATE UNIQUE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
         }
 
         if ($cmd['type'] === 'index') {
+            $columns = (array) ($cmd['columns'] ?? []);
             if ($inline) {
-                $name = $cmd['name'] ?? ('idx_' . $this->table . '_' . implode('_', $cmd['columns']));
-                return "INDEX {$name} (" . implode(', ', array_map(fn($c) => $this->quote($c), $cmd['columns'])) . ")";
+                $name = (string) ($cmd['name'] ?? ('idx_' . $this->table . '_' . implode('_', $columns)));
+                return "INDEX {$name} (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
             }
-            $name = $cmd['name'] ?? ('idx_' . $this->table . '_' . implode('_', $cmd['columns']));
+            $name = (string) ($cmd['name'] ?? ('idx_' . $this->table . '_' . implode('_', $columns)));
             $tableSql = $this->quote($this->table);
-            return "CREATE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $cmd['columns'])) . ")";
+            return "CREATE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
         }
 
         return null;

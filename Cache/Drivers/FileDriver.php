@@ -80,7 +80,8 @@ final class FileDriver
 
             if ($prefix !== '') {
                 $filename = basename($file);
-                $safePrefix = substr(preg_replace('/[^a-zA-Z0-9_\-]/', '_', $prefix), 0, 200);
+                $sanitized = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $prefix);
+                $safePrefix = substr((string) $sanitized, 0, 200);
                 if (!str_starts_with($filename, $safePrefix)) {
                     continue;
                 }
@@ -96,7 +97,7 @@ final class FileDriver
 
     private function pathFor(string $key): string
     {
-        $safe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key);
+        $safe = (string) preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key);
         $safe = substr($safe, 0, 200) . '_' . sha1($key);
         return $this->cachePath . DIRECTORY_SEPARATOR . $safe . '.cache';
     }
@@ -116,6 +117,7 @@ final class FileDriver
             return null;
         }
 
+        /** @var array<string, mixed>|null $decoded */
         $decoded = json_decode($content, true);
         if (!is_array($decoded)) {
             @unlink($file);

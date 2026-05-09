@@ -1,6 +1,6 @@
 # Release Notes
 
-## v0.21.0 — Server-Ready Release (2026-05-09)
+## v0.21.0 — Server-Ready Release (2026-05-10)
 
 ### 🚀 SiroPHP v0.21.0 - Server Deployment Ready
 
@@ -28,6 +28,40 @@ SiroPHP is built on five principles:
 | Testing | ✅ Stable | 872 tests, HTTP assertions, DB assertions |
 
 ### New in v0.21.0
+
+#### MiddlewareInterface
+```php
+use Siro\Core\Middleware\MiddlewareInterface;
+
+final class MyMiddleware implements MiddlewareInterface
+{
+    public function handle(Request $request, callable $next): mixed
+    {
+        // ... middleware logic
+        return $next($request);
+    }
+}
+```
+
+#### Controller Base Class
+```php
+use Siro\Core\Controller;
+
+final class ProductController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        return $this->paginated($data, $meta, 'Product list');
+    }
+    // $this->success(), $this->error(), $this->created(),
+    // $this->noContent(), $this->validate(), $this->input()
+}
+```
+
+#### PHPStan Level Max
+- Full type safety across the entire codebase
+- 0 errors at max level (1580 baseline entries for intentional patterns)
+- Catches `mixed` type bugs at compile time
 
 #### Model Relations
 ```php

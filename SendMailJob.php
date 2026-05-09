@@ -38,15 +38,15 @@ final class SendMailJob
             $mail->replyTo((string) $data['reply_to']);
         }
 
-        foreach ($data['cc'] ?? [] as $ccAddr) {
+        foreach ((array) ($data['cc'] ?? []) as $ccAddr) {
             $mail->cc((string) $ccAddr);
         }
 
-        foreach ($data['bcc'] ?? [] as $bccAddr) {
+        foreach ((array) ($data['bcc'] ?? []) as $bccAddr) {
             $mail->bcc((string) $bccAddr);
         }
 
-        foreach ($data['attachments'] ?? [] as $attachment) {
+        foreach ((array) ($data['attachments'] ?? []) as $attachment) {
             if (is_array($attachment) && isset($attachment['path'])) {
                 $mail->attach(
                     (string) $attachment['path'],

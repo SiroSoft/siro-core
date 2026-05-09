@@ -16,6 +16,7 @@ final class Column
 {
     public string $type;
     public string $name;
+    /** @var array<string, mixed> */
     public array $params;
     public ?bool $nullable = null;
     public mixed $defaultValue = null;

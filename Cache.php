@@ -47,6 +47,7 @@ final class Cache
         self::$requestHadCacheHit = false;
     }
 
+    /** @return array<string, string> */
     public static function requestStatus(): array
     {
         return [

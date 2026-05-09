@@ -75,6 +75,7 @@ final class ApiKey
             return null;
         }
 
+        /** @var array<string, mixed> $key */
         $key = $rows[0];
         $expiresAt = (int) ($key['expires_at'] ?? 0);
 
@@ -89,10 +90,10 @@ final class ApiKey
 
         return [
             'id' => (int) $key['id'],
-            'name' => $key['name'],
-            'scopes' => $key['scopes'],
+            'name' => (string) ($key['name'] ?? ''),
+            'scopes' => (string) ($key['scopes'] ?? ''),
             'user_id' => (int) ($key['user_id'] ?? 0),
-            'created_at' => $key['created_at'],
+            'created_at' => (string) ($key['created_at'] ?? ''),
             'expires_at' => $expiresAt > 0 ? date('Y-m-d H:i:s', $expiresAt) : null,
         ];
     }
@@ -149,13 +150,14 @@ final class ApiKey
         $result = [];
 
         foreach ($rows as $row) {
+            /** @var array<string, mixed> $row */
             $result[] = [
-                'id' => (int) $row['id'],
-                'name' => $row['name'],
-                'scopes' => $row['scopes'],
-                'created_at' => $row['created_at'],
-                'expires_at' => $row['expires_at'],
-                'last_used_at' => $row['last_used_at'],
+                'id' => (int) ($row['id'] ?? 0),
+                'name' => (string) ($row['name'] ?? ''),
+                'scopes' => (string) ($row['scopes'] ?? ''),
+                'created_at' => (string) ($row['created_at'] ?? ''),
+                'expires_at' => (string) ($row['expires_at'] ?? ''),
+                'last_used_at' => (string) ($row['last_used_at'] ?? ''),
                 'is_expired' => ((int) ($row['expires_at'] ?? 0) > 0 && (int) ($row['expires_at'] ?? 0) < time()),
             ];
         }
@@ -178,7 +180,7 @@ final class ApiKey
             return false;
         }
 
-        $scopes = array_map('trim', explode(',', $keyData['scopes']));
+        $scopes = array_map('trim', explode(',', (string) ($keyData['scopes'] ?? '')));
         $scope = strtolower(trim($scope));
 
         if (in_array('admin', $scopes, true)) {

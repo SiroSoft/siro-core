@@ -37,7 +37,7 @@ final class Env
                 foreach ($cached as $key => $value) {
                     $_ENV[$key] = $value;
                     $_SERVER[$key] = $value;
-                    putenv("{$key}={$value}");
+                    putenv((string) $key . '=' . (string) $value);
                 }
                 self::$loaded = true;
                 // Cache excludes secrets (JWT_SECRET, APP_KEY), load them from .env
@@ -60,7 +60,7 @@ final class Env
                                 }
                                 $_ENV[$key] = $value;
                                 $_SERVER[$key] = $value;
-                                putenv(sprintf('%s=%s', $key, $value));
+                                putenv((string) $key . '=' . (string) $value);
                             }
                         }
                     }
