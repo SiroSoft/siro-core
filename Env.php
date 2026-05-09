@@ -110,6 +110,12 @@ final class Env
         }
     }
 
+    public static function reset(): void
+    {
+        self::$loaded = false;
+        self::$cachedFile = '';
+    }
+
     public static function isLoaded(): bool
     {
         return self::$loaded;

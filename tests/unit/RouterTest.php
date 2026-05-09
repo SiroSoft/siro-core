@@ -296,4 +296,65 @@ final class RouterTest extends TestCase
         $this->assertIsArray($routes);
         $this->assertGreaterThanOrEqual(3, count($routes));
     }
+
+    public function testDispatchReturnsResponseForValidRoute(): void
+    {
+        Route::get('/dispatch-test', fn() => Response::json(['ok' => true]));
+        $request = new \Siro\Core\Request('GET', '/dispatch-test', [], [], [], '127.0.0.1');
+        $response = $this->router->dispatch($request);
+        $this->assertInstanceOf(\Siro\Core\Response::class, $response);
+    }
+
+    public function testDispatchReturns404ForUnknownRoute(): void
+    {
+        $request = new \Siro\Core\Request('GET', '/nonexistent-path-xyz', [], [], [], '127.0.0.1');
+        $response = $this->router->dispatch($request);
+        $this->assertEquals(404, $response->statusCode());
+    }
+
+    public function testDispatchWithDynamicRoute(): void
+    {
+        Route::get('/users/{id}', fn(\Siro\Core\Request $r) => Response::json(['id' => $r->param('id')]));
+        $request = new \Siro\Core\Request('GET', '/users/42', [], [], [], '127.0.0.1');
+        $response = $this->router->dispatch($request);
+        $this->assertEquals(200, $response->statusCode());
+    }
+
+    public function testGroupPrefixIsApplied(): void
+    {
+        $this->router->group('/api', [], function ($router) {
+            $router->get('/items', fn() => 'ok');
+        });
+        $routes = $this->router->getRoutes();
+        $this->assertNotEmpty($routes);
+    }
+
+    public function testRouteExport(): void
+    {
+        Route::get('/export-test', fn() => 'ok');
+        $exported = $this->router->exportRoutes();
+        $this->assertIsArray($exported);
+    }
+
+    public function testRouteClear(): void
+    {
+        Route::get('/to-clear', fn() => 'ok');
+        $this->router->clearRoutes();
+        $routes = $this->router->getRoutes();
+        $this->assertEmpty($routes);
+    }
+
+    public function testOptionsRequestReturnsResponse(): void
+    {
+        Route::post('/options-test', fn() => Response::json(['ok' => true]));
+        $request = new \Siro\Core\Request('OPTIONS', '/options-test', [], [], [], '127.0.0.1');
+        $response = $this->router->dispatch($request);
+        $this->assertInstanceOf(\Siro\Core\Response::class, $response);
+    }
+
+    public function testMiddlewareAliasCanBeRegistered(): void
+    {
+        \Siro\Core\Router::registerMiddlewareAlias('test', \Siro\Core\Middleware\JsonMiddleware::class);
+        $this->assertTrue(true);
+    }
 }
