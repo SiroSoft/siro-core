@@ -76,6 +76,10 @@ final class Console
 
     public function __construct(private readonly string $basePath)
     {
+        $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';
+        if (file_exists($envFile)) {
+            Env::load($envFile);
+        }
     }
 
     /** @return array<string, array{handler: class-string, desc: string, usage: string}> */

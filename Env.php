@@ -40,7 +40,7 @@ final class Env
                     putenv((string) $key . '=' . (string) $value);
                 }
                 self::$loaded = true;
-                // Cache excludes secrets (JWT_SECRET, APP_KEY), load them from .env
+                // Load any keys from .env not already in $_ENV (cache excludes some)
                 $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
                 if ($lines !== false) {
                     foreach ($lines as $line) {
@@ -49,20 +49,17 @@ final class Env
                         $pos = strpos($line, '=');
                         if ($pos === false) continue;
                         $key = trim(substr($line, 0, $pos));
+                        if ($key === '' || array_key_exists($key, $_ENV)) continue;
                         $value = trim(substr($line, $pos + 1));
-                        if ($key === 'JWT_SECRET' || $key === 'APP_KEY') {
-                            if (!array_key_exists($key, $_ENV)) {
-                                if (
-                                    (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
-                                    (str_starts_with($value, "'") && str_ends_with($value, "'"))
-                                ) {
-                                    $value = substr($value, 1, -1);
-                                }
-                                $_ENV[$key] = $value;
-                                $_SERVER[$key] = $value;
-                                putenv((string) $key . '=' . (string) $value);
-                            }
+                        if (
+                            (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                            (str_starts_with($value, "'") && str_ends_with($value, "'"))
+                        ) {
+                            $value = substr($value, 1, -1);
                         }
+                        $_ENV[$key] = $value;
+                        $_SERVER[$key] = $value;
+                        putenv((string) $key . '=' . (string) $value);
                     }
                 }
                 return;
