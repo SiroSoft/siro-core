@@ -19,6 +19,7 @@ final class KeyGenerateCommand
  * to the JWT_SECRET key in .env.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

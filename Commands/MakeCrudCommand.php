@@ -22,6 +22,7 @@ final class MakeCrudCommand
         return $this->forceOverwrite ? true : $this->traitConfirmOverwrite($basePath, $path);
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $resource = trim((string) ($args[0] ?? ''));
@@ -41,10 +42,6 @@ final class MakeCrudCommand
         $controllerClass = $model . 'Controller';
         $resourceClass = $model . 'Resource';
         $table = $this->plural(strtolower($resource));
-
-        $isSimple = in_array('--simple', $args, true);
-        $withSeed = in_array('--seed', $args, true);
-        $withRbac = in_array('--with-rbac', $args, true);
 
         $withoutService = $isSimple || in_array('--without-service', $args, true);
         $withoutRepository = $isSimple || in_array('--without-repository', $args, true);

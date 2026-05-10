@@ -12,6 +12,7 @@ final class LogTopCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $limit = 10;
@@ -81,6 +82,7 @@ final class LogTopCommand
 
         $this->table(
             ['#', 'Method', 'Path', 'Count', 'Avg (ms)', 'Max (ms)', 'Total (s)'],
+            /** @phpstan-ignore argument.type */
             array_map(fn ($i, $e) => [
                 (string) ($i + 1),
                 $e['method'],

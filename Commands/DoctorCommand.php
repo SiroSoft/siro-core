@@ -21,6 +21,7 @@ final class DoctorCommand
  * storage permissions, and database connectivity.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

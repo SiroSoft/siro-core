@@ -20,6 +20,7 @@ final class LogTraceCommand
  * by status code, HTTP method, and slow requests.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

@@ -14,6 +14,7 @@ final class EnvCacheCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';

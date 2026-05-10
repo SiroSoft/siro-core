@@ -21,6 +21,7 @@ final class RouteListCommand
  * middleware in a formatted table.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

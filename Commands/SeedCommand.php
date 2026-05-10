@@ -27,6 +27,7 @@ final class SeedCommand
  * specific seeder if a class name is provided.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

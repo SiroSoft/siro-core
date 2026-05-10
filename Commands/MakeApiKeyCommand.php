@@ -14,6 +14,7 @@ final class MakeApiKeyCommand
 {
     use CommandSupport;
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         /** @var string $name */

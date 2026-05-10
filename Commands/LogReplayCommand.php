@@ -22,6 +22,7 @@ final class LogReplayCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $traceId = trim((string) ($args[0] ?? ''));

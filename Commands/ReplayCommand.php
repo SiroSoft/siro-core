@@ -21,6 +21,7 @@ final class ReplayCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         // If trace_id provided as first arg

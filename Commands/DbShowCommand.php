@@ -15,6 +15,7 @@ final class DbShowCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $table = trim((string) ($args[0] ?? ''));

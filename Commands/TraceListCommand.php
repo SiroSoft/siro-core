@@ -21,6 +21,7 @@ final class TraceListCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $limit = 20;

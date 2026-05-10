@@ -24,6 +24,7 @@ final class LiveCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $port = 8080;

@@ -12,6 +12,7 @@ final class SlowLogCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $limit = 10;

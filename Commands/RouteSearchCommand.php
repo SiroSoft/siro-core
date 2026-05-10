@@ -12,6 +12,7 @@ final class RouteSearchCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $keyword = trim((string) ($args[0] ?? ''));

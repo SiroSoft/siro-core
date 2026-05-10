@@ -12,6 +12,7 @@ final class EnvSwitchCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $env = strtolower(trim($args[0] ?? ''));

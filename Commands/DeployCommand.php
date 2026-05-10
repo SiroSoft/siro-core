@@ -29,6 +29,7 @@ final class DeployCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         if (in_array('--init', $args, true)) {

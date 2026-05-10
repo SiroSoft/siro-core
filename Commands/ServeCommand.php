@@ -21,6 +21,7 @@ final class ServeCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $host = (string) ($args[0] ?? 'localhost');

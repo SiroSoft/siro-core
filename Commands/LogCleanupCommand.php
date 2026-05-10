@@ -12,6 +12,7 @@ final class LogCleanupCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $days = 7;

@@ -22,6 +22,7 @@ final class DebugLastCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';

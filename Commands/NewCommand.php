@@ -48,6 +48,7 @@ final class NewCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $name = $args[0] ?? '';

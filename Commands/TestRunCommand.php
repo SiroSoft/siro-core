@@ -12,6 +12,7 @@ final class TestRunCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $dir = $this->basePath . DIRECTORY_SEPARATOR . 'tests';

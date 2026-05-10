@@ -38,6 +38,7 @@ final class ApiTestCommand
         $this->collectionFile = $dir . DIRECTORY_SEPARATOR . 'api-test-collections.json';
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         if ($args === []) {

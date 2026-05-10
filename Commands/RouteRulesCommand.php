@@ -12,6 +12,7 @@ final class RouteRulesCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $routesFile = $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php';

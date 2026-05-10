@@ -21,6 +21,7 @@ final class ConfigCacheCommand
  * PHP file for faster boot times in production.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

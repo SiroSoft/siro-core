@@ -45,8 +45,8 @@ trait CommandSupport
     }
 
     /**
-     * @param array<string, string> $headers
-     * @param array<int, array<string, string>> $rows
+     * @param array<int, string> $headers
+     * @param array<int, array<int, string>> $rows
      */
     protected function table(array $headers, array $rows): void
     {
@@ -54,7 +54,7 @@ trait CommandSupport
             return;
         }
 
-        // Calculate column widths
+        /** @var array<int, int> $widths */
         $widths = [];
         foreach ($headers as $i => $header) {
             $widths[$i] = strlen($header);

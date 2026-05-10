@@ -12,6 +12,7 @@ final class LogExportCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $format = 'json';

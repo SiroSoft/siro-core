@@ -26,6 +26,7 @@ final class FixCommand
         $this->basePath = $basePath;
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         // --last or <trace_id> support

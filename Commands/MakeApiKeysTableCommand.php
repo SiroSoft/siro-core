@@ -13,6 +13,7 @@ final class MakeApiKeysTableCommand
 {
     use CommandSupport;
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $this->info('Creating api_keys table...');

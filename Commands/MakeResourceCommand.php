@@ -19,6 +19,7 @@ final class MakeResourceCommand
  * a toArray() method stub for the given entity.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

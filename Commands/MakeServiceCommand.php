@@ -12,6 +12,7 @@ final class MakeServiceCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $name = trim((string) ($args[0] ?? ''));

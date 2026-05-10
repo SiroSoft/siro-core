@@ -24,6 +24,7 @@ final class MigrateCommand
  * in batch order, with optional transaction support.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

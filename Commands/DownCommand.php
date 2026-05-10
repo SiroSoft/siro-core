@@ -27,6 +27,7 @@ class DownCommand
         $this->basePath = $basePath;
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $message = 'Upgrading... please wait.';

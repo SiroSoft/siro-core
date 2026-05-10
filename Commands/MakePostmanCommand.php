@@ -22,6 +22,7 @@ final class MakePostmanCommand
  * and bearer token variable.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

@@ -12,6 +12,7 @@ final class RateStatusCommand
     {
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $rateDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'rate_limit';

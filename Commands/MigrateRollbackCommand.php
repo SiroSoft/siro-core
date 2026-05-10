@@ -24,6 +24,7 @@ final class MigrateRollbackCommand
  * reverse order. Default step is 1, configurable via --step=N.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

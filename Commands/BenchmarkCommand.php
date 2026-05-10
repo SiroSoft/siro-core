@@ -19,6 +19,7 @@ final class BenchmarkCommand
         $this->basePath = $basePath;
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $this->parseArgs($args);

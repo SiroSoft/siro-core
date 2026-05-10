@@ -26,6 +26,7 @@ class UpCommand
         $this->basePath = $basePath;
     }
 
+    /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $file = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down';

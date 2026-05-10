@@ -24,6 +24,7 @@ final class MigrateStatusCommand
  * (applied/pending) and batch number.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {

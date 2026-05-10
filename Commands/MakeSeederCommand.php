@@ -19,6 +19,7 @@ final class MakeSeederCommand
  * for seeding initial data.
  *
  * @package Siro\Core\Commands
+ * @param array<int, string> $args
  */
     public function run(array $args): int
     {
