@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
-use PDO;
 use RuntimeException;
 use Siro\Core\DB\ModelQueryBuilder;
 use Siro\Core\DB\Relations\BelongsTo;
@@ -271,7 +270,6 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      *
      * @return static|null
      */
-    #[\ReturnTypeWillChange]
     public static function find(int|string $id): ?static
     {
         /** @phpstan-ignore new.static */

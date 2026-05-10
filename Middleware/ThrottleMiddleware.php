@@ -54,26 +54,31 @@ final class ThrottleMiddleware implements MiddlewareInterface
 
             $remaining = max(0, $limit - $count);
 
-            header('X-RateLimit-Limit: ' . $limit);
-            header('X-RateLimit-Remaining: ' . $remaining);
-            if ($retryAfter > 0) {
-                header('X-RateLimit-Reset: ' . (time() + $retryAfter));
-            }
-
             if ($count > $limit) {
-                if ($retryAfter > 0) {
-                    header('Retry-After: ' . $retryAfter);
-                }
-
-                return Response::error('Too Many Requests', 429, [
+                $response = Response::error('Too Many Requests', 429, [
                     'throttle' => [sprintf('Rate limit exceeded. Max %d requests per %d minute(s).', $limit, $windowMinutes)],
                 ]);
+                $response->header('X-RateLimit-Limit', (string) $limit);
+                $response->header('X-RateLimit-Remaining', (string) $remaining);
+                if ($retryAfter > 0) {
+                    $response->header('X-RateLimit-Reset', (string) (time() + $retryAfter));
+                    $response->header('Retry-After', (string) $retryAfter);
+                }
+                return $response;
             }
+
+            $response = $next($request);
+            if ($response instanceof Response) {
+                $response->header('X-RateLimit-Limit', (string) $limit);
+                $response->header('X-RateLimit-Remaining', (string) $remaining);
+                if ($retryAfter > 0) {
+                    $response->header('X-RateLimit-Reset', (string) (time() + $retryAfter));
+                }
+            }
+            return $response;
         } catch (Throwable) {
             return $this->handleFallback($request, $next, $limit, $windowMinutes, $ttl);
         }
-
-        return $next($request);
     }
 
     private function handleFallback(Request $request, callable $next, int $limit, int $windowMinutes, int $ttl): mixed
@@ -155,19 +160,27 @@ final class ThrottleMiddleware implements MiddlewareInterface
             fclose($fp);
 
             $remaining = max(0, $limit - $count);
-            header('X-RateLimit-Limit: ' . $limit);
-            header('X-RateLimit-Remaining: ' . $remaining);
-            header('X-RateLimit-Reset: ' . ($now + $remainingTtl));
 
             if ($count > $limit) {
-                if ($remainingTtl > 0) {
-                    header('Retry-After: ' . $remainingTtl);
-                }
-
-                return Response::error('Too Many Requests', 429, [
+                $response = Response::error('Too Many Requests', 429, [
                     'throttle' => [sprintf('Rate limit exceeded. Max %d requests per %d minute(s).', $limit, $windowMinutes)],
                 ]);
+                $response->header('X-RateLimit-Limit', (string) $limit);
+                $response->header('X-RateLimit-Remaining', (string) $remaining);
+                $response->header('X-RateLimit-Reset', (string) ($now + $remainingTtl));
+                if ($remainingTtl > 0) {
+                    $response->header('Retry-After', (string) $remainingTtl);
+                }
+                return $response;
             }
+
+            $response = $next($request);
+            if ($response instanceof Response) {
+                $response->header('X-RateLimit-Limit', (string) $limit);
+                $response->header('X-RateLimit-Remaining', (string) $remaining);
+                $response->header('X-RateLimit-Reset', (string) ($now + $remainingTtl));
+            }
+            return $response;
         } catch (Throwable) {
             @flock($fp, LOCK_UN);
             @fclose($fp);
@@ -175,8 +188,6 @@ final class ThrottleMiddleware implements MiddlewareInterface
                 'throttle' => ['Rate limiter fallback processing failed'],
             ]);
         }
-
-        return $next($request);
     }
 
     private function redis(): ?\Redis

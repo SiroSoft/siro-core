@@ -148,7 +148,7 @@ final class Queue
         try {
             $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
             $lockCheck = $driver === 'sqlite'
-                ? "(locked_until IS NULL OR locked_until < strftime('%s','now'))"
+                ? "(locked_until IS NULL OR locked_until < :now)"
                 : "(locked_until IS NULL OR locked_until < UNIX_TIMESTAMP())";
 
             $row = Database::first(

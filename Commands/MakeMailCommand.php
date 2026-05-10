@@ -79,14 +79,14 @@ final class {$className}
      */
     public function build(array \$data = []): string
     {
-        \$name = \$data['name'] ?? 'User';
+        \$name = htmlspecialchars(\$data['name'] ?? 'User', ENT_QUOTES, 'UTF-8');
 
-        return <<<'HTML'
+        return <<<HTML
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family: sans-serif; padding: 20px;">
-    <h1>Hello, {$name}!</h1>
+    <h1>Hello, {\$name}!</h1>
     <p>This is an email from SiroPHP.</p>
 </body>
 </html>

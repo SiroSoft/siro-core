@@ -79,7 +79,6 @@ class BelongsToMany
         return $this->query()->get();
     }
 
-    /** @return ModelQueryBuilder */
     public function query(): ModelQueryBuilder
     {
         /** @var Model $related */

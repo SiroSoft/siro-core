@@ -605,19 +605,6 @@ public function group(string $prefix, callable|array $arg2, callable|array|null 
         return $params;
     }
 
-    /**
-     * Check if a param value matches its where constraint (if any).
-     */
-    private function matchesWhereConstraint(string $method, string $path, string $param, string $value): bool
-    {
-        $key = strtoupper($method) . ':' . $this->normalizePath($path);
-        $constraints = $this->whereConstraints[$key] ?? [];
-        if (!isset($constraints[$param])) {
-            return true;
-        }
-        return preg_match($constraints[$param], $value) === 1;
-    }
-
     /** @return array<string, string> */
     private function getWhereConstraints(string $method, string $path): array
     {
