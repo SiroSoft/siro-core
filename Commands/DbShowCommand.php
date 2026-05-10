@@ -7,8 +7,7 @@ namespace Siro\Core\Commands;
 use Siro\Core\Database;
 use Siro\Core\Env;
 
-final class DbShowCommand
-{
+final class DbShowCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

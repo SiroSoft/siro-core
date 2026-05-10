@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class BenchmarkCommand
-{
+final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     /** @phpstan-ignore property.onlyWritten */

@@ -6,8 +6,7 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\App;
 
-final class RouteListCommand
-{
+final class RouteListCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

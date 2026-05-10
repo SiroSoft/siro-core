@@ -9,8 +9,7 @@ use Siro\Core\Database;
 use Siro\Core\Env;
 use Throwable;
 
-final class MigrateStatusCommand
-{
+final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

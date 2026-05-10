@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class NewCommand
-{
+final class NewCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     private const SKELETON_DIRS = [

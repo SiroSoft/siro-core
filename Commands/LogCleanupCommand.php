@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class LogCleanupCommand
-{
+final class LogCleanupCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

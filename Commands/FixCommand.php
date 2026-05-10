@@ -13,8 +13,7 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-final class FixCommand
-{
+final class FixCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     private string $basePath;

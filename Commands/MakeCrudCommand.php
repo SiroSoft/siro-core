@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class MakeCrudCommand
+final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
 {
     use CommandSupport {
         confirmOverwrite as traitConfirmOverwrite;

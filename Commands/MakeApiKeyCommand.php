@@ -10,8 +10,7 @@ use Siro\Core\Commands\CommandSupport;
 /**
  * Create API key for external developers.
  */
-final class MakeApiKeyCommand
-{
+final class MakeApiKeyCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     /** @param array<int, string> $args */

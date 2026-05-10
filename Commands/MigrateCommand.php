@@ -9,7 +9,7 @@ use Siro\Core\Database;
 use Siro\Core\Env;
 use Throwable;
 
-final class MigrateCommand
+final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
 {
     use MigrationBaseCommand;
 

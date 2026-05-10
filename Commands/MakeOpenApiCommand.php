@@ -6,8 +6,7 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\App;
 
-final class MakeOpenApiCommand
-{
+final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     private string $basePath;

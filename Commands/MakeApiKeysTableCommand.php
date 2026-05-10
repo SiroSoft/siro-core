@@ -9,8 +9,7 @@ use Siro\Core\Commands\CommandSupport;
 /**
  * Create API keys table migration.
  */
-final class MakeApiKeysTableCommand
-{
+final class MakeApiKeysTableCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     /** @param array<int, string> $args */

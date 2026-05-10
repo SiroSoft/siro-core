@@ -6,8 +6,7 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\Env;
 
-final class ConfigCacheCommand
-{
+final class ConfigCacheCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

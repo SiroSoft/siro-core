@@ -22,8 +22,7 @@ use Siro\Core\Router;
 use Siro\Core\Lang;
 use Siro\Core\ValidationException;
 
-final class ApiTestCommand
-{
+final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     private string $authFile;

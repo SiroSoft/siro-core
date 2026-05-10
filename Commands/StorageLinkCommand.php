@@ -14,8 +14,7 @@ use RuntimeException;
  *
  * @package Siro\Core\Commands
  */
-final class StorageLinkCommand
-{
+final class StorageLinkCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

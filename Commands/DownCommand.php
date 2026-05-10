@@ -13,8 +13,7 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-class DownCommand
-{
+class DownCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     public string $name = 'down';

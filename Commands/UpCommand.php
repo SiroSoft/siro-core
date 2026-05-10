@@ -12,8 +12,7 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-class UpCommand
-{
+class UpCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
     public string $name = 'up';
