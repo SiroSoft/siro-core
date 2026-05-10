@@ -190,6 +190,11 @@ final class Blueprint
         return $statements;
     }
 
+    public function dropColumn(string $name): void
+    {
+        $this->commands[] = ['type' => 'dropColumn', 'column' => $name];
+    }
+
     public function compileAlter(): string
     {
         $parts = [];
@@ -198,6 +203,13 @@ final class Blueprint
         foreach ($this->columns as $col) {
             $def = $this->compileColumnDef($col, true);
             $parts[] = "ALTER TABLE {$tableSql} ADD COLUMN {$def}";
+        }
+
+        foreach ($this->commands as $cmd) {
+            if ($cmd['type'] === 'dropColumn') {
+                $col = $this->quote((string) ($cmd['column'] ?? ''));
+                $parts[] = "ALTER TABLE {$tableSql} DROP COLUMN {$col}";
+            }
         }
 
         return implode(";\n", $parts);

@@ -53,6 +53,9 @@ final class EagerLoader
     private function loadRelation(array $models, string $relation, array $columns): void
     {
         $model = new $this->modelClass();
+        if (!method_exists($model, $relation)) {
+            return;
+        }
         $rel = $model->{$relation}();
 
         if ($rel instanceof Relations\HasMany) {

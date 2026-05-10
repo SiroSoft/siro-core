@@ -433,7 +433,11 @@ final class Storage
         ]);
 
         $result = @get_headers($url, false, $context);
-        return $result !== false && (str_contains($result[0] ?? '', '200') || str_contains($result[0] ?? '', '404') === false);
+        if ($result === false) return false;
+        $statusLine = $result[0] ?? '';
+        preg_match('/\s(\d{3})\s/', $statusLine, $matches);
+        $statusCode = (int) ($matches[1] ?? 0);
+        return $statusCode >= 200 && $statusCode < 300;
     }
 
     private static function s3Url(string $path): string

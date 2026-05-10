@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+use RuntimeException;
+
 /**
  * JSON response builder and HTTP sender.
  *

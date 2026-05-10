@@ -300,17 +300,43 @@ final class Logger
 
     private static function protectLogDir(): void
     {
-        // Create .htaccess to protect log directory from web access
-        $htaccess = self::$logDir . DIRECTORY_SEPARATOR . '.htaccess';
-        if (!file_exists($htaccess)) {
-            file_put_contents($htaccess, "Deny from all\n");
+        $logDir = self::$logDir;
+        $traceDir = $logDir . DIRECTORY_SEPARATOR . 'traces';
+
+        // Apache: .htaccess
+        foreach ([$logDir, $traceDir] as $dir) {
+            if (!is_dir($dir)) continue;
+            $htaccess = $dir . DIRECTORY_SEPARATOR . '.htaccess';
+            if (!file_exists($htaccess)) {
+                file_put_contents($htaccess, "Deny from all\n");
+            }
         }
 
-        // Protect trace directory too
-        $traceDir = self::$logDir . DIRECTORY_SEPARATOR . 'traces';
-        $traceHtaccess = $traceDir . DIRECTORY_SEPARATOR . '.htaccess';
-        if (is_dir($traceDir) && !file_exists($traceHtaccess)) {
-            file_put_contents($traceHtaccess, "Deny from all\n");
+        // Nginx: deny.conf snippet (include this in your nginx config)
+        $nginxConf = $logDir . DIRECTORY_SEPARATOR . 'nginx-deny.conf';
+        if (!file_exists($nginxConf)) {
+            file_put_contents($nginxConf, "deny all;\n");
+        }
+
+        // IIS: web.config
+        foreach ([$logDir, $traceDir] as $dir) {
+            if (!is_dir($dir)) continue;
+            $webConfig = $dir . DIRECTORY_SEPARATOR . 'web.config';
+            if (!file_exists($webConfig)) {
+                file_put_contents($webConfig, '<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <system.webServer>
+        <security>
+            <requestFiltering>
+                <denyUrlSequences>
+                    <add sequence="."/>
+                </denyUrlSequences>
+            </requestFiltering>
+        </security>
+    </system.webServer>
+</configuration>
+');
+            }
         }
     }
 }
