@@ -326,7 +326,7 @@ final class App
 
             $authHeader = isset($request) ? $request->header('authorization', '') : '';
             if ($authHeader !== '') {
-                $traceData['auth_header'] = $authHeader;
+                $traceData['auth_header'] = substr($authHeader, 0, 20) . '...[REDACTED]';
             }
 
             if ($this->debug) {

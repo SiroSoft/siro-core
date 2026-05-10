@@ -34,6 +34,12 @@ final class CsrfMiddleware implements MiddlewareInterface
             ], 419);
         }
 
+        // Rotate token after successful validation to prevent reuse
+        $session = Session::instance();
+        $session->start();
+        $newToken = self::generateToken();
+        $session->set('_csrf_token', $newToken);
+
         return $next($request);
     }
 

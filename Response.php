@@ -113,18 +113,44 @@ final class Response
     /**
      * Create a file download response.
      */
+    private static function sanitizeDownloadPath(string $filePath): string
+    {
+        // Resolve symlinks and relative paths, validate within project
+        $real = realpath($filePath);
+        if ($real === false || !is_file($real) || !is_readable($real)) {
+            throw new RuntimeException('File not found: ' . $filePath);
+        }
+        // Ensure file is within project directory to prevent path traversal
+        $base = defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd();
+        $base = rtrim($base, DIRECTORY_SEPARATOR);
+        if (!str_starts_with($real, $base)) {
+            throw new RuntimeException('Access denied: file is outside project directory');
+        }
+        return $real;
+    }
+
+    private static function sanitizeFilename(string $filename): string
+    {
+        // Strip all dangerous characters for HTTP headers
+        $clean = preg_replace('/[^\p{L}\p{N}\s._\-,()\[\]!@#$%^&+=~]/u', '', $filename);
+        $clean = preg_replace('/\R/', '', $clean); // Remove newlines
+        $clean = str_replace(['"', '\\', "\0", "\x00"], '', $clean); // Remove quotes, backslashes, null bytes
+        return trim($clean);
+    }
+
     public static function download(string $filePath, ?string $filename = null, array $headers = []): self
     {
-        if (!file_exists($filePath) || !is_readable($filePath)) {
-            return self::error('File not found', 404);
+        try {
+            $filePath = self::sanitizeDownloadPath($filePath);
+        } catch (RuntimeException $e) {
+            return self::error($e->getMessage(), 404);
         }
 
         $response = new self([], 200);
         $response->isFileResponse = true;
         $response->filePath = $filePath;
         if ($filename !== null) {
-            $filename = (string) preg_replace('/\R/', '', $filename);
-            $filename = str_replace('"', '', $filename);
+            $filename = self::sanitizeFilename($filename);
         }
         $disposition = $filename ? 'attachment; filename="' . $filename . '"' : 'attachment';
         $response->extraHeaders['Content-Disposition'] = $disposition;
@@ -157,15 +183,16 @@ final class Response
      */
     public static function stream(string $filePath, ?string $filename = null, int $chunkSize = 8192): self
     {
-        if (!file_exists($filePath) || !is_readable($filePath)) {
-            return self::error('File not found', 404);
+        try {
+            $filePath = self::sanitizeDownloadPath($filePath);
+        } catch (RuntimeException $e) {
+            return self::error($e->getMessage(), 404);
         }
 
         $response = new self([], 200);
         $response->isFileResponse = true;
         $response->filePath = $filePath;
-        $downloadFilename = $filename ?? basename($filePath);
-        $downloadFilename = preg_replace('/\R/', '', $downloadFilename);
+        $downloadFilename = self::sanitizeFilename($filename ?? basename($filePath));
         $response->extraHeaders['Content-Disposition'] = 'attachment; filename="' . $downloadFilename . '"';
         $response->extraHeaders['Content-Type'] = mime_content_type($filePath) ?: 'application/octet-stream';
         $response->extraHeaders['Accept-Ranges'] = 'bytes';
@@ -180,8 +207,10 @@ final class Response
      */
     public static function file(string $filePath, ?string $contentType = null, array $headers = []): self
     {
-        if (!file_exists($filePath) || !is_readable($filePath)) {
-            return self::error('File not found', 404);
+        try {
+            $filePath = self::sanitizeDownloadPath($filePath);
+        } catch (RuntimeException $e) {
+            return self::error($e->getMessage(), 404);
         }
 
         $response = new self([], 200);
@@ -190,11 +219,11 @@ final class Response
         $response->extraHeaders['Content-Disposition'] = 'inline';
         $response->extraHeaders['Content-Type'] = $contentType ?? (mime_content_type($filePath) ?: 'application/octet-stream');
         $response->extraHeaders['Content-Length'] = (string) filesize($filePath);
-        
+
         foreach ($headers as $name => $value) {
             $response->extraHeaders[$name] = $value;
         }
-        
+
         return $response;
     }
 

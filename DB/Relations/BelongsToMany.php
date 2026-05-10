@@ -26,7 +26,7 @@ class BelongsToMany
     /**
      * Quote identifier for SQL safety.
      */
-    private function quoteIdentifier(string $identifier): string
+    public function quoteIdentifier(string $identifier): string
     {
         if ($identifier === '*') {
             return $identifier;

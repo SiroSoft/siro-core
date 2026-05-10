@@ -479,44 +479,7 @@ final class Router
             return $this->resolved[$class];
         }
 
-        $container = Container::getInstance();
-
-        // Try Container first (supports bindings, singletons, interfaces)
-        if ($container->has($class)) {
-            $this->resolved[$class] = $container->make($class);
-            return $this->resolved[$class];
-        }
-
-        $ref = new \ReflectionClass($class);
-        $ctor = $ref->getConstructor();
-
-        if ($ctor === null || $ctor->getNumberOfRequiredParameters() === 0) {
-            $this->resolved[$class] = $ref->newInstance();
-            return $this->resolved[$class];
-        }
-
-        $deps = [];
-        foreach ($ctor->getParameters() as $param) {
-            $type = $param->getType();
-            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-                $depClass = $type->getName();
-                if ($depClass === $class) {
-                    $deps[] = null;
-                    continue;
-                }
-
-                // Check Container first for each dependency
-                if ($container->has($depClass)) {
-                    $deps[] = $container->make($depClass);
-                } else {
-                    $deps[] = $this->resolveController($depClass);
-                }
-            } else {
-                $deps[] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
-            }
-        }
-
-        $this->resolved[$class] = $ref->newInstanceArgs($deps);
+        $this->resolved[$class] = Container::getInstance()->make($class);
         return $this->resolved[$class];
     }
 
@@ -738,7 +701,7 @@ final class Router
 
     /**
      * Handle OPTIONS requests automatically (CORS preflight).
-     * Returns 204 No Content with appropriate CORS headers.
+     * Delegates CORS header logic to CorsMiddleware to avoid duplication.
      */
     private function handleOptionsRequest(string $path): Response
     {
@@ -770,18 +733,25 @@ final class Router
             return Response::error('Route not found', 404);
         }
 
-        $allowedOrigins = (string) \Siro\Core\Env::get('CORS_ALLOWED_ORIGINS', '*');
-        $allowedMethods = (string) \Siro\Core\Env::get('CORS_ALLOWED_METHODS', 'GET,POST,PUT,DELETE,OPTIONS');
-        $allowedHeaders = (string) \Siro\Core\Env::get('CORS_ALLOWED_HEADERS', 'Content-Type,Authorization,X-Requested-With');
-        $parts = explode(',', $allowedOrigins);
-        $origin = $allowedOrigins === '*' ? '*' : $parts[0];
-        $allowCredentials = $allowedOrigins !== '*' ? 'true' : 'false';
+        // Let CorsMiddleware handle CORS headers via the group middleware pipeline.
+        // This avoids duplicating CORS logic between Router and CorsMiddleware.
+        $finalHandler = function (Request $req): Response {
+            return Response::noContent()
+                ->header('Access-Control-Max-Age', '86400');
+        };
 
-        return Response::noContent()
-            ->header('Access-Control-Allow-Origin', $origin)
-            ->header('Access-Control-Allow-Methods', $allowedMethods)
-            ->header('Access-Control-Allow-Headers', $allowedHeaders)
-            ->header('Access-Control-Allow-Credentials', $allowCredentials)
-            ->header('Access-Control-Max-Age', '86400');
+        // Run group middleware (CorsMiddleware, SecurityHeadersMiddleware, etc.)
+        $pipeline = array_reverse($this->groupMiddleware);
+        foreach ($pipeline as $middleware) {
+            $next = $finalHandler;
+            $finalHandler = function (Request $req) use ($middleware, $next): Response {
+                return $this->runMiddleware($middleware, $req, $next);
+            };
+        }
+
+        // Create OPTIONS request with original headers so CorsMiddleware can read origin
+        $reqHeaders = function_exists('getallheaders') ? (getallheaders() ?: []) : [];
+        $req = new Request('OPTIONS', $path, $_GET, $reqHeaders, []);
+        return $finalHandler($req);
     }
 }

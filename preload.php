@@ -66,14 +66,13 @@ $files = [
 
     // Utilities
     __DIR__ . '/Str.php',
-    __DIR__ . '/Arr.php',
+    __DIR__ . '/Collection.php',
     __DIR__ . '/Hash.php',
-    __DIR__ . '/Encrypt.php',
+    __DIR__ . '/Encrypter.php',
     __DIR__ . '/Container.php',
     __DIR__ . '/Lang.php',
     __DIR__ . '/Session.php',
     __DIR__ . '/Queue.php',
-    __DIR__ . '/RateLimiter.php',
     __DIR__ . '/UploadedFile.php',
     __DIR__ . '/ValidationException.php',
 

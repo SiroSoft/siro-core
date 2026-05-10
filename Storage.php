@@ -201,8 +201,47 @@ final class Storage
         $base = defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd();
         $base = rtrim($base, DIRECTORY_SEPARATOR);
         $storagePath = str_replace('/', DIRECTORY_SEPARATOR, (string) (self::$config['path'] ?? ''));
+        $allowedDir = $base . DIRECTORY_SEPARATOR . $storagePath;
 
-        return $base . DIRECTORY_SEPARATOR . $storagePath . DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR);
+        // Clean path and prevent traversal
+        $cleanPath = ltrim($path, DIRECTORY_SEPARATOR);
+        $cleanPath = str_replace(['../', '..\\', './', '.\\'], '', $cleanPath);
+        $cleanPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $cleanPath);
+        // Remove any remaining parent dir references
+        $segments = explode(DIRECTORY_SEPARATOR, $cleanPath);
+        $filtered = [];
+        foreach ($segments as $segment) {
+            if ($segment === '..' || $segment === '.' || $segment === '') {
+                continue;
+            }
+            $filtered[] = $segment;
+        }
+        $cleanPath = implode(DIRECTORY_SEPARATOR, $filtered);
+
+        $fullPath = $allowedDir . DIRECTORY_SEPARATOR . $cleanPath;
+
+        // Validate that the resolved path is within the allowed directory
+        $realPath = realpath($fullPath);
+        if ($realPath !== false) {
+            $realAllowed = realpath($allowedDir);
+            if ($realAllowed === false || !str_starts_with($realPath, $realAllowed)) {
+                throw new RuntimeException('Path traversal detected: ' . $path);
+            }
+            return $fullPath;
+        }
+
+        // File doesn't exist yet: validate parent directory instead
+        $parentDir = dirname($fullPath);
+        if (!is_dir($parentDir)) {
+            @mkdir($parentDir, 0775, true);
+        }
+        $realParent = realpath($parentDir);
+        $realAllowed = realpath($allowedDir);
+        if ($realParent === false || $realAllowed === false || !str_starts_with($realParent, $realAllowed)) {
+            throw new RuntimeException('Path traversal detected: ' . $path);
+        }
+
+        return $fullPath;
     }
 
     private static function localPut(string $path, string $content): bool
@@ -307,7 +346,7 @@ final class Storage
             'Host: ' . parse_url($url, PHP_URL_HOST),
         ];
 
-        $auth = self::s3Sign('PUT', $path, $headers);
+        $auth = self::s3Sign('PUT', $path, $headers, $content);
         $headers[] = 'Authorization: ' . $auth;
 
         $context = stream_context_create([
@@ -415,7 +454,7 @@ final class Storage
         return self::s3Url($path);
     }
 
-    private static function s3Sign(string $method, string $path, array $headers): string
+    private static function s3Sign(string $method, string $path, array $headers, string $content = ''): string
     {
         $cfg = self::s3Config();
         $key = $cfg['key'];
@@ -442,7 +481,10 @@ final class Storage
 
         $canonicalUri = '/' . ltrim($path, '/');
         $canonicalQueryString = '';
-        $payload = $method === 'PUT' ? 'UNSIGNED-PAYLOAD' : 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+        // Compute SHA256 hash of payload for PUT requests instead of using UNSIGNED-PAYLOAD
+        $payload = $method === 'PUT'
+            ? hash('sha256', $content ?? '')
+            : 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 
         $canonicalHeaders = '';
         foreach ($signedHeaders as $name) {

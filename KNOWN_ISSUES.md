@@ -18,12 +18,12 @@
 | No multi-tenancy | Medium | Implement in application layer |
 | No 2FA built-in | Low | Add manually or use third-party |
 
-### File Upload
+### File Upload / Storage
 
 | Issue | Severity | Workaround |
 |-------|----------|------------|
 | No chunked upload | Medium | Handle in frontend, send as multiple requests |
-| No S3 integration | Medium | Use local storage + sync script |
+| S3 driver: basic implementation (no multipart) | Low | Use local storage for files >100MB |
 | Max file size limited by PHP.ini | Low | Configure `upload_max_filesize` |
 
 ### Queue/Jobs
@@ -31,7 +31,7 @@
 | Issue | Severity | Workaround |
 |-------|----------|------------|
 | File-based only (no Redis) | Medium | Use database queue for persistence |
-| No delayed jobs | Low | Use cron + scheduled commands |
+| Delayed jobs via cron only | Low | Use `sendLater()` for basic delays |
 | No job retry UI | Low | Check `failed_jobs` table manually |
 
 ---

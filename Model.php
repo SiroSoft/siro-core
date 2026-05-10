@@ -98,6 +98,17 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     private function isFillable(string $key): bool
     {
         if ($this->fillable === []) {
+            if ($key !== '') {
+                trigger_error(
+                    sprintf(
+                        'Mass assignment attempt on unprotected model [%s]: "%s" was discarded because $fillable is empty. '
+                        . 'Set $fillable on your model or use forceFill() for explicit assignment.',
+                        static::class,
+                        $key
+                    ),
+                    E_USER_WARNING
+                );
+            }
             return false;
         }
 

@@ -98,9 +98,22 @@ final class Database
         if ($name === null) {
             self::$pdoInstances = [];
             self::$configs = [];
+            self::$capturedQueries = [];
+            self::$transactionDepth = 0;
             return;
         }
         unset(self::$pdoInstances[$name], self::$configs[$name]);
+    }
+
+    public static function purgeAll(): void
+    {
+        self::$pdoInstances = [];
+        self::$configs = [];
+        self::$capturedQueries = [];
+        self::$transactionDepth = 0;
+        self::$defaultConnection = 'default';
+        self::$queryCacheTtl = 0;
+        DB\QueryBuilder::resetDriverNames();
     }
 
     public static function connections(): array
@@ -183,9 +196,10 @@ final class Database
 
     public static function transaction(callable $callback, ?string $connection = null): mixed
     {
-        $pdo = self::connection($connection);
+        $connName = $connection ?? self::$defaultConnection;
+        $pdo = self::connection($connName);
         $isRoot = self::$transactionDepth === 0;
-        $savepoint = 'siro_sp_' . self::$transactionDepth;
+        $savepoint = 'siro_sp_' . $connName . '_' . self::$transactionDepth;
 
         if ($isRoot) {
             $pdo->beginTransaction();

@@ -42,6 +42,7 @@ class QueryBuilder
     private int $cacheTtl = 0;
     private string $cacheTable = '';
     private ?string $connectionName = null;
+    private string $primaryKey = 'id';
 
     public function __construct(string $table)
     {
@@ -198,6 +199,11 @@ class QueryBuilder
 
     /** @var array<string, string> */
     private static array $driverNames = [];
+
+    public static function resetDriverNames(): void
+    {
+        self::$driverNames = [];
+    }
 
     private function detectDriver(?string $connectionName = null): string
     {
@@ -436,7 +442,13 @@ class QueryBuilder
         return $this->count() === 0;
     }
 
-    public function inRandomOrder(?string $seed = null): self
+    public function setPrimaryKey(string $key): self
+    {
+        $this->primaryKey = $key;
+        return $this;
+    }
+
+    public function inRandomOrder(?int $seed = null): self
     {
         $driver = 'mysql';
         try {
@@ -447,7 +459,8 @@ class QueryBuilder
         $sql = match ($driver) {
             'pgsql', 'postgres', 'postgresql' => 'RANDOM()',
             'sqlite' => 'RANDOM()',
-            default => 'RAND()',
+            default => $seed !== null
+                ? "RAND({$seed})" : 'RAND()',
         };
 
         $this->orders[] = ['column' => $sql, 'direction' => 'ASC'];
@@ -518,7 +531,8 @@ class QueryBuilder
 
         $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
         $driver = $this->detectDriver($this->connectionName);
-        $returning = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? ' RETURNING id' : '';
+        $primaryKey = $this->primaryKey ?? 'id';
+        $returning = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? ' RETURNING ' . $this->quoteIdentifier($primaryKey) : '';
         $sql = sprintf(
             'INSERT INTO %s (%s) VALUES (%s)%s',
             $this->quoteIdentifier($this->table),

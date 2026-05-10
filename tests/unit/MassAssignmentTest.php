@@ -57,7 +57,8 @@ final class MassAssignmentTest extends TestCase
         $model = new class extends Model {
             protected array $fillable = [];
         };
-        $model->fill(['any_field' => 'value']);
+        // Warning expected when fillable is empty (triggers E_USER_WARNING to alert devs)
+        @$model->fill(['any_field' => 'value']);
         $this->assertNull($model->getAttribute('any_field'));
     }
 

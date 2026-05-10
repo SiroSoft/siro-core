@@ -198,6 +198,40 @@ final class Session
         return $this->started;
     }
 
+    /**
+     * Garbage collect expired file-based sessions.
+     * Deletes session files older than $maxLifetime seconds (default 30 days).
+     *
+     * @return int Number of deleted session files
+     */
+    public static function gc(int $maxLifetime = 2592000): int
+    {
+        $basePath = defined('BASE_PATH') ? (string) BASE_PATH
+            : (defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd());
+        $filePath = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'sessions';
+
+        if (!is_dir($filePath)) {
+            return 0;
+        }
+
+        $deleted = 0;
+        $expireTime = time() - $maxLifetime;
+
+        $files = glob($filePath . DIRECTORY_SEPARATOR . '*.json');
+        if ($files === false) {
+            return 0;
+        }
+
+        foreach ($files as $file) {
+            if (is_file($file) && filemtime($file) < $expireTime) {
+                @unlink($file);
+                $deleted++;
+            }
+        }
+
+        return $deleted;
+    }
+
     /** @return array<string, mixed> */
     public function all(): array
     {

@@ -43,6 +43,14 @@ final class Logger
         self::protectLogDir();
     }
 
+    public static function reset(): void
+    {
+        self::$logDir = '';
+        self::$retentionDays = 30;
+        self::$slowThreshold = 100;
+        self::$maxFileSize = 50 * 1024 * 1024;
+    }
+
     public static function setSanitizeConfig(array $config): void
     {
         if (isset($config['headers'])) self::$sanitizeConfig['headers'] = $config['headers'];

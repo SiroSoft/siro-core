@@ -35,32 +35,25 @@ final class Schema
 
     public static function drop(string $table): void
     {
-        self::execute("DROP TABLE IF EXISTS {$table}");
+        self::execute("DROP TABLE IF EXISTS " . self::quoteIdentifier($table));
     }
 
     public static function dropIfExists(string $table): void
     {
-        self::execute("DROP TABLE IF EXISTS {$table}");
+        self::execute("DROP TABLE IF EXISTS " . self::quoteIdentifier($table));
     }
 
     public static function dropColumn(string $table, string $column): void
     {
         $driver = self::driver();
+        $qt = self::quoteIdentifier($table);
+        $qc = self::quoteIdentifier($column);
         if ($driver === 'pgsql') {
-            self::execute("ALTER TABLE {$table} DROP COLUMN IF EXISTS {$column}");
-        } elseif ($driver === 'sqlite') {
-            // SQLite doesn't support DROP COLUMN natively before 3.35
-            // Try it anyway
-            try {
-                self::execute("ALTER TABLE {$table} DROP COLUMN {$column}");
-            } catch (\Throwable) {
-                // Ignore if column doesn't exist
-            }
+            self::execute("ALTER TABLE {$qt} DROP COLUMN IF EXISTS {$qc}");
         } else {
             try {
-                self::execute("ALTER TABLE {$table} DROP COLUMN {$column}");
+                self::execute("ALTER TABLE {$qt} DROP COLUMN {$qc}");
             } catch (\Throwable) {
-                // Ignore if column doesn't exist
             }
         }
     }
@@ -68,10 +61,12 @@ final class Schema
     public static function rename(string $from, string $to): void
     {
         $driver = self::driver();
+        $qf = self::quoteIdentifier($from);
+        $qt = self::quoteIdentifier($to);
         if ($driver === 'mysql' || $driver === 'mariadb') {
-            self::execute("RENAME TABLE {$from} TO {$to}");
+            self::execute("RENAME TABLE {$qf} TO {$qt}");
         } else {
-            self::execute("ALTER TABLE {$from} RENAME TO {$to}");
+            self::execute("ALTER TABLE {$qf} RENAME TO {$qt}");
         }
     }
 
@@ -95,7 +90,7 @@ final class Schema
         $sql = match ($driver) {
             'pgsql' => "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = :table",
             'sqlite' => "SELECT name FROM pragma_table_info(:table)",
-            default => "SHOW COLUMNS FROM {$table}",
+            default => "SHOW COLUMNS FROM " . self::quoteIdentifier($table),
         };
         $stmt = self::pdo()->prepare($sql);
         $stmt->execute([':table' => $table]);
@@ -139,5 +134,10 @@ final class Schema
     private static function driver(): string
     {
         return self::pdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
+    }
+
+    private static function quoteIdentifier(string $identifier): string
+    {
+        return '`' . str_replace('`', '``', $identifier) . '`';
     }
 }

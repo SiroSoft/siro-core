@@ -174,6 +174,9 @@ final class Validator
     {
         $errors = [];
 
+        // Initialize strategies once for all rules
+        self::initStrategies();
+
         foreach ($rules as $field => $ruleLine) {
             $value = $input[$field] ?? null;
 
@@ -227,9 +230,6 @@ final class Validator
                 if ($rule === 'nullable' || $rule === 'required' || str_starts_with($rule, 'required_if:')) {
                     continue;
                 }
-
-                // Initialize strategies on first use
-                self::initStrategies();
 
                 // Parse rule name and parameter
                 $ruleName = $rule;

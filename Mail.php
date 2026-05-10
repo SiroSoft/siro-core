@@ -255,6 +255,7 @@ final class Mail
             'From: ' . $fromName . ' <' . $fromAddress . '>',
             'MIME-Version: 1.0',
             'Content-Type: ' . $this->contentType . '; charset=' . $this->charset,
+            'Content-Transfer-Encoding: base64',
             'X-Mailer: SiroPHP/' . (Env::get('APP_VERSION', '0.8.4')),
         ];
 
@@ -270,7 +271,7 @@ final class Mail
             $headers[] = 'BCC: ' . $bccAddr;
         }
 
-        $body = $this->body;
+        $body = chunk_split(base64_encode($this->body), 76, "\r\n");
 
         if ($this->attachments !== []) {
             $boundary = 'siro_boundary_' . bin2hex(random_bytes(8));
@@ -356,9 +357,11 @@ final class Mail
             fwrite($socket, $headers . $this->buildMultipartBody($boundary) . "\r\n.\r\n");
         } else {
             $headers .= "Content-Type: {$this->contentType}; charset={$this->charset}\r\n";
+            $headers .= "Content-Transfer-Encoding: base64\r\n";
             $headers .= "Subject: {$this->subject}\r\n";
             $headers .= "\r\n";
-            fwrite($socket, $headers . $this->body . "\r\n.\r\n");
+            $encodedBody = chunk_split(base64_encode($this->body), 76, "\r\n");
+            fwrite($socket, $headers . $encodedBody . "\r\n.\r\n");
         }
 
         $this->smtpReadResponse($socket);
@@ -377,8 +380,8 @@ final class Mail
         $body = "This is a multi-part message in MIME format.\r\n\r\n";
         $body .= "--{$boundary}\r\n";
         $body .= "Content-Type: {$this->contentType}; charset={$this->charset}\r\n";
-        $body .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-        $body .= $this->body . "\r\n\r\n";
+        $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
+        $body .= chunk_split(base64_encode($this->body), 76, "\r\n") . "\r\n";
 
         foreach ($this->attachments as $attachment) {
             $encoded = base64_encode((string) file_get_contents($attachment['path']));

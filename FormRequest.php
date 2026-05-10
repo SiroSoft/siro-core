@@ -63,7 +63,7 @@ abstract class FormRequest
         }
 
         if (!$this->authorize()) {
-            throw new ValidationException($this->request, ['authorization' => ['Unauthorized.']]);
+            throw new ValidationException(['authorization' => ['Unauthorized.']]);
         }
 
         $this->validated = $this->request->validate($this->rules());
