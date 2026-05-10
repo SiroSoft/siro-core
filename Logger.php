@@ -51,6 +51,7 @@ final class Logger
         self::$maxFileSize = 50 * 1024 * 1024;
     }
 
+    /** @param array{headers?: array<int, string>, body?: array<int, string>, query?: array<int, string>} $config */
     public static function setSanitizeConfig(array $config): void
     {
         if (isset($config['headers'])) self::$sanitizeConfig['headers'] = $config['headers'];
@@ -119,6 +120,7 @@ final class Logger
         self::write('error', self::escapeLog($line), true);
     }
 
+    /** @param array<string, mixed> $data */
     public static function trace(string $traceId, array $data): void
     {
         $data['timestamp'] = date('Y-m-d H:i:s');
@@ -174,6 +176,10 @@ final class Logger
         return (string) preg_replace(array_keys($sensitive), array_values($sensitive), $message);
     }
 
+    /**
+     * @param array<string, string> $headers
+     * @return array<string, string>
+     */
     public static function sanitizeHeaders(array $headers): array
     {
         foreach ($headers as $key => $value) {
@@ -192,9 +198,15 @@ final class Logger
 
         $decoded = self::sanitizeRecursive($decoded, self::$sanitizeConfig['body']);
 
-        return json_encode($decoded, JSON_UNESCAPED_UNICODE);
+        $encoded = json_encode($decoded, JSON_UNESCAPED_UNICODE);
+        return $encoded !== false ? $encoded : $json;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @param array<int, string> $sensitiveFields
+     * @return array<string, mixed>
+     */
     private static function sanitizeRecursive(array $data, array $sensitiveFields): array
     {
         foreach ($data as $key => &$value) {
@@ -256,6 +268,7 @@ final class Logger
         }
     }
 
+    /** @param array<string, mixed> $data */
     private static function writeTrace(string $traceId, array $data): void
     {
         $traceDir = self::$logDir . DIRECTORY_SEPARATOR . 'traces';

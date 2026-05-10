@@ -11,8 +11,10 @@ use IteratorAggregate;
 use JsonSerializable;
 use Traversable;
 
-/** @implements \ArrayAccess<int|string, mixed> */
-/** @implements \IteratorAggregate<int|string, mixed> */
+/**
+ * @implements \ArrayAccess<int|string, mixed>
+ * @implements \IteratorAggregate<int|string, mixed>
+ */
 class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
 {
     /** @var array<int|string, mixed> */
@@ -167,6 +169,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
         });
     }
 
+    /** @param array<int|string, mixed> $values */
     public function whereIn(string $key, array $values): self
     {
         return $this->where($key, 'in', $values);
@@ -382,17 +385,11 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     public function offsetExists(mixed $offset): bool
     {
-        if ($offset === null) {
-            return false;
-        }
         return array_key_exists($offset, $this->items);
     }
 
     public function offsetGet(mixed $offset): mixed
     {
-        if ($offset === null) {
-            return null;
-        }
         return $this->items[$offset] ?? null;
     }
 

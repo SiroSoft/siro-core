@@ -79,6 +79,7 @@ class BelongsToMany
         return $this->query()->get();
     }
 
+    /** @return ModelQueryBuilder */
     public function query(): ModelQueryBuilder
     {
         /** @var Model $related */
@@ -91,11 +92,13 @@ class BelongsToMany
 
         /** @var Model $relatedInstance */
         $relatedInstance = new $this->relatedClass();
-        return $relatedInstance
+        /** @var ModelQueryBuilder $query */
+        $query = $relatedInstance
             ->query()
             ->select("{$relatedTable}.*")
             ->join("{$pivotTable}", "{$pivotTable}.{$relatedKey}", '=', "{$relatedTable}.id")
             ->where("{$pivotTable}.{$foreignKey}", '=', $localValue);
+        return $query;
     }
 
     public function getRelatedClass(): string { return $this->relatedClass; }

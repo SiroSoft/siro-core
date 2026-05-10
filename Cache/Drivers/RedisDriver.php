@@ -12,7 +12,6 @@ namespace Siro\Core\Cache\Drivers;
  *
  * @package Siro\Core\Cache\Drivers
  */
-/** @implements CacheDriverInterface */
 final class RedisDriver
 {
     public function __construct(private readonly \Redis $redis)

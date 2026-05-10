@@ -37,6 +37,7 @@ final class ConfigCacheCommand
         $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';
         if (is_file($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if ($lines === false) { $lines = []; }
             foreach ($lines as $line) {
                 $line = trim($line);
                 if ($line === '' || str_starts_with($line, '#')) {
@@ -56,7 +57,7 @@ final class ConfigCacheCommand
         $dbConfig = [];
         $dbConfigPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
         if (is_file($dbConfigPath)) {
-            $dbConfig = require $dbConfigPath;
+            $dbConfig = (array) require $dbConfigPath;
         }
 
         $content = '<?php return ' . var_export([

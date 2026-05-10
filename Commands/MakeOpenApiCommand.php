@@ -124,6 +124,9 @@ final class MakeOpenApiCommand
         return 0;
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
     private function loadRoutes(): array
     {
         $routes = [];
@@ -167,15 +170,20 @@ final class MakeOpenApiCommand
     {
         if (is_string($handler)) return $handler;
         if (is_array($handler) && count($handler) >= 2) {
-            if (is_object($handler[0])) {
-                return get_class($handler[0]) . '@' . $handler[1];
+            $first = $handler[0];
+            if (is_object($first)) {
+                return get_class($first) . '@' . $handler[1];
             }
-            return (is_string($handler[0]) ? $handler[0] : get_class($handler[0])) . '@' . $handler[1];
+            return (is_string($first) ? $first : $first::class) . '@' . $handler[1];
         }
         if ($handler instanceof \Closure) return 'Closure';
         return 'unknown';
     }
 
+    /**
+     * @param array<mixed> $paths
+     * @param array<string, mixed> $route
+     */
     private function addRouteToPaths(array &$paths, array $route): void
     {
         $method = strtolower($route['method'] ?? 'get');
@@ -277,9 +285,12 @@ final class MakeOpenApiCommand
                 $resource = $prev;
             }
         }
-        return $action . ' ' . ($resource ?? 'resource');
+        return $action . ' ' . ($resource !== false ? $resource : 'resource');
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
     private function extractPathParams(string $path): array
     {
         $params = [];
@@ -296,6 +307,9 @@ final class MakeOpenApiCommand
         return $params;
     }
 
+    /**
+     * @param array<int, mixed> $middleware
+     */
     private function hasAuthMiddleware(array $middleware): bool
     {
         foreach ($middleware as $m) {
@@ -305,15 +319,6 @@ final class MakeOpenApiCommand
             if (str_contains($mStr, 'AuthMiddleware') || str_contains($mStr, 'Auth:')) return true;
         }
         return false;
-    }
-
-    private function pathRequiresAuth(string $path, string $method): bool
-    {
-        if (str_contains($path, '/auth/')) return false;
-        if ($path === '/' || $path === '/health') return false;
-        if ($method === 'get' && str_contains($path, '/api/')) return false;
-        if ($method === 'options') return false;
-        return true;
     }
 
     private function buildRequestSchema(string $handler, string $method): ?string
@@ -327,16 +332,11 @@ final class MakeOpenApiCommand
         $properties = [];
         $required = [];
         foreach ($rules as $field => $fieldRules) {
-            $prop = $this->ruleToProperty($field, $fieldRules);
-            if ($prop !== null) {
-                $properties[$field] = $prop;
-            }
+            $properties[$field] = $this->ruleToProperty($field, $fieldRules);
             if ($this->isRequired($fieldRules)) {
                 $required[] = $field;
             }
         }
-
-        if ($properties === []) return null;
 
         $this->schemas[$schemaName] = [
             'type' => 'object',
@@ -348,7 +348,7 @@ final class MakeOpenApiCommand
         return $schemaName;
     }
 
-    private function buildResponseSchema(string $handler, string $method, string $path): ?string
+    private function buildResponseSchema(string $handler, string $method, string $path): string
     {
         // Singular for show/update/delete, plural for index
         $isList = $method === 'get' && !str_contains($path, '{');
@@ -387,6 +387,9 @@ final class MakeOpenApiCommand
     /** @var array<int, string> Internal model fields that should never appear in API docs */
     private array $internalModelFields = ['password', 'token_version', 'verification_token', 'password_reset_token', 'password_reset_expires_at', 'email_verified_at', 'deleted_at', 'remember_token'];
 
+    /**
+     * @return array<string, mixed>|null
+     */
     private function extractDataSchema(string $handler): ?array
     {
         if (!preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) return null;
@@ -402,7 +405,7 @@ final class MakeOpenApiCommand
         $modelFile = $this->basePath . '/app/Models/' . $m[1] . '.php';
         if (file_exists($modelFile)) {
             $schema = $this->parseModelFile($modelFile);
-            if ($schema !== null && isset($schema['properties'])) {
+            if (isset($schema['properties'])) {
                 foreach ($schema['properties'] as $field => $prop) {
                     if (in_array(strtolower($field), $this->internalModelFields, true)) {
                         unset($schema['properties'][$field]);
@@ -415,7 +418,10 @@ final class MakeOpenApiCommand
         return null;
     }
 
-    private function parseResourceFile(string $file): ?array
+    /**
+     * @return array<string, mixed>
+     */
+    private function parseResourceFile(string $file): array
     {
         $content = (string) file_get_contents($file);
         $properties = [];
@@ -429,10 +435,13 @@ final class MakeOpenApiCommand
             }
         }
 
-        return $properties !== [] ? ['type' => 'object', 'properties' => $properties] : null;
+        return ['type' => 'object', 'properties' => $properties];
     }
 
-    private function parseModelFile(string $file): ?array
+    /**
+     * @return array<string, mixed>
+     */
+    private function parseModelFile(string $file): array
     {
         $content = (string) file_get_contents($file);
         $properties = [];
@@ -446,10 +455,8 @@ final class MakeOpenApiCommand
         }
 
         // Extract $fillable for required fields
-        $fillable = [];
         if (preg_match('/\$fillable\s*=\s*\[([^\]]+)\]/s', $content, $m)) {
             preg_match_all('/\'(\w+)\'/', $m[1], $fields);
-            $fillable = $fields[1];
         }
 
         // Add common fields
@@ -460,7 +467,7 @@ final class MakeOpenApiCommand
             $properties['created_at'] = ['type' => 'string', 'format' => 'date-time'];
         }
 
-        return $properties !== [] ? ['type' => 'object', 'properties' => $properties] : null;
+        return ['type' => 'object', 'properties' => $properties];
     }
 
     /** @var array<int, string> Sensitive fields that should not be exposed in OpenAPI */
@@ -469,6 +476,9 @@ final class MakeOpenApiCommand
     /** @var array<int, string> Internal validation rules that should not be exposed */
     private array $internalRules = ['unique:', 'exists:', 'confirmed', 'required_if:', 'prohibited_if:'];
 
+    /**
+     * @return array<string, mixed>
+     */
     private function extractValidationRules(string $handler): array
     {
         if (!preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) return [];
@@ -533,7 +543,11 @@ final class MakeOpenApiCommand
         return $body;
     }
 
-    private function ruleToProperty(string $field, array $rules): ?array
+    /**
+     * @param array<int, string> $rules
+     * @return array<string, mixed>
+     */
+    private function ruleToProperty(string $field, array $rules): array
     {
         $type = 'string';
         foreach ($rules as $rule) {
@@ -571,13 +585,15 @@ final class MakeOpenApiCommand
             'integer' => 1,
             'number' => 0.0,
             'boolean' => true,
-            'email' => 'user@example.com',
             default => 'string',
         };
 
         return $prop;
     }
 
+    /**
+     * @param array<string, mixed> $rules
+     */
     private function isRequired(array $rules): bool
     {
         return in_array('required', $rules, true);
@@ -598,6 +614,9 @@ final class MakeOpenApiCommand
         return ucfirst($method) . 'Request';
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function buildResponses(?string $responseSchema, string $method, string $path): array
     {
         $successCode = $method === 'post' ? '201' : '200';
@@ -624,6 +643,9 @@ final class MakeOpenApiCommand
         return $responses;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function inferPropertyType(string $key, string $content): array
     {
         $type = match (true) {
@@ -689,13 +711,16 @@ final class MakeOpenApiCommand
         ];
     }
 
+    /**
+     * @return list<array<string, string>>
+     */
     private function buildTagsList(): array
     {
         $tagList = [];
         $defined = ['Auth' => 'Authentication', 'System' => 'System endpoints'];
         foreach (['Auth', 'System'] as $t) {
             if (isset($this->tags[$t])) {
-                $tagList[] = ['name' => $t, 'description' => $defined[$t] ?? $t];
+                $tagList[] = ['name' => $t, 'description' => $defined[$t]];
             }
         }
         foreach ($this->tags as $tag => $desc) {
@@ -706,6 +731,9 @@ final class MakeOpenApiCommand
         return $tagList;
     }
 
+    /**
+     * @param array<string, mixed> $route
+     */
     private function passesFilter(array $route): bool
     {
         $path = $route['path'] ?? '/';
@@ -724,6 +752,9 @@ final class MakeOpenApiCommand
         return true;
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
     private function buildFallbackRoutes(): array
     {
         // Fix 5: Explicit warning about fallback mode
@@ -754,6 +785,9 @@ final class MakeOpenApiCommand
         return $routes;
     }
 
+    /**
+     * @param array<int, string> $args
+     */
     private function parseArgs(array $args): void
     {
         foreach ($args as $arg) {

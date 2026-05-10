@@ -14,15 +14,7 @@ final class EnvCheckCommand
     {
     }
 
-    /**
- * Validate environment configuration.
- *
- * Checks that all required .env variables are set, JWT_SECRET
- * is strong, APP_DEBUG is disabled in production, and storage
- * directories are writable.
- *
- * @package Siro\Core\Commands
- */
+    /** @var array<string, string> */
     private array $requiredConfig = [
         'APP_NAME' => 'Application name',
         'APP_ENV' => 'Application environment (production/testing/local)',

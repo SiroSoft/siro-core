@@ -67,6 +67,7 @@ class QueryBuilder
         return $this;
     }
 
+    /** @param string|array<int, string> ...$columns */
     public function select(array|string ...$columns): self
     {
         if (count($columns) === 1 && is_array($columns[0])) {
@@ -75,7 +76,10 @@ class QueryBuilder
 
         $normalized = [];
         foreach ($columns as $column) {
-            $column = trim((string) $column);
+            if (is_array($column)) {
+                continue;
+            }
+            $column = trim($column);
             if ($column !== '') {
                 $normalized[] = $column;
             }
@@ -106,6 +110,7 @@ class QueryBuilder
         return $this->addWhere('OR', $column, $operatorOrValue, $value, $hasExplicitValue);
     }
 
+    /** @param array<int|string, mixed> $values */
     public function whereIn(string $column, array $values): self
     {
         return $this->addWhereIn('AND', $column, $values, false);
@@ -126,11 +131,13 @@ class QueryBuilder
         return $this;
     }
 
+    /** @param array<int|string, mixed> $values */
     public function orWhereIn(string $column, array $values): self
     {
         return $this->addWhereIn('OR', $column, $values, false);
     }
 
+    /** @param array<int|string, mixed> $values */
     public function whereNotIn(string $column, array $values): self
     {
         return $this->addWhereIn('AND', $column, $values, true);
@@ -162,6 +169,7 @@ class QueryBuilder
         return $this;
     }
 
+    /** @param array<int, string>|string $columns */
     public function groupBy(array|string $columns): self
     {
         if (is_string($columns)) {
@@ -303,6 +311,7 @@ class QueryBuilder
         return $rows[0] ?? null;
     }
 
+    /** @param array{0: mixed, 1: mixed} $range */
     public function whereBetween(string $column, array $range): self
     {
         $min = $range[0] ?? 0;
@@ -322,6 +331,7 @@ class QueryBuilder
         return $this;
     }
 
+    /** @param array{0: mixed, 1: mixed} $range */
     public function whereNotBetween(string $column, array $range): self
     {
         $min = $range[0] ?? 0;
@@ -385,7 +395,7 @@ class QueryBuilder
         return $this;
     }
 
-    /** @return array<int, mixed> */
+    /** @return array<int|string, mixed> */
     public function pluck(string $column, ?string $key = null): array
     {
         $rows = $this->select([$column, $key ?? $column])->get();
@@ -512,6 +522,7 @@ class QueryBuilder
         return $this->aggregate('MIN', $column);
     }
 
+    /** @param array<string, mixed> $data */
     public function insert(array $data): int
     {
         if ($data === []) {
@@ -531,7 +542,7 @@ class QueryBuilder
 
         $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
         $driver = $this->detectDriver($this->connectionName);
-        $primaryKey = $this->primaryKey ?? 'id';
+        $primaryKey = $this->primaryKey;
         $returning = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? ' RETURNING ' . $this->quoteIdentifier($primaryKey) : '';
         $sql = sprintf(
             'INSERT INTO %s (%s) VALUES (%s)%s',
@@ -554,11 +565,13 @@ class QueryBuilder
         return $lastId !== false && $lastId !== '0' ? (int) $lastId : $stmt->rowCount();
     }
 
+    /** @param array<string, mixed> $data */
     public function insertGetId(array $data): int
     {
         return $this->insert($data);
     }
 
+    /** @param array<string, mixed> $data */
     public function update(array $data): int
     {
         if ($data === []) {
@@ -780,9 +793,7 @@ class QueryBuilder
         ];
     }
 
-    /**
-     * @return array{data: array<int, array<string, mixed>>, meta: array<string, int>}
-     */
+    /** @return array<string, mixed> */
     public function paginate(int $perPage, ?int $page = null): array
     {
         $perPage = max(1, $perPage);
@@ -840,6 +851,7 @@ class QueryBuilder
         return $this;
     }
 
+    /** @param array<int|string, mixed> $values */
     private function addWhereIn(string $boolean, string $column, array $values, bool $not): self
     {
         if ($values === []) {

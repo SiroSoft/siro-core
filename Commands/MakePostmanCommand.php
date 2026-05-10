@@ -239,6 +239,9 @@ final class MakePostmanCommand
         return 'General';
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     private function buildRequestBody(string $handler, string $method): ?array
     {
         if (!in_array(strtoupper($method), ['POST', 'PUT', 'PATCH'], true)) {
@@ -302,6 +305,9 @@ final class MakePostmanCommand
         return null;
     }
 
+    /**
+     * @param array<int, string> $rules
+     */
     private function ruleToExample(string $field, array $rules): mixed
     {
         if (in_array('email', $rules, true)) {

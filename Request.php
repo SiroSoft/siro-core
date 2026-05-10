@@ -17,7 +17,7 @@ final class Request
 {
     private readonly string $method;
     private readonly string $path;
-    /** @var array<string, mixed> */
+    /** @var array<int|string, mixed> */
     private readonly array $queryParams;
     /** @var array<string, string> */
     private readonly array $headerBag;
@@ -34,7 +34,7 @@ final class Request
     private static ?string $rawBodyCache = null;
 
     /**
-     * @param array<string, mixed> $query
+     * @param array<int|string, mixed> $query
      * @param array<string, string> $headers
      * @param array<string, mixed> $jsonBody
      */
@@ -146,7 +146,7 @@ final class Request
         }
     }
 
-    private function parseNestedFiles(string $key, array $file): void
+    /** @param array<string, mixed> $file */ private function parseNestedFiles(string $key, array $file): void
     {
         $names = is_array($file['name']) ? $file['name'] : [];
         $tmpNames = is_array($file['tmp_name']) ? $file['tmp_name'] : [];
@@ -191,7 +191,7 @@ final class Request
         return $this->body();
     }
 
-    /** @return array<string, mixed> */
+    /** @return mixed */
     public function query(?string $key = null, mixed $default = null): mixed
     {
         if ($key === null) {
@@ -238,6 +238,14 @@ final class Request
             $cleaned[$key] = str_replace(["\0", "\x00", '%00'], '', (string) $value);
         }
         $this->routeParams = $cleaned;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function inputAll(): array
+    {
+        return $this->bodyData;
     }
 
     public function input(string $key, mixed $default = null): mixed
@@ -405,7 +413,7 @@ final class Request
     /**
      * Get all input data (body + query params).
      *
-     * @return array<string, mixed>
+     * @return array<int|string, mixed>
      */
     public function all(): array
     {
@@ -464,6 +472,9 @@ final class Request
     public function string(string $key, string $default = ''): string
     {
         $value = $this->input($key, $default);
+        if (is_array($value)) {
+            return $default;
+        }
         return trim((string) $value);
     }
 
@@ -488,6 +499,7 @@ final class Request
     /**
      * Get input as array.
      *
+     * @param array<int|string, mixed> $default
      * @return array<int|string, mixed>
      */
     public function array(string $key, array $default = []): array
@@ -520,7 +532,10 @@ final class Request
     public function queryString(string $key, string $default = ''): string
     {
         $value = $this->query($key, $default);
-        return (string) $value;
+        if (is_string($value)) {
+            return $value;
+        }
+        return $default;
     }
 
     private static function normalizePath(string $path): string
@@ -533,7 +548,10 @@ final class Request
         }
 
         $normalized = '/' . trim($path, '/');
-        return $normalized === '//' || $normalized === '' ? '/' : ($normalized === '/.' ? '/' : $normalized);
+        return match ($normalized) {
+            '//', '/.' => '/',
+            default => $normalized,
+        };
     }
 
     private static function resolveClientIp(): string

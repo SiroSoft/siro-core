@@ -157,6 +157,7 @@ final class Console
         ];
     }
 
+    /** @return array<string, string> */
     private function aliases(): array
     {
         return [
@@ -166,12 +167,10 @@ final class Console
         ];
     }
 
-    /** @var array<int, string> Core workflow commands shown on default */
-    private const CORE_FLOW = ['make:crud', 'serve', 'api:test', 'why', 'fix', 'replay', 'traces'];
-
+    /** @param array<int, string> $argv */
     public function run(array $argv): int
     {
-        $command = trim($argv[1] ?? '');
+        $command = isset($argv[1]) ? trim($argv[1]) : '';
         $args = array_slice($argv, 2);
 
         if ($command === '--version' || $command === '-V') {
@@ -232,9 +231,13 @@ final class Console
             return 0;
         }
 
-        /** @var string $handlerClass */
+        /** @var class-string $handlerClass */
         $handlerClass = $registry[$command]['handler'];
-        return (new $handlerClass($this->basePath))->run($args);
+        $handlerInstance = new $handlerClass($this->basePath);
+        if (!$handlerInstance instanceof \Siro\Core\Commands\CommandInterface) {
+            throw new \RuntimeException("Command {$command} must implement CommandInterface");
+        }
+        return $handlerInstance->run($args);
     }
 
     private function printWorkflow(): void
@@ -365,6 +368,7 @@ final class Console
         $this->write('Run "php siro list" for all 59 commands with usage examples.');
     }
 
+    /** @param array{handler: class-string, desc: string, usage: string} $info */
     private function printCommandHelp(string $command, array $info): void
     {
         $this->write('SiroPHP v' . self::VERSION);
@@ -377,6 +381,7 @@ final class Console
         $this->write('  Run "php siro list" to see all commands.');
     }
 
+    /** @return array<string, array<string, string>> */
     private function groupedCommands(): array
     {
         $registry = $this->commandRegistry();
@@ -411,6 +416,7 @@ final class Console
         return $result;
     }
 
+    /** @param array<string, array{handler: class-string, desc: string, usage: string}> $registry */
     private function unknownCommand(string $command, array $registry): int
     {
         $this->write("Unknown command: \033[31m{$command}\033[0m");

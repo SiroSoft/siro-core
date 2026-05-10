@@ -328,6 +328,7 @@ final class Storage
 
     // ─── S3 Driver ────────────────────────────────────────
 
+    /** @return array<string, string> */
     private static function s3Config(): array
     {
         return self::$config['s3'];
@@ -458,6 +459,7 @@ final class Storage
         return self::s3Url($path);
     }
 
+    /** @param array<int, string> $headers */
     private static function s3Sign(string $method, string $path, array $headers, string $content = ''): string
     {
         $cfg = self::s3Config();
@@ -487,7 +489,7 @@ final class Storage
         $canonicalQueryString = '';
         // Compute SHA256 hash of payload for PUT requests instead of using UNSIGNED-PAYLOAD
         $payload = $method === 'PUT'
-            ? hash('sha256', $content ?? '')
+            ? hash('sha256', $content)
             : 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 
         $canonicalHeaders = '';

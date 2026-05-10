@@ -12,7 +12,7 @@ use RuntimeException;
 final class Container
 {
     private static ?Container $instance = null;
-    /** @var array<string, callable|class-string> */
+    /** @var array<string, (callable(): mixed)|class-string|string> */
     private array $bindings = [];
     /** @var array<string, true> */
     private array $singletons = [];
@@ -66,6 +66,7 @@ final class Container
         if ($concrete instanceof Closure) {
             $object = $concrete($this);
         } elseif (is_string($concrete)) {
+            /** @var class-string $concrete */
             $object = $this->resolve($concrete);
         } else {
             throw new RuntimeException("Cannot resolve [{$abstract}].");
@@ -118,6 +119,7 @@ final class Container
         $this->resolved = [];
     }
 
+    /** @param class-string $class */
     private function resolve(string $class): object
     {
         $ref = new ReflectionClass($class);

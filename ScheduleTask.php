@@ -9,6 +9,7 @@ final class ScheduleTask
     public string $type;
     public mixed $task;
     private string $expression = '* * * * *';
+    /** @phpstan-ignore property.onlyWritten */
     private int $lastRun = 0;
     private bool $withoutOverlapping = false;
     private string $mutexKey = '';

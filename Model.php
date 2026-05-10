@@ -21,6 +21,7 @@ use Siro\Core\DB\Relations\HasOne;
  *
  * @package Siro\Core
  */
+/** @implements \ArrayAccess<string, mixed> */
 abstract class Model implements \JsonSerializable, \ArrayAccess
 {
     /** @var string Table name (auto-detected if not set) */
@@ -219,7 +220,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function offsetExists(mixed $offset): bool
     {
-        return $offset !== null && array_key_exists($offset, $this->attributes);
+        return array_key_exists($offset, $this->attributes);
     }
 
     public function offsetGet(mixed $offset): mixed
@@ -270,18 +271,31 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      *
      * @return static|null
      */
-    public static function find(int|string $id): ?self
+    #[\ReturnTypeWillChange]
+    public static function find(int|string $id): ?static
     {
+        /** @phpstan-ignore new.static */
         $instance = new static();
         $table = $instance->getTable();
 
+        /** @var array<string, mixed>|null $result */
         $result = Database::table($table)->where('id', '=', $id)->first();
 
         if ($result === null) {
             return null;
         }
 
+        /** @var array<string, mixed> $result */
         return self::hydrate($result);
+    }
+
+    /**
+     * @return static
+     */
+    private static function createInstance(): self
+    {
+        /** @phpstan-ignore new.static */
+        return new static();
     }
 
     /**
@@ -289,7 +303,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      */
     public static function query(): ModelQueryBuilder
     {
-        $instance = new static();
+        $instance = self::createInstance();
         return new ModelQueryBuilder($instance->getTable(), static::class);
     }
 
@@ -310,21 +324,11 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /**
      * Execute a query and get all results as Model instances.
      *
-     * @return array<int, static>
+     * @return array<int, self>
      */
     public static function all(): array
     {
         return self::query()->get();
-    }
-
-    /**
-     * Get the hidden attributes.
-     *
-     * @return array<int, string>
-     */
-    public function getHidden(): array
-    {
-        return $this->hidden;
     }
 
     /**
@@ -353,6 +357,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     /**
      * Specify columns to select.
+     * @param string ...$columns
      */
     public static function select(...$columns): ModelQueryBuilder
     {
@@ -370,7 +375,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /**
      * Execute a query and get the first result as a Model instance.
      *
-     * @return static|null
+     * @return self|null
      */
     public static function first(): ?self
     {
@@ -380,7 +385,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /**
      * Get Model results from a query builder.
      *
-     * @return array<int, static>
+     * @return array<int, self>
      */
     public static function get(): array
     {
@@ -392,7 +397,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      *
      * @param int $perPage Number of items per page
      * @param int $page Current page number
-     * @return array{data: array<int, static>, meta: array{page:int, per_page:int, total:int, last_page:int}}
+     * @return array{data: array<int, self>, meta: array{page:int, per_page:int, total:int, last_page:int}}
      */
     public static function paginate(int $perPage = 15, int $page = 1): array
     {
@@ -418,6 +423,16 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     }
 
     /**
+     * Get the hidden attributes.
+     *
+     * @return array<int, string>
+     */
+    public function getHidden(): array
+    {
+        return $this->hidden;
+    }
+
+    /**
      * Create a new model and save it to the database.
      *
      * @param array<string, mixed> $attributes
@@ -425,7 +440,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      */
     public static function create(array $attributes): self
     {
-        $instance = new static($attributes);
+        $instance = self::createInstance();
+        $instance->fill($attributes);
         $instance->save();
 
         return $instance;
@@ -459,6 +475,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     {
         $existing = self::findByAttributes($attributes);
         if ($existing !== null) {
+            /** @var static $existing */
             return $existing;
         }
 
@@ -476,10 +493,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     {
         $existing = self::findByAttributes($attributes);
         if ($existing !== null) {
+            /** @var static $existing */
             return $existing;
         }
 
-        return new static([...$attributes, ...$values]);
+        $instance = self::createInstance();
+        $instance->fill([...$attributes, ...$values]);
+        return $instance;
     }
 
     /**
@@ -494,6 +514,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         $existing = self::findByAttributes($attributes);
         if ($existing !== null) {
             $existing->update($values);
+            /** @var static $existing */
             return $existing;
         }
 
@@ -504,7 +525,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      * Find a record by arbitrary attributes.
      *
      * @param array<string, mixed> $attributes
-     * @return static|null
+     * @return self|null
      */
     private static function findByAttributes(array $attributes): ?self
     {
@@ -515,7 +536,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
         $rows = $query->limit(1)->get();
         $row = $rows[0] ?? null;
-        return $row !== null ? self::hydrate($row) : null;
+        return $row;
     }
 
     /**
@@ -626,6 +647,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     public static function with(...$relations): ModelQueryBuilder
     {
         $query = self::query();
+        /** @var array<string, array<int, string>> $eagerLoads */
         $eagerLoads = [];
 
         foreach ($relations as $key => $value) {
@@ -636,7 +658,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                     $eagerLoads[$value] = ['*'];
                 }
             } elseif (is_array($value)) {
-                $eagerLoads[(string) $key] = $value;
+                /** @var array<int, string> $cols */
+                $cols = $value;
+                $eagerLoads[(string) $key] = $cols;
             }
         }
 
@@ -654,6 +678,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      */
     public function load(...$relations): self
     {
+        /** @var array<string, array<int, string>> $eagerLoads */
         $eagerLoads = [];
         foreach ($relations as $key => $value) {
             if (is_string($value)) {
@@ -663,11 +688,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                     $eagerLoads[$value] = ['*'];
                 }
             } elseif (is_array($value)) {
-                $eagerLoads[(string) $key] = $value;
+                /** @var array<int, string> $cols */
+                $cols = $value;
+                $eagerLoads[(string) $key] = $cols;
             }
         }
 
-        $eager = new EagerLoader(static::class);
+        $eager = new \Siro\Core\DB\EagerLoader(static::class);
         $eager->load($this, $eagerLoads);
 
         return $this;
@@ -733,7 +760,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      */
     public static function hydrate(array $attributes): self
     {
-        $model = new static();
+        $model = self::createInstance();
         $model->forceFill($attributes);
         $model->syncOriginal();
         $model->exists = true;
@@ -760,6 +787,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      */
     protected function hasMany(string $relatedClass, string $foreignKey = '', string $localKey = 'id'): HasMany
     {
+        /** @var self $related */
         $related = new $relatedClass();
 
         if ($foreignKey === '') {
@@ -810,7 +838,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         $related = new $relatedClass();
 
         if ($pivotTable === '') {
-            /** @var array{0: string, 1: string} $tables */
+            /** @var self $related */
             $tables = [$this->getTable(), $related->getTable()];
             sort($tables);
             $pivotTable = $tables[0] . '_' . $tables[1];
@@ -863,7 +891,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      */
     public static function __callStatic(string $method, array $parameters): mixed
     {
-        $instance = new static();
+        $instance = self::createInstance();
 
         if (method_exists($instance, $method)) {
             return $instance->$method(...$parameters);

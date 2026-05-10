@@ -13,7 +13,6 @@ namespace Siro\Core\Cache\Drivers;
  *
  * @package Siro\Core\Cache\Drivers
  */
-/** @implements CacheDriverInterface */
 final class FileDriver
 {
     private readonly string $cachePath;

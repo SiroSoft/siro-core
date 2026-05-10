@@ -12,6 +12,7 @@ final class ConfigClearCommand
     {
     }
 
+    /** @param array<int, string> $_args */
     public function run(array $_args): int
     {
         $this->write('Clearing cache...');

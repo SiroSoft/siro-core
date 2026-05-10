@@ -60,7 +60,7 @@ final class Schedule
     private function runCommand(string $command, string $basePath): void
     {
         $parts = explode(' ', $command);
-        $name = $parts[0] ?? '';
+        $name = $parts[0];
         $args = array_slice($parts, 1);
 
         $console = new Console($basePath);

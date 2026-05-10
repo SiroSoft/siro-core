@@ -109,12 +109,12 @@ final class AuthGuard
         $container = Container::getInstance();
 
         if ($container->has('auth.provider')) {
-            return $container->make('auth.provider');
+            $provider = $container->make('auth.provider'); return $provider instanceof UserProvider ? $provider : null;
         }
 
+        /** @var string $modelClass */
         $modelClass = 'App\\Models\\User';
         if (class_exists($modelClass)) {
-            /** @var class-string $modelClass */
             return new ModelUserProvider($modelClass);
         }
 

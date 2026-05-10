@@ -399,7 +399,7 @@ final class Mail
     /**
      * Send an SMTP command.
      */
-    private function smtpCommand($socket, string $command): void
+    private function smtpCommand(mixed $socket, string $command): void
     {
         if ($command !== 'QUIT') {
             fwrite($socket, $command . "\r\n");
@@ -411,7 +411,7 @@ final class Mail
      *
      * @throws RuntimeException on error
      */
-    private function smtpReadResponse($socket): string
+    private function smtpReadResponse(mixed $socket): string
     {
         $response = '';
         while ($line = fgets($socket, 512)) {

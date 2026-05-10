@@ -148,6 +148,9 @@ final class DeployCommand
         passthru("cd {$safeBasePath} && {$script} 2>&1", $code);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function loadConfig(): array
     {
         $configFile = $this->basePath . DIRECTORY_SEPARATOR . 'deploy.json';

@@ -101,6 +101,9 @@ final class MigrateStatusCommand
     private function appliedMigrations(PDO $pdo): array
     {
         $stmt = $pdo->query('SELECT migration, batch FROM migrations ORDER BY id ASC');
+        if ($stmt === false) {
+            return [];
+        }
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $result = [];

@@ -34,7 +34,7 @@ final class RouteSearchCommand
         $matched = [];
 
         foreach ($routes as $route) {
-            $haystack = ($route['method'] ?? '') . ' ' . ($route['path'] ?? '') . ' ' . ($route['handler'] ?? '');
+            $haystack = $route['method'] . ' ' . $route['path'] . ' ' . $route['handler'];
             if (str_contains(strtolower($haystack), strtolower($keyword))) {
                 $matched[] = $route;
             }
@@ -52,11 +52,11 @@ final class RouteSearchCommand
 
         $this->table(
             ['Method', 'Path', 'Handler', 'Middleware'],
-            array_map(fn ($r) => [
-                $r['method'] ?? '?',
-                $r['path'] ?? '?',
-                $r['handler'] ?? '?',
-                ($r['middleware'] ?? '') . (($r['cache_ttl'] ?? 0) > 0 ? ' [cache:' . $r['cache_ttl'] . 's]' : ''),
+            array_map(fn (array $r) => [
+                $r['method'],
+                $r['path'],
+                $r['handler'],
+                $r['middleware'] . ($r['cache_ttl'] > 0 ? ' [cache:' . $r['cache_ttl'] . 's]' : ''),
             ], $matched)
         );
 

@@ -133,11 +133,11 @@ final class LogReplayCommand
                     $this->write("  {$key}: \033[33m{$value}\033[0m");
                     $input = readline("  New value (Enter to keep): ");
                     if ($input !== '') {
-                        $decoded[$key] = is_numeric($input) ? $input : $input;
+                        $decoded[$key] = $input;
                     }
                 }
             }
-            $body = json_encode($decoded ?? [], JSON_UNESCAPED_UNICODE);
+            $body = (string) json_encode($decoded ?? [], JSON_UNESCAPED_UNICODE);
             $this->write('  ' . str_repeat('-', 40));
             $this->write('  Updated body: ' . $this->prettyPrint($body));
         }
@@ -161,7 +161,7 @@ final class LogReplayCommand
             if (is_array($seedData)) {
                 unset($seedData['id'], $seedData['created_at'], $seedData['updated_at']);
                 $this->write('Seed command:');
-                $this->write('  $db->table("' . ($data['table'] ?? 'table') . '")->insert(' . json_encode($seedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . ');');
+                $this->write((string) '  $db->table("' . ($data['table'] ?? 'table') . '")->insert(' . json_encode($seedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . ');');
                 $this->write('  Then run: php siro db:seed');
             }
             return 0;
@@ -193,8 +193,8 @@ final class LogReplayCommand
             $this->write('  ' . str_repeat('-', 40));
             $this->write('  Method: ' . $method);
             $this->write('  URL:    ' . $url);
-            $this->write('  Body:   ' . ($body ?: '(empty)'));
-            $this->write('  Auth:   ' . ($auth ? 'Bearer [token present]' : 'none'));
+            $this->write('  Body:   ' . $body);
+            $this->write('  Auth:   Bearer [token present]');
             $this->write('  ' . str_repeat('-', 40));
             $this->write('  To execute: php siro replay ' . $traceId);
             return 0;
@@ -216,9 +216,9 @@ final class LogReplayCommand
             $this->write('  Status: ' . $beforeStatus);
             $decodedBefore = json_decode((string) $beforeBody, true);
             $beforeErrors = $decodedBefore['errors'] ?? ($decodedBefore['data']['errors'] ?? []);
-            if ($beforeErrors !== [] && is_array($beforeErrors)) {
+            if ($beforeErrors !== []) {
                 foreach ($beforeErrors as $f => $m) {
-                    $msgs = is_array($m) ? implode(', ', $m) : $m;
+                    $msgs = implode(', ', (array) $m);
                     $this->write('  ❌ ' . $f . ': ' . $msgs);
                 }
             }
@@ -228,9 +228,9 @@ final class LogReplayCommand
             $this->write('  Status: ' . $result['status']);
             $decodedAfter = json_decode((string) ($result['body'] ?? '{}'), true);
             $afterErrors = $decodedAfter['errors'] ?? ($decodedAfter['data']['errors'] ?? []);
-            if ($afterErrors !== [] && is_array($afterErrors)) {
+            if ($afterErrors !== []) {
                 foreach ($afterErrors as $f => $m) {
-                    $msgs = is_array($m) ? implode(', ', $m) : $m;
+                    $msgs = implode(', ', (array) $m);
                     $this->write('  ❌ ' . $f . ': ' . $msgs);
                 }
             } elseif ((int) $result['status'] >= 200 && (int) $result['status'] < 300) {
@@ -241,7 +241,8 @@ final class LogReplayCommand
         }
 
         // Audit log for all replay operations
-        $this->auditReplay($traceId, $method, $path, $dryRun ? 'dry-run' : ($diffMode ? 'diff' : ($editMode ? 'edit' : 'replay')));
+        $replayMode = $editMode ? 'edit' : 'replay';
+        $this->auditReplay($traceId, $method, $path, $replayMode);
 
         // Normal replay (curl output or execute)
         if (!$force && $method !== 'GET') {
@@ -264,8 +265,13 @@ final class LogReplayCommand
         if (!is_dir($auditDir)) return;
 
         $auditFile = $auditDir . DIRECTORY_SEPARATOR . 'replay-audit.log';
-        $env = strtolower((string) getenv('APP_ENV')) ?: 'unknown';
-        $user = getenv('USER') ?: getenv('USERNAME') ?: 'unknown';
+        $envVal = getenv('APP_ENV');
+        $env = $envVal !== false ? strtolower($envVal) : 'unknown';
+        $userVal = getenv('USER');
+        if ($userVal === false || $userVal === '') {
+            $userVal = getenv('USERNAME');
+        }
+        $user = $userVal !== false && $userVal !== '' ? $userVal : 'unknown';
         $line = sprintf(
             '[%s] user=%s env=%s mode=%s trace=%s %s %s',
             date('Y-m-d H:i:s'),
@@ -279,6 +285,11 @@ final class LogReplayCommand
         file_put_contents($auditFile, $line . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
 
+    /**
+     * @param array<string, mixed> $headers
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
     private function executeReplay(string $method, string $url, string $body, array $headers, string $auth, string $ct, array $data): array
     {
         $ch = curl_init($url);
@@ -291,19 +302,25 @@ final class LogReplayCommand
         if ($auth !== '') $curlHeaders[] = 'Authorization: ' . $auth;
         if ($ct !== '') $curlHeaders[] = 'Content-Type: ' . $ct;
 
-        curl_setopt_array($ch, [
+        /** @var array<int, mixed> $curlOpts */
+        $curlOpts = [
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_HTTPHEADER => $curlHeaders,
             CURLOPT_POSTFIELDS => $body,
-        ]);
+        ];
+        curl_setopt_array($ch, $curlOpts);
         $response = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         return ['status' => $status, 'body' => $response];
     }
 
+    /**
+     * @param array<string, mixed> $headers
+     * @param array<string, mixed> $data
+     */
     private function outputCurl(string $method, string $url, string $body, array $headers, string $auth, array $data): void
     {
         $this->write('');
@@ -334,10 +351,14 @@ final class LogReplayCommand
         }
     }
 
+    /**
+     * @param array<string, mixed> $headers
+     */
     private function outputHttpie(string $method, string $url, string $body, array $headers, string $auth): void
     {
         $this->write('');
-        $parts = ['http', strtolower($method === 'GET' ? '' : $method), $url];
+        $httpMethod = $method === 'GET' ? '' : $method;
+        $parts = ['http', strtolower($httpMethod), $url];
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
             if ($lk === 'host' || $lk === 'content-length') continue;
@@ -356,7 +377,7 @@ final class LogReplayCommand
     {
         $decoded = json_decode($json, true);
         if (is_array($decoded)) {
-            return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
         return $json;
     }

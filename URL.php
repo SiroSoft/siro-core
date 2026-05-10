@@ -6,18 +6,9 @@ namespace Siro\Core;
 
 use RuntimeException;
 
-/**
- * Signed URL generator and validator.
- *
- * Creates HMAC-signed URLs with optional expiration for secure
- * one-time links (email verification, unsubscribe, etc.).
- * Uses APP_KEY or JWT_SECRET as signing key.
- *
- * @package Siro\Core
- */
-
 final class URL
 {
+    /** @param array<string, mixed> $params */
     public static function signed(string $route, array $params = [], ?int $expires = null): string
     {
         $secret = self::secret();
@@ -25,13 +16,15 @@ final class URL
         if ($expires !== null) {
             $data['expires'] = time() + $expires;
         }
-        $payload = base64_encode(json_encode($data, JSON_UNESCAPED_UNICODE));
+        $encoded = json_encode($data, JSON_UNESCAPED_UNICODE);
+        $payload = base64_encode($encoded !== false ? $encoded : '{}');
         $signature = hash_hmac('sha256', $payload, $secret);
         $query = http_build_query(['payload' => $payload, 'signature' => $signature]);
         $base = defined('APP_URL') ? APP_URL : 'http://localhost:8080';
         return rtrim($base, '/') . '/' . ltrim($route, '/') . '?' . $query;
     }
 
+    /** @return array<string, mixed>|null */
     public static function validate(string $payload, string $signature, bool $throw = false): ?array
     {
         $secret = self::secret();
@@ -45,17 +38,18 @@ final class URL
             if ($throw) throw new RuntimeException('Invalid payload.');
             return null;
         }
-        if (isset($data['expires']) && $data['expires'] < time()) {
+        if (isset($data['expires']) && (int) $data['expires'] < time()) {
             if ($throw) throw new RuntimeException('Signed URL has expired.');
             return null;
         }
         return $data;
     }
 
+    /** @return array<string, mixed>|null */
     public static function validateRequest(Request $request, bool $throw = false): ?array
     {
-        $payload = (string) $request->query('payload', '');
-        $signature = (string) $request->query('signature', '');
+        $payload = $request->queryString('payload');
+        $signature = $request->queryString('signature');
         if ($payload === '' || $signature === '') {
             if ($throw) throw new RuntimeException('Missing signature parameters.');
             return null;

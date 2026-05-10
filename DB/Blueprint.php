@@ -215,6 +215,7 @@ final class Blueprint
         return implode(";\n", $parts);
     }
 
+    /** @param array<string, mixed> $params */
     private function addColumn(string $type, string $name, array $params = []): Column
     {
         $col = new Column($type, $name, $params, $this);
@@ -314,9 +315,11 @@ final class Blueprint
         };
     }
 
+    /** @param array<string, mixed> $cmd */
     private function compileCommandAsSql(array $cmd, bool $inline): ?string
     {
-        if ($cmd['type'] === 'foreign') {
+        if (($cmd['type'] ?? '') === 'foreign') {
+            /** @var ForeignKey $fk */
             $fk = $cmd['fk'];
             $col = $this->quote($fk->column);
             $ref = $this->quote($fk->references);
@@ -365,3 +368,4 @@ final class Blueprint
         return $char . $identifier . $char;
     }
 }
+

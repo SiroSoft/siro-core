@@ -18,8 +18,6 @@ final class FixCommand
     use CommandSupport;
 
     private string $basePath;
-    private array $lastStatus = [];
-    private int $watchPid = 0;
 
     public function __construct(string $basePath)
     {
@@ -100,6 +98,7 @@ final class FixCommand
 
         $lastMtime = $this->getMaxMtime($dirs);
 
+        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
             sleep(1);
             $currentMtime = $this->getMaxMtime($dirs);
@@ -110,7 +109,7 @@ final class FixCommand
                 $this->write('  🔄 Code changed → replaying ' . ($traceId ?? 'last request') . '...');
                 $output = shell_exec($lastTest . ' 2>&1');
                 if ($output !== null) {
-                    $lines = explode("\n", $output);
+                    $lines = explode("\n", (string) $output);
                     $statusLine = '';
                     foreach ($lines as $line) {
                         if (str_contains($line, 'Status:')) {
@@ -137,6 +136,9 @@ final class FixCommand
         }
     }
 
+    /**
+     * @param array<int, string> $dirs
+     */
     private function getMaxMtime(array $dirs): int
     {
         $max = 0;

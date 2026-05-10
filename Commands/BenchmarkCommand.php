@@ -8,10 +8,10 @@ final class BenchmarkCommand
 {
     use CommandSupport;
 
+    /** @phpstan-ignore property.onlyWritten */
     private string $basePath;
     private int $iterations = 100;
     private int $warmup = 10;
-    private ?string $routeFilter = null;
     private bool $jsonOutput = false;
 
     public function __construct(string $basePath)
@@ -40,6 +40,9 @@ final class BenchmarkCommand
         return 0;
     }
 
+    /**
+     * @param array<int, string> $args
+     */
     private function parseArgs(array $args): void
     {
         foreach ($args as $arg) {
@@ -47,14 +50,15 @@ final class BenchmarkCommand
                 $this->iterations = (int) substr($arg, 13);
             } elseif (str_starts_with($arg, '--warmup=')) {
                 $this->warmup = (int) substr($arg, 9);
-            } elseif (str_starts_with($arg, '--route=')) {
-                $this->routeFilter = substr($arg, 8);
             } elseif ($arg === '--json') {
                 $this->jsonOutput = true;
             }
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function runBenchmarks(): array
     {
         $results = [];
@@ -79,6 +83,9 @@ final class BenchmarkCommand
         return $results;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function benchmarkContainer(): array
     {
         $start = hrtime(true);
@@ -95,6 +102,9 @@ final class BenchmarkCommand
         return $this->formatResult('Container (DI)', $nsPerOp);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function benchmarkConfig(): array
     {
         $config = new \Siro\Core\Config();
@@ -112,6 +122,9 @@ final class BenchmarkCommand
         return $this->formatResult('Config Repository', $nsPerOp);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function benchmarkString(): array
     {
         $str = new \Siro\Core\Str();
@@ -128,6 +141,9 @@ final class BenchmarkCommand
         return $this->formatResult('String Helpers', $nsPerOp);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function benchmarkHash(): array
     {
         $password = 'test_password_123';
@@ -143,6 +159,9 @@ final class BenchmarkCommand
         return $this->formatResult('Hash (Bcrypt)', $nsPerOp);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function benchmarkValidation(): array
     {
         $input = ['email' => 'test@example.com', 'password' => 'secret123'];
@@ -158,6 +177,9 @@ final class BenchmarkCommand
         return $this->formatResult('Validation', $nsPerOp);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function benchmarkDatabase(): array
     {
         $start = hrtime(true);
@@ -173,6 +195,9 @@ final class BenchmarkCommand
         return $this->formatResult('Database (SQLite)', $nsPerOp);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function benchmarkRouter(): array
     {
         $router = new \Siro\Core\Router();
@@ -190,6 +215,9 @@ final class BenchmarkCommand
         return $this->formatResult('Router', $nsPerOp);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function formatResult(string $name, float $nsPerOp): array
     {
         $usPerOp = $nsPerOp / 1000;
@@ -205,6 +233,9 @@ final class BenchmarkCommand
         ];
     }
 
+    /**
+     * @param array<string, mixed> $benchmarks
+     */
     private function outputTable(array $benchmarks): void
     {
         $this->write('  +---------------------------+-------------+---------------+---------------+');
@@ -233,6 +264,9 @@ final class BenchmarkCommand
         $this->write('');
     }
 
+    /**
+     * @param array<string, mixed> $benchmarks
+     */
     private function outputJson(array $benchmarks): void
     {
         $output = [
@@ -245,6 +279,6 @@ final class BenchmarkCommand
             'results' => $benchmarks,
         ];
 
-        $this->write(json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $this->write((string) json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 }

@@ -32,6 +32,7 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this;
     }
 
+    /** @param array<int, mixed> $parameters */
     public function __call(string $method, array $parameters): mixed
     {
         $modelClass = $this->modelClass;
@@ -44,6 +45,36 @@ final class ModelQueryBuilder extends QueryBuilder
         }
 
         throw new RuntimeException(sprintf('Scope %s not found on %s.', $method, $modelClass));
+    }
+
+    public function limit(int $limit): static
+    {
+        parent::limit($limit);
+        return $this;
+    }
+
+    public function offset(int $offset): static
+    {
+        parent::offset($offset);
+        return $this;
+    }
+
+    public function orderBy(string $column, string $direction = 'asc'): static
+    {
+        parent::orderBy($column, $direction);
+        return $this;
+    }
+
+    public function where(string $column, mixed $operatorOrValue, mixed $value = null): static
+    {
+        parent::where($column, $operatorOrValue, $value);
+        return $this;
+    }
+
+    public function select(array|string ...$columns): static
+    {
+        parent::select(...$columns);
+        return $this;
     }
 
     public function withTrashed(): self
@@ -69,6 +100,7 @@ final class ModelQueryBuilder extends QueryBuilder
     }
 
     /** @return array<int, Model> */
+    // @phpstan-ignore-next-line return.type
     public function get(): array
     {
         $this->applySoftDeleteFilter();
@@ -83,8 +115,7 @@ final class ModelQueryBuilder extends QueryBuilder
         return $models;
     }
 
-    /** @return Model|null */
-    public function first(): mixed
+    public function first(): ?Model
     {
         $this->applySoftDeleteFilter();
         $rows = $this->limit(1)->get();

@@ -90,10 +90,9 @@ final class NewCommand
                 if (!is_dir($dir)) {
                     mkdir($dir, 0755, true);
                 }
-                $content = file_get_contents($src);
-                if ($content === false) continue;
-                // Replace placeholder project name
-                $content = str_replace('Siro API Framework', $name, $content);
+                $fileContent = file_get_contents($src);
+                if ($fileContent === false) continue;
+                $content = str_replace('Siro API Framework', $name, $fileContent);
                 $content = str_replace('sirosoft/api', $name, $content);
                 file_put_contents($dst, $content);
                 $copied++;
@@ -119,8 +118,10 @@ final class NewCommand
         $envPath = $targetDir . DIRECTORY_SEPARATOR . '.env';
         if (is_file($envPath)) {
             $env = file_get_contents($envPath);
-            $env = str_replace('JWT_SECRET=', 'JWT_SECRET=' . $jwtSecret, $env);
-            file_put_contents($envPath, $env);
+            if ($env !== false) {
+                $env = str_replace('JWT_SECRET=', 'JWT_SECRET=' . $jwtSecret, $env);
+                file_put_contents($envPath, $env);
+            }
         }
 
         $this->write('');

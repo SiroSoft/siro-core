@@ -24,8 +24,10 @@ final class ModelUserProvider implements UserProvider
         return $user !== null ? $user->toArray() : null;
     }
 
-    /** @param array<string, mixed> $credentials */
-    /** @return array<string, mixed>|null */
+    /**
+     * @param array<string, mixed> $credentials
+     * @return array<string, mixed>|null
+     */
     public function retrieveByCredentials(array $credentials): ?array
     {
         $model = $this->modelClass;

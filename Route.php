@@ -48,10 +48,10 @@ final class Route
     /**
      * Register a GET route (facade method)
      *
-     * @param callable|array|string $handler
+     * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    public static function get(string $path, callable|array|string $handler): self
+    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function get(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('GET', $path, $handler);
     }
@@ -59,10 +59,10 @@ final class Route
     /**
      * Register a POST route (facade method)
      *
-     * @param callable|array|string $handler
+     * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    public static function post(string $path, callable|array|string $handler): self
+    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function post(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('POST', $path, $handler);
     }
@@ -70,10 +70,10 @@ final class Route
     /**
      * Register a PUT route (facade method)
      *
-     * @param callable|array|string $handler
+     * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    public static function put(string $path, callable|array|string $handler): self
+    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function put(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('PUT', $path, $handler);
     }
@@ -81,10 +81,10 @@ final class Route
     /**
      * Register a DELETE route (facade method)
      *
-     * @param callable|array|string $handler
+     * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    public static function delete(string $path, callable|array|string $handler): self
+    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function delete(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('DELETE', $path, $handler);
     }
@@ -92,10 +92,10 @@ final class Route
     /**
      * Register a PATCH route (facade method)
      *
-     * @param callable|array|string $handler
+     * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    public static function patch(string $path, callable|array|string $handler): self
+    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function patch(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('PATCH', $path, $handler);
     }
@@ -161,10 +161,10 @@ final class Route
     /**
      * Register a route with the static router instance
      *
-     * @param callable|array|string $handler
+     * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    private static function registerRoute(string $method, string $path, callable|array|string $handler): self
+    /** @param callable|array{0:class-string,1:string}|string $handler */ private static function registerRoute(string $method, string $path, callable|array|string $handler): self
     {
         $router = self::$routerInstance;
         

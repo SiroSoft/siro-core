@@ -140,7 +140,7 @@ final class Response
         return trim($clean);
     }
 
-    public static function download(string $filePath, ?string $filename = null, array $headers = []): self
+    /** @param array<string, string> $headers */ public static function download(string $filePath, ?string $filename = null, array $headers = []): self
     {
         try {
             $filePath = self::sanitizeDownloadPath($filePath);
@@ -207,7 +207,7 @@ final class Response
     /**
      * Create a file response (inline display).
      */
-    public static function file(string $filePath, ?string $contentType = null, array $headers = []): self
+    /** @param array<string, string> $headers */ public static function file(string $filePath, ?string $contentType = null, array $headers = []): self
     {
         try {
             $filePath = self::sanitizeDownloadPath($filePath);
@@ -258,7 +258,7 @@ final class Response
         self::$debugEnabled = $enabled;
     }
 
-    /** @param array<string, float|int|string|bool|null> $meta */
+    /** @param array<string, mixed> $meta */
     public static function setDebugMeta(array $meta): void
     {
         self::$debugMeta = $meta;

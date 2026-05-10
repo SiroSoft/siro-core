@@ -53,10 +53,11 @@ final class AuthMiddleware implements MiddlewareInterface
                 $userModel = new \App\Models\User();
             }
             if ($userModel !== null) {
+                /** @var \Siro\Core\Model $userModel */
                 $user = $userModel->find($userId);
             }
 
-            if ($user === null || ((int) $user->status !== 1)) {
+            if ($user === null || ((int) ($user->getAttribute('status') ?? 0) !== 1)) {
                 return Response::error('Unauthorized', 401, [
                     'token' => ['User not found or inactive'],
                 ]);

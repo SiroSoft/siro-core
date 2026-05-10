@@ -132,7 +132,7 @@ final class DoctorCommand
 
             // Check log directory is NOT inside public/
             $publicDir = $this->basePath . DIRECTORY_SEPARATOR . 'public';
-            $logInsidePublic = $publicDir !== '' && str_starts_with(realpath($logDir) ?: $logDir, rtrim(realpath($publicDir) ?: $publicDir, DIRECTORY_SEPARATOR));
+            $logInsidePublic = str_starts_with(realpath($logDir) ?: $logDir, rtrim(realpath($publicDir) ?: $publicDir, DIRECTORY_SEPARATOR));
             $this->printCheck('Logs outside public/', $logInsidePublic ? '⚠ INSIDE public/' : 'OK (outside)', !$logInsidePublic);
             if ($logInsidePublic) $allPassed = false;
 

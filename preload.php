@@ -98,9 +98,12 @@ foreach ($files as $file) {
 // Preload app models if exists
 $modelsPath = $basePath . '/app/Models';
 if (is_dir($modelsPath)) {
-    foreach (glob($modelsPath . '/*.php') as $file) {
-        if (is_file($file)) {
-            require_once $file;
+    $modelFiles = glob($modelsPath . '/*.php');
+    if ($modelFiles !== false) {
+        foreach ($modelFiles as $file) {
+            if (is_file($file)) {
+                require_once $file;
+            }
         }
     }
 }
@@ -108,9 +111,12 @@ if (is_dir($modelsPath)) {
 // Preload app controllers if exists
 $controllersPath = $basePath . '/app/Controllers';
 if (is_dir($controllersPath)) {
-    foreach (glob($controllersPath . '/*.php') as $file) {
-        if (is_file($file)) {
-            require_once $file;
+    $controllerFiles = glob($controllersPath . '/*.php');
+    if ($controllerFiles !== false) {
+        foreach ($controllerFiles as $file) {
+            if (is_file($file)) {
+                require_once $file;
+            }
         }
     }
 }

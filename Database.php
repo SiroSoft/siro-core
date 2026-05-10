@@ -19,9 +19,10 @@ final class Database
     private static int $queryCacheTtl = 0;
     private static int $transactionDepth = 0;
     private static int $slowQueryThreshold = 100;
-    /** @var array<int, array{sql:string,bindings:array<string,mixed>,time_ms:float,rows:int,connection:string}> */
+    /** @var array<int, array{sql:string,bindings:array<int|string,mixed>,time_ms:float,rows:int,connection:string}> */
     private static array $capturedQueries = [];
 
+    /** @param array<string, mixed> $config */
     public static function configure(array $config, string $name = 'default'): void
     {
         self::$configs[$name] = $config;
@@ -41,7 +42,7 @@ final class Database
     {
         $name ??= self::$defaultConnection;
 
-        if (isset(self::$pdoInstances[$name]) && self::$pdoInstances[$name] instanceof PDO) {
+        if (isset(self::$pdoInstances[$name])) {
             $pdo = self::$pdoInstances[$name];
             try {
                 $pdo->query('SELECT 1');
@@ -116,6 +117,7 @@ final class Database
         DB\QueryBuilder::resetDriverNames();
     }
 
+    /** @return array<int, string> */
     public static function connections(): array
     {
         return array_keys(self::$configs);
@@ -133,6 +135,7 @@ final class Database
         return rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($path, './');
     }
 
+    /** @return array<int, array{sql:string,bindings:array<int|string,mixed>,time_ms:float,rows:int,connection:string}> */
     public static function getCapturedQueries(): array
     {
         return self::$capturedQueries;
@@ -143,6 +146,10 @@ final class Database
         self::$capturedQueries = [];
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     * @return array<int, array<string, mixed>>
+     */
     public static function select(string $sql, array $params = [], ?string $connection = null): array
     {
         $ttl = self::pullQueryCacheTtl();
@@ -150,16 +157,18 @@ final class Database
             $cacheKey = self::queryCacheKey('select', $sql, $params);
             $cached = Cache::remember($cacheKey, $ttl, static function () use ($sql, $params, $connection): array {
                 $stmt = self::prepareAndExecute($sql, $params, $connection);
-                $rows = $stmt->fetchAll();
-                return is_array($rows) ? $rows : [];
+                return $stmt->fetchAll();
             });
-            return is_array($cached) ? $cached : [];
+            return $cached;
         }
         $stmt = self::prepareAndExecute($sql, $params, $connection);
-        $rows = $stmt->fetchAll();
-        return is_array($rows) ? $rows : [];
+        return $stmt->fetchAll();
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     * @return array<string, mixed>|null
+     */
     public static function first(string $sql, array $params = [], ?string $connection = null): ?array
     {
         $ttl = self::pullQueryCacheTtl();
@@ -168,15 +177,16 @@ final class Database
             $cached = Cache::remember($cacheKey, $ttl, static function () use ($sql, $params, $connection): ?array {
                 $stmt = self::prepareAndExecute($sql, $params, $connection);
                 $row = $stmt->fetch();
-                return is_array($row) ? $row : null;
+                return $row !== false ? $row : null;
             });
-            return is_array($cached) ? $cached : null;
+            return $cached;
         }
         $stmt = self::prepareAndExecute($sql, $params, $connection);
         $row = $stmt->fetch();
-        return is_array($row) ? $row : null;
+        return $row !== false ? $row : null;
     }
 
+    /** @param array<int|string, mixed> $params */
     public static function execute(string $sql, array $params = [], ?string $connection = null): int
     {
         $stmt = self::prepareAndExecute($sql, $params, $connection);
@@ -230,6 +240,10 @@ final class Database
         }
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     * @return array<int, array<string, mixed>>
+     */
     public static function selectCached(string $sql, array $params, int $ttl, string $cachePrefix = 'qb:default:', ?string $connection = null): array
     {
         $ttl = max(0, $ttl);
@@ -240,12 +254,12 @@ final class Database
         $cacheKey = $normalizedPrefix . sha1('qb_select|' . $sql . '|' . json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $cached = Cache::remember($cacheKey, $ttl, static function () use ($sql, $params, $connection): array {
             $stmt = self::prepareAndExecute($sql, $params, $connection);
-            $rows = $stmt->fetchAll();
-            return is_array($rows) ? $rows : [];
+            return $stmt->fetchAll();
         });
-        return is_array($cached) ? $cached : [];
+        return $cached;
     }
 
+    /** @param array<int|string, mixed> $params */
     private static function prepareAndExecute(string $sql, array $params, ?string $connection = null): PDOStatement
     {
         $start = microtime(true);
@@ -288,6 +302,7 @@ final class Database
         return $ttl;
     }
 
+    /** @param array<int|string, mixed> $params */
     private static function queryCacheKey(string $type, string $sql, array $params): string
     {
         return 'db:' . sha1($type . '|' . $sql . '|' . json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));

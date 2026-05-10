@@ -96,7 +96,7 @@ final class LogTraceCommand
             if ($full) {
                 $formatted = json_decode($displayBody, true);
                 if (is_array($formatted)) {
-                    foreach (explode("\n", json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) as $line) {
+                    foreach (explode("\n", (string) json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) as $line) {
                         $this->write('    ' . $line);
                     }
                 } else {
@@ -115,7 +115,7 @@ final class LogTraceCommand
             if ($full) {
                 $formatted = json_decode($displayBody, true);
                 if (is_array($formatted)) {
-                    foreach (explode("\n", json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) as $line) {
+                    foreach (explode("\n", (string) json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) as $line) {
                         $this->write('    ' . $line);
                     }
                 } else {

@@ -33,11 +33,11 @@ final class Str
 
     public static function words(string $value, int $words = 100, string $end = '...'): string
     {
-        $parts = preg_split('/\s+/u', $value);
+        $parts = preg_split('/\s+/u', $value) ?: [];
         if (count($parts) <= $words) {
             return $value;
         }
-        return implode(' ', array_slice($parts, 0, $words)) . $end;
+        return implode(' ', array_slice((array) $parts, 0, $words)) . $end;
     }
 
     public static function camel(string $value): string

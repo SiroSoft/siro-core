@@ -17,9 +17,10 @@ use RuntimeException;
 
 final class Hash
 {
-    public static function make(string $value, array $options = []): string
+    /** @param array<string, mixed> $options */ public static function make(string $value, array $options = []): string
     {
-        $hash = password_hash($value, PASSWORD_BCRYPT, $options);
+        $hash = @password_hash($value, PASSWORD_BCRYPT, $options);
+        // @phpstan-ignore identical.alwaysFalse
         if ($hash === false) {
             throw new RuntimeException('Bcrypt hashing failed.');
         }
@@ -31,11 +32,12 @@ final class Hash
         return password_verify($value, $hash);
     }
 
-    public static function needsRehash(string $hash, array $options = []): bool
+    /** @param array<string, mixed> $options */ public static function needsRehash(string $hash, array $options = []): bool
     {
         return password_needs_rehash($hash, PASSWORD_BCRYPT, $options);
     }
 
+    /** @return array{algo: string, cost: int} */
     public static function info(string $hash): array
     {
         $info = password_get_info($hash);

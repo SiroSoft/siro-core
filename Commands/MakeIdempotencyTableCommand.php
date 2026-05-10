@@ -13,6 +13,7 @@ final class MakeIdempotencyTableCommand
 {
     use CommandSupport;
 
+    /** @param array<int, string> $_args */
     public function run(array $_args): int
     {
         $this->info('Creating idempotency_keys table...');

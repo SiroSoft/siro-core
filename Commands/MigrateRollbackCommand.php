@@ -39,14 +39,14 @@ final class MigrateRollbackCommand
         $this->ensureMigrationTable($pdo);
         $migrations = $this->lastAppliedMigrations($pdo, $step);
 
-        if (!is_array($migrations) || $migrations === []) {
+        if ($migrations === []) {
             $this->write('Nothing to rollback.');
             return 0;
         }
 
         $rolledBack = 0;
         foreach ($migrations as $migration) {
-            if (!is_string($migration) || $migration === '') {
+            if ($migration === '') {
                 continue;
             }
 
@@ -99,7 +99,7 @@ final class MigrateRollbackCommand
             $stmt->execute();
 
             $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            return is_array($rows) ? array_values(array_filter($rows, 'is_string')) : [];
+            return $rows ? array_values($rows) : [];
         } catch (Throwable) {
             return [];
         }
@@ -113,6 +113,9 @@ final class MigrateRollbackCommand
  *
  * @package Siro\Core\Commands
  */
+    /**
+     * @param array<int, string> $args
+     */
     private function parseStep(array $args): int
     {
         $count = count($args);

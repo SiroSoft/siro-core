@@ -23,7 +23,7 @@ final class Encrypter
     public static function encrypt(string $data, ?string $key = null): string
     {
         $key = self::key($key);
-        $iv = random_bytes(openssl_cipher_iv_length(self::CIPHER));
+        $iv = random_bytes(max(1, openssl_cipher_iv_length(self::CIPHER)));
         $encrypted = openssl_encrypt($data, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
         if ($encrypted === false) {
             throw new RuntimeException('Encryption failed.');

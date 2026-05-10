@@ -4,14 +4,6 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
-/**
- * API resource transformer.
- *
- * Converts models and arrays into structured API responses.
- * Supports auto-mapping from Model instances and field filtering.
- *
- * @package Siro\Core
- */
 abstract class Resource
 {
     /** @var array<string, mixed> */
@@ -20,10 +12,10 @@ abstract class Resource
     /** @param array<string, mixed>|Model $data */
     public function __construct(array|Model $data)
     {
-        if ($data instanceof Model) {
-            $this->data = $data->toArray();
-        } else {
+        if (is_array($data)) {
             $this->data = $data;
+        } else {
+            $this->data = $data->toArray();
         }
     }
 
@@ -40,9 +32,10 @@ abstract class Resource
     public static function make(array|Model $item, ?array $fields = null): array
     {
         if ($fields !== null) {
-            return static::makeWithFields($item, $fields);
+            return self::makeWithFields($item, $fields);
         }
 
+        /** @phpstan-ignore new.static */
         return (new static($item))->toArray();
     }
 
@@ -55,10 +48,7 @@ abstract class Resource
         $result = [];
 
         foreach ($items as $item) {
-            if (!is_array($item) && !$item instanceof Model) {
-                continue;
-            }
-
+            /** @phpstan-ignore new.static */
             $result[] = (new static($item))->toArray();
         }
 
@@ -73,8 +63,8 @@ abstract class Resource
     public static function collectionOf(array $items, array $fields): array
     {
         return array_map(
-            fn (array|Model $item): array => static::makeWithFields($item, $fields),
-            array_filter($items, fn (mixed $item): bool => is_array($item) || $item instanceof Model)
+            fn (array|Model $item): array => self::makeWithFields($item, $fields),
+            $items
         );
     }
 
@@ -85,10 +75,10 @@ abstract class Resource
      */
     private static function makeWithFields(array|Model $item, array $fields): array
     {
-        if ($item instanceof Model) {
-            $data = $item->toArray();
-        } else {
+        if (is_array($item)) {
             $data = $item;
+        } else {
+            $data = $item->toArray();
         }
 
         $result = [];

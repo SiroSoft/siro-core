@@ -24,8 +24,6 @@ use Throwable;
  */
 final class Queue
 {
-    /** @var array<int, array{job: string, data: mixed}> */
-    private static array $pending = [];
     private static bool $faked = false;
     /** @var array<int, array{job: string, data: mixed}> */
     private static array $fakeJobs = [];
@@ -243,7 +241,7 @@ final class Queue
      */
     private static function calculateBackoff(int $attempt): int
     {
-        return min(5 * (2 ** ($attempt - 1)), 300);
+        return (int) min(5 * (2 ** ($attempt - 1)), 300);
     }
 
     /**

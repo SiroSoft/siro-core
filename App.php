@@ -97,6 +97,7 @@ final class App
         Router::registerMiddlewareAlias('json', \Siro\Core\Middleware\JsonMiddleware::class);
 
         // Register default container bindings for auth
+        /** @var string $userModelClass */
         $userModelClass = 'App\\Models\\User';
         if (class_exists($userModelClass)) {
             $container->bind('auth.provider', function () use ($userModelClass) {
@@ -226,7 +227,7 @@ final class App
             return null;
         }
         $data = json_decode((string) file_get_contents($file), true);
-        return is_array($data) ? $data : null;
+        return $data;
     }
 
     /**
@@ -382,7 +383,7 @@ final class App
         Response::setDebugMeta([
             'execution_time_ms' => round($executionTimeMs, 2),
             'memory_usage_mb' => round($memoryUsageMb, 2),
-            'cache' => is_array($cacheStatus) ? $cacheStatus : [],
+            'cache' => $cacheStatus,
         ]);
     }
 }

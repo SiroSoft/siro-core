@@ -94,7 +94,8 @@ final class Lang
             return $key;
         }
 
-        [$file, $item] = $parts;
+        $file = $parts[0];
+        $item = $parts[1];
 
         // Try requested locale first, then fallback
         $value = self::resolve($file, $item, $locale);
@@ -106,7 +107,7 @@ final class Lang
             return $key;
         }
 
-        return self::replace((string) $value, $replace);
+        return self::replace($value, $replace);
     }
 
     /**
@@ -210,7 +211,7 @@ final class Lang
     /**
      * Replace :param placeholders with values.
      */
-    private static function replace(string $message, array $replace): string
+    /** @param array<string, string> $replace */ private static function replace(string $message, array $replace): string
     {
         if ($replace === []) {
             return $message;
@@ -243,7 +244,9 @@ final class Lang
         $template = self::get($key, $replace);
         $parts = explode('|', $template);
 
-        $form = $count === 1 ? ($parts[0] ?? $template) : ($parts[1] ?? $parts[0] ?? $template);
+        $form = $count === 1 ? $parts[0] : ($parts[1] ?? $parts[0]);
         return str_replace('{count}', (string) $count, $form);
     }
 }
+
+

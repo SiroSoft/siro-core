@@ -19,7 +19,7 @@ final class Http
 {
     private static int $timeout = 30;
     private static bool $verifySsl = true;
-    private static array $defaultHeaders = [];
+    /** @var array<string, string> */ private static array $defaultHeaders = [];
 
     public static function timeout(int $seconds): void
     {
@@ -31,11 +31,15 @@ final class Http
         self::$verifySsl = $verify;
     }
 
-    public static function withHeaders(array $headers): void
+    /** @param array<string, string> $headers */ public static function withHeaders(array $headers): void
     {
         self::$defaultHeaders = array_merge(self::$defaultHeaders, $headers);
     }
 
+    /**
+     * @param array<string, string> $query
+     * @param array<string, string> $headers
+     */
     public static function get(string $url, array $query = [], array $headers = []): HttpResponse
     {
         if ($query !== []) {
@@ -44,27 +48,27 @@ final class Http
         return self::request('GET', $url, null, $headers);
     }
 
-    public static function post(string $url, mixed $data = null, array $headers = []): HttpResponse
+    /** @param array<string, string> $headers */ public static function post(string $url, mixed $data = null, array $headers = []): HttpResponse
     {
         return self::request('POST', $url, $data, $headers);
     }
 
-    public static function put(string $url, mixed $data = null, array $headers = []): HttpResponse
+    /** @param array<string, string> $headers */ public static function put(string $url, mixed $data = null, array $headers = []): HttpResponse
     {
         return self::request('PUT', $url, $data, $headers);
     }
 
-    public static function patch(string $url, mixed $data = null, array $headers = []): HttpResponse
+    /** @param array<string, string> $headers */ public static function patch(string $url, mixed $data = null, array $headers = []): HttpResponse
     {
         return self::request('PATCH', $url, $data, $headers);
     }
 
-    public static function delete(string $url, mixed $data = null, array $headers = []): HttpResponse
+    /** @param array<string, string> $headers */ public static function delete(string $url, mixed $data = null, array $headers = []): HttpResponse
     {
         return self::request('DELETE', $url, $data, $headers);
     }
 
-    private static function request(string $method, string $url, mixed $data, array $headers): HttpResponse
+    /** @param array<string, string> $headers */ private static function request(string $method, string $url, mixed $data, array $headers): HttpResponse
     {
         if (!function_exists('curl_init')) {
             throw new RuntimeException('curl extension is required for HTTP client.');
@@ -84,11 +88,12 @@ final class Http
             $curlOpts[CURLOPT_SSL_VERIFYPEER] = false;
             $curlOpts[CURLOPT_SSL_VERIFYHOST] = 0;
         }
+        /** @var array{10002: non-empty-string, 19913: bool, 13: int, 78: int, 52: bool, 68: int, 42: bool, 64?: bool, 81?: int, 19914?: int} $curlOpts */
         curl_setopt_array($ch, $curlOpts);
 
         $allHeaders = array_merge(self::$defaultHeaders, $headers);
 
-        if ($method !== 'GET') {
+        if ($method !== 'GET' && $method !== '') {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
         }
 
@@ -96,9 +101,11 @@ final class Http
             if (is_array($data) && !isset($allHeaders['Content-Type'])) {
                 $data = http_build_query($data);
             } elseif (is_array($data)) {
-                $data = json_encode($data, JSON_UNESCAPED_UNICODE);
+                $data = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
             }
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+            if (is_string($data) && $data !== '') {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, (string) $data);
+            }
         }
 
         if ($allHeaders !== []) {
@@ -111,6 +118,7 @@ final class Http
 
         $response = curl_exec($ch);
         $error = curl_error($ch);
+        /** @var array{header_size: int, http_code: int} $info */
         $info = curl_getinfo($ch);
         curl_close($ch);
 
@@ -118,12 +126,12 @@ final class Http
             throw new RuntimeException("HTTP request failed: {$error}");
         }
 
-        $headerSize = (int) ($info['header_size'] ?? 0);
+        $headerSize = $info['header_size'];
         $body = substr((string) $response, $headerSize);
         $rawHeaders = substr((string) $response, 0, $headerSize);
 
         return new HttpResponse(
-            (int) ($info['http_code'] ?? 0),
+            $info['http_code'],
             $body,
             $rawHeaders,
         );
@@ -140,7 +148,7 @@ final class HttpResponse
     private int $status;
     private string $body;
     private string $rawHeaders;
-    private ?array $parsedJson = null;
+    /** @var array<string, mixed>|null */ private ?array $parsedJson = null;
 
     public function __construct(int $status, string $body, string $rawHeaders)
     {
@@ -159,7 +167,7 @@ final class HttpResponse
         return $this->body;
     }
 
-    public function json(): array
+    /** @return array<string, mixed> */ public function json(): array
     {
         if ($this->parsedJson === null) {
             $this->parsedJson = json_decode($this->body, true) ?? [];
@@ -184,7 +192,7 @@ final class HttpResponse
         return trim($matches[1] ?? '');
     }
 
-    public function headers(): array
+    /** @return array<string, string> */ public function headers(): array
     {
         $lines = explode("\r\n", trim($this->rawHeaders));
         $headers = [];

@@ -19,9 +19,9 @@ use Siro\Core\Middleware\MiddlewareInterface;
  */
 final class Router
 {
-    /** @var array<string, array<string, array{path:string,handler:callable|array|string,middleware:array<int, callable|string>,cache_ttl:int}>> */
+    /** @var array<string, array<string, array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int, callable|string>,cache_ttl:int}>> */
     private array $staticRoutes = [];
-    /** @var array<string, array<int, array{path:string,segments:array<int,string>,handler:callable|array|string,middleware:array<int, callable|string>,cache_ttl:int}>> */
+    /** @var array<string, array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int, callable|string>,cache_ttl:int}>> */
     private array $dynamicRoutes = [];
     /** @var array<string, array<string, string>> */
     private array $whereConstraints = [];
@@ -30,31 +30,46 @@ final class Router
     private array $groupMiddleware = [];
     private bool $routesLoadedFromCache = false;
 
-    /** @param array<int, callable|string> $middleware */
+    /**
+     * @param callable|array{0:class-string,1:string}|string $handler
+     * @param array<int, callable|string> $middleware
+     */
     public function get(string $path, callable|array|string $handler, array $middleware = []): Route
     {
         return $this->add('GET', $path, $handler, $middleware);
     }
 
-    /** @param array<int, callable|string> $middleware */
+    /**
+     * @param callable|array{0:class-string,1:string}|string $handler
+     * @param array<int, callable|string> $middleware
+     */
     public function post(string $path, callable|array|string $handler, array $middleware = []): Route
     {
         return $this->add('POST', $path, $handler, $middleware);
     }
 
-    /** @param array<int, callable|string> $middleware */
+    /**
+     * @param callable|array{0:class-string,1:string}|string $handler
+     * @param array<int, callable|string> $middleware
+     */
     public function put(string $path, callable|array|string $handler, array $middleware = []): Route
     {
         return $this->add('PUT', $path, $handler, $middleware);
     }
 
-    /** @param array<int, callable|string> $middleware */
+    /**
+     * @param callable|array{0:class-string,1:string}|string $handler
+     * @param array<int, callable|string> $middleware
+     */
     public function delete(string $path, callable|array|string $handler, array $middleware = []): Route
     {
         return $this->add('DELETE', $path, $handler, $middleware);
     }
 
-    /** @param array<int, callable|string> $middleware */
+    /**
+     * @param callable|array{0:class-string,1:string}|string $handler
+     * @param array<int, callable|string> $middleware
+     */
     public function options(string $path, callable|array|string $handler, array $middleware = []): Route
     {
         return $this->add('OPTIONS', $path, $handler, $middleware);
@@ -71,7 +86,11 @@ final class Router
         $this->group($prefix, [], $callback);
     }
 
-    public function group(string $prefix, callable|array $arg2, callable|array|null $arg3 = null): void
+    /**
+ * @param callable|array<int, callable|string> $arg2
+ * @param callable|array<int, callable|string>|null $arg3
+ */
+public function group(string $prefix, callable|array $arg2, callable|array|null $arg3 = null): void
     {
         $callback = null;
         $middleware = [];
@@ -119,11 +138,11 @@ final class Router
             return Response::error('Route not found', 404);
         }
 
-        if (isset($route['params']) && is_array($route['params'])) {
+        if (isset($route['params'])) {
             $request->setParams($route['params']);
         }
 
-        $cacheTtl = (int) ($route['cache_ttl'] ?? 0);
+        $cacheTtl = $route['cache_ttl'];
         $canUseCache = $method === 'GET' && $cacheTtl > 0;
         if ($canUseCache) {
             $cacheKey = 'route:' . $request->cacheKey();
@@ -194,7 +213,13 @@ final class Router
             }
         }
 
-        usort($routes, fn (array $a, array $b): int => $a['path'] <=> $b['path'] ?: $a['method'] <=> $b['method']);
+        usort($routes, function (array $a, array $b): int {
+            $cmp = $a['path'] <=> $b['path'];
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+            return $a['method'] <=> $b['method'];
+        });
 
         return $routes;
     }
@@ -213,7 +238,7 @@ final class Router
     /**
      * Export routes as serializable array for caching.
      *
-     * @return array{static:array, dynamic:array}
+     * @return array<string, mixed>
      */
     public function exportRoutes(): array
     {
@@ -283,22 +308,19 @@ final class Router
         return $this->routesLoadedFromCache;
     }
 
+    /** @param callable|array{0:class-string,1:string}|string $handler */
     private function handlerToString(callable|array|string $handler): string
     {
         if (is_string($handler)) {
             return $handler;
         }
 
-        if (is_array($handler) && count($handler) === 2) {
-            $class = is_string($handler[0]) ? $handler[0] : $handler[0]::class;
+        if (is_array($handler)) {
+            $class = $handler[0];
             return $class . '@' . $handler[1];
         }
 
-        if (is_callable($handler)) {
-            return 'Closure';
-        }
-
-        return 'Unknown';
+        return 'Closure';
     }
 
     private function middlewareToString(callable|string $middleware): string
@@ -311,6 +333,7 @@ final class Router
     }
 
     /**
+     * @param callable|array{0:class-string,1:string}|string $handler
      * @param array<int, callable|string> $middleware
      */
     private function add(string $method, string $path, callable|array|string $handler, array $middleware = []): Route
@@ -408,9 +431,10 @@ final class Router
     private function normalizePath(string $path): string
     {
         $normalized = '/' . trim($path, '/');
-        return $normalized === '/.' || $normalized === '' ? '/' : $normalized;
+        return $normalized === '/.' ? '/' : $normalized;
     }
 
+    /** @param callable|array{0:class-string,1:string}|string $handler */
     private function runHandler(callable|array|string $handler, Request $request): Response
     {
         if (is_callable($handler)) {
@@ -422,12 +446,9 @@ final class Router
             return $this->normalizeHandlerResult($response);
         }
 
-        if (is_array($handler) && count($handler) === 2) {
+        if (is_array($handler)) {
             [$class, $method] = $handler;
-            if (!is_string($class) || !is_string($method)) {
-                throw new RuntimeException('Invalid array handler format. Use [ClassName::class, method].');
-            }
-
+            /** @var class-string $class */
             $controller = $this->resolveController($class);
             if (!method_exists($controller, $method)) {
                 throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
@@ -500,7 +521,9 @@ final class Router
         throw new RuntimeException('Route handler result must be Response|array|null.');
     }
 
-    /** @return array{path:string,handler:callable|array|string,middleware:array<int, callable|string>,cache_ttl:int,params?:array<string,string>}|null */
+    /**
+     * @return array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null
+     */
     private function matchDynamicRoute(string $method, string $path): ?array
     {
         $routes = $this->dynamicRoutes[$method] ?? [];
@@ -595,6 +618,7 @@ final class Router
         return preg_match($constraints[$param], $value) === 1;
     }
 
+    /** @return array<string, string> */
     private function getWhereConstraints(string $method, string $path): array
     {
         $key = strtoupper($method) . ':' . $this->normalizePath($path);

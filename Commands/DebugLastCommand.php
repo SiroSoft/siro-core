@@ -163,7 +163,7 @@ final class DebugLastCommand
     {
         $decoded = json_decode($json, true);
         if (is_array($decoded)) {
-            return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
         return $json;
     }

@@ -15,27 +15,27 @@ namespace Siro\Core;
 abstract class FormRequest
 {
     protected Request $request;
-    protected array $validated = [];
-    protected array $errors = [];
+    /** @var array<string, mixed> */ protected array $validated = [];
+    /** @var array<string, mixed> */ protected array $errors = [];
 
     public function __construct(Request $request)
     {
         $this->request = $request;
     }
 
-    abstract public function rules(): array;
+    /** @return array<string, string> */ abstract public function rules(): array;
 
     public function authorize(): bool
     {
         return true;
     }
 
-    public function messages(): array
+    /** @return array<string, string> */ public function messages(): array
     {
         return [];
     }
 
-    public function validated(): array
+    /** @return array<string, mixed> */ public function validated(): array
     {
         if ($this->validated === []) {
             $this->validate();
@@ -43,7 +43,7 @@ abstract class FormRequest
         return $this->validated;
     }
 
-    public function errors(): array
+    /** @return array<string, mixed> */ public function errors(): array
     {
         return $this->errors;
     }
@@ -56,7 +56,7 @@ abstract class FormRequest
         return $this->errors !== [];
     }
 
-    public function validate(): array
+    /** @return array<string, mixed> */ public function validate(): array
     {
         if ($this->validated !== []) {
             return $this->validated;
@@ -75,7 +75,7 @@ abstract class FormRequest
         return $this->validated[$key] ?? $this->request->input($key, $default);
     }
 
-    public function all(): array
+    /** @return array<string, mixed> */ public function all(): array
     {
         return $this->validated !== [] ? $this->validated : $this->request->body();
     }

@@ -150,6 +150,9 @@ final class MigrateCommand
     private function executedMigrations(PDO $pdo): array
     {
         $stmt = $pdo->query('SELECT migration FROM migrations');
+        if ($stmt === false) {
+            return [];
+        }
         $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         $executed = [];
@@ -165,6 +168,9 @@ final class MigrateCommand
     private function nextBatch(PDO $pdo): int
     {
         $stmt = $pdo->query('SELECT MAX(batch) AS max_batch FROM migrations');
+        if ($stmt === false) {
+            return 1;
+        }
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $max = (int) ($row['max_batch'] ?? 0);
 

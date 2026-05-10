@@ -24,6 +24,7 @@ final class Column
     public bool $unique_ = false;
     private ?Blueprint $blueprint;
 
+    /** @param array<string, mixed> $params */
     public function __construct(string $type, string $name, array $params = [], ?Blueprint $blueprint = null)
     {
         $this->type = $type;

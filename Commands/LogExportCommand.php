@@ -90,7 +90,7 @@ final class LogExportCommand
         }
 
         if ($format === 'json') {
-            $content = json_encode($traces, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+            $content = (string) json_encode($traces, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         } elseif ($format === 'csv') {
             $content = $this->toCsv($traces);
         } else {
@@ -178,9 +178,15 @@ final class LogExportCommand
         return 0;
     }
 
+    /**
+     * @param list<array<mixed>> $traces
+     */
     private function toCsv(array $traces): string
     {
         $handle = fopen('php://memory', 'r+');
+        if ($handle === false) {
+            return '';
+        }
         fputcsv($handle, ['timestamp', 'method', 'path', 'status', 'time_ms', 'ip']);
 
         foreach ($traces as $t) {

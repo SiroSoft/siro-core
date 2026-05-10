@@ -73,6 +73,7 @@ final class LiveCommand
 
         $this->write('  Watching for file changes...');
 
+        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
             if (filemtime($signalFile) > $lastRestart) {
                 // Server was already restarted by watcher
@@ -101,6 +102,9 @@ final class LiveCommand
         }
     }
 
+    /**
+     * @param array<int, string> $dirs
+     */
     private function checkChanges(array $dirs, int $since): string
     {
         foreach ($dirs as $dir) {
@@ -132,7 +136,10 @@ final class LiveCommand
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // Windows: use start /B
             $wrapped = "start /B \"SiroLive\" {$cmd}";
-            pclose(popen($wrapped, 'r'));
+            $proc = popen($wrapped, 'r');
+            if ($proc !== false) {
+                pclose($proc);
+            }
             // Get PID via WMIC
             $pid = trim((string) shell_exec('WMIC PROCESS WHERE "Name=\'php.exe\' AND CommandLine LIKE \'%SiroLive%\'" GET ProcessId /VALUE 2>NUL'));
             if (preg_match('/=(\d+)/', $pid, $m)) {

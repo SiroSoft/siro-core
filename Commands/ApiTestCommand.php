@@ -236,6 +236,10 @@ final class ApiTestCommand
 
     // ─── Watch Mode ────────────────────────────────
 
+    /**
+     * @param array<string, mixed> $fields
+     * @param array<int, string> $customHeaders
+     */
     private function watchMode(
         string $method,
         string $path,
@@ -259,6 +263,7 @@ final class ApiTestCommand
         $this->write("  \033[33mWatching for changes... (Ctrl+C to stop)\033[0m");
         $this->write('');
 
+        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
             sleep(1);
             $changed = false;
@@ -283,6 +288,9 @@ final class ApiTestCommand
         }
     }
 
+    /**
+     * @param array<string, mixed> $files
+     */
     private function addFilesRecursive(string $dir, array &$files): void
     {
         $items = scandir($dir);
@@ -304,6 +312,10 @@ final class ApiTestCommand
 
     // ─── Collection ────────────────────────────────
 
+    /**
+     * @param array<string, mixed> $fields
+     * @param array<int, string> $headers
+     */
     private function saveToCollection(
         string $name,
         string $method,
@@ -392,6 +404,9 @@ final class ApiTestCommand
         return 0;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function loadCollections(): array
     {
         if (!is_file($this->collectionFile)) {
@@ -403,6 +418,10 @@ final class ApiTestCommand
 
     // ─── Core logic (unchanged) ────────────────────
 
+    /**
+     * @param array<string, mixed> $fields
+     * @param array<int, string> $customHeaders
+     */
     private function sendInternal(
         string $method,
         string $path,
@@ -411,13 +430,14 @@ final class ApiTestCommand
         string $contentType,
         ?string $as
     ): int {
-        $query = [];
+        $parsedQuery = [];
         $pathOnly = $path;
         $queryPos = strpos($path, '?');
         if ($queryPos !== false) {
-            parse_str(substr($path, $queryPos + 1), $query);
+            parse_str(substr($path, $queryPos + 1), $parsedQuery);
             $pathOnly = substr($path, 0, $queryPos);
         }
+        $convertedQuery = $parsedQuery;
 
         $token = null;
         if ($as !== null) {
@@ -452,12 +472,12 @@ final class ApiTestCommand
         try {
             ob_start();
 
-            Router::setMiddlewareAliases([
-                'auth' => \App\Middleware\AuthMiddleware::class,
-                'throttle' => \App\Middleware\ThrottleMiddleware::class,
-                'cors' => \App\Middleware\CorsMiddleware::class,
-                'json' => \App\Middleware\JsonMiddleware::class,
-            ]);
+            $aliases = [];
+            if (class_exists(\App\Middleware\AuthMiddleware::class)) $aliases['auth'] = \App\Middleware\AuthMiddleware::class;
+            if (class_exists(\App\Middleware\ThrottleMiddleware::class)) $aliases['throttle'] = \App\Middleware\ThrottleMiddleware::class;
+            if (class_exists(\App\Middleware\CorsMiddleware::class)) $aliases['cors'] = \App\Middleware\CorsMiddleware::class;
+            if (class_exists(\App\Middleware\JsonMiddleware::class)) $aliases['json'] = \App\Middleware\JsonMiddleware::class;
+            if ($aliases !== []) Router::setMiddlewareAliases($aliases);
 
             $app = new App($this->basePath);
             $app->boot();
@@ -465,7 +485,7 @@ final class ApiTestCommand
 
             Response::enableDebug(true);
 
-            $request = new Request($method, $pathOnly, $query, $parsedHeaders, $bodyData, '127.0.0.1');
+            $request = new Request($method, $pathOnly, $convertedQuery, $parsedHeaders, $bodyData, '127.0.0.1');
 
             $locale = $parsedHeaders['x-locale'] ?? '';
             if ($locale !== '' && preg_match('/^[a-z]{2}$/i', $locale)) {
@@ -506,7 +526,7 @@ final class ApiTestCommand
                 $this->write("  \033[1;90mBody:\033[0m");
                 $decoded = json_decode($body, true);
                 if (is_array($decoded)) {
-                    $this->write(json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                    $this->write((string) json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
                 } else {
                     $this->write(trim($body));
                 }
@@ -565,6 +585,9 @@ final class ApiTestCommand
         return $tokens[$role] ?? null;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function loadTokens(): array
     {
         if (!is_file($this->authFile)) {
@@ -574,6 +597,10 @@ final class ApiTestCommand
         return is_array($data) ? $data : [];
     }
 
+    /**
+     * @param array<string, mixed> $fields
+     * @param array<int, string> $headers
+     */
     private function saveHistory(
         string $method,
         string $path,
@@ -602,6 +629,9 @@ final class ApiTestCommand
         file_put_contents($this->historyFile, json_encode($history, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function loadHistory(): array
     {
         if (!is_file($this->historyFile)) {
@@ -687,6 +717,9 @@ final class ApiTestCommand
 
     // ─── Webhook Listener ─────────────────────────
 
+    /**
+     * @param array<int, string> $args
+     */
     private function listenWebhook(array $args): int
     {
         $port = 9000;
@@ -707,6 +740,7 @@ final class ApiTestCommand
         }
 
         $count = 0;
+        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
             $conn = @stream_socket_accept($socket, 5);
             if ($conn === false) {
@@ -721,7 +755,7 @@ final class ApiTestCommand
 
             // Parse HTTP request
             $lines = explode("\r\n", $data);
-            $requestLine = $lines[0] ?? '';
+            $requestLine = $lines[0];
             preg_match('/^(\w+) (\S+)/', $requestLine, $m);
             $method = $m[1] ?? 'GET';
             $uri = $m[2] ?? '/';
@@ -750,7 +784,7 @@ final class ApiTestCommand
             }
             if (is_array($bodyDecoded)) {
                 $this->write('    Body:');
-                $this->write('      ' . json_encode($bodyDecoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                $this->write((string) '      ' . json_encode($bodyDecoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
             } elseif ($body !== '') {
                 $this->write('    Body: ' . mb_substr($body, 0, 500));
             }

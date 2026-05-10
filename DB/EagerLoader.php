@@ -52,6 +52,7 @@ final class EagerLoader
      */
     private function loadRelation(array $models, string $relation, array $columns): void
     {
+        /** @var \Siro\Core\Model $model */
         $model = new $this->modelClass();
         if (!method_exists($model, $relation)) {
             return;
@@ -93,7 +94,9 @@ final class EagerLoader
 
         $localIds = array_unique($localIds);
 
-        $query = (new $relatedClass())->query();
+        /** @var Model $relatedInstance */
+        $relatedInstance = new $relatedClass();
+        $query = $relatedInstance->query();
         if ($columns !== ['*']) {
             $selectCols = array_merge([$foreignKey], array_diff($columns, [$foreignKey]));
             $query->select(...$selectCols);
@@ -151,12 +154,14 @@ final class EagerLoader
             : 'r.*';
         $pivotCols = 'p.' . $relatedKey . ' AS pivot_related_id, p.' . $foreignKey . ' AS pivot_foreign_id';
 
+        /** @var \Siro\Core\Model $relatedInstance */
+        $relatedInstance = new $relatedClass();
         $sql = sprintf(
             'SELECT %s, %s FROM %s p INNER JOIN %s r ON r.id = p.%s WHERE p.%s IN (%s)',
             $pivotCols,
             $selectCols,
             $rel->quoteIdentifier($pivotTable),
-            $rel->quoteIdentifier((new $relatedClass())->getTable()),
+            $rel->quoteIdentifier($relatedInstance->getTable()),
             $rel->quoteIdentifier($relatedKey),
             $rel->quoteIdentifier($foreignKey),
             implode(', ', $placeholders)
@@ -201,7 +206,9 @@ final class EagerLoader
 
         $localIds = array_unique($localIds);
 
-        $query = (new $relatedClass())->query();
+        /** @var Model $relatedInstance */
+        $relatedInstance = new $relatedClass();
+        $query = $relatedInstance->query();
         if ($columns !== ['*']) {
             $selectCols = array_merge([$foreignKey], array_diff($columns, [$foreignKey]));
             $query->select(...$selectCols);
@@ -245,6 +252,7 @@ final class EagerLoader
 
         $foreignIds = array_unique($foreignIds);
 
+        /** @var Model $related */
         $related = new $relatedClass();
         $ownerKeyCol = $ownerKey;
         $query = $related->query();

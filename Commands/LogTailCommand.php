@@ -60,15 +60,16 @@ final class LogTailCommand
             $this->write('');
             $this->write("  \033[33mWatching for new entries... (Ctrl+C to stop)\033[0m");
             $lastSize = filesize($logFile);
+            // @phpstan-ignore-next-line while.alwaysTrue
             while (true) {
                 clearstatcache(true, $logFile);
                 $currentSize = filesize($logFile);
                 if ($currentSize > $lastSize) {
                     $fh = fopen($logFile, 'r');
                     if ($fh) {
-                        fseek($fh, $lastSize);
+                        fseek($fh, (int) $lastSize);
                         while (($line = fgets($fh)) !== false) {
-                            $this->printLine($line);
+                            $this->printLine((string) $line);
                         }
                         fclose($fh);
                     }

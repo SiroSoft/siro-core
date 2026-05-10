@@ -12,6 +12,7 @@ namespace Siro\Core\DB;
  * Works with ModelQueryBuilder to automatically filter soft-deleted records.
  *
  * @package Siro\Core\DB
+ * @phpstan-ignore trait.unused
  */
 trait SoftDeletes
 {

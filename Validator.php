@@ -61,30 +61,30 @@ final class Validator
         }
 
         // Email validation
-        self::registerStrategy('email', function ($value): ?string {
+        self::registerStrategy('email', function ($value) {
             return filter_var($value, FILTER_VALIDATE_EMAIL) === false
                 ? 'validation.email'
                 : null;
         });
 
         // Numeric validation
-        self::registerStrategy('numeric', function ($value): ?string {
+        self::registerStrategy('numeric', function ($value) {
             return !is_numeric($value) ? 'validation.numeric' : null;
         });
 
         // Integer validation
-        self::registerStrategy('integer', function ($value): ?string {
+        self::registerStrategy('integer', function ($value) {
             return filter_var($value, FILTER_VALIDATE_INT) === false ? 'validation.integer' : null;
         });
 
         // Date validation
-        self::registerStrategy('date', function ($value): ?string {
+        self::registerStrategy('date', function ($value) {
             $ts = is_int($value) || is_float($value) ? $value : strtotime((string) $value);
             return ($ts === false || $ts <= 0) ? 'validation.date' : null;
         });
 
         // URL validation
-        self::registerStrategy('url', function ($value): ?string {
+        self::registerStrategy('url', function ($value) {
             return filter_var($value, FILTER_VALIDATE_URL) === false ? 'validation.url' : null;
         });
 
@@ -94,7 +94,7 @@ final class Validator
         });
 
         // Min validation (handles strings, numbers, files)
-        self::registerStrategy('min', function ($value, ?string $param, array $input = [], string $field = ''): string|array|null {
+        self::registerStrategy('min', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
             if ($param === null) return null;
             $min = (int) $param;
 
@@ -118,7 +118,7 @@ final class Validator
         });
 
         // Max validation (handles strings, numbers, files)
-        self::registerStrategy('max', function ($value, ?string $param, array $input = [], string $field = ''): string|array|null {
+        self::registerStrategy('max', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
             if ($param === null) return null;
             $max = (int) $param;
 
@@ -149,7 +149,7 @@ final class Validator
         });
 
         // In validation
-        self::registerStrategy('in', function ($value, ?string $param, array $input = [], string $field = ''): string|array|null {
+        self::registerStrategy('in', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
             if ($param === null) return null;
             $allowedValues = array_map('trim', explode(',', $param));
             return !in_array((string) $value, $allowedValues, true)
@@ -203,7 +203,7 @@ final class Validator
             }
             if ($requiredIf !== null) {
                 $parts = explode(',', $requiredIf, 2);
-                $otherField = trim($parts[0] ?? '');
+                $otherField = trim($parts[0]);
                 $otherValue = trim($parts[1] ?? '');
                 if ($otherField !== '' && ($input[$otherField] ?? null) == $otherValue) {
                     $isRequired = true;
@@ -277,7 +277,7 @@ final class Validator
                 if ($ruleName === 'unique') {
                     if ($ruleParam !== null) {
                         $parts = explode(',', $ruleParam);
-                        $table = trim($parts[0] ?? '');
+                        $table = trim($parts[0]);
                         $column = trim($parts[1] ?? $field);
 
                         if ($table !== '') {
@@ -296,7 +296,7 @@ final class Validator
                 if ($ruleName === 'exists') {
                     if ($ruleParam !== null) {
                         $parts = explode(',', $ruleParam);
-                        $table = trim($parts[0] ?? '');
+                        $table = trim($parts[0]);
                         $column = trim($parts[1] ?? $field);
 
                         if ($table !== '') {
@@ -317,6 +317,7 @@ final class Validator
         return $errors;
     }
 
+    /** @param array<string, string> $replace */
     private static function msg(string $key, array $replace = []): string
     {
         $translated = Lang::get($key, $replace);
@@ -327,6 +328,7 @@ final class Validator
         return self::fallback($key, $replace);
     }
 
+    /** @param array<string, string> $replace */
     private static function fallback(string $key, array $replace): string
     {
         $defaults = [
