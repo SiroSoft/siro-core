@@ -25,7 +25,7 @@ final class BenchmarkCommand
         $this->parseArgs($args);
 
         $this->write('');
-        $this->write('  ⚡ SiroPHP Benchmark v0.21.0');
+        $this->write('  ⚡ SiroPHP Benchmark v0.22.0');
         $this->write('  ' . str_repeat('=', 58));
         $this->write('');
 
@@ -270,7 +270,7 @@ final class BenchmarkCommand
     private function outputJson(array $benchmarks): void
     {
         $output = [
-            'version' => '0.21.0',
+            'version' => '0.22.0',
             'timestamp' => date('c'),
             'iterations' => $this->iterations,
             'warmup' => $this->warmup,

@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.22.0 (2026-05-11) — Final Audit & Zero PHPStan Baseline
+
+### Audit & Type Safety
+- All 1,570 PHPStan baseline errors eliminated (0 remaining)
+- Full type annotations across all Commands (68 files)
+- Security: SQL injection fixes, XSS fixes, JWT secret removal
+- Security: s3Exists() logic fix, EagerLoader method validation
+- Architecture: BaseRepository, BaseService, CacheDriverInterface
+- Architecture: Blueprint dropColumn() method added
+- Quality: Dead code removal, CorsMiddleware fix, Queue SQLite fix
+- Tests: 868 passing, SoftDeletesTest, SecurityHeadersTest, CorsTest added
+
 ## v0.21.0 (2026-05-10) — Security & Quality Release
 
 ### 🐛 Bug Fixes

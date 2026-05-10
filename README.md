@@ -1,4 +1,4 @@
-# Siro Core Framework v0.21.0
+# Siro Core Framework v0.22.0
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
@@ -70,7 +70,7 @@
 - 📈 **Slow Query Detection** - Auto-log queries exceeding threshold
 - ✅ **Environment Validation** - Pre-deployment checks
 
-### Testing & Quality (v0.21.0) 🏆
+### Testing & Quality (v0.22.0) 🏆
 - ✅ **660+ PHPUnit Tests** - 100% pass rate
 - ✅ **SecurityTest Suite** - 30+ tests for SQL injection, XSS, CSRF, credential sanitization
 - ✅ **BenchmarkCommand** - Advanced performance benchmarking CLI
@@ -218,7 +218,7 @@ $app = new App();
 Route::get('/', function() {
     return Response::json([
         'message' => 'Welcome to Siro API',
-        'version' => '0.21.0'
+        'version' => '0.22.0'
     ]);
 });
 

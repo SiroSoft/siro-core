@@ -72,7 +72,7 @@ use Siro\Core\Commands\BenchmarkCommand;
 
 final class Console
 {
-    private const VERSION = '0.21.0';
+    private const VERSION = '0.22.0';
 
     public function __construct(private readonly string $basePath)
     {
