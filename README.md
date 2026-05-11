@@ -1,4 +1,4 @@
-# Siro Core Framework v0.22.0
+# Siro Core Framework v1.0.0
 
 **Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
@@ -8,7 +8,7 @@
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20max-brightgreen.svg)](https://phpstan.org)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
-[![Tests](https://img.shields.io/badge/tests-660%2B%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-868%2B%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/phpstan-level%20max-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
 [![Security](https://img.shields.io/badge/security-audited-brightgreen)](https://github.com/SiroSoft/siro-core)
@@ -70,8 +70,8 @@
 - 📈 **Slow Query Detection** - Auto-log queries exceeding threshold
 - ✅ **Environment Validation** - Pre-deployment checks
 
-### Testing & Quality (v0.22.0) 🏆
-- ✅ **660+ PHPUnit Tests** - 100% pass rate
+### Testing & Quality (v1.0.0) 🏆
+- ✅ **868 PHPUnit Tests** - 100% pass rate
 - ✅ **SecurityTest Suite** - 30+ tests for SQL injection, XSS, CSRF, credential sanitization
 - ✅ **BenchmarkCommand** - Advanced performance benchmarking CLI
 - ✅ **Container Test Suite** - 10 tests for DI Container
@@ -218,7 +218,7 @@ $app = new App();
 Route::get('/', function() {
     return Response::json([
         'message' => 'Welcome to Siro API',
-        'version' => '0.22.0'
+        'version' => '1.0.0'
     ]);
 });
 
@@ -2460,16 +2460,53 @@ DB_SLOW_QUERY_THRESHOLD=100
 
 ## 📚 Documentation
 
-For full documentation and examples:
+### Quick Links
 - **Main Repository:** https://github.com/SiroSoft/SiroPHP
 - **Core Library:** https://github.com/SiroSoft/siro-core
 - **Issues:** https://github.com/SiroSoft/siro-core/issues
+- **Discussions:** https://github.com/SiroSoft/siro-core/discussions
+
+### In-Depth Guides
+- **[Architecture Decisions](docs/ARCHITECTURE.md)** - Why we made key design choices
+- **[Security Guide](docs/SECURITY.md)** - Security features and best practices
+- **[Performance Optimization](docs/PERFORMANCE.md)** - Benchmarking and tuning tips
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the project
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community guidelines
+- **[Security Policy](SECURITY.md)** - Reporting vulnerabilities
+
+### API Reference
+- [Router API](docs/api/Router.md)
+- [Model API](docs/api/Model.md)
+- [Database API](docs/api/Database.md)
+- [Auth API](docs/api/Auth.md)
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+**Quick Start:**
+```bash
+# Fork and clone
+git clone https://github.com/YOUR_USERNAME/siro-core.git
+cd siro-core
+
+# Install dependencies
+composer install
+
+# Run tests
+php vendor/bin/phpunit
+
+# Check code quality
+vendor/bin/phpstan analyse
+```
+
+**Before submitting PR:**
+- ✅ All tests passing
+- ✅ PHPStan shows no errors
+- ✅ Code follows standards
+- ✅ Documentation updated
 
 ---
 

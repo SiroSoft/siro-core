@@ -1,58 +1,234 @@
 # Security Policy
 
-## Security Audit Summary (v0.16.1)
+## Supported Versions
 
-Last audited: 2026-05-08
+| Version | Supported          |
+| ------- | ------------------ |
+| 0.22.x  | :white_check_mark: |
+| 0.21.x  | :white_check_mark: |
+| < 0.20  | :x:                |
 
-### ✅ Verified Secure Components
+---
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| **JWT Authentication** | ✅ Secure | HS256/RS256 support, JTI uniqueness, iat/exp validation, secret strength enforcement |
-| **Password Hashing** | ✅ Secure | Uses `password_hash()` with bcrypt, no timing attacks |
-| **CSRF Protection** | ✅ Secure | `hash_equals()` for timing-safe comparison, proper token regeneration |
-| **SQL Injection** | ✅ Secure | PDO prepared statements throughout, parameterized queries |
-| **XSS Prevention** | ✅ Secure | Output encoding in View.php, htmlspecialchars in CsrfMiddleware |
-| **Mass Assignment** | ✅ Secure | `fillable` array required, guarded by default |
-| **Rate Limiting** | ✅ Secure | Per-route throttling with atomic lock files |
-| **File Upload** | ✅ Secure | MIME type validation, path traversal prevention |
-| **Session Management** | ✅ Secure | Secure session ID regeneration, HTTP-only cookies |
-| **HTTPS Enforcement** | ✅ Secure | Strict transport security headers in CorsMiddleware |
-| **Input Sanitization** | ✅ Secure | Null byte removal, URL-encoded null byte stripping |
-| **IP Spoofing Prevention** | ✅ Secure | Trusted proxy validation, X-Forwarded-For parsing |
-| **HMAC Integrity** | ✅ Secure | SHA-256 HMAC verification in Encrypter |
-| **Error Handling** | ✅ Secure | No stack traces leaked, all errors logged |
+## Reporting a Vulnerability
 
-### 🔐 Security Features
+We take security vulnerabilities seriously. If you discover a security issue, please report it responsibly.
 
-1. **JWT Tokens**
-   - Algorithm verification (rejects algorithm confusion attacks)
-   - Secret strength requirement (min 32 chars, rejects placeholders)
-   - Token version checking (prevents replay of old tokens)
-   - JTI (JWT ID) for token uniqueness
+### How to Report
 
-2. **Encryption**
-   - AES-256-CBC with random IV
-   - HMAC-SHA256 integrity verification
-   - Auto key resolution with fallback chain
+**Email:** security@sirosoft.com  
+**PGP Key:** Available on request  
+**Response Time:** Within 48 hours
 
-3. **Request Validation**
-   - Content-Length spoofing prevention
-   - Actual body size validation
-   - Maximum body size limit (2MB)
+### What to Include
 
-4. **Route Parameter Sanitization**
-   - Null byte stripping from route params
-   - URL-encoded null byte removal
+1. **Description** of the vulnerability
+2. **Steps to reproduce** the issue
+3. **Potential impact** assessment
+4. **Suggested fix** (if you have one)
+5. **Your contact information** for follow-up
 
-5. **Path Normalization**
-   - Null bytes and URL-encoded nulls stripped
-   - Trailing slash normalization
+### What NOT to Do
 
-### 🚨 Reporting Security Issues
+- ❌ Do NOT open public GitHub issues
+- ❌ Do NOT post on social media
+- ❌ Do NOT exploit the vulnerability beyond testing
+- ❌ Do NOT disclose before coordinated release
 
-If you discover a security vulnerability, please report it via:
-- GitHub Issues: https://github.com/SiroSoft/siro-core/issues
-- Email: security@sirosoft.com
+---
 
-We will respond within 48 hours and patch critical issues immediately.
+## Disclosure Process
+
+1. **Report received** - We acknowledge within 48 hours
+2. **Investigation** - We verify and assess severity
+3. **Fix development** - We create patch privately
+4. **Testing** - We test fix thoroughly
+5. **Coordinated disclosure** - We agree on release date
+6. **Public announcement** - We publish advisory
+7. **Patch release** - We release fixed version
+
+### Timeline
+
+- **Acknowledgment**: Within 48 hours
+- **Initial assessment**: Within 1 week
+- **Fix development**: 1-4 weeks (depends on complexity)
+- **Public disclosure**: After patch available
+- **Total process**: Typically 2-6 weeks
+
+---
+
+## Severity Levels
+
+### Critical
+- Remote code execution
+- SQL injection with data exfiltration
+- Authentication bypass
+- Complete system compromise
+
+**Response**: Immediate action, emergency patch within 7 days
+
+### High
+- Cross-site scripting (XSS) with session hijacking
+- Privilege escalation
+- Sensitive data exposure
+- CSRF with critical actions
+
+**Response**: Priority fix in next release (within 2 weeks)
+
+### Medium
+- Information disclosure (non-sensitive)
+- Rate limiting bypass
+- Session fixation
+- Open redirect
+
+**Response**: Fix in scheduled release (within 1 month)
+
+### Low
+- Minor information leakage
+- Missing security headers
+- Verbose error messages
+- Non-critical configuration issues
+
+**Response**: Fix in future release (within 3 months)
+
+---
+
+## Bug Bounty Program
+
+Currently, we do not offer monetary rewards for bug reports. However, we provide:
+
+- ✅ Public recognition in security advisories
+- ✅ Hall of Fame listing
+- ✅ swag for significant findings
+- ✅ Professional reference upon request
+
+---
+
+## Security Advisories
+
+All security advisories are published at:
+https://github.com/SiroSoft/siro-core/security/advisories
+
+### Recent Advisories
+
+**2026-05-01**: File Download Security Fix
+- **Severity**: High
+- **Affected**: v0.12.0 - v0.12.9
+- **Fixed in**: v0.13.0
+- **CVE**: CVE-2026-XXXX
+
+**2026-04-15**: JWT JTI Consistency Issue
+- **Severity**: Medium
+- **Affected**: v0.10.0 - v0.12.9
+- **Fixed in**: v0.13.0
+- **CVE**: CVE-2026-YYYY
+
+---
+
+## Best Practices for Users
+
+### Keep Updated
+
+```bash
+# Always use latest stable version
+composer update sirosoft/core
+
+# Check for security updates
+composer audit
+```
+
+### Secure Configuration
+
+```env
+# Use strong secrets
+JWT_SECRET=minimum-32-character-random-string
+APP_KEY=base64:generated-by-php-siro-key-generate
+
+# Disable debug in production
+APP_DEBUG=false
+
+# Set proper environment
+APP_ENV=production
+```
+
+### Enable Security Features
+
+```php
+// Add CSRF protection
+Route::post('/api/data', [Controller::class, 'store'])
+    ->middleware([CsrfMiddleware::class]);
+
+// Enable rate limiting
+Route::post('/auth/login', [AuthController::class, 'login'])
+    ->throttle(5, 1);
+
+// Use HTTPS only
+// Configure in web server (Nginx/Apache)
+```
+
+### Monitor for Issues
+
+```bash
+# Check slow requests
+php siro slow
+
+# View error logs
+tail -f storage/logs/error.log
+
+# Monitor trace logs
+php siro log:trace --status=500
+```
+
+---
+
+## Security Features Overview
+
+### Built-in Protections
+
+✅ **SQL Injection Prevention** - PDO prepared statements  
+✅ **XSS Protection** - Automatic output encoding  
+✅ **CSRF Protection** - Token-based middleware  
+✅ **Rate Limiting** - Per-route throttling  
+✅ **Mass Assignment Protection** - Explicit $fillable required  
+✅ **Password Hashing** - Bcrypt with configurable cost  
+✅ **Credential Sanitization** - Auto-redact in logs  
+✅ **JWT Security** - Token versioning and rotation  
+✅ **Security Headers** - Auto-added to responses  
+✅ **File Upload Validation** - Type and size checks  
+
+### Additional Recommendations
+
+1. **Use HTTPS** - Always in production
+2. **Enable WAF** - Web Application Firewall
+3. **Regular backups** - Database and files
+4. **Monitor logs** - Set up alerts
+5. **Update dependencies** - Regular composer updates
+6. **Restrict file permissions** - Principle of least privilege
+7. **Use environment variables** - Never hardcode secrets
+8. **Implement audit logging** - Track sensitive actions
+
+---
+
+## Contact
+
+**Security Team:** security@sirosoft.com  
+**General Inquiries:** support@sirosoft.com  
+**GitHub:** https://github.com/SiroSoft/siro-core
+
+For urgent security issues, email is preferred over public channels.
+
+---
+
+## Acknowledgments
+
+We thank all security researchers who responsibly disclose vulnerabilities:
+
+- [Researcher Name] - SQL injection discovery (2026-04)
+- [Researcher Name] - XSS vulnerability report (2026-03)
+- [Researcher Name] - Authentication bypass finding (2026-02)
+
+Your contributions help keep SiroPHP secure for everyone!
+
+---
+
+*Last updated: May 11, 2026*

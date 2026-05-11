@@ -24,7 +24,7 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
         $this->parseArgs($args);
 
         $this->write('');
-        $this->write('  ⚡ SiroPHP Benchmark v0.22.0');
+        $this->write('  ⚡ SiroPHP Benchmark v1.0.0');
         $this->write('  ' . str_repeat('=', 58));
         $this->write('');
 
@@ -269,7 +269,7 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
     private function outputJson(array $benchmarks): void
     {
         $output = [
-            'version' => '0.22.0',
+            'version' => '1.0.0',
             'timestamp' => date('c'),
             'iterations' => $this->iterations,
             'warmup' => $this->warmup,
