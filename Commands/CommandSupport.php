@@ -113,7 +113,7 @@ trait CommandSupport
     {
         $value = str_replace(['-', '_'], ' ', trim($value));
         $words = explode(' ', $value);
-        $words = array_map(fn(string $w): string => ucfirst(strtolower($w)), $words);
+        $words = array_map(fn(string $w): string => $w === '' ? '' : ucfirst($w), $words);
         return implode('', $words);
     }
 
