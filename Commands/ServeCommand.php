@@ -23,8 +23,20 @@ final class ServeCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $host = (string) ($args[0] ?? 'localhost');
-        $port = (string) ($args[1] ?? '8000');
+        $host = 'localhost';
+        $port = '8000';
+
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--port=')) {
+                $port = substr($arg, 7);
+            } elseif (str_starts_with($arg, '--host=')) {
+                $host = substr($arg, 7);
+            } elseif (ctype_digit($arg)) {
+                $port = $arg;
+            } elseif (!str_starts_with($arg, '--')) {
+                $host = $arg;
+            }
+        }
 
         if (!preg_match('/^[a-zA-Z0-9.\-]+$/', $host)) {
             $this->write('Invalid host.');

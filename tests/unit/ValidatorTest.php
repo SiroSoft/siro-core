@@ -63,7 +63,7 @@ final class ValidatorTest extends TestCase
     public function testMinRuleForStrings(): void
     {
         $errors = Validator::make(
-            ['password' => '12345'],
+            ['password' => 'abc'],
             ['password' => 'min:8']
         );
 

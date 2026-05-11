@@ -40,7 +40,7 @@ final class ValidatorCombinationsTest extends TestCase
     public function testMinMaxValidRange(): void
     {
         $errors = Validator::make(
-            ['password' => '12345678'],
+            ['password' => 'abcdefgh'],
             ['password' => 'min:8|max:20']
         );
         $this->assertArrayNotHasKey('password', $errors);

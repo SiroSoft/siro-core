@@ -298,6 +298,22 @@ final class Router
         }
 
         $data = $this->exportRoutes();
+
+        // Remove routes with Closure handlers (cannot be serialized)
+        foreach (['static', 'dynamic'] as $type) {
+            foreach ($data[$type] ?? [] as $method => &$routes) {
+                if ($type === 'static') {
+                    foreach ($routes as $path => $route) {
+                        if ($route['handler'] === 'Closure') {
+                            unset($routes[$path]);
+                        }
+                    }
+                } else {
+                    $routes = array_values(array_filter($routes, fn($r) => $r['handler'] !== 'Closure'));
+                }
+            }
+        }
+
         $content = '<?php return ' . var_export($data, true) . ';' . PHP_EOL;
 
         return file_put_contents($cacheFile, $content) !== false;

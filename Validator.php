@@ -108,6 +108,9 @@ final class Validator
             }
 
             if (is_string($value)) {
+                if (is_numeric($value)) {
+                    return (float) $value < $min ? ['validation.min', ['min' => (string) $min]] : null;
+                }
                 return strlen(trim($value)) < $min ? ['validation.min', ['min' => (string) $min]] : null;
             }
 
@@ -132,6 +135,9 @@ final class Validator
             }
 
             if (is_string($value)) {
+                if (is_numeric($value)) {
+                    return (float) $value > $max ? ['validation.max', ['max' => (string) $max]] : null;
+                }
                 return strlen(trim($value)) > $max ? ['validation.max', ['max' => (string) $max]] : null;
             }
 

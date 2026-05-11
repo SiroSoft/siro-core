@@ -17,7 +17,7 @@ final class CorsMiddleware implements MiddlewareInterface
         $allowedHeaders = (string) Env::get('CORS_ALLOWED_HEADERS', 'Content-Type,Authorization,X-Requested-With');
 
         $origin = (string) $request->header('origin', '');
-        $allowOrigin = $allowedOrigins === '*' ? ($origin !== '' ? $origin : '*') : $this->resolveOrigin($origin, $allowedOrigins);
+        $allowOrigin = $allowedOrigins === '*' ? '*' : $this->resolveOrigin($origin, $allowedOrigins);
         $allowCredentials = $allowedOrigins !== '*';
 
         if ($request->method() === 'OPTIONS') {
@@ -40,6 +40,7 @@ final class CorsMiddleware implements MiddlewareInterface
         $response->header('Access-Control-Allow-Methods', $allowedMethods);
         $response->header('Access-Control-Allow-Headers', $allowedHeaders);
         $response->header('Access-Control-Allow-Credentials', $allowCredentials ? 'true' : 'false');
+        $response->header('Access-Control-Expose-Headers', 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Siro-Trace-Id');
         $response->header('Vary', 'Origin');
     }
 

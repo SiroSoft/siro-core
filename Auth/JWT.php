@@ -91,7 +91,8 @@ final class JWT
             throw new RuntimeException('Invalid token payload.');
         }
 
-        $alg = (string) ($header['alg'] ?? '');
+        // Always use server-configured algorithm, never trust the token's alg header
+        $alg = self::algorithm();
         if (!in_array($alg, [self::ALG_HS256, self::ALG_RS256], true)) {
             throw new RuntimeException('Unsupported token algorithm: ' . $alg);
         }
@@ -99,7 +100,7 @@ final class JWT
         $data = $headerB64 . '.' . $payloadB64;
         $valid = match ($alg) {
             self::ALG_RS256 => self::verifyRs256($data, $signature),
-            default => self::verifyHs256($data, $signature),
+            self::ALG_HS256 => self::verifyHs256($data, $signature),
         };
 
         if (!$valid) {

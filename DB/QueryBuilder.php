@@ -742,6 +742,9 @@ class QueryBuilder
         $perPage = max(1, $perPage);
         $order = strtolower($order) === 'desc' ? 'DESC' : 'ASC';
 
+        // Compute total BEFORE adding cursor filter
+        $total = $this->count();
+
         $clone = clone $this;
 
         if ($cursor !== null && isset($cursor['id'], $cursor['created_at'])) {
@@ -778,7 +781,6 @@ class QueryBuilder
         }
 
         $rows = $countRows;
-        $total = $clone->count();
 
         return [
             'data' => $rows,

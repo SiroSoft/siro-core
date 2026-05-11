@@ -274,17 +274,14 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     {
         /** @phpstan-ignore new.static */
         $instance = new static();
-        $table = $instance->getTable();
-
-        /** @var array<string, mixed>|null $result */
-        $result = Database::table($table)->where('id', '=', $id)->first();
+        $result = $instance->query()->where('id', '=', $id)->first();
 
         if ($result === null) {
             return null;
         }
 
-        /** @var array<string, mixed> $result */
-        return self::hydrate($result);
+        /** @var static $result */
+        return $result;
     }
 
     /**

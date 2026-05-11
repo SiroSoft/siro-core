@@ -40,10 +40,12 @@ final class ApiKey
         $createdAt = time();
         $expiresAt = $expiresIn > 0 ? $createdAt + ($expiresIn * 86400) : 0;
 
+        $bcryptHash = password_hash($token, PASSWORD_DEFAULT);
+
         Database::execute(
-            "INSERT INTO " . self::$table . " (name, token_hash, scopes, user_id, created_at, expires_at, last_used_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [$name, $hashedToken, $scopes, $userId ?? 0, $createdAt, $expiresAt, null]
+            "INSERT INTO " . self::$table . " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [$name, $hashedToken, $bcryptHash, $scopes, $userId ?? 0, $createdAt, $expiresAt, null]
         );
 
         return [
@@ -77,6 +79,15 @@ final class ApiKey
 
         /** @var array<string, mixed> $key */
         $key = $rows[0];
+
+        // Verify with bcrypt if available, fallback to sha256 for legacy keys
+        $storedBcrypt = $key['token_bcrypt'] ?? '';
+        if ($storedBcrypt !== '') {
+            if (!password_verify($token, $storedBcrypt)) {
+                return null;
+            }
+        }
+
         $expiresAt = (int) ($key['expires_at'] ?? 0);
 
         if ($expiresAt > 0 && $expiresAt < $now) {
@@ -203,6 +214,7 @@ final class ApiKey
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     token_hash VARCHAR(64) UNIQUE NOT NULL,
+                    token_bcrypt VARCHAR(255) DEFAULT NULL,
                     scopes VARCHAR(100) NOT NULL DEFAULT 'read',
                     user_id INTEGER DEFAULT 0,
                     created_at INTEGER NOT NULL,
@@ -216,6 +228,7 @@ final class ApiKey
                     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     token_hash VARCHAR(64) UNIQUE NOT NULL,
+                    token_bcrypt VARCHAR(255) DEFAULT NULL,
                     scopes VARCHAR(100) NOT NULL DEFAULT 'read',
                     user_id INT DEFAULT 0,
                     created_at INT NOT NULL,
@@ -230,6 +243,7 @@ final class ApiKey
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name VARCHAR(255) NOT NULL,
                     token_hash VARCHAR(64) UNIQUE NOT NULL,
+                    token_bcrypt VARCHAR(255) DEFAULT NULL,
                     scopes VARCHAR(100) NOT NULL DEFAULT 'read',
                     user_id INTEGER DEFAULT 0,
                     created_at INTEGER NOT NULL,
