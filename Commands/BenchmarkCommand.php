@@ -269,7 +269,7 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
     private function outputJson(array $benchmarks): void
     {
         $output = [
-            'version' => '1.0.0',
+            'version' => '0.22.0',
             'timestamp' => date('c'),
             'iterations' => $this->iterations,
             'warmup' => $this->warmup,
