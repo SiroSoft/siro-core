@@ -1,0 +1,9 @@
+﻿PHPUnit 11.5.50 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.2.30
+Configuration: D:\VietVang\SiroSoft\siro-core\phpunit.xml
+
+Time: 00:07.743, Memory: 18.00 MB
+
+OK, but there were issues!
+Tests: 868, Assertions: 2250, PHPUnit Deprecations: 6, Skipped: 40.
