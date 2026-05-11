@@ -208,7 +208,10 @@ final class App
         $cacheFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR
             . 'framework' . DIRECTORY_SEPARATOR . 'routes.php';
         if (is_file($cacheFile) && $router->loadFromCache($cacheFile)) {
-            return;
+            $routes = $router->getRoutes();
+            if ($routes !== []) {
+                return;
+            }
         }
 
         require $routesFile;
