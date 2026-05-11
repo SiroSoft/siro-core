@@ -1,36 +1,49 @@
 {
-  "name": "sirosoft/core",
-  "version": "0.22.0",
-  "description": "Siro API Framework Core - Lightweight PHP Micro-Framework with Advanced Debugging and RBAC",
-  "type": "library",
-  "license": "MIT",
-  "keywords": ["framework", "api", "micro-framework", "php", "core"],
-  "homepage": "https://github.com/SiroSoft/siro-core",
-  "support": {
-    "issues": "https://github.com/SiroSoft/siro-core/issues",
-    "source": "https://github.com/SiroSoft/siro-core"
-  },
-  "autoload": {
-    "psr-4": {
-      "Siro\\Core\\": ""
+    "name": "sirosoft/core",
+    "version": "0.22.0",
+    "description": "Siro API Framework Core - Ultra-fast PHP micro-framework with built-in JWT auth, RBAC, rate limiting, migrations, ORM, and CRUD generator. Zero PHPStan errors.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "framework",
+        "api",
+        "micro-framework",
+        "php",
+        "core",
+        "rest",
+        "rest-api",
+        "jwt",
+        "auth",
+        "crud-generator",
+        "api-first",
+        "php8"
+    ],
+    "homepage": "https://github.com/SiroSoft/siro-core",
+    "support": {
+        "issues": "https://github.com/SiroSoft/siro-core/issues",
+        "source": "https://github.com/SiroSoft/siro-core"
+    },
+    "autoload": {
+        "psr-4": {
+            "Siro\\Core\\": ""
+        }
+    },
+    "require": {
+        "php": ">=8.2",
+        "ext-pdo": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require-dev": {
+        "phpunit/phpunit": "11.5.50",
+        "phpstan/phpstan": "*"
+    },
+    "suggest": {
+        "ext-redis": "Required for Redis cache, session, and rate limiter drivers",
+        "ext-openssl": "Required for Encrypter (AES-256 encryption)",
+        "ext-curl": "Required for HTTP Client",
+        "ext-fileinfo": "Required for UploadedFile MIME type detection"
     }
-  },
-  "require": {
-    "php": ">=8.2",
-    "ext-pdo": "*",
-    "ext-json": "*",
-    "ext-mbstring": "*"
-  },
-  "minimum-stability": "stable",
-  "prefer-stable": true,
-  "require-dev": {
-    "phpunit/phpunit": "11.5.50",
-    "phpstan/phpstan": "*"
-  },
-  "suggest": {
-    "ext-redis": "Required for Redis cache, session, and rate limiter drivers",
-    "ext-openssl": "Required for Encrypter (AES-256 encryption)",
-    "ext-curl": "Required for HTTP Client",
-    "ext-fileinfo": "Required for UploadedFile MIME type detection"
-  }
 }
