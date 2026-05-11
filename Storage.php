@@ -230,15 +230,24 @@ final class Storage
             return $fullPath;
         }
 
-        // File doesn't exist yet: validate parent directory instead
-        $parentDir = dirname($fullPath);
-        if (!is_dir($parentDir)) {
-            @mkdir($parentDir, 0775, true);
+        // For new files, validate that the path structure is safe without checking realpath
+        // Check that no '..' segments remain after filtering
+        $remainingPath = str_replace(DIRECTORY_SEPARATOR, '/', $fullPath);
+        $normalized = str_replace('\\', '/', $fullPath);
+        $segments = explode('/', str_replace('\\', '/', $fullPath));
+        foreach ($segments as $seg) {
+            if ($seg === '..') {
+                throw new RuntimeException('Path traversal detected: ' . $path);
+            }
         }
-        $realParent = realpath($parentDir);
-        $realAllowed = realpath($allowedDir);
-        if ($realParent === false || $realAllowed === false || !str_starts_with($realParent, $realAllowed)) {
-            throw new RuntimeException('Path traversal detected: ' . $path);
+        // Validate parent if exists
+        $parentDir = dirname($fullPath);
+        if (is_dir($parentDir)) {
+            $realParent = realpath($parentDir);
+            $realAllowed = realpath($allowedDir);
+            if ($realParent === false || $realAllowed === false || !str_starts_with($realParent, $realAllowed)) {
+                throw new RuntimeException('Path traversal detected: ' . $path);
+            }
         }
 
         return $fullPath;
