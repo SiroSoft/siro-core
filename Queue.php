@@ -291,8 +291,12 @@ final class Queue
      */
     public static function pendingCount(): int
     {
-        $row = Database::first("SELECT COUNT(*) AS count FROM jobs WHERE available_at <= :now", ['now' => time()]);
-        return (int) ($row['count'] ?? 0);
+        try {
+            $row = Database::first("SELECT COUNT(*) AS count FROM jobs WHERE available_at <= :now", ['now' => time()]);
+            return (int) ($row['count'] ?? 0);
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     /**
@@ -300,8 +304,12 @@ final class Queue
      */
     public static function failedCount(): int
     {
-        $row = Database::first("SELECT COUNT(*) AS count FROM failed_jobs");
-        return (int) ($row['count'] ?? 0);
+        try {
+            $row = Database::first("SELECT COUNT(*) AS count FROM failed_jobs");
+            return (int) ($row['count'] ?? 0);
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     /**
@@ -319,37 +327,41 @@ final class Queue
 
     public static function retryFailed(int|string $id): bool
     {
-        if ($id === 'all') {
-            $rows = Database::select("SELECT * FROM failed_jobs");
-            $count = 0;
-            foreach ($rows as $row) {
-                self::push(
-                    $row['job'],
-                    self::decodeJobData($row['data']),
-                    0,
-                    self::DEFAULT_PRIORITY,
-                    self::DEFAULT_MAX_ATTEMPTS
-                );
-                Database::execute("DELETE FROM failed_jobs WHERE id = :id", ['id' => $row['id']]);
-                $count++;
+        try {
+            if ($id === 'all') {
+                $rows = Database::select("SELECT * FROM failed_jobs");
+                $count = 0;
+                foreach ($rows as $row) {
+                    self::push(
+                        $row['job'],
+                        self::decodeJobData($row['data']),
+                        0,
+                        self::DEFAULT_PRIORITY,
+                        self::DEFAULT_MAX_ATTEMPTS
+                    );
+                    Database::execute("DELETE FROM failed_jobs WHERE id = :id", ['id' => $row['id']]);
+                    $count++;
+                }
+                return $count > 0;
             }
-            return $count > 0;
-        }
 
-        $row = Database::first("SELECT * FROM failed_jobs WHERE id = :id", ['id' => $id]);
-        if ($row === null) {
+            $row = Database::first("SELECT * FROM failed_jobs WHERE id = :id", ['id' => $id]);
+            if ($row === null) {
+                return false;
+            }
+
+            self::push(
+                $row['job'],
+                self::decodeJobData($row['data']),
+                0,
+                self::DEFAULT_PRIORITY,
+                self::DEFAULT_MAX_ATTEMPTS
+            );
+            Database::execute("DELETE FROM failed_jobs WHERE id = :id", ['id' => $row['id']]);
+            return true;
+        } catch (\Throwable) {
             return false;
         }
-
-        self::push(
-            $row['job'],
-            self::decodeJobData($row['data']),
-            0,
-            self::DEFAULT_PRIORITY,
-            self::DEFAULT_MAX_ATTEMPTS
-        );
-        Database::execute("DELETE FROM failed_jobs WHERE id = :id", ['id' => $row['id']]);
-        return true;
     }
 
     /**
