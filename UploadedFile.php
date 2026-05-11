@@ -122,16 +122,21 @@ final class UploadedFile
             return Storage::url($path);
         }
 
-        $publicDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . $directory;
-
-        // Validate final resolved path stays within allowed directory
-        $realPublicDir = realpath(dirname($publicDir));
-        if ($realPublicDir === false || strpos(realpath($publicDir) ?: '', $realPublicDir) !== 0) {
-            throw new RuntimeException('Directory path resolves outside allowed storage area');
+        $storagePublicRoot = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public';
+        $realStoragePublicRoot = realpath($storagePublicRoot);
+        if ($realStoragePublicRoot === false) {
+            throw new RuntimeException('Storage public directory not found.');
         }
+
+        $publicDir = $storagePublicRoot . DIRECTORY_SEPARATOR . $directory;
 
         if (!is_dir($publicDir)) {
             mkdir($publicDir, 0775, true);
+        }
+
+        $realPublicDir = realpath($publicDir);
+        if ($realPublicDir === false || !str_starts_with($realPublicDir, $realStoragePublicRoot)) {
+            throw new RuntimeException('Directory path resolves outside allowed storage area');
         }
 
         $destPath = $publicDir . DIRECTORY_SEPARATOR . $filename;

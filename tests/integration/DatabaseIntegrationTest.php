@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\Tests\Integration;
 
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 use Siro\Core\Database;
 use Siro\Core\DB\QueryBuilder;
@@ -48,7 +49,7 @@ final class DatabaseIntegrationTest extends TestCase
         }
     }
 
-    /** @requires extension pdo_mysql */
+    #[RequiresPhpExtension('pdo_mysql')]
     public function testMySQLConnection(): void
     {
         $pdo = $this->connectMySQL();
@@ -56,7 +57,7 @@ final class DatabaseIntegrationTest extends TestCase
         $this->assertInstanceOf(\PDO::class, $pdo);
     }
 
-    /** @requires extension pdo_mysql */
+    #[RequiresPhpExtension('pdo_mysql')]
     public function testMySQLCreateTableAndInsert(): void
     {
         $pdo = $this->connectMySQL();
@@ -67,7 +68,7 @@ final class DatabaseIntegrationTest extends TestCase
         $this->assertSame('2', $rows['cnt']);
     }
 
-    /** @requires extension pdo_mysql */
+    #[RequiresPhpExtension('pdo_mysql')]
     public function testMySQLQueryBuilder(): void
     {
         $pdo = $this->connectMySQL();
@@ -83,7 +84,7 @@ final class DatabaseIntegrationTest extends TestCase
         $this->assertNotNull($pdo2);
     }
 
-    /** @requires extension pdo_pgsql */
+    #[RequiresPhpExtension('pdo_pgsql')]
     public function testPostgreSQLConnection(): void
     {
         $pdo = $this->connectPostgreSQL();
@@ -91,7 +92,7 @@ final class DatabaseIntegrationTest extends TestCase
         $this->assertInstanceOf(\PDO::class, $pdo);
     }
 
-    /** @requires extension pdo_pgsql */
+    #[RequiresPhpExtension('pdo_pgsql')]
     public function testPostgreSQLCreateTableAndInsert(): void
     {
         $pdo = $this->connectPostgreSQL();
@@ -102,7 +103,7 @@ final class DatabaseIntegrationTest extends TestCase
         $this->assertSame('2', (string) $rows['cnt']);
     }
 
-    /** @requires extension pdo_pgsql */
+    #[RequiresPhpExtension('pdo_pgsql')]
     public function testPostgreSQLQueryBuilderQuoting(): void
     {
         $pdo = $this->connectPostgreSQL();
