@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run tests
+        run: php vendor/bin/phpunit --no-progress
+
+      - name: PHPStan check
+        run: php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          body: |
+            ## Release ${{ github.ref_name }}
+
+            ### Changes
+            Please see the [CHANGELOG](CHANGELOG.md) for details.
+
+            ### Installation
+            ```bash
+            composer create-project sirosoft/api my-api
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

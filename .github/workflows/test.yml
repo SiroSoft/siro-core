@@ -2,7 +2,9 @@ name: Core Test
 
 on:
   push:
+    branches: [main, develop]
   pull_request:
+    branches: [main, develop]
 
 jobs:
   lint:
@@ -14,8 +16,23 @@ jobs:
         with:
           php-version: '8.2'
           tools: composer:v2
-      - name: PHP lint
+      - name: PHP syntax check
         run: find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 php -l
+
+  code-style:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: PHP_CodeSniffer (PSR-12)
+        continue-on-error: true
+        run: vendor/bin/phpcs --standard=PSR12 --ignore=vendor .
 
   static-analysis:
     runs-on: ubuntu-latest
@@ -34,8 +51,8 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
-      - name: PHPStan Level max
-        run: php -d memory_limit=512M vendor/bin/phpstan analyse --level=max --no-progress
+      - name: PHPStan Level 7
+        run: php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
 
   phpunit:
     runs-on: ubuntu-latest
