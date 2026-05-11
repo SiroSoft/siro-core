@@ -36,7 +36,7 @@ final class Router
      */
     public function get(string $path, callable|array|string $handler, array $middleware = []): Route
     {
-        return $this->add('GET', $path, $handler, $middleware);
+        return $this->add(Method::GET, $path, $handler, $middleware);
     }
 
     /**
@@ -45,7 +45,7 @@ final class Router
      */
     public function post(string $path, callable|array|string $handler, array $middleware = []): Route
     {
-        return $this->add('POST', $path, $handler, $middleware);
+        return $this->add(Method::POST, $path, $handler, $middleware);
     }
 
     /**
@@ -54,7 +54,7 @@ final class Router
      */
     public function put(string $path, callable|array|string $handler, array $middleware = []): Route
     {
-        return $this->add('PUT', $path, $handler, $middleware);
+        return $this->add(Method::PUT, $path, $handler, $middleware);
     }
 
     /**
@@ -63,7 +63,7 @@ final class Router
      */
     public function delete(string $path, callable|array|string $handler, array $middleware = []): Route
     {
-        return $this->add('DELETE', $path, $handler, $middleware);
+        return $this->add(Method::DELETE, $path, $handler, $middleware);
     }
 
     /**
@@ -72,7 +72,7 @@ final class Router
      */
     public function options(string $path, callable|array|string $handler, array $middleware = []): Route
     {
-        return $this->add('OPTIONS', $path, $handler, $middleware);
+        return $this->add(Method::OPTIONS, $path, $handler, $middleware);
     }
 
     /**
