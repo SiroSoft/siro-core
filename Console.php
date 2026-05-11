@@ -68,6 +68,9 @@ use Siro\Core\Commands\NewCommand;
 use Siro\Core\Commands\MakeIdempotencyTableCommand;
 use Siro\Core\Commands\MakeApiKeysTableCommand;
 use Siro\Core\Commands\MakeApiKeyCommand;
+use Siro\Core\Commands\MakeMiddlewareCommand;
+use Siro\Core\Commands\MakeListenerCommand;
+use Siro\Core\Commands\TestCommand;
 use Siro\Core\Commands\BenchmarkCommand;
 
 final class Console
@@ -104,6 +107,8 @@ final class Console
             'make:postman'    => ['handler' => MakePostmanCommand::class, 'desc' => 'Generate Postman collection', 'usage' => 'php siro make:postman [--flow=crud]'],
             'make:service'    => ['handler' => MakeServiceCommand::class, 'desc' => 'Generate service class', 'usage' => 'php siro make:service <name>'],
             'make:repository' => ['handler' => MakeRepositoryCommand::class, 'desc' => 'Generate repository class', 'usage' => 'php siro make:repository <name>'],
+            'make:middleware'  => ['handler' => MakeMiddlewareCommand::class, 'desc' => 'Generate middleware class', 'usage' => 'php siro make:middleware <name>'],
+            'make:listener'    => ['handler' => MakeListenerCommand::class, 'desc' => 'Generate event listener', 'usage' => 'php siro make:listener <name>'],
             'make:idempotency-table' => ['handler' => MakeIdempotencyTableCommand::class, 'desc' => 'Create idempotency table', 'usage' => 'php siro make:idempotency-table'],
             'make:apikey-table' => ['handler' => MakeApiKeysTableCommand::class, 'desc' => 'Create API keys table', 'usage' => 'php siro make:apikey-table'],
             'make:apikey' => ['handler' => MakeApiKeyCommand::class, 'desc' => 'Generate API key', 'usage' => 'php siro make:apikey <name> [scopes] [expires_days]'],
@@ -125,7 +130,7 @@ final class Console
             'log:top'     => ['handler' => LogTopCommand::class, 'desc' => 'Top slowest APIs by total time', 'usage' => 'php siro log:top [--limit=N] [--min=MS]'],
             'debug:last'  => ['handler' => DebugLastCommand::class, 'desc' => 'Show why last request failed (alias: why)', 'usage' => 'php siro debug:last'],
 
-            'test'          => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite', 'usage' => 'php siro test'],
+            'test:run'      => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite (legacy)', 'usage' => 'php siro test:run'],
             'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API (--loop, --as=admin/guest)', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]'],
 
             'queue:work'    => ['handler' => QueueWorkCommand::class, 'desc' => 'Process queue jobs', 'usage' => 'php siro queue:work [--daemon]'],
@@ -157,6 +162,7 @@ final class Console
             'trace:list'    => ['handler' => TraceListCommand::class, 'desc' => 'List recent traces (--limit=N)', 'usage' => 'php siro trace:list [--limit=20]'],
             'rate:status'   => ['handler' => RateStatusCommand::class, 'desc' => 'Rate limit dashboard', 'usage' => 'php siro rate:status'],
             'replay'        => ['handler' => ReplayCommand::class, 'desc' => 'Replay last trace (or by id)', 'usage' => 'php siro replay [trace_id] [--edit] [--diff]'],
+            'test'          => ['handler' => TestCommand::class, 'desc' => 'Run tests (--filter=, --suite=, --coverage)', 'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
         ];
     }
@@ -326,7 +332,7 @@ final class Console
             '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'why', 'fix', 'replay', 'trace:list'],
             '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
                                     'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
-            '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
+            '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
                                     'queue:work', 'queue:status', 'schedule:run', 'deploy', 'optimize', 'config:cache',
                                     'down', 'up', 'log:trace', 'log:replay', 'log:slow', 'debug:last'],
             '⚙️ System'        => ['key:generate', 'doctor', 'env:check', 'env:switch', 'route:search', 'route:rules',
