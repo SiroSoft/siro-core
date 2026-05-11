@@ -40,6 +40,11 @@
         "phpstan/phpstan": "*",
         "squizlabs/php_codesniffer": "^3.0"
     },
+    "scripts": {
+        "release:check": [
+            "@php scripts/release-check.php"
+        ]
+    },
     "suggest": {
         "ext-redis": "Required for Redis cache, session, and rate limiter drivers",
         "ext-openssl": "Required for Encrypter (AES-256 encryption)",

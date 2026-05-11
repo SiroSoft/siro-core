@@ -19,11 +19,8 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Run tests
-        run: php vendor/bin/phpunit --no-progress
-
-      - name: PHPStan check
-        run: php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
+      - name: Run strict technical gate
+        run: composer release:check
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
