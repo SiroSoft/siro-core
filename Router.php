@@ -87,10 +87,10 @@ final class Router
     }
 
     /**
- * @param callable|array<int, callable|string> $arg2
- * @param callable|array<int, callable|string>|null $arg3
- */
-public function group(string $prefix, callable|array $arg2, callable|array|null $arg3 = null): void
+     * @param callable|array<int, callable|string> $arg2
+     * @param callable|array<int, callable|string>|null $arg3
+     */
+    public function group(string $prefix, callable|array $arg2, callable|array|null $arg3 = null): void
     {
         $callback = null;
         $middleware = [];

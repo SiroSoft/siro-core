@@ -21,7 +21,10 @@ abstract class Controller
         return Response::success($data, $message, $statusCode, $meta);
     }
 
-    /** @param array<string, mixed> $errors */ protected function error(string $message, int $statusCode = 400, array $errors = []): Response
+    /**
+     * @param array<string, mixed> $errors
+     */
+    protected function error(string $message, int $statusCode = 400, array $errors = []): Response
     {
         return Response::error($message, $statusCode, $errors);
     }
