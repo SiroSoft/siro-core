@@ -1,6 +1,6 @@
 # Known Issues & Limitations
 
-## v1.0 Known Issues
+## v0.23 Known Issues
 
 ### Database
 
@@ -14,7 +14,7 @@
 
 | Issue | Severity | Workaround |
 |-------|----------|------------|
-| NoOAuth2/Passport support | Low | Use API Key auth for external devs |
+| No OAuth2/Passport support | Low | Use API Key auth for external devs |
 | No multi-tenancy | Medium | Implement in application layer |
 | No 2FA built-in | Low | Add manually or use third-party |
 
@@ -40,11 +40,11 @@
 
 These are by design, not bugs:
 
-### No ORM (like Eloquent)
+### No Eloquent-style ORM
 
-Siro uses QueryBuilder + Models. Eloquent-style mass operations not available.
+Siro uses QueryBuilder + Model. Full Eloquem ORM not available.
 
-**Why**: Complexity vs benefit. QueryBuilder is sufficient for most use cases.
+**Why**: Complexity vs benefit. QueryBuilder covers most use cases.
 
 **Workaround**: Use Model methods + QueryBuilder for complex queries.
 
@@ -52,9 +52,9 @@ Siro uses QueryBuilder + Models. Eloquent-style mass operations not available.
 
 CLI debugging only. No GUI like Laravel Telescope.
 
-**Why**: Keep simple, zero JS dependencies.
+**Why**: Keep zero JS dependencies, framework under 25k lines.
 
-**Workaround**: `log:trace`, `log:replay`, `debug:last`
+**Workaround**: `log:trace`, `log:replay`, `debug:last`, `why`
 
 ### No GraphQL
 
@@ -62,7 +62,7 @@ REST API only.
 
 **Why**: GraphQL adds complexity. REST with cursor pagination covers most needs.
 
-**Workaround**: Use REST + OpenAPI for API docs. GraphQL can be added via external service.
+**Workaround**: Use REST + OpenAPI for API docs.
 
 ### No WebSocket/SSE
 
@@ -76,7 +76,7 @@ HTTP only. No real-time support.
 
 Siro is API-only. No built-in admin UI.
 
-**Why**: Admin panels are app-specific. Scaffold your own.
+**Why**: Admin panels are app-specific.
 
 **Workaround**: Build with any frontend (Vue, React, Next.js).
 
@@ -92,12 +92,6 @@ Siro is API-only. No built-in admin UI.
 | Slow query threshold | 100ms | Configurable | Set `DB_SLOW_QUERY_THRESHOLD` |
 | Rate limit (default) | 60/min | 10000 | Per route configurable |
 | Upload max size | 8MB | PHP limit | Set in php.ini |
-
----
-
-## Deprecated Patterns (v1.0+)
-
-None. No deprecations in v1.0.
 
 ---
 

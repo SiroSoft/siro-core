@@ -1,179 +1,73 @@
 # Release Notes
 
-## v0.21.0 — Server-Ready Release (2026-05-10)
+## v0.23.0 — The "Số 1" Release (2026-05-12)
 
-### 🚀 SiroPHP v0.21.0 - Server Deployment Ready
+### ⚡ Performance
+- **Sub-millisecond boot**: Lazy-loaded non-essential services
+- **Model refactored**: 908→457 lines, extracted into traits
+- **Benchmark**: Container::make 1.67M ops/sec, Response 2.97M ops/sec
 
-Optimized for production server deployment with enhanced stability and performance.
+### 🛡️ Security
+- **CspMiddleware**: Strict CSP with `strict-dynamic` + nonce
+- **AuditMiddleware**: Security event logging (401/403/429)
+- **File upload MIME validation**: Extension vs actual content type
+- **Container circular dependency detection**: MAX_CIRCULAR_DEPTH=64
 
-### Philosophy
+### 🆕 API Features
+- **API Versioning**: `Accept: application/vnd.siro.v2+json` header
+- **ETag / Conditional Requests**: Auto `304 Not Modified`
+- **Prometheus Metrics**: GET `/metrics` in OpenMetrics format
 
-SiroPHP is built on five principles:
-1. **Simple** — Zero dependencies, ~2MB RAM per request
-2. **Fast** — <1ms framework overhead
-3. **Code Fast** — Scaffold APIs in minutes, not hours
-4. **Debug Fast** — CLI-first debugging for API developers
-5. **Test Fast** — Built-in testing with replay capabilities
+### 🧪 Testing
+- **1,312 tests** passing (886 core + 426 skeleton) — 0 failures
+- **New tests**: UploadedFile, FormRequest, ApiKey, EagerLoader
+- **SQLite integration tests**: No server required
+- **phpunit.xml**: Coverage config (HTML, Clover, text)
 
-### What's Server-Ready in v0.21.0
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Router | ✅ Stable | GET/POST/PUT/DELETE/OPTIONS, groups, middleware |
-| Request/Response | ✅ Stable | JSON parsing, file uploads, downloads |
-| Auth (JWT) | ✅ Stable | Access + refresh tokens, RBAC |
-| Database | ✅ Stable | MySQL/PostgreSQL/SQLite, migrations |
-| Model Relations | ✅ Stable | HasOne, HasMany, BelongsTo, BelongsToMany |
-| CLI (59 commands) | ✅ Stable | Scaffolding, debugging, deployment |
-| Testing | ✅ Stable | 872 tests, HTTP assertions, DB assertions |
-
-### New in v0.21.0
-
-#### MiddlewareInterface
-```php
-use Siro\Core\Middleware\MiddlewareInterface;
-
-final class MyMiddleware implements MiddlewareInterface
-{
-    public function handle(Request $request, callable $next): mixed
-    {
-        // ... middleware logic
-        return $next($request);
-    }
-}
-```
-
-#### Controller Base Class
-```php
-use Siro\Core\Controller;
-
-final class ProductController extends Controller
-{
-    public function index(Request $request): Response
-    {
-        return $this->paginated($data, $meta, 'Product list');
-    }
-    // $this->success(), $this->error(), $this->created(),
-    // $this->noContent(), $this->validate(), $this->input()
-}
-```
-
-#### PHPStan Level Max
-- Full type safety across the entire codebase
-- 0 errors at max level (1580 baseline entries for intentional patterns)
-- Catches `mixed` type bugs at compile time
-
-#### Model Relations
-```php
-// HasOne
-$user->phone()
-
-// BelongsToMany with attach/detach/sync/has/toggle
-$user->roles()->attach($roleId)
-$user->roles()->sync([1, 2, 3])
-$user->roles()->has($roleId)
-```
-
-#### API Reliability
-```php
-// Idempotency - prevent duplicate requests
-// Header: Idempotency-Key: <unique-key>
-
-// API Key Auth - for external developers
-// Header: X-Api-Key: <api-key>
-```
-
-#### File Upload Helpers
-```php
-$file->isImage()   // true/false
-$file->isPdf()     // true/false
-$file->maxSize(5)  // MB, returns bool
-$file->hash('sha256')
-```
-
-#### Batch Operations
-```php
-// Update multiple rows
-User::whereIn('id', [1, 2, 3])->update(['status' => 'active']);
-
-// Delete multiple rows
-User::whereIn('id', [1, 2, 3])->delete();
-
-// Insert multiple rows
-User::insertMany([
-    ['name' => 'A', 'email' => 'a@test.com'],
-    ['name' => 'B', 'email' => 'b@test.com'],
-]);
-```
-
-#### Cursor Pagination
-```php
-// Stable pagination for concurrent inserts
-$users = User::cursorPaginate(20, after: ['id' => 100, 'created_at' => '2026-01-01']);
-```
-
-### Breaking Changes (v0.x → v0.21.0)
-
-**None.** v0.21.0 maintains full backward compatibility with v0.20.x and v0.16.x.
-
-### Deprecations
-
-No deprecated features. All v0.x APIs continue to work.
-
-### Known Limitations
-
-| Limitation | Workaround |
-|------------|------------|
-| No ORM (like Eloquent) | Use QueryBuilder + Models |
-| No Web Debug Bar | Use `log:trace`, `log:replay`, `debug:last` |
-| No GraphQL | Use REST + cursor pagination |
-| No Redis Queue | Use file-based queue (`php siro queue:work`) |
-| No WebSocket/SSE | Use polling or external service |
-| No Admin Panel | Build with REST API + any frontend |
-
-### Performance
-
-- **Framework overhead**: <1ms per request
-- **Memory**: ~2MB per request
-- **Startup**: <50ms cold start
-- **CLI**: Instant command execution
-
-Benchmark comparing with other micro-frameworks available in `benchmark/` directory.
-
-### Security
-
-- JWT with HS256/RS256 support
-- Password hashing with bcrypt
-- SQL injection prevention (prepared statements)
-- XSS prevention (output escaping)
-- Rate limiting (configurable per endpoint)
-- Log sanitization (passwords, tokens auto-redacted)
-- CORS middleware built-in
-
-### CLI Commands (59 total)
-
-**Core workflow**: `make:auth`, `make:crud`, `make:controller`, `migrate`, `seed`
-
-**Debug**: `debug:last`, `log:trace`, `log:replay`, `log:top`, `log:tail`, `log:stats`, `log:export`
-
-**Testing**: `api:test`, `test:run`, `t` (shortcut)
-
-**Deployment**: `deploy`, `down`, `up`, `doctor`
-
-**See all**: `php siro list`
-
-### Migrating from v0.x
-
-All v0.20.x and v0.16.x code works unchanged in v0.21.0. See [MIGRATION.md](MIGRATION.md) for detailed guide.
-
-### Support
-
-- **Documentation**: [README.md](README.md)
-- **Issues**: https://github.com/SiroSoft/siro-core/issues
-- **Discord**: (coming soon)
+### 🔧 Workflow
+- **Makefile**: `make test`, `make analyse`, `make audit`, `make check`
+- **VSCode**: snippets (30 templates), settings, tasks, launch, extensions
+- **AI**: .cursorrules + llms.txt for Copilot/Cursor/Claude
+- **CI**: Dependabot + CodeQL + GitHub Actions with PHPStan
 
 ---
 
-## Changelog
+## v0.22.0 — Final Audit & Zero PHPStan Baseline (2026-05-11)
 
-For full history, see [CHANGELOG.md](CHANGELOG.md).
+- All 1,570 PHPStan baseline errors eliminated
+- Full type annotations across all Commands (68 files)
+- Security: SQL injection fixes, XSS fixes, JWT secret hardening
+- Architecture: Model relations, cursor pagination, file upload helpers
+- Tests: 868 passing, SoftDeletesTest, SecurityHeadersTest
+
+---
+
+## v0.21.0 — Server-Ready Release (2026-05-10)
+
+- Production server deployment optimized
+- 59 CLI commands stable
+- JWT access + refresh tokens, RBAC
+- MySQL/PostgreSQL/SQLite with migrations
+- Model relations (HasOne, HasMany, BelongsTo, BelongsToMany)
+- 872 tests passing
+
+---
+
+## v0.20.0 — Developer Experience (2026-05-09)
+
+- Debug workflow: `why`, `fix`, `replay`, `traces`
+- API test CLI: `php siro t GET /api/users`
+- OpenAPI/Swagger doc generation
+- Idempotency keys, API Key auth
+- Cursor pagination
+
+---
+
+## Philosophy
+
+SiroPHP is built on five principles:
+1. **Simple** — Zero dependencies, ~4MB RAM per request
+2. **Fast** — <1ms framework overhead, 3.1M JSON responses/sec
+3. **Code Fast** — Scaffold APIs in 2 seconds, not hours
+4. **Debug Fast** — CLI-first debugging with trace/replay
+5. **Test Fast** — 1,312 tests, 0 failures, built-in coverage
