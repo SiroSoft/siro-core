@@ -75,7 +75,12 @@ use Siro\Core\Commands\BenchmarkCommand;
 
 final class Console
 {
-    private const VERSION = '0.23.0';
+    public const VERSION = '0.23.1';
+
+    public static function getVersion(): string
+    {
+        return self::VERSION;
+    }
 
     public function __construct(private readonly string $basePath)
     {
