@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.23.1 (2026-05-12) — Composer Plugin Configuration Fix
+
+### 🔧 Bug Fixes
+- **Composer allow-plugins**: Added `config.allow-plugins` to composer.json
+  - Allows `infection/extension-installer` plugin required by infection/infection
+  - Fixes `composer install` failures in CI/CD with Composer 2.2+
+  - Prevents security blocking of Composer plugins
+
 ## v0.23.0 (2026-05-12) — The "Số 1" Release — Performance, Security, API Versioning
 
 ### ⚡ Performance (Nhanh nhất - Nhẹ nhất)

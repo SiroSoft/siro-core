@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.23.1 — Composer Plugin Fix (2026-05-12)
+
+### 🔧 Bug Fixes
+- **Composer allow-plugins**: Added configuration to allow `infection/extension-installer` plugin
+- Fixes `composer install` failures in CI/CD environments with Composer 2.2+
+
+---
+
 ## v0.23.0 — The "Số 1" Release (2026-05-12)
 
 ### ⚡ Performance
