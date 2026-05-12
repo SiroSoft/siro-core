@@ -125,6 +125,21 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         unset($this->attributes[$offset]);
     }
 
+    public function __get(string $name): mixed
+    {
+        return $this->getAttribute($name);
+    }
+
+    public function __set(string $name, mixed $value): void
+    {
+        $this->setAttribute($name, $value);
+    }
+
+    public function __isset(string $name): bool
+    {
+        return $this->offsetExists($name);
+    }
+
     /** @return static|null */
     public static function find(int|string $id): ?static
     {
@@ -232,7 +247,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     }
 
     /** @param array<string, mixed> $attributes */
-    public static function create(array $attributes): self
+    public static function create(array $attributes): static
     {
         $instance = self::createInstance();
         $instance->fill($attributes);
@@ -242,7 +257,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     }
 
     /** @return static */
-    public static function findOrFail(int|string $id): self
+    public static function findOrFail(int|string $id): static
     {
         $model = self::find($id);
 
