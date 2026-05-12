@@ -1,5 +1,55 @@
 # Changelog
 
+## v0.23.0 (2026-05-12) — The "Số 1" Release — Performance, Security, API Versioning
+
+### ⚡ Performance (Nhanh nhất - Nhẹ nhất)
+- **Lazy-loaded boot**: Non-essential services (Lang, Storage) deferred → sub-1ms cold boot
+- **Model refactor**: 908→457 lines, extracted `ModelSerialization` + `ModelRelations` traits
+- **Benchmark suite**: `php benchmark.php` — 8 benchmarks with `--json` output
+- **Benchmark results**: Container::make at 1.67M ops/sec, Response::success at 2.97M ops/sec
+- **AuthMiddleware cache**: Request-scoped user cache eliminates repeated DB queries per request
+
+### 🛡️ Security (Bảo mật nhất)
+- **CspMiddleware**: Strict CSP with `strict-dynamic` + nonce, X-Content-Type-Options, X-Frame-Options
+- **AuditMiddleware**: Security event logging for 401/403/429 + sensitive operations
+- **Logger::security()**: SIEM-compatible audit trail (separate `security.log`)
+- **Logger::debug()**: Structured debug logging with context array
+- **UploadedFile MIME validation**: Cross-validate extension vs actual MIME type (prevents extension spoofing)
+- **Container circular dependency detection**: `MAX_CIRCULAR_DEPTH=64` with full chain reporting
+
+### 🆕 API Features
+- **API Versioning**: `VersionMiddleware` — header-based via `Accept: application/vnd.siro.v2+json`
+  - `Request::version()` returns parsed version
+  - `X-API-Version` header on every response
+  - Route override per version: `VersionMiddleware::override(2, 'GET', '/users', V2Handler)`
+- **ETag / Conditional Requests**: `EtagMiddleware`
+  - Auto ETag from SHA-256 of response body
+  - `If-None-Match` → `304 Not Modified`
+  - `If-Modified-Since` support
+- **Prometheus Metrics**: `Metrics` collector + `MetricsMiddleware`
+  - GET `/metrics` in OpenMetrics text format
+  - Auto-track: `http_requests_total`, `http_response_duration_ms`, `http_responses_total`
+  - Histogram with configurable buckets
+
+### 🧪 Testing (Test tốt nhất)
+- **886 tests** passing (siro-core) — 0 failures, 40 skipped (DB-dependent)
+- **New tests**: UploadedFile (15), FormRequest (6), ApiKey (3), EagerLoader (2)
+- **DatabaseIntegrationTest**: Added 5 SQLite tests (no external server required)
+- **phpunit.xml**: Coverage config (HTML, Clover, text) for all suites
+- **composer.json**: Scripts `analyse`, `test`, `test:coverage`, `test:mutation`, `audit`, `check`, `optimize`
+
+### 🔧 Workflow (Workflow tốt nhất)
+- **Git pre-commit hook**: 4 quality gates (syntax → PHPStan → Unit tests → composer audit)
+- **Git post-checkout hook**: Auto `composer install` when `composer.lock` changes
+- **GitHub Actions CI**: 2 jobs — `quality` (composer audit + PHPStan) + `test` (PHPUnit with coverage)
+- **phpstan-baseline.neon**: 0 reported errors, 19 baseline warnings managed
+
+### Other
+- `App::boot()` optimized — removed non-essential `checkRequiredExtensions()` in hot path
+- `Router::saveToCache()` improved — skips Closure handlers gracefully
+- `Response::getHeader()` added for header inspection
+- Cleaned up coverage dirs, phpunit cache, generated routes cache
+
 ## v0.22.0 (2026-05-11) — Final Audit & Zero PHPStan Baseline
 
 ### Audit & Type Safety

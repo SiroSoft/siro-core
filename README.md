@@ -1,6 +1,6 @@
-# Siro Core Framework v0.22.0
+# Siro Core Framework v0.23.0
 
-**Siro API Framework Core** - The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
+**Siro API Framework Core** — The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
@@ -8,12 +8,22 @@
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20max-brightgreen.svg)](https://phpstan.org)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 [![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
-[![Tests](https://img.shields.io/badge/tests-868%2B%20passing-brightgreen.svg)](tests/)
-[![PHPStan](https://img.shields.io/badge/phpstan-level%20max-brightgreen.svg)](phpstan.neon)
+[![Tests](https://img.shields.io/badge/tests-886%20passing-brightgreen.svg)](tests/)
+[![PHPStan](https://img.shields.io/badge/phpstan-level%207%20-0%20errors-brightgreen.svg)](phpstan.neon)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-ready-blue.svg)](https://www.postgresql.org/)
 [![Security](https://img.shields.io/badge/security-audited-brightgreen)](https://github.com/SiroSoft/siro-core)
 
 ---
+
+## 📢 What's New in v0.23.0
+
+- ⚡ **Performance**: Lazy-loaded boot, sub-1ms cold start, Model refactored (908→457 lines)
+- 🛡️ **Security**: CspMiddleware (strict CSP + nonce), AuditMiddleware (SIEM audit trail), MIME-extension validation
+- 🆕 **API Versioning**: Header-based via `Accept: application/vnd.siro.v2+json`
+- 🆕 **ETag**: Conditional requests → `304 Not Modified` (save mobile bandwidth)
+- 🆕 **Prometheus Metrics**: `/metrics` endpoint with counters + histograms
+- 🔧 **CI/CD**: GitHub Actions with composer audit + PHPStan, pre-commit hooks, coverage reports
+- 📊 **Benchmark**: `php benchmark.php` — 8 benchmarks, 2.97M JSON responses/sec
 
 ## 🚀 Why SiroPHP?
 
@@ -45,6 +55,13 @@
 - 💾 **Cache System** - File and Redis drivers
 - 📦 **Resource Transformation** - Auto-mapping for API responses
 - 🔤 **Typed Input Helpers** - Type-safe request data handling
+
+### API Features (v0.23.0+) 🆕
+- 🔄 **API Versioning** — Header-based version negotiation (`Accept: application/vnd.siro.vN+json`)
+- 🏷️ **ETag / Conditional Requests** — Auto ETag generation, `304 Not Modified` responses
+- 📊 **Prometheus Metrics** — `/metrics` endpoint, auto-collect request count/duration/status
+- 📋 **Audit Logging** — Security event trail for 401/403/429, SIEM-compatible format
+- 🛡️ **CSP Middleware** — Strict Content-Security-Policy with nonce + `strict-dynamic`
 
 ### Advanced Debugging (v0.8.0) 🔍
 - 🔍 **Trace ID per Request** - Every request gets unique `X-Siro-Trace-Id`
