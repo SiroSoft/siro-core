@@ -153,7 +153,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         return $result;
     }
 
-    private static function createInstance(): self
+    private static function createInstance(): static
     {
         return new static();
     }
