@@ -249,7 +249,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /** @param array<string, mixed> $attributes */
     public static function create(array $attributes): static
     {
-        $instance = self::createInstance();
+        $instance = new static();
         $instance->fill($attributes);
         $instance->save();
 
