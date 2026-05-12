@@ -1,5 +1,5 @@
 {
-	"Siro Controller": {
+	"Siro CRUD Controller": {
 		"prefix": "siro-controller",
 		"body": [
 			"<?php",
@@ -44,9 +44,10 @@
 			"",
 			"    public function store(Request \$request): Response",
 			"    {",
-			"        \$item = \$this->service->create(",
-			"            \$request->validate(['name' => 'required|min:2|max:100'])",
-			"        );",
+			"        \$data = \$request->validate([",
+			"            '${3:name}' => 'required|min:2|max:255',",
+			"        ]);",
+			"        \$item = \$this->service->create(\$data);",
 			"        return \$this->created(${1}Resource::make(\$item), '${1} created');",
 			"    }",
 			"",
@@ -54,10 +55,10 @@
 			"    {",
 			"        \$id = (int) \$request->param('id');",
 			"        if (\$id <= 0) return \$this->error('Invalid id', 422);",
-			"        \$item = \$this->service->update(",
-			"            \$id,",
-			"            \$request->validate(['name' => 'min:2|max:100'])",
-			"        );",
+			"        \$data = \$request->validate([",
+			"            '${4:name}' => 'min:2|max:255',",
+			"        ]);",
+			"        \$item = \$this->service->update(\$id, \$data);",
 			"        if (\$item === null) return \$this->error('${1} not found', 404);",
 			"        return \$this->success(${1}Resource::make(\$item), '${1} updated');",
 			"    }",
@@ -72,7 +73,19 @@
 			"    }",
 			"}"
 		],
-		"description": "Siro CRUD Controller"
+		"description": "Siro CRUD Controller with validation"
+	},
+	"Siro Controller (single action)": {
+		"prefix": "siro-action",
+		"body": [
+			"    public function ${1:action}(Request \$request): Response",
+			"    {",
+			"        ${2:// logic}",
+			"        return Response::success(\$data, 'OK');",
+			"    }",
+			""
+		],
+		"description": "Single controller action"
 	},
 	"Siro Middleware": {
 		"prefix": "siro-middleware",
@@ -89,14 +102,14 @@
 			"",
 			"final class ${1:My}Middleware implements MiddlewareInterface",
 			"{",
-			"    public function handle(Request \$request, callable \$next): mixed",
+			"    public function handle(Request \$request, callable \$next, string ...\$params): mixed",
 			"    {",
-			"        // ${2:middleware logic}",
+			"        ${2:// middleware logic}",
 			"        return \$next(\$request);",
 			"    }",
 			"}"
 		],
-		"description": "Siro Middleware with MiddlewareInterface"
+		"description": "Siro Middleware with params support"
 	},
 	"Siro Route": {
 		"prefix": "siro-route",
@@ -104,6 +117,27 @@
 			"\$router->${1|get,post,put,delete|}]('${2:/path}', [${3:Controller}::class, '${4:index}'])${5:->middleware(['${6:auth}'])};"
 		],
 		"description": "Siro Route Definition"
+	},
+	"Siro Route Group": {
+		"prefix": "siro-group",
+		"body": [
+			"\$router->group('${1:/prefix}', [${2:auth}], function (\$router): void {",
+			"    \$router->${3|get,post,put,delete|}('${4:/path}', [${5:Controller}::class, '${6:index}'])${7:->middleware(['${8:throttle:60,1}'])};",
+			"});"
+		],
+		"description": "Siro Route Group with middleware"
+	},
+	"Siro Route Resource (manual)": {
+		"prefix": "siro-resource",
+		"body": [
+			"// ${1:Resource} routes",
+			"\$router->get('/${2:resources}', [${3:Controller}::class, 'index']);",
+			"\$router->get('/${2:resources}/{id}', [${3:Controller}::class, 'show']);",
+			"\$router->post('/${2:resources}', [${3:Controller}::class, 'store']);",
+			"\$router->put('/${2:resources}/{id}', [${3:Controller}::class, 'update']);",
+			"\$router->delete('/${2:resources}/{id}', [${3:Controller}::class, 'delete']);"
+		],
+		"description": "Full CRUD route set"
 	},
 	"Siro Model": {
 		"prefix": "siro-model",
@@ -120,10 +154,45 @@
 			"{",
 			"    protected string \$table = '${2:table_name}';",
 			"",
-			"    protected array \$fillable = [${3}];",
+			"    protected array \$fillable = [",
+			"        '${3:field}',",
+			"    ];",
+			"",
+			"    protected array \$casts = [",
+			"        '${4:field}' => '${5|int,float,string,bool,array,datetime|}',",
+			"    ];",
+			"",
+			"    protected array \$hidden = [",
+			"        '${6:password}',",
+			"    ];",
 			"}"
 		],
-		"description": "Siro Model Class"
+		"description": "Siro Model with casts + hidden"
+	},
+	"Siro Model with Relationships": {
+		"prefix": "siro-model-relations",
+		"body": [
+			"<?php",
+			"",
+			"declare(strict_types=1);",
+			"",
+			"namespace App\\Models;",
+			"",
+			"use Siro\\Core\\Model;",
+			"",
+			"final class ${1:ModelName} extends Model",
+			"{",
+			"    protected string \$table = '${2:table_name}';",
+			"",
+			"    protected array \$fillable = ['${3:field}'];",
+			"",
+			"    public function ${4:related}(): \\Siro\\Core\\DB\\Relations\\HasMany",
+			"    {",
+			"        return \$this->hasMany(${5:Related}::class);",
+			"    }",
+			"}"
+		],
+		"description": "Siro Model with HasMany/HasOne/BelongsTo"
 	},
 	"Siro Migration": {
 		"prefix": "siro-migration",
@@ -140,7 +209,7 @@
 			"    {",
 			"        Schema::create('${1:table_name}', function (Blueprint \$t) {",
 			"            \$t->id();",
-			"            ${2:// columns}",
+			"            \$t->string('${2:name}');",
 			"            \$t->timestamps();",
 			"        });",
 			"    }",
@@ -153,13 +222,366 @@
 		],
 		"description": "Siro Migration Class"
 	},
-	"Siro Validator Rules": {
+	"Siro Migration with Foreign Key": {
+		"prefix": "siro-migration-fk",
+		"body": [
+			"<?php",
+			"",
+			"declare(strict_types=1);",
+			"",
+			"use Siro\\Core\\Schema;",
+			"use Siro\\Core\\DB\\Blueprint;",
+			"",
+			"return new class {",
+			"    public function up(): void",
+			"    {",
+			"        Schema::create('${1:table_name}', function (Blueprint \$t) {",
+			"            \$t->id();",
+			"            \$t->foreignId('${2:user_id}')->constrained()->cascadeOnDelete();",
+			"            \$t->string('${3:name}');",
+			"            \$t->timestamps();",
+			"        });",
+			"    }",
+			"",
+			"    public function down(): void",
+			"    {",
+			"        Schema::dropIfExists('${1:table_name}');",
+			"    }",
+			"};"
+		],
+		"description": "Siro Migration with Foreign Key"
+	},
+	"Siro Service": {
+		"prefix": "siro-service",
+		"body": [
+			"<?php",
+			"",
+			"declare(strict_types=1);",
+			"",
+			"namespace App\\Services;",
+			"",
+			"use App\\Repositories\\${1:Model}Repository;",
+			"",
+			"final class ${1:Model}Service",
+			"{",
+			"    public function __construct(private readonly ${1}Repository \$repository)",
+			"    {",
+			"    }",
+			"",
+			"    public function getAll(int \$page = 1, int \$perPage = 20): array",
+			"    {",
+			"        return \$this->repository->findAll(\$page, \$perPage);",
+			"    }",
+			"",
+			"    public function getById(int \$id): ?array",
+			"    {",
+			"        return \$this->repository->findById(\$id);",
+			"    }",
+			"",
+			"    public function create(array \$data): array",
+			"    {",
+			"        return \$this->repository->store(\$data);",
+			"    }",
+			"",
+			"    public function update(int \$id, array \$data): ?array",
+			"    {",
+			"        return \$this->repository->update(\$id, \$data);",
+			"    }",
+			"",
+			"    public function delete(int \$id): bool",
+			"    {",
+			"        return \$this->repository->destroy(\$id);",
+			"    }",
+			"}"
+		],
+		"description": "Siro Service Layer"
+	},
+	"Siro Repository": {
+		"prefix": "siro-repository",
+		"body": [
+			"<?php",
+			"",
+			"declare(strict_types=1);",
+			"",
+			"namespace App\\Repositories;",
+			"",
+			"use App\\Models\\${1:Model};",
+			"",
+			"final class ${1}Repository",
+			"{",
+			"    public function findAll(int \$page = 1, int \$perPage = 20): array",
+			"    {",
+			"        return ${1}::paginate(\$perPage, \$page);",
+			"    }",
+			"",
+			"    public function findById(int \$id): ?array",
+			"    {",
+			"        \$model = ${1}::find(\$id);",
+			"        return \$model?->toArray();",
+			"    }",
+			"",
+			"    public function store(array \$data): array",
+			"    {",
+			"        return ${1}::create(\$data)->toArray();",
+			"    }",
+			"",
+			"    public function update(int \$id, array \$data): ?array",
+			"    {",
+			"        \$model = ${1}::find(\$id);",
+			"        if (\$model === null) return null;",
+			"        \$model->update(\$data);",
+			"        return \$model->fresh()?->toArray();",
+			"    }",
+			"",
+			"    public function destroy(int \$id): bool",
+			"    {",
+			"        \$model = ${1}::find(\$id);",
+			"        if (\$model === null) return false;",
+			"        return \$model->delete();",
+			"    }",
+			"}"
+		],
+		"description": "Siro Repository Layer"
+	},
+	"Siro API Resource": {
+		"prefix": "siro-resource",
+		"body": [
+			"<?php",
+			"",
+			"declare(strict_types=1);",
+			"",
+			"namespace App\\Resources;",
+			"",
+			"use Siro\\Core\\Resource;",
+			"",
+			"final class ${1:Model}Resource extends Resource",
+			"{",
+			"    public function toArray(): array",
+			"    {",
+			"        return [",
+			"            'id' => (int) \$this->resource['id'],",
+			"            '${2:field}' => \$this->resource['${2:field}'],",
+			"        ];",
+			"    }",
+			"}"
+		],
+		"description": "Siro API Resource Transformer"
+	},
+	"Siro FormRequest": {
+		"prefix": "siro-form-request",
+		"body": [
+			"<?php",
+			"",
+			"declare(strict_types=1);",
+			"",
+			"namespace App\\Requests;",
+			"",
+			"use Siro\\Core\\FormRequest;",
+			"",
+			"final class ${1:Store}${2:Model}Request extends FormRequest",
+			"{",
+			"    public function rules(): array",
+			"    {",
+			"        return [",
+			"            '${3:name}' => 'required|min:2|max:255',",
+			"        ];",
+			"    }",
+			"",
+			"    public function messages(): array",
+			"    {",
+			"        return [",
+			"            '${3:name}.required' => '${4:The name is required.}',",
+			"        ];",
+			"    }",
+			"}"
+		],
+		"description": "Siro FormRequest with validation"
+	},
+	"Siro Event": {
+		"prefix": "siro-event",
+		"body": [
+			"<?php",
+			"",
+			"declare(strict_types=1);",
+			"",
+			"namespace App\\Events;",
+			"",
+			"use Siro\\Core\\Event;",
+			"",
+			"final class ${1:Model}${2:Creation}Event",
+			"{",
+			"    public const NAME = '${3:model}.${4:created}';",
+			"",
+			"    public static function dispatch(mixed \$payload): void",
+			"    {",
+			"        Event::emit(self::NAME, \$payload);",
+			"    }",
+			"",
+			"    public static function listen(callable \$handler): void",
+			"    {",
+			"        Event::on(self::NAME, \$handler);",
+			"    }",
+			"}"
+		],
+		"description": "Siro Event Class"
+	},
+	"Siro Job": {
+		"prefix": "siro-job",
+		"body": [
+			"<?php",
+			"",
+			"declare(strict_types=1);",
+			"",
+			"namespace App\\Jobs;",
+			"",
+			"use Siro\\Core\\Queue;",
+			"",
+			"final class ${1:Process}Job",
+			"{",
+			"    public function handle(array \$payload): void",
+			"    {",
+			"        ${2:// job logic}",
+			"    }",
+			"",
+			"    public static function dispatch(array \$payload = [], int \$delay = 0): void",
+			"    {",
+			"        Queue::push(self::class, \$payload, \$delay);",
+			"    }",
+			"}"
+		],
+		"description": "Siro Queue Job"
+	},
+	"Siro Validation (inline)": {
 		"prefix": "siro-validate",
 		"body": [
-			"\$request->validate([",
-			"    '${1:field}' => '${2:required|min:2|max:100}',",
+			"\$data = \$request->validate([",
+			"    '${1:email}' => '${2:required|email}',",
 			"]);"
 		],
-		"description": "Siro Request Validation"
+		"description": "Siro Inline Validation"
+	},
+	"Siro Validation Rules (common)": {
+		"prefix": "siro-rules",
+		"body": [
+			"'${1:field}' => 'required|min:${2:2}|max:${3:255}',",
+			"'${4:email}' => 'required|email|max:255',",
+			"'${5:age}' => 'required|integer|min:${6:1}|max:${7:150}',",
+			"'${8:price}' => 'required|numeric|min:${9:0}',",
+			"'${10:status}' => 'required|in:${11|active,inactive,pending|}',",
+			"'${12:password}' => 'required|min:${13:8}|confirmed',"
+		],
+		"description": "Common validation rules"
+	},
+	"Siro DB Query": {
+		"prefix": "siro-db",
+		"body": [
+			"use Siro\\Core\\DB;",
+			"",
+			"\$rows = DB::table('${1:table}')",
+			"    ->where('${2:column}', '=', \$value)",
+			"    ->orderBy('${3:id}', 'asc')",
+			"    ->limit(10)",
+			"    ->get();"
+		],
+		"description": "Siro DB query with QueryBuilder"
+	},
+	"Siro Eager Loading": {
+		"prefix": "siro-with",
+		"body": [
+			"\$items = ${1:Model}::with('${2:relation}')->where('${3:column}', '=', \$value)->get();"
+		],
+		"description": "Siro Eager Loading"
+	},
+	"Siro Model Scope": {
+		"prefix": "siro-scope",
+		"body": [
+			"    public function scope${1:Active}(\\Siro\\Core\\DB\\ModelQueryBuilder \$query): ModelQueryBuilder",
+			"    {",
+			"        return \$query->where('status', '=', '${2:active}');",
+			"    }"
+		],
+		"description": "Siro Model Global/Local Scope"
+	},
+	"Siro Schedule": {
+		"prefix": "siro-schedule",
+		"body": [
+			"\\Siro\\Core\\Schedule::command('${1:command}', '${2:* * * * *}');"
+		],
+		"description": "Siro Scheduled Task"
+	},
+	"Siro API test CLI": {
+		"prefix": "siro-apitest",
+		"body": [
+			"php siro api:test ${1|GET,POST,PUT,DELETE|} '${2:/api/endpoint}' ${3:field:=value} --as=${4|admin,user,guest|}"
+		],
+		"description": "Siro API test from CLI"
+	},
+	"Siro Benchmark CLI": {
+		"prefix": "siro-bench",
+		"body": [
+			"php siro benchmark --iterations=${1:1000} --json"
+		],
+		"description": "Siro Benchmark command"
+	},
+	"Siro Replay CLI": {
+		"prefix": "siro-replay",
+		"body": [
+			"php siro replay ${1:trace_id} --diff"
+		],
+		"description": "Siro Replay request from trace ID"
+	},
+	"Siro Logger": {
+		"prefix": "siro-log",
+		"body": [
+			"use Siro\\Core\\Logger;",
+			"",
+			"Logger::debug('${1:message}', ['${2:context}' => \$value]);",
+			"Logger::error('${3:error message}');",
+			"Logger::security('${4:event.type}', ['ip' => \$request->ip()]);"
+		],
+		"description": "Siro Logger (debug/error/security)"
+	},
+	"Siro Metrics": {
+		"prefix": "siro-metrics",
+		"body": [
+			"use Siro\\Core\\Metrics;",
+			"",
+			"Metrics::counter('${1:events_total}', 1, ['type' => '${2:event}']);",
+			"Metrics::histogram('${3:duration_ms}', \$value, ['${4:label}' => '${5:val}']);"
+		],
+		"description": "Siro Prometheus Metrics"
+	},
+	"Siro Config Access": {
+		"prefix": "siro-config",
+		"body": [
+			"use Siro\\Core\\Config;",
+			"",
+			"\$value = Config::get('${1:file.key}', '${2:default}');"
+		],
+		"description": "Siro Config dot-notation access"
+	},
+	"Siro Cache": {
+		"prefix": "siro-cache",
+		"body": [
+			"use Siro\\Core\\Cache;",
+			"",
+			"\$result = Cache::remember('${1:key}', ${2:60}, fn() => ${3:// expensive operation});"
+		],
+		"description": "Siro Cache::remember"
+	},
+	"Siro Response Helpers": {
+		"prefix": "siro-response",
+		"body": [
+			"// Success",
+			"return Response::success(\$data, '${1:OK}');",
+			"return Response::created(\$data, '${2:Created}');",
+			"return Response::noContent();",
+			"// Error",
+			"return Response::error('${3:Not found}', 404);",
+			"return Response::error('${4:Validation failed}', 422, ['field' => ['Error']]);",
+			"// Raw",
+			"return Response::raw(\$content, 'text/plain', 200);"
+		],
+		"description": "Siro Response helpers"
 	}
 }
