@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
          bootstrap="tests/bootstrap.php"
          colors="true"
          cacheDirectory=".phpunit.cache"
@@ -27,5 +27,13 @@
             <directory>vendor</directory>
         </exclude>
     </source>
+
+    <coverage>
+        <report>
+            <html outputDirectory="coverage/html" lowUpperBound="50" highLowerBound="80"/>
+            <clover outputFile="coverage/clover.xml"/>
+            <text outputFile="coverage/text.txt" showOnlySummary="false"/>
+        </report>
+    </coverage>
 
 </phpunit>

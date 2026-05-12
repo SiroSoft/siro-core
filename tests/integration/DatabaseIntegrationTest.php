@@ -49,6 +49,86 @@ final class DatabaseIntegrationTest extends TestCase
         }
     }
 
+    private function initSQLite(): \PDO
+    {
+        $pdo = new \PDO('sqlite::memory:', null, null, [
+            \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+        ]);
+        $pdo->exec('PRAGMA journal_mode=WAL');
+        $pdo->exec('PRAGMA foreign_keys=ON');
+        return $pdo;
+    }
+
+    public function testSQLiteConnection(): void
+    {
+        $pdo = $this->initSQLite();
+        $this->assertInstanceOf(\PDO::class, $pdo);
+    }
+
+    public function testSQLiteCreateTableAndInsert(): void
+    {
+        $pdo = $this->initSQLite();
+        $pdo->exec('CREATE TABLE test_items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)');
+        $pdo->exec("INSERT INTO test_items (name) VALUES ('test1'), ('test2')");
+        $rows = $pdo->query('SELECT COUNT(*) as cnt FROM test_items')->fetch();
+        $this->assertSame(2, (int) $rows['cnt']);
+    }
+
+    public function testSQLiteQueryBuilder(): void
+    {
+        Database::configure([
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+        ]);
+
+        $pdo = Database::connection();
+        $this->assertNotNull($pdo);
+
+        $pdo->exec('CREATE TABLE test_qb (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, value INT)');
+        $pdo->exec("INSERT INTO test_qb (name, value) VALUES ('a', 10), ('b', 20), ('c', 30)");
+
+        $qb = new QueryBuilder('test_qb');
+        $result = $qb->where('value', '>=', 20)
+            ->orderBy('value', 'asc')
+            ->get();
+
+        $this->assertCount(2, $result);
+        $this->assertSame('b', $result[0]['name']);
+        $this->assertSame('c', $result[1]['name']);
+    }
+
+    public function testSQLiteTransactionCommit(): void
+    {
+        Database::configure(['driver' => 'sqlite', 'database' => ':memory:']);
+        $pdo = Database::connection();
+        $pdo->exec('CREATE TABLE test_txn (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT)');
+
+        Database::execute("INSERT INTO test_txn (label) VALUES ('commit_test')");
+        $count = Database::select("SELECT COUNT(*) as cnt FROM test_txn");
+        $this->assertSame(1, (int) $count[0]['cnt']);
+    }
+
+    public function testSQLiteTransactionRollback(): void
+    {
+        Database::configure(['driver' => 'sqlite', 'database' => ':memory:']);
+        $pdo = Database::connection();
+        $pdo->exec('CREATE TABLE test_txn2 (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT)');
+
+        Database::execute("INSERT INTO test_txn2 (label) VALUES ('outside transaction')");
+
+        try {
+            Database::transaction(function () {
+                Database::execute("INSERT INTO test_txn2 (label) VALUES ('inside transaction')");
+                throw new \RuntimeException('rollback');
+            });
+        } catch (\RuntimeException) {
+        }
+
+        $count = Database::select("SELECT COUNT(*) as cnt FROM test_txn2");
+        $this->assertSame(1, (int) $count[0]['cnt']);
+    }
+
     #[RequiresPhpExtension('pdo_mysql')]
     public function testMySQLConnection(): void
     {

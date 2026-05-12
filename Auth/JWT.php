@@ -14,6 +14,8 @@ final class JWT
     public const ALG_HS256 = 'HS256';
     public const ALG_RS256 = 'RS256';
 
+    private static ?string $keyVersion = null;
+
     private static function algorithm(): string
     {
         $alg = strtoupper((string) Env::get('JWT_ALGORITHM', self::ALG_HS256));
@@ -43,30 +45,51 @@ final class JWT
         return implode('.', $segments);
     }
 
-    public static function encodeAccess(int $userId, int $tokenVersion, int $ttl = 3600): string
+    public static function encodeAccess(int $userId, int $tokenVersion, int $ttl = 3600, ?string $audience = null): string
     {
         $now = time();
-        return self::encode([
+        $payload = [
             'sub' => $userId,
             'ver' => max(1, $tokenVersion),
             'iat' => $now,
             'exp' => $now + $ttl,
             'type' => self::TYPE_ACCESS,
             'jti' => bin2hex(random_bytes(16)),
-        ]);
+        ];
+        if ($audience !== null) {
+            $payload['aud'] = $audience;
+        }
+        return self::encode($payload);
     }
 
-    public static function encodeRefresh(int $userId, int $tokenVersion, int $ttl = 604800, ?string $jti = null): string
+    public static function encodeRefresh(int $userId, int $tokenVersion, int $ttl = 604800, ?string $jti = null, ?string $audience = null): string
     {
         $now = time();
-        return self::encode([
+        $payload = [
             'sub' => $userId,
             'ver' => max(1, $tokenVersion),
             'iat' => $now,
             'exp' => $now + $ttl,
             'type' => self::TYPE_REFRESH,
             'jti' => $jti ?? bin2hex(random_bytes(16)),
-        ]);
+        ];
+        if ($audience !== null) {
+            $payload['aud'] = $audience;
+        }
+        return self::encode($payload);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public static function validateAudience(array $payload, string $audience): bool
+    {
+        $tokenAudience = $payload['aud'] ?? null;
+        if ($tokenAudience === null) {
+            return true;
+        }
+        if (is_array($tokenAudience)) {
+            return in_array($audience, $tokenAudience, true);
+        }
+        return $tokenAudience === $audience;
     }
 
     /** @return array<string, mixed> */
@@ -138,7 +161,7 @@ final class JWT
 
     private static function verifyHs256(string $data, string $signature): bool
     {
-        return hash_equals(self::signHs256($data), $signature);
+        return self::verifyHs256WithRotation($data, $signature);
     }
 
     private static function signRs256(string $data): string
@@ -214,6 +237,57 @@ final class JWT
         }
 
         return $secret;
+    }
+
+    public static function getKeyVersion(): string
+    {
+        if (self::$keyVersion !== null) {
+            return self::$keyVersion;
+        }
+        return (string) Env::get('JWT_KEY_VERSION', '1');
+    }
+
+    public static function setKeyVersion(string $version): void
+    {
+        self::$keyVersion = $version;
+    }
+
+    public static function rotateKey(string $newSecret): void
+    {
+        $newVersion = (int) self::getKeyVersion() + 1;
+        putenv("JWT_KEY_VERSION={$newVersion}");
+        putenv("JWT_SECRET={$newSecret}");
+        self::$keyVersion = (string) $newVersion;
+    }
+
+    private static function previousSecret(): string
+    {
+        $secret = (string) Env::get('JWT_PREVIOUS_SECRET', '');
+        if ($secret === '') {
+            return '';
+        }
+        return $secret;
+    }
+
+    private static function verifyHs256WithRotation(string $data, string $signature): bool
+    {
+        $currentSecret = self::secret();
+
+        if (hash_equals(self::signHs256WithSecret($data, $currentSecret), $signature)) {
+            return true;
+        }
+
+        $prevSecret = self::previousSecret();
+        if ($prevSecret !== '' && hash_equals(self::signHs256WithSecret($data, $prevSecret), $signature)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static function signHs256WithSecret(string $data, string $secret): string
+    {
+        return hash_hmac('sha256', $data, $secret, true);
     }
 
     private static function base64UrlEncode(string $value): string

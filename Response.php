@@ -276,6 +276,16 @@ final class Response
         return $this;
     }
 
+    public function isFileResponse(): bool
+    {
+        return $this->isFileResponse;
+    }
+
+    public function getHeader(string $name): ?string
+    {
+        return $this->extraHeaders[$name] ?? null;
+    }
+
     /** @return array<int, string> */
     public function getHeaders(): array
     {

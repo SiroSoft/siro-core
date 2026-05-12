@@ -5,3 +5,5 @@ parameters:
     excludePaths:
         - vendor/
         - tests/
+includes:
+    - phpstan-baseline.neon

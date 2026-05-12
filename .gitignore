@@ -11,5 +11,7 @@ Thumbs.db
 .vscode/
 .idea/
 
+/coverage/
+
 # Temporary verification files
 *.VERIFICATION.md

@@ -30,6 +30,8 @@ final class Request
     /** @var array<string, UploadedFile> */
     private array $uploadedFiles = [];
     private readonly string $clientIp;
+    private int $apiVersion = 1;
+    private mixed $versionedHandler = null;
 
     private static ?string $rawBodyCache = null;
 
@@ -265,6 +267,27 @@ final class Request
         return $default;
     }
 
+    public function setVersion(int $version): void
+    {
+        $this->apiVersion = max(1, $version);
+    }
+
+    public function version(): int
+    {
+        return $this->apiVersion;
+    }
+
+    public function setVersionedHandler(callable|string|array $handler): void
+    {
+        $this->versionedHandler = $handler;
+    }
+
+    /** @return callable|string|array|null */
+    public function versionedHandler(): mixed
+    {
+        return $this->versionedHandler;
+    }
+
     /** @param array<string, mixed>|null $user */
     public function setUser(?array $user): void
     {
@@ -335,6 +358,24 @@ final class Request
             $ext = $file->extension();
             if (!in_array($ext, $allowed, true)) {
                 $errors[] = 'The file must have one of the following extensions: ' . $extensions;
+            }
+        }
+
+        // Cross-validate MIME type against claimed extension
+        if (!in_array('image', $rules, true) && !in_array('pdf', $rules, true)) {
+            $ext = $file->extension();
+            $mime = $file->getMimeType();
+            $mimeMap = [
+                'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
+                'png' => 'image/png', 'gif' => 'image/gif',
+                'webp' => 'image/webp', 'pdf' => 'application/pdf',
+                'txt' => 'text/plain', 'csv' => 'text/csv',
+                'json' => 'application/json', 'xml' => 'application/xml',
+                'zip' => 'application/zip', 'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ];
+            if (isset($mimeMap[$ext]) && $mime !== $mimeMap[$ext]) {
+                $errors[] = "The file extension ({$ext}) does not match its content type ({$mime}).";
             }
         }
 

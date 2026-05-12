@@ -153,9 +153,29 @@ final class UploadedFile
         return $this->store($directory, $name);
     }
 
+    private const MIME_MAP = [
+        'jpeg' => ['image/jpeg', 'image/jpg'],
+        'jpg' => ['image/jpeg', 'image/jpg'],
+        'png' => ['image/png'],
+        'gif' => ['image/gif'],
+        'webp' => ['image/webp'],
+        'pdf' => ['application/pdf'],
+        'txt' => ['text/plain'],
+        'csv' => ['text/csv'],
+        'json' => ['application/json'],
+        'xml' => ['application/xml'],
+        'zip' => ['application/zip'],
+        'doc' => ['application/msword'],
+        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+    ];
+
     public function isImage(): bool
     {
         if (!$this->isValid()) {
+            return false;
+        }
+
+        if (!$this->mimeMatchesExtension(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
             return false;
         }
 
@@ -169,7 +189,25 @@ final class UploadedFile
             return false;
         }
 
+        if (!$this->mimeMatchesExtension(['application/pdf'])) {
+            return false;
+        }
+
         return $this->getMimeType() === 'application/pdf';
+    }
+
+    /** @param array<int, string> $allowedMimes */
+    private function mimeMatchesExtension(array $allowedMimes): bool
+    {
+        $ext = $this->getClientOriginalExtension();
+        if ($ext === '' || !isset(self::MIME_MAP[$ext])) {
+            return true;
+        }
+
+        $expectedMimes = self::MIME_MAP[$ext];
+        $actualMime = $this->getMimeType();
+
+        return in_array($actualMime, $expectedMimes, true);
     }
 
     public function hash(): ?string

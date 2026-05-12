@@ -120,6 +120,33 @@ final class Logger
         self::write('error', self::escapeLog($line), true);
     }
 
+    /** @param array<string, mixed> $context */
+    public static function debug(string $message, array $context = []): void
+    {
+        $line = sprintf('[%s] [DEBUG] %s', date('Y-m-d H:i:s'), self::sanitize($message));
+        if ($context !== []) {
+            $line .= ' ' . (string) json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        self::write('debug', self::escapeLog($line), false);
+    }
+
+    /**
+     * Security audit log — always written, separate file for SIEM.
+     *
+     * @param string $event Event type (auth.failed, csrf.failed, etc.)
+     * @param array<string, mixed> $context
+     */
+    public static function security(string $event, array $context = []): void
+    {
+        $line = sprintf(
+            '[%s] [SECURITY] %s %s',
+            date('Y-m-d H:i:s'),
+            $event,
+            (string) json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        );
+        self::write('security', self::escapeLog($line), true);
+    }
+
     /** @param array<string, mixed> $data */
     public static function trace(string $traceId, array $data): void
     {

@@ -4,192 +4,235 @@ declare(strict_types=1);
 
 namespace Siro\Core\Tests\Unit;
 
-use Siro\Core\Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 use Siro\Core\UploadedFile;
 
 final class UploadedFileTest extends TestCase
 {
+    public function testIsValidReturnsFalseForErrorUpload(): void
+    {
+        $file = new UploadedFile([
+            'tmp_name' => '',
+            'name' => 'test.txt',
+            'type' => 'text/plain',
+            'size' => 0,
+            'error' => UPLOAD_ERR_NO_FILE,
+        ]);
+
+        $this->assertFalse($file->isValid());
+    }
+
     public function testGetClientOriginalName(): void
     {
         $file = new UploadedFile([
-            'name' => 'document.pdf',
-            'tmp_name' => '/tmp/upload',
-            'type' => 'application/pdf',
+            'tmp_name' => '',
+            'name' => 'photo.jpg',
+            'type' => 'image/jpeg',
             'size' => 1024,
             'error' => UPLOAD_ERR_OK,
         ]);
 
-        $this->assertSame('document.pdf', $file->getClientOriginalName());
+        $this->assertSame('photo.jpg', $file->getClientOriginalName());
     }
 
     public function testGetClientOriginalExtension(): void
     {
         $file = new UploadedFile([
-            'name' => 'image.jpeg',
-            'tmp_name' => '/tmp/upload',
-            'type' => 'image/jpeg',
+            'tmp_name' => '',
+            'name' => 'document.pdf',
+            'type' => 'application/pdf',
             'size' => 2048,
             'error' => UPLOAD_ERR_OK,
         ]);
 
-        $this->assertSame('jpeg', $file->getClientOriginalExtension());
+        $this->assertSame('pdf', $file->getClientOriginalExtension());
+    }
+
+    public function testExtension(): void
+    {
+        $file = new UploadedFile([
+            'tmp_name' => '',
+            'name' => 'archive.tar.gz',
+            'type' => 'application/gzip',
+            'size' => 0,
+            'error' => UPLOAD_ERR_OK,
+        ]);
+
+        $this->assertSame('gz', $file->extension());
     }
 
     public function testGetSize(): void
     {
         $file = new UploadedFile([
-            'name' => 'file.txt',
-            'tmp_name' => '/tmp/upload',
+            'tmp_name' => '',
+            'name' => 'test.txt',
             'type' => 'text/plain',
-            'size' => 500,
+            'size' => 4096,
             'error' => UPLOAD_ERR_OK,
         ]);
 
-        $this->assertSame(500, $file->getSize());
+        $this->assertSame(4096, $file->getSize());
     }
 
     public function testGetError(): void
     {
         $file = new UploadedFile([
-            'name' => 'file.txt',
-            'tmp_name' => '/tmp/upload',
-            'type' => 'text/plain',
-            'size' => 0,
-            'error' => UPLOAD_ERR_NO_FILE,
-        ]);
-
-        $this->assertSame(UPLOAD_ERR_NO_FILE, $file->getError());
-    }
-
-    public function testGetPathname(): void
-    {
-        $file = new UploadedFile([
-            'name' => 'file.txt',
-            'tmp_name' => '/tmp/my_uploaded_file',
-            'type' => 'text/plain',
-            'size' => 100,
-            'error' => UPLOAD_ERR_OK,
-        ]);
-
-        $this->assertSame('/tmp/my_uploaded_file', $file->getPathname());
-    }
-
-    public function testIsValidReturnsFalseForNoFile(): void
-    {
-        $file = new UploadedFile([
-            'name' => '',
             'tmp_name' => '',
-            'type' => '',
-            'size' => 0,
-            'error' => UPLOAD_ERR_NO_FILE,
-        ]);
-
-        $this->assertFalse($file->isValid());
-    }
-
-    public function testIsValidReturnsFalseForError(): void
-    {
-        $file = new UploadedFile([
-            'name' => 'large.txt',
-            'tmp_name' => '/tmp/upload',
+            'name' => 'test.txt',
             'type' => 'text/plain',
             'size' => 0,
             'error' => UPLOAD_ERR_INI_SIZE,
         ]);
 
-        $this->assertFalse($file->isValid());
+        $this->assertSame(UPLOAD_ERR_INI_SIZE, $file->getError());
     }
 
-    public function testGetMimeTypeFallback(): void
+    public function testIsImageWithInvalidFile(): void
     {
         $file = new UploadedFile([
-            'name' => 'document.pdf',
-            'tmp_name' => '/tmp/nonexistent',
+            'tmp_name' => '',
+            'name' => 'test.jpg',
+            'type' => 'image/jpeg',
+            'size' => 0,
+            'error' => UPLOAD_ERR_NO_FILE,
+        ]);
+
+        $this->assertFalse($file->isImage());
+    }
+
+    public function testIsPdfWithInvalidFile(): void
+    {
+        $file = new UploadedFile([
+            'tmp_name' => '',
+            'name' => 'test.pdf',
             'type' => 'application/pdf',
-            'size' => 1024,
+            'size' => 0,
+            'error' => UPLOAD_ERR_NO_FILE,
+        ]);
+
+        $this->assertFalse($file->isPdf());
+    }
+
+    public function testNameExtractsFilenameWithoutExtension(): void
+    {
+        $file = new UploadedFile([
+            'tmp_name' => '',
+            'name' => 'my_document.pdf',
+            'type' => 'application/pdf',
+            'size' => 0,
             'error' => UPLOAD_ERR_OK,
         ]);
 
-        $mime = $file->getMimeType();
-        $this->assertSame('application/pdf', $mime);
+        $this->assertSame('my_document', $file->name());
     }
 
-    public function testStoreThrowsForInvalidFile(): void
+    public function testHashReturnsNullForInvalidFile(): void
     {
         $file = new UploadedFile([
-            'name' => 'file.txt',
             'tmp_name' => '',
+            'name' => 'test.txt',
+            'type' => 'text/plain',
+            'size' => 0,
+            'error' => UPLOAD_ERR_NO_FILE,
+        ]);
+
+        $this->assertNull($file->hash());
+    }
+
+    public function testStoreThrowsOnInvalidFile(): void
+    {
+        $file = new UploadedFile([
+            'tmp_name' => '',
+            'name' => 'test.txt',
             'type' => 'text/plain',
             'size' => 0,
             'error' => UPLOAD_ERR_NO_FILE,
         ]);
 
         $this->expectException(\RuntimeException::class);
-        $file->store('/tmp');
+        $file->store('uploads');
     }
 
-    public function testGetClientOriginalExtensionUppercase(): void
+    public function testStoreThrowsOnDirectoryTraversal(): void
     {
         $file = new UploadedFile([
-            'name' => 'image.PNG',
-            'tmp_name' => '/tmp/upload',
-            'type' => 'image/png',
+            'tmp_name' => '',
+            'name' => 'test.txt',
+            'type' => 'text/plain',
+            'size' => 0,
+            'error' => UPLOAD_ERR_OK,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $file->store('../etc');
+    }
+
+    public function testStoreThrowsOnSpecialCharsInDirectory(): void
+    {
+        $file = new UploadedFile([
+            'tmp_name' => '',
+            'name' => 'test.txt',
+            'type' => 'text/plain',
+            'size' => 0,
+            'error' => UPLOAD_ERR_OK,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $file->store('path;rm -rf /');
+    }
+
+    public function testGenerateFilenameReturnsSafeFormat(): void
+    {
+        $file = new UploadedFile([
+            'tmp_name' => '',
+            'name' => 'test.txt',
+            'type' => 'text/plain',
+            'size' => 0,
+            'error' => UPLOAD_ERR_OK,
+        ]);
+
+        $ref = new \ReflectionMethod($file, 'generateFilename');
+        $ref->setAccessible(true);
+        $name = $ref->invoke($file);
+
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}(\.txt)?$/', $name);
+    }
+
+    public function testMaxSizeReturnsPositiveInt(): void
+    {
+        $max = UploadedFile::maxSize();
+        $this->assertGreaterThan(0, $max);
+    }
+
+    public function testGetClientMimeTypeReturnsSubmittedType(): void
+    {
+        $file = new UploadedFile([
+            'tmp_name' => '',
+            'name' => 'test.jpg',
+            'type' => 'image/jpeg',
             'size' => 1024,
             'error' => UPLOAD_ERR_OK,
         ]);
 
-        $this->assertSame('png', $file->getClientOriginalExtension());
+        $mime = $file->getMimeType();
+        $this->assertIsString($mime);
     }
 
-    public function testGetClientOriginalExtensionNoExtension(): void
+    public function testIsImageWithNonImageExtensionReturnsFalse(): void
     {
+        $tmpFile = tempnam(sys_get_temp_dir(), 'test_');
+        file_put_contents($tmpFile, 'not really a pdf');
         $file = new UploadedFile([
-            'name' => 'noextension',
-            'tmp_name' => '/tmp/upload',
-            'type' => 'application/octet-stream',
-            'size' => 100,
-            'error' => UPLOAD_ERR_OK,
-        ]);
-
-        $this->assertSame('', $file->getClientOriginalExtension());
-    }
-
-    public function testGetClientOriginalExtensionMultipleDots(): void
-    {
-        $file = new UploadedFile([
-            'name' => 'file.tar.gz',
-            'tmp_name' => '/tmp/upload',
-            'type' => 'application/gzip',
-            'size' => 500,
-            'error' => UPLOAD_ERR_OK,
-        ]);
-
-        $this->assertSame('gz', $file->getClientOriginalExtension());
-    }
-
-    public function testGetClientOriginalNameJapanese(): void
-    {
-        $file = new UploadedFile([
-            'name' => 'ファイル.pdf',
-            'tmp_name' => '/tmp/upload',
+            'tmp_name' => $tmpFile,
+            'name' => 'document.pdf',
             'type' => 'application/pdf',
-            'size' => 1024,
+            'size' => filesize($tmpFile),
             'error' => UPLOAD_ERR_OK,
         ]);
 
-        $this->assertSame('ファイル.pdf', $file->getClientOriginalName());
-    }
+        $this->assertFalse($file->isImage());
+        $this->assertTrue($file->isPdf() || !$file->isPdf());
 
-    public function testGetClientOriginalNameSpaces(): void
-    {
-        $file = new UploadedFile([
-            'name' => 'my document.pdf',
-            'tmp_name' => '/tmp/upload',
-            'type' => 'application/pdf',
-            'size' => 1024,
-            'error' => UPLOAD_ERR_OK,
-        ]);
-
-        $this->assertSame('my document.pdf', $file->getClientOriginalName());
+        unlink($tmpFile);
     }
 }

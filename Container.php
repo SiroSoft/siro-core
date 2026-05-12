@@ -11,6 +11,7 @@ use RuntimeException;
 
 final class Container
 {
+    private const MAX_CIRCULAR_DEPTH = 64;
     private static ?Container $instance = null;
     /** @var array<string, (callable(): mixed)|class-string|string> */
     private array $bindings = [];
@@ -20,6 +21,8 @@ final class Container
     private array $instances = [];
     /** @var array<string, object> */
     private array $resolved = [];
+    /** @var array<string, int> */
+    private array $resolvingStack = [];
 
     public static function getInstance(): self
     {
@@ -122,56 +125,68 @@ final class Container
     /** @param class-string $class */
     private function resolve(string $class): object
     {
-        $ref = new ReflectionClass($class);
-
-        if (!$ref->isInstantiable()) {
-            throw new RuntimeException("Class [{$class}] is not instantiable.");
+        $depth = ($this->resolvingStack[$class] ?? 0);
+        if ($depth >= self::MAX_CIRCULAR_DEPTH) {
+            $chain = implode(' -> ', array_keys($this->resolvingStack));
+            throw new RuntimeException("Circular dependency detected: {$chain} -> {$class}");
         }
 
-        $constructor = $ref->getConstructor();
+        $this->resolvingStack[$class] = $depth + 1;
 
-        if ($constructor === null) {
-            return $ref->newInstance();
-        }
+        try {
+            $ref = new ReflectionClass($class);
 
-        $deps = [];
-        foreach ($constructor->getParameters() as $param) {
-            $type = $param->getType();
-
-            if ($type === null) {
-                $deps[] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
-                continue;
+            if (!$ref->isInstantiable()) {
+                throw new RuntimeException("Class [{$class}] is not instantiable.");
             }
 
-            if ($type instanceof ReflectionNamedType) {
-                if ($type->isBuiltin()) {
+            $constructor = $ref->getConstructor();
+
+            if ($constructor === null) {
+                return $ref->newInstance();
+            }
+
+            $deps = [];
+            foreach ($constructor->getParameters() as $param) {
+                $type = $param->getType();
+
+                if ($type === null) {
                     $deps[] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
                     continue;
                 }
 
-                $typeName = $type->getName();
-
-                if ($typeName === self::class) {
-                    $deps[] = $this;
-                    continue;
-                }
-
-                try {
-                    $deps[] = $this->make($typeName);
-                } catch (RuntimeException $e) {
-                    if ($param->isDefaultValueAvailable()) {
-                        $deps[] = $param->getDefaultValue();
-                    } elseif ($type->allowsNull()) {
-                        $deps[] = null;
-                    } else {
-                        throw $e;
+                if ($type instanceof ReflectionNamedType) {
+                    if ($type->isBuiltin()) {
+                        $deps[] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
+                        continue;
                     }
-                }
-            } else {
-                $deps[] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
-            }
-        }
 
-        return $ref->newInstanceArgs($deps);
+                    $typeName = $type->getName();
+
+                    if ($typeName === self::class) {
+                        $deps[] = $this;
+                        continue;
+                    }
+
+                    try {
+                        $deps[] = $this->make($typeName);
+                    } catch (RuntimeException $e) {
+                        if ($param->isDefaultValueAvailable()) {
+                            $deps[] = $param->getDefaultValue();
+                        } elseif ($type->allowsNull()) {
+                            $deps[] = null;
+                        } else {
+                            throw $e;
+                        }
+                    }
+                } else {
+                    $deps[] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
+                }
+            }
+
+            return $ref->newInstanceArgs($deps);
+        } finally {
+            unset($this->resolvingStack[$class]);
+        }
     }
 }
