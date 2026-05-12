@@ -8,12 +8,9 @@ Thumbs.db
 
 # IDE and AI assistant folders (kept locally only)
 /.cline/
-.vscode/
 .idea/
 
 /coverage/
 
 # Temporary verification files
 *.VERIFICATION.md
-
-.vscode/
