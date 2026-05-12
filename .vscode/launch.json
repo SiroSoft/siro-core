@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Listen for Xdebug",
+            "type": "php",
+            "request": "launch",
+            "port": 9003,
+            "stopOnEntry": false,
+            "pathMappings": {
+                "/var/www/html": "${workspaceFolder}"
+            },
+            "ignore": [
+                "**/vendor/**"
+            ]
+        },
+        {
+            "name": "Run tests (current file)",
+            "type": "php",
+            "request": "launch",
+            "program": "${workspaceFolder}/vendor/bin/phpunit",
+            "args": [
+                "--no-coverage",
+                "${file}"
+            ],
+            "cwd": "${workspaceFolder}",
+            "port": 9003
+        }
+    ]
+}

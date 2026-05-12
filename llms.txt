@@ -1,0 +1,88 @@
+# Siro Framework — LLM Context
+> This file helps AI assistants understand the Siro Framework architecture.
+> Use this when helping developers write code with Siro.
+
+## Overview
+Siro is a zero-dependency PHP 8.2+ micro-framework for building APIs.
+- 24,870 LOC, 0 external dependencies
+- Namespace: `Siro\Core\`
+- 1,312 tests passing, PHPStan level 7 (0 errors)
+- Sub-millisecond boot, ~4MB RAM per request
+
+## Key Classes
+- `App` — Application bootstrap and request lifecycle
+- `Router` — Route registration + middleware pipeline (onion model)
+- `Model` — Active Record ORM with relationships, casts, scopes
+- `Database` — PDO multi-connection manager (MySQL/PostgreSQL/SQLite)
+- `Container` — DI container with autowiring
+- `Request` — HTTP request with typed input helpers
+- `Response` — JSON response builder with security headers
+- `Validator` — Input validation engine (15+ rules)
+- `Config` — Dot-notation config access
+- `Cache` — File + Redis caching
+- `Logger` — Structured logging with sanitization
+- `Event` — Simple event emitter
+- `Queue` — Database-backed job queue
+- `Metrics` — Prometheus metrics collector
+
+## Middleware
+All implement `MiddlewareInterface::handle(Request, callable $next): mixed`
+Available: auth, throttle, cors, json, audit, csp, version, etag, metrics
+
+## API Versioning
+Header-based: `Accept: application/vnd.siro.v2+json`
+Access version: `$request->version()`
+
+## Route Definition
+```php
+$router->get('/users', [UserController::class, 'index'])->middleware(['auth', 'throttle:60,1']);
+$router->group('/api', ['auth'], function ($router) { ... });
+```
+
+## Response Helpers
+```php
+Response::success($data, 'message', 200);
+Response::error('message', 400, ['field' => ['error']]);
+Response::created($data, 'Created');
+Response::noContent();
+Response::paginated($data, $meta, 'list');
+Response::raw('content', 'text/plain', 200);
+```
+
+## Model Features
+- `$fillable`, `$hidden`, `$casts` (int, float, string, bool, array, datetime)
+- Relationships: `hasMany()`, `hasOne()`, `belongsTo()`, `belongsToMany()`
+- Scopes: `scopeActive()` → `Model::active()->get()`
+- Eager loading: `Model::with('relation')->get()`
+- Events: saving, saved, creating, created, updating, updated, deleting, deleted
+- `find()`, `findOrFail()`, `firstOrCreate()`, `updateOrCreate()`
+- `paginate($perPage, $page)` returns `{data: [...], meta: {page, per_page, total, last_page}}`
+
+## Validation Rules
+required, email, numeric, integer, min:N, max:N, confirmed, in:a,b, unique:table,column, exists:table,column, image, pdf, string, boolean, url, date, array, nullable
+
+## Security
+- JWT with HS256/RS256, refresh token rotation, token version revocation
+- CSRF protection, rate limiting, CORS, CSP
+- Input validation auto-returns 422
+- Mass assignment protection via $fillable
+- All SQL via PDO prepared statements
+- Log sanitization for sensitive data
+
+## CLI Commands
+- `make:crud Name` — Scaffold full CRUD (model+controller+resource+migration+test)
+- `make:auth` — Auth scaffolding
+- `api:test GET /path` — Test endpoint from CLI
+- `replay <trace_id>` — Replay production request
+- `why` — Why last request failed
+- `fix` — Watch + auto-replay on save
+- `benchmark` — Performance benchmarking
+- `migrate` — Run migrations
+- `deploy` — One-command deployment
+- `serve` — PHP dev server
+- `config:cache` — Cache config for production
+
+## Links
+- Core: https://github.com/SiroSoft/siro-core
+- Skeleton: https://github.com/SiroSoft/SiroPHP
+- Docs: https://sirophp.com/docs

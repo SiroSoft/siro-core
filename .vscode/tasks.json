@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run tests",
+            "type": "shell",
+            "command": "vendor/bin/phpunit --no-coverage",
+            "group": "test",
+            "presentation": { "reveal": "always" }
+        },
+        {
+            "label": "Run PHPStan",
+            "type": "shell",
+            "command": "php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress",
+            "group": "test",
+            "presentation": { "reveal": "always" }
+        },
+        {
+            "label": "Run Benchmark",
+            "type": "shell",
+            "command": "php benchmark.php --quick",
+            "group": "test",
+            "presentation": { "reveal": "always" }
+        },
+        {
+            "label": "Fix code style",
+            "type": "shell",
+            "command": "vendor/bin/phpcbf --standard=phpcs.xml src/",
+            "problemMatcher": []
+        },
+        {
+            "label": "Check code style",
+            "type": "shell",
+            "command": "vendor/bin/phpcs --standard=phpcs.xml src/",
+            "presentation": { "reveal": "always" }
+        }
+    ]
+}

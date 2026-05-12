@@ -1,0 +1,12 @@
+{
+    "recommendations": [
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-debug",
+        "mehedidracula.php-namespace-resolver",
+        "neilbrayfield.php-docblocker",
+        "github.copilot",
+        "github.copilot-chat",
+        "streetsidesoftware.code-spell-checker",
+        "yzhang.markdown-all-in-one"
+    ]
+}

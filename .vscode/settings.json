@@ -1,0 +1,81 @@
+{
+    "php.suggest.basic": false,
+    "intelephense.files.maxSize": 5000000,
+    "intelephense.files.exclude": [
+        "**/.git/**",
+        "**/vendor/**",
+        "**/storage/**",
+        "**/coverage/**"
+    ],
+    "intelephense.stubs": [
+        "apache",
+        "bcmath",
+        "calendar",
+        "ctype",
+        "curl",
+        "date",
+        "dom",
+        "fileinfo",
+        "filter",
+        "gd",
+        "hash",
+        "iconv",
+        "intl",
+        "json",
+        "mbstring",
+        "mysql",
+        "openssl",
+        "pcre",
+        "pdo",
+        "pdo_mysql",
+        "pdo_pgsql",
+        "pdo_sqlite",
+        "phar",
+        "posix",
+        "random",
+        "readline",
+        "redis",
+        "session",
+        "simplexml",
+        "soap",
+        "sockets",
+        "sodium",
+        "standard",
+        "tokenizer",
+        "xml",
+        "xmlreader",
+        "xmlwriter",
+        "xsl",
+        "zip",
+        "zlib"
+    ],
+    "[php]": {
+        "editor.defaultFormatter": "bmewburn.vscode-intelephense-client",
+        "editor.formatOnSave": true,
+        "editor.rulers": [120]
+    },
+    "files.associations": {
+        "*.php": "php"
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/vendor": true,
+        "**/node_modules": true,
+        "**/coverage": true
+    },
+    "php-docblocker.returnGap": true,
+    "php-docblocker.qualifyClassNames": true,
+    "cSpell.words": [
+        "siro",
+        "sirosoft",
+        "phpstan",
+        "phpunit",
+        "intelephense"
+    ],
+    "editor.quickSuggestions": {
+        "comments": true,
+        "strings": true,
+        "other": true
+    },
+    "editor.snippetSuggestions": "top"
+}
