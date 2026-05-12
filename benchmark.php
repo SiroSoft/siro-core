@@ -62,38 +62,34 @@ class Result
     }
 }
 
+/** @var array<int, Result> $results */
 $results = [];
 
-function bench(string $name, int $iters, callable $fn): void
+function bench(string $name, int $iters, callable $fn): Result
 {
-    global $results;
     $r = new Result($name, $iters);
     for ($i = 0; $i < WARMUP; $i++) { $fn(); }
     for ($i = 0; $i < $iters; $i++) { $s = microtime(true); $fn(); $r->add($s, microtime(true)); }
-    $results[] = $r;
+    return $r;
 }
 
 // === BENCHMARKS ===
 
-bench('Container::make(stdClass)', 10000, fn() => (new Container())->make(\stdClass::class));
+$results[] = bench('Container::make(stdClass)', 10000, fn() => (new Container())->make(\stdClass::class));
+$results[] = bench('Router: register static route', 10000, function () { $r = new Router(); $r->get('/test', fn() => 'ok'); });
 
-bench('Router: register static route', 10000, function () {
-    $r = new Router(); $r->get('/test', fn() => 'ok');
-});
-
-bench('Router: dispatch static O(1)', 10000, function () {
+$results[] = bench('Router: dispatch static O(1)', 10000, function () {
     static $r = null; if ($r === null) { $r = new Router(); $r->get('/bench/test', fn(Request $req) => Response::success()); }
     $r->dispatch(new Request('GET', '/bench/test'));
 });
 
-bench('Router: dispatch dynamic {id}', 10000, function () {
+$results[] = bench('Router: dispatch dynamic {id}', 10000, function () {
     static $r = null; if ($r === null) { $r = new Router(); $r->get('/bench/user/{id}', fn(Request $req) => Response::success()); }
     $r->dispatch(new Request('GET', '/bench/user/12345'));
 });
 
-bench('Response::success()', 10000, fn() => Response::success(['id' => 1, 'name' => 'Test']));
-
-bench('Middleware 5-layer pipeline', 5000, function () {
+$results[] = bench('Response::success()', 10000, fn() => Response::success(['id' => 1, 'name' => 'Test']));
+$results[] = bench('Middleware 5-layer pipeline', 5000, function () {
     static $r = null;
     if ($r === null) {
         $r = new Router();
@@ -104,12 +100,12 @@ bench('Middleware 5-layer pipeline', 5000, function () {
     $r->dispatch(new Request('GET', '/bench/mw'));
 });
 
-bench('Request::validate 5 rules', 5000, function () {
+$results[] = bench('Request::validate 5 rules', 5000, function () {
     $req = new Request('POST', '/t', [], [], ['email' => 'a@b.com', 'name' => 'John', 'age' => '25', 'score' => '100.5', 'active' => '1']);
     $req->validate(['email' => 'required|email', 'name' => 'required|min:2', 'age' => 'required|integer', 'score' => 'required|numeric', 'active' => 'required']);
 });
 
-bench('Request::fromGlobals simulation', 5000, function () {
+$results[] = bench('Request::fromGlobals simulation', 5000, function () {
     new Request('POST', '/api/users', ['page' => '1', 'per_page' => '10'], ['content-type' => 'application/json', 'authorization' => 'Bearer test'], ['name' => 'Test'], '127.0.0.1');
 });
 
@@ -119,6 +115,7 @@ $totalAvg = 0; $totalOps = 0; $n = 0;
 
 if ($isJson) {
     $out = ['benchmark' => 'SiroPHP', 'php' => PHP_VERSION, 'memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2), 'results' => []];
+    /** @var Result $r */
     foreach ($results as $r) { $s = $r->stats(); $out['results'][] = ['name' => $r->name, 'iters' => $r->iters, 'avg_ms' => round($s['avg'], 4), 'min_ms' => round($s['min'], 4), 'max_ms' => round($s['max'], 4), 'ops_per_sec' => round($s['ops'], 1)]; }
     echo json_encode($out, JSON_PRETTY_PRINT) . "\n";
     exit;
