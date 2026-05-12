@@ -29,9 +29,9 @@ jobs:
           php-version: '8.2'
           tools: composer:v2
       - name: Install dependencies
-        run: |
-          composer install --no-interaction --no-progress --prefer-dist
-          composer dump-autoload
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Regenerate autoloader
+        run: composer dump-autoload
       - name: PHP_CodeSniffer (PSR-12)
         continue-on-error: true
         run: vendor/bin/phpcs --standard=PSR12 --ignore=vendor .
@@ -52,9 +52,9 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
-        run: |
-          composer install --no-interaction --no-progress --prefer-dist
-          composer dump-autoload
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Regenerate autoloader
+        run: composer dump-autoload
       - name: PHPStan Level 7
         run: php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
 
@@ -74,9 +74,9 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
-        run: |
-          composer install --no-interaction --no-progress --prefer-dist
-          composer dump-autoload
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Regenerate autoloader
+        run: composer dump-autoload
       - name: PHPUnit tests
         run: php vendor/bin/phpunit --no-progress
 
@@ -90,8 +90,8 @@ jobs:
           php-version: '8.2'
           tools: composer:v2
       - name: Install dependencies
-        run: |
-          composer install --no-interaction --no-progress --prefer-dist
-          composer dump-autoload
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Regenerate autoloader
+        run: composer dump-autoload
       - name: Run release technical gate
         run: composer release:check
