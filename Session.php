@@ -48,6 +48,11 @@ final class Session
 
         $this->sessionId = $sessionId ?? ($_COOKIE['siro_session'] ?? $this->generateId());
 
+        // Validate session ID format (prevent path traversal via cookie)
+        if (!preg_match('/^[a-f0-9]{64}$/', $this->sessionId)) {
+            $this->sessionId = $this->generateId();
+        }
+
         // Validate session ID exists in storage when provided from cookie (prevent fixation)
         if ($sessionId === null && isset($_COOKIE['siro_session'])) {
             if ($this->driver === self::DRIVER_REDIS) {
@@ -167,9 +172,12 @@ final class Session
         }
 
         if (!headers_sent()) {
+            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
             setcookie('siro_session', $this->sessionId, [
                 'expires' => time() + 86400 * 30,
                 'path' => '/',
+                'secure' => $isHttps,
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
