@@ -65,6 +65,11 @@ final class App
         $container->instance(Router::class, $this->router);
         $container->singleton(Container::class, fn () => $container);
 
+        // Register core services as singletons for DI
+        $container->singleton(\Siro\Core\DB\DatabaseInterface::class, fn () => new \Siro\Core\DB\DatabaseInstance());
+        $container->singleton(\Siro\Core\Cache\CacheInterface::class, fn () => new \Siro\Core\Cache\CacheInstance());
+        $container->singleton(\Siro\Core\Logger\LoggerInterface::class, fn () => new \Siro\Core\Logger\LoggerInstance());
+
         // Database config loaded but NO connection opened yet
         $dbConfig = (array) Config::get('database', []);
         if ($dbConfig === []) {
