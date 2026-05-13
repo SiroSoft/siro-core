@@ -206,4 +206,80 @@ final class Route
         
         return $route;
     }
+
+    /**
+     * Auto-register routes from PHP 8 attributes on controllers.
+     * Scans all files in the given directory and registers #[Route] attributes.
+     *
+     * Usage in routes/api.php:
+     *   Route::registerAttributes(__DIR__ . '/../app/Controllers');
+     *
+     * @param string $controllerDir Directory containing controller files
+     * @param array<int, string> $globalMiddleware Middleware applied to all attribute routes
+     * @param string $prefix URL prefix for all routes
+     */
+    public static function registerAttributes(string $controllerDir, array $globalMiddleware = [], string $prefix = ''): void
+    {
+        $router = self::$routerInstance;
+        if ($router === null) return;
+
+        if (!is_dir($controllerDir)) return;
+
+        $files = glob(rtrim($controllerDir, '/') . '/*Controller.php');
+        if ($files === false) return;
+
+        foreach ($files as $file) {
+            $className = self::pathToClassName($file);
+            if ($className === null) continue;
+
+            // Reflect on class to find attribute-routed methods
+            try {
+                $refClass = new \ReflectionClass($className);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            foreach ($refClass->getMethods() as $refMethod) {
+                $attributes = $refMethod->getAttributes(RouteAttribute::class);
+                foreach ($attributes as $attr) {
+                    /** @var RouteAttribute $route */
+                    $route = $attr->newInstance();
+
+                    $fullPath = $prefix . $route->path;
+                    $handler = [$className, $refMethod->getName()];
+
+                    foreach ($route->methods as $method) {
+                        $lowerMethod = strtolower($method);
+                        $routeObj = $router->{$lowerMethod}($fullPath, $handler);
+                        if ($route->middleware !== []) {
+                            $routeObj->middleware([...$globalMiddleware, ...$route->middleware]);
+                        }
+                        if ($route->cacheTtl > 0) {
+                            $routeObj->cache($route->cacheTtl);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static function pathToClassName(string $file): ?string
+    {
+        // Extract namespace from file content
+        $content = (string) file_get_contents($file);
+        $namespace = '';
+
+        if (preg_match('/^namespace\s+([^;]+);/m', $content, $m)) {
+            $namespace = $m[1];
+        }
+
+        $basename = basename($file, '.php');
+        if ($basename === '') return null;
+
+        $fqcn = $namespace !== '' ? $namespace . '\\' . $basename : $basename;
+
+        if (!class_exists($fqcn)) return null;
+
+        return $fqcn;
+    }
 }
