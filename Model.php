@@ -6,6 +6,7 @@ namespace Siro\Core;
 
 use RuntimeException;
 use Siro\Core\DB\ModelQueryBuilder;
+use Siro\Core\ModelNotFoundException;
 
 /** @implements \ArrayAccess<string, mixed> */
 abstract class Model implements \JsonSerializable, \ArrayAccess
@@ -262,7 +263,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         $model = self::find($id);
 
         if ($model === null) {
-            throw new RuntimeException(sprintf('Model not found with id %s', (string) $id));
+            throw new ModelNotFoundException(static::class, $id);
         }
 
         return $model;

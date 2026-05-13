@@ -49,6 +49,7 @@ final class LoggerInstance implements LoggerInterface
         $this->retentionDays = 30;
         $this->slowThreshold = 100;
         $this->maxFileSize = 50 * 1024 * 1024;
+        $this->compiledSanitizePatterns = null;
     }
 
     /** @param array{headers?: array<int, string>, body?: array<int, string>, query?: array<int, string>} $config */
@@ -176,9 +177,14 @@ final class LoggerInstance implements LoggerInterface
         $this->writeTrace($traceId, $data);
     }
 
-    public function sanitize(string $message): string
+    /** @var array{patterns: array<int, string>, replacements: array<int, string>}|null */
+    private ?array $compiledSanitizePatterns = null;
+
+    private function getSanitizePatterns(): array
     {
-        $message = $this->escapeLog($message);
+        if ($this->compiledSanitizePatterns !== null) {
+            return $this->compiledSanitizePatterns;
+        }
 
         $sensitive = [
             '/(authorization\s*[:=]\s*)([^\s,;&]+)/i' => '$1[REDACTED]',
@@ -191,7 +197,6 @@ final class LoggerInstance implements LoggerInterface
             '/(credit_card|card_number|cvv|ssn|passport)\s*[:=]\s*["\']?([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
             '/(\bapi[_-]?key\b\s*[:=]\s*["\']?)([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
             '/(session[_-]?id\s*[:=]\s*["\']?)([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
-
             '/"authorization"\s*:\s*"[^"]+"/i' => '"authorization":"[REDACTED]"',
             '/"(bearer|token)"\s*:\s*"[^"]{8,}"/i' => '"$1":"[REDACTED]"',
             '/"(password|passwd|pass)"\s*:\s*"[^"]{3,}"/i' => '"$1":"[REDACTED]"',
@@ -200,11 +205,24 @@ final class LoggerInstance implements LoggerInterface
             '/"(credit_card|card_number|cvv|cvc|ssn|passport)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
             '/"(session_id|sessionid)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
             '/"(refresh_token|access_token)"\s*:\s*"[^"]{8,}"/i' => '"$1":"[REDACTED]"',
-
             '/\b\d{13,19}\b/' => '[REDACTED-CARD]',
         ];
 
-        return (string) preg_replace(array_keys($sensitive), array_values($sensitive), $message);
+        $this->compiledSanitizePatterns = [
+            'patterns' => array_keys($sensitive),
+            'replacements' => array_values($sensitive),
+        ];
+
+        return $this->compiledSanitizePatterns;
+    }
+
+    public function sanitize(string $message): string
+    {
+        $message = $this->escapeLog($message);
+
+        $patterns = $this->getSanitizePatterns();
+
+        return (string) preg_replace($patterns['patterns'], $patterns['replacements'], $message);
     }
 
     /**
@@ -291,11 +309,20 @@ final class LoggerInstance implements LoggerInterface
             rename($mainFile, $rotated);
         }
 
-        static $cleaned = false;
-        if (!$cleaned) {
-            $cleaned = true;
+        if ($this->shouldCleanLogs()) {
             $this->cleanOldLogs();
         }
+    }
+
+    private bool $logsCleaned = false;
+
+    private function shouldCleanLogs(): bool
+    {
+        if ($this->logsCleaned) {
+            return false;
+        }
+        $this->logsCleaned = true;
+        return true;
     }
 
     /** @param array<string, mixed> $data */
@@ -309,11 +336,20 @@ final class LoggerInstance implements LoggerInterface
         $traceFile = $traceDir . DIRECTORY_SEPARATOR . $traceId . '.json';
         file_put_contents($traceFile, (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 
-        static $cleaned = false;
-        if (!$cleaned) {
-            $cleaned = true;
+        if ($this->shouldCleanTraces()) {
             $this->cleanOldTraces();
         }
+    }
+
+    private bool $tracesCleaned = false;
+
+    private function shouldCleanTraces(): bool
+    {
+        if ($this->tracesCleaned) {
+            return false;
+        }
+        $this->tracesCleaned = true;
+        return true;
     }
 
     private function cleanOldTraces(): void

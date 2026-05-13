@@ -28,7 +28,7 @@ final class Config
             $configModified = self::getConfigDirMtime(self::$configPath);
 
             if ($cacheModified !== false && $configModified !== false && $cacheModified >= $configModified) {
-                $cached = json_decode(substr((string) file_get_contents($cacheFile), 14), true);
+                $cached = json_decode(substr((string) file_get_contents($cacheFile), strlen('<?php exit; ?>')), true);
                 if (is_array($cached)) {
                     self::$items = $cached;
                     self::$loaded = true;
@@ -83,11 +83,16 @@ final class Config
         $segments = explode('.', $key);
         $value = self::$items;
 
+        $partial = '';
         foreach ($segments as $segment) {
             if (!is_array($value) || !array_key_exists($segment, $value)) {
                 return $default;
             }
             $value = $value[$segment];
+            $partial = $partial === '' ? $segment : $partial . '.' . $segment;
+            if ($partial !== $key) {
+                self::$cache[$partial] = $value;
+            }
         }
 
         self::$cache[$key] = $value;

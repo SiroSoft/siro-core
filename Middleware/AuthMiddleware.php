@@ -46,15 +46,30 @@ final class AuthMiddleware implements MiddlewareInterface
                 ]);
             }
 
-            $user = null;
-            $container = \Siro\Core\Container::getInstance();
-            $userModel = $container->has('user.model') ? $container->make('user.model') : null;
-            if ($userModel === null && class_exists(\App\Models\User::class)) {
-                $userModel = new \App\Models\User();
-            }
-            if ($userModel !== null) {
-                /** @var \Siro\Core\Model $userModel */
-                $user = $userModel->find($userId);
+            $user = $request->getAttribute('_auth_user');
+            if ($user === null) {
+                $container = \Siro\Core\Container::getInstance();
+                $userModel = $container->has('user.model') ? $container->make('user.model') : null;
+                if ($userModel === null && class_exists(\App\Models\User::class)) {
+                    $userModel = new \App\Models\User();
+                }
+                if ($userModel !== null) {
+                    $user = $userModel->find($userId);
+                }
+                $request->setAttribute('_auth_user', $user);
+            } else {
+                $cachedId = (int) ($user instanceof \Siro\Core\Model ? ($user->getAttribute('id') ?? 0) : 0);
+                if ($cachedId !== $userId) {
+                    $container = \Siro\Core\Container::getInstance();
+                    $userModel = $container->has('user.model') ? $container->make('user.model') : null;
+                    if ($userModel === null && class_exists(\App\Models\User::class)) {
+                        $userModel = new \App\Models\User();
+                    }
+                    if ($userModel !== null) {
+                        $user = $userModel->find($userId);
+                    }
+                    $request->setAttribute('_auth_user', $user);
+                }
             }
 
             if ($user === null || ((int) ($user->getAttribute('status') ?? 0) !== 1)) {
