@@ -39,13 +39,23 @@ final class Encrypter
         if ($data === false || strlen($data) < 64) {
             throw new RuntimeException('Invalid encrypted payload.');
         }
-        $hmac = substr($data, 0, 32);
-        $iv = substr($data, 32, 16);
-        $encrypted = substr($data, 48);
+        $hmacLength = 32;
+        $ivLength = max(1, openssl_cipher_iv_length(self::CIPHER));
+        $minLength = $hmacLength + $ivLength;
+        
+        if (strlen($data) < $minLength) {
+            throw new RuntimeException('Invalid encrypted payload.');
+        }
+        
+        $hmac = substr($data, 0, $hmacLength);
+        $iv = substr($data, $hmacLength, $ivLength);
+        $encrypted = substr($data, $hmacLength + $ivLength);
+        
         $expected = hash_hmac(self::HMAC_ALGO, $iv . $encrypted, $key, true);
         if (!hash_equals($expected, $hmac)) {
             throw new RuntimeException('Invalid HMAC or corrupted data.');
         }
+        
         $decrypted = openssl_decrypt($encrypted, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
         if ($decrypted === false) {
             throw new RuntimeException('Decryption failed.');
