@@ -148,11 +148,17 @@ final class Router
             $cacheKey = 'route:' . $request->cacheKey();
             $cached = Cache::get($cacheKey);
 
-            if (is_array($cached) && isset($cached['payload']) && isset($cached['status'])) {
-                return Response::json(
+            if (is_array($cached) && isset($cached['payload']) && isset($cached['status']) && isset($cached['headers'])) {
+                $response = Response::json(
                     is_array($cached['payload']) ? $cached['payload'] : [],
                     (int) $cached['status']
                 );
+                if (is_array($cached['headers'])) {
+                    foreach ($cached['headers'] as $name => $value) {
+                        $response->header($name, $value);
+                    }
+                }
+                return $response;
             }
         }
 
@@ -174,6 +180,7 @@ final class Router
             Cache::set($cacheKey, [
                 'payload' => $response->payload(),
                 'status' => $response->statusCode(),
+                'headers' => $response->headers(),
             ], $cacheTtl);
         }
 
@@ -279,7 +286,7 @@ final class Router
             return false;
         }
 
-        $data = require $cacheFile;
+        $data = json_decode(substr((string) file_get_contents($cacheFile), 14), true);
         if (!is_array($data) || !isset($data['static'], $data['dynamic'])) {
             return false;
         }
@@ -294,7 +301,7 @@ final class Router
     {
         $dir = dirname($cacheFile);
         if (!is_dir($dir)) {
-            @mkdir($dir, 0775, true);
+            !is_dir($dir) && mkdir($dir, 0775, true);
         }
 
         $data = $this->exportRoutes();
@@ -314,7 +321,7 @@ final class Router
             }
         }
 
-        $content = '<?php return ' . var_export($data, true) . ';' . PHP_EOL;
+        $content = '<?php exit; ?>' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 
         return file_put_contents($cacheFile, $content) !== false;
     }
@@ -372,7 +379,8 @@ final class Router
             $this->staticRoutes[$method][$fullPath] = $routeData;
         }
 
-        return new Route($this, $method, $fullPath);
+        $routeObj = new Route($this, $method, $fullPath);
+        return $routeObj;
     }
 
     /**

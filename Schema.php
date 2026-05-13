@@ -79,7 +79,7 @@ final class Schema
             default => "SHOW TABLES LIKE :table",
         };
         $stmt = self::pdo()->prepare($sql);
-        $stmt->execute([':table' => $table]);
+        $stmt->execute([':table' => str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $table)]);
         return (bool) $stmt->fetch(PDO::FETCH_COLUMN);
     }
 
@@ -138,6 +138,9 @@ final class Schema
 
     private static function quoteIdentifier(string $identifier): string
     {
-        return '`' . str_replace('`', '``', $identifier) . '`';
+        $driver = self::driver();
+        $char = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? '"' : '`';
+        $escaped = str_replace($char, $char . $char, $identifier);
+        return $char . $escaped . $char;
     }
 }

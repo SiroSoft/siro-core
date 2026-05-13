@@ -47,7 +47,10 @@ final class VersionMiddleware implements MiddlewareInterface
     {
         $header = (string) $request->header('accept', '');
         if (preg_match(self::VERSION_PATTERN, $header, $m)) {
-            return max(1, (int) $m[1]);
+            $version = (int) $m[1];
+            if (isset(self::$versions[$version])) {
+                return $version;
+            }
         }
         return self::$latestVersion;
     }

@@ -22,19 +22,19 @@ final class Encrypter
 
     public static function encrypt(string $data, ?string $key = null): string
     {
-        $key = self::key($key);
+        $keys = self::key($key);
         $iv = random_bytes(max(1, openssl_cipher_iv_length(self::CIPHER)));
-        $encrypted = openssl_encrypt($data, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
+        $encrypted = openssl_encrypt($data, self::CIPHER, $keys['enc'], OPENSSL_RAW_DATA, $iv);
         if ($encrypted === false) {
             throw new RuntimeException('Encryption failed.');
         }
-        $hmac = hash_hmac(self::HMAC_ALGO, $iv . $encrypted, $key, true);
+        $hmac = hash_hmac(self::HMAC_ALGO, $iv . $encrypted, $keys['auth'], true);
         return base64_encode($hmac . $iv . $encrypted);
     }
 
     public static function decrypt(string $payload, ?string $key = null): string
     {
-        $key = self::key($key);
+        $keys = self::key($key);
         $data = base64_decode($payload, true);
         if ($data === false || strlen($data) < 64) {
             throw new RuntimeException('Invalid encrypted payload.');
@@ -42,28 +42,28 @@ final class Encrypter
         $hmacLength = 32;
         $ivLength = max(1, openssl_cipher_iv_length(self::CIPHER));
         $minLength = $hmacLength + $ivLength;
-        
+
         if (strlen($data) < $minLength) {
             throw new RuntimeException('Invalid encrypted payload.');
         }
-        
+
         $hmac = substr($data, 0, $hmacLength);
         $iv = substr($data, $hmacLength, $ivLength);
         $encrypted = substr($data, $hmacLength + $ivLength);
-        
-        $expected = hash_hmac(self::HMAC_ALGO, $iv . $encrypted, $key, true);
+
+        $expected = hash_hmac(self::HMAC_ALGO, $iv . $encrypted, $keys['auth'], true);
         if (!hash_equals($expected, $hmac)) {
             throw new RuntimeException('Invalid HMAC or corrupted data.');
         }
-        
-        $decrypted = openssl_decrypt($encrypted, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
+
+        $decrypted = openssl_decrypt($encrypted, self::CIPHER, $keys['enc'], OPENSSL_RAW_DATA, $iv);
         if ($decrypted === false) {
             throw new RuntimeException('Decryption failed.');
         }
         return $decrypted;
     }
 
-    private static function key(?string $key): string
+    private static function key(?string $key): array
     {
         $key ??= Env::get('APP_KEY', '');
         if ($key === '') {
@@ -72,6 +72,10 @@ final class Encrypter
         if ($key === '') {
             throw new RuntimeException('Encryption key not configured. Set APP_KEY or JWT_SECRET in .env.');
         }
-        return hash('sha256', $key, true);
+        $raw = hash('sha256', $key, true);
+        // Derive separate keys using HKDF-like expansion
+        $encKey = hash_hmac('sha256', 'encryption', $raw, true);
+        $authKey = hash_hmac('sha256', 'authentication', $raw, true);
+        return ['enc' => $encKey, 'auth' => $authKey];
     }
 }

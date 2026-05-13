@@ -301,19 +301,19 @@ final class SecurityTest extends TestCase
     public function testXmlExternalEntityPrevention(): void
     {
         $xml = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><foo>&xxe;</foo>';
-    
+
         libxml_use_internal_errors(true);
-            
+
         // Disable external entity loading - proper XXE prevention
         // LIBXML_NONET prevents network access
         // Not using LIBXML_NOENT prevents entity substitution
         $doc = @simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NONET);
         $errors = libxml_get_errors();
-    
+
         // Check if parsing failed or produced errors (XXE prevented)
         $parsingFailed = ($doc === false);
         $hasErrors = !empty($errors);
-            
+
         // If doc loaded, check it doesn't contain file content
         $containsFileContent = false;
         if ($doc !== false) {
@@ -325,12 +325,12 @@ final class SecurityTest extends TestCase
                 stripos($content, '/usr/sbin') !== false
             );
         }
-    
+
         libxml_clear_errors();
-    
+
         // XXE is prevented if: parsing failed, had errors, or didn't load file content
         $xxePrevented = $parsingFailed || $hasErrors || !$containsFileContent;
-            
+
         $this->assertTrue(
             $xxePrevented,
             sprintf(

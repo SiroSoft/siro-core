@@ -28,7 +28,7 @@ final class Config
             $configModified = self::getConfigDirMtime(self::$configPath);
 
             if ($cacheModified !== false && $configModified !== false && $cacheModified >= $configModified) {
-                $cached = require $cacheFile;
+                $cached = json_decode(substr((string) file_get_contents($cacheFile), 14), true);
                 if (is_array($cached)) {
                     self::$items = $cached;
                     self::$loaded = true;
@@ -140,11 +140,11 @@ final class Config
         $cacheDir = dirname(self::$configPath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework';
         if (!is_dir($cacheDir)) {
-            @mkdir($cacheDir, 0775, true);
+            mkdir($cacheDir, 0775, true);
         }
 
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'config.php';
-        $content = '<?php return ' . var_export(self::$items, true) . ';' . PHP_EOL;
+        $content = '<?php exit; ?>' . json_encode(self::$items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 
         if (file_put_contents($cacheFile, $content) !== false) {
             return $cacheFile;
@@ -158,7 +158,7 @@ final class Config
         $cacheFile = dirname(self::$configPath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'config.php';
         if (is_file($cacheFile)) {
-            @unlink($cacheFile);
+            unlink($cacheFile);
         }
         self::$cache = [];
     }

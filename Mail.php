@@ -47,6 +47,12 @@ final class Mail
     /** @var array<int, array{to:string,subject:string,body:string}> */
     private static array $fakeMails = [];
 
+    public static function reset(): void
+    {
+        self::$faked = false;
+        self::$fakeMails = [];
+    }
+
     public static function fake(): void
     {
         self::$faked = true;
@@ -63,6 +69,18 @@ final class Mail
     {
         $matched = array_filter(self::$fakeMails, fn($m) => $m['subject'] === $subject);
         \PHPUnit\Framework\Assert::assertGreaterThan(0, count($matched), "Mail with subject '{$subject}' was not sent.");
+    }
+
+    public static function assertSentTo(string $address): void
+    {
+        $matched = array_filter(self::$fakeMails, fn($m) => $m['to'] === $address);
+        \PHPUnit\Framework\Assert::assertGreaterThan(0, count($matched), "Mail to '{$address}' was not sent.");
+    }
+
+    public static function assertNotSentTo(string $address): void
+    {
+        $matched = array_filter(self::$fakeMails, fn($m) => $m['to'] === $address);
+        \PHPUnit\Framework\Assert::assertCount(0, $matched, "Mail to '{$address}' was sent unexpectedly.");
     }
 
     private string $to = '';
@@ -280,9 +298,11 @@ final class Mail
             $body = $this->buildMultipartBody($boundary);
         }
 
-        $result = @mail($this->to, $this->subject, $body, implode("\r\n", $headers));
-        if (!$result && error_get_last() !== null) {
-            error_clear_last();
+        try {
+            $result = mail($this->to, $this->subject, $body, implode("\r\n", $headers));
+        } catch (\Throwable $e) {
+            \Siro\Core\Logger::error('mail() failed: ' . $e->getMessage());
+            $result = false;
         }
         return $result;
     }
@@ -302,7 +322,7 @@ final class Mail
 
         $errno = 0;
         $errstr = '';
-        $socket = @fsockopen($host, $port, $errno, $errstr, 30);
+        $socket = fsockopen($host, $port, $errno, $errstr, 30);
 
         if ($socket === false) {
             throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");

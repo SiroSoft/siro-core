@@ -48,10 +48,32 @@ final class Session
 
         $this->sessionId = $sessionId ?? ($_COOKIE['siro_session'] ?? $this->generateId());
 
-        if ($this->driver === self::DRIVER_REDIS) {
-            $this->loadFromRedis();
+        // Validate session ID format (prevent path traversal via cookie)
+        if (!preg_match('/^[a-f0-9]{64}$/', $this->sessionId)) {
+            $this->sessionId = $this->generateId();
+        }
+
+        // Validate session ID exists in storage when provided from cookie (prevent fixation)
+        if ($sessionId === null && isset($_COOKIE['siro_session'])) {
+            if ($this->driver === self::DRIVER_REDIS) {
+                $this->loadFromRedis();
+                if ($this->data === []) {
+                    $this->sessionId = $this->generateId();
+                }
+            } else {
+                $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
+                if (!is_file($path)) {
+                    $this->sessionId = $this->generateId();
+                } else {
+                    $this->loadFromFile();
+                }
+            }
         } else {
-            $this->loadFromFile();
+            if ($this->driver === self::DRIVER_REDIS) {
+                $this->loadFromRedis();
+            } else {
+                $this->loadFromFile();
+            }
         }
 
         $this->started = true;
@@ -128,7 +150,7 @@ final class Session
 
         $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
         if (is_file($path)) {
-            @unlink($path);
+            unlink($path);
         }
 
         if (!headers_sent()) {
@@ -145,14 +167,17 @@ final class Session
         if ($this->driver !== self::DRIVER_REDIS) {
             $oldPath = $this->filePath . DIRECTORY_SEPARATOR . $oldId . '.json';
             if (is_file($oldPath)) {
-                @unlink($oldPath);
+                unlink($oldPath);
             }
         }
 
         if (!headers_sent()) {
+            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
             setcookie('siro_session', $this->sessionId, [
                 'expires' => time() + 86400 * 30,
                 'path' => '/',
+                'secure' => $isHttps,
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
@@ -224,7 +249,7 @@ final class Session
 
         foreach ($files as $file) {
             if (is_file($file) && filemtime($file) < $expireTime) {
-                @unlink($file);
+                unlink($file);
                 $deleted++;
             }
         }
@@ -248,7 +273,7 @@ final class Session
     private function loadFromFile(): void
     {
         if (!is_dir($this->filePath)) {
-            @mkdir($this->filePath, 0775, true);
+            mkdir($this->filePath, 0775, true);
         }
 
         $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
@@ -266,7 +291,7 @@ final class Session
     private function saveToFile(): void
     {
         if (!is_dir($this->filePath)) {
-            @mkdir($this->filePath, 0775, true);
+            mkdir($this->filePath, 0775, true);
         }
 
         $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
@@ -302,9 +327,13 @@ final class Session
         }
     }
 
+    private static ?\Redis $redisInstance = null;
+
     private function getRedis(): ?\Redis
     {
         if (!class_exists(\Redis::class)) return null;
+
+        if (self::$redisInstance !== null) return self::$redisInstance;
 
         try {
             $redis = new \Redis();
@@ -318,6 +347,7 @@ final class Session
             $password = (string) Env::get('REDIS_PASSWORD', '');
             if ($password !== '') $redis->auth($password);
 
+            self::$redisInstance = $redis;
             return $redis;
         } catch (\Throwable) {
             return null;
