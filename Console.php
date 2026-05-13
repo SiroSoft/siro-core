@@ -334,7 +334,6 @@ final class Console
         $this->write('    php siro --version             Version info');
         $this->write('');
 
-        $groups = $this->groupedCommands();
         $layers = [
             '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'why', 'fix', 'replay', 'trace:list'],
             '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
@@ -382,7 +381,7 @@ final class Console
             $this->write('');
         }
 
-        $this->write('Run "php siro list" for all 59 commands with usage examples.');
+        $this->write('Run "php siro <command> --help" for command details.');
     }
 
     /** @param array{handler: class-string, desc: string, usage: string} $info */
@@ -402,34 +401,50 @@ final class Console
     private function groupedCommands(): array
     {
         $registry = $this->commandRegistry();
+
         $groups = [
-            'Make / Generate'    => ['make:auth', 'make:controller', 'make:model', 'make:migration',
-                'make:queue-table', 'make:resource', 'make:seeder', 'make:crud', 'make:test',
-                'make:job', 'make:mail', 'make:event', 'make:lang', 'make:factory',
-                'make:service', 'make:repository',
-                'make:openapi', 'make:postman'],
+            'Make / Generate'    => 'make:',
             'New Project'        => ['new'],
-            'Database'           => ['migrate', 'migrate:rollback', 'migrate:status', 'db:seed', 'db:show'],
-            'Logs'               => ['log:trace', 'log:replay', 'log:export', 'log:cleanup', 'log:slow', 'log:tail', 'log:stats', 'log:top', 'debug:last'],
-            'Test'               => ['test', 'api:test'],
-            'Queue & Schedule'   => ['queue:work', 'queue:retry', 'queue:flush', 'queue:status', 'schedule:run'],
+            'Database'           => ['migrate', 'migrate:', 'db:'],
+            'Logs'               => ['log:', 'debug:'],
+            'Test'               => ['test', 'test:', 'api:test'],
+            'Queue & Schedule'   => ['queue:', 'schedule:'],
             'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link'],
-            'System & Config'    => ['key:generate', 'config:cache', 'optimize', 'env:check',
-                'env:switch', 'doctor', 'fix', 'down', 'up', 'replay', 'trace:list', 'route:list', 'route:search', 'route:rules', 'rate:status'],
         ];
 
+        $fallbackGroup = 'System & Config';
+
         $result = [];
-        foreach ($groups as $group => $cmds) {
+        $mapped = [];
+
+        foreach ($groups as $group => $prefixes) {
+            $prefixes = (array) $prefixes;
             $entries = [];
-            foreach ($cmds as $cmd) {
-                if (isset($registry[$cmd])) {
-                    $entries[$cmd] = $registry[$cmd]['desc'];
+            foreach ($registry as $cmd => $info) {
+                foreach ($prefixes as $prefix) {
+                    if (str_starts_with($cmd, $prefix)) {
+                        $entries[$cmd] = $info['desc'];
+                        $mapped[$cmd] = true;
+                        break;
+                    }
                 }
             }
             if ($entries !== []) {
                 $result[$group] = $entries;
             }
         }
+
+        // Unmatched commands go to System & Config
+        $remaining = [];
+        foreach ($registry as $cmd => $info) {
+            if (!isset($mapped[$cmd])) {
+                $remaining[$cmd] = $info['desc'];
+            }
+        }
+        if ($remaining !== []) {
+            $result[$fallbackGroup] = $remaining;
+        }
+
         return $result;
     }
 

@@ -127,7 +127,7 @@ final class Env
     {
         $cacheFile = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php';
         if (is_file($cacheFile)) {
-            @unlink($cacheFile);
+            unlink($cacheFile);
         }
     }
 

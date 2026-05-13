@@ -21,6 +21,9 @@ final class Route
 {
     /** @var Router|null */
     private static ?Router $routerInstance = null;
+
+    /** @var array<string, array{method:string, path:string}> */
+    private static array $namedRoutes = [];
     
     public function __construct(
         private readonly Router $router,
@@ -51,7 +54,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function get(string $path, callable|array|string $handler): self
+    public static function get(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('GET', $path, $handler);
     }
@@ -62,7 +65,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function post(string $path, callable|array|string $handler): self
+    public static function post(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('POST', $path, $handler);
     }
@@ -73,7 +76,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function put(string $path, callable|array|string $handler): self
+    public static function put(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('PUT', $path, $handler);
     }
@@ -84,7 +87,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function delete(string $path, callable|array|string $handler): self
+    public static function delete(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('DELETE', $path, $handler);
     }
@@ -95,7 +98,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function patch(string $path, callable|array|string $handler): self
+    public static function patch(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('PATCH', $path, $handler);
     }
@@ -144,6 +147,30 @@ final class Route
             $this->router->setRouteWhereConstraints($this->method, $this->path, [$name => $pattern]);
         }
         return $this;
+    }
+
+    public function name(string $name): self
+    {
+        if ($name !== '') {
+            self::$namedRoutes[$name] = [
+                'method' => $this->method,
+                'path' => $this->path,
+            ];
+        }
+        return $this;
+    }
+
+    public static function url(string $name, array $params = []): ?string
+    {
+        $route = self::$namedRoutes[$name] ?? null;
+        if ($route === null) {
+            return null;
+        }
+        $path = $route['path'];
+        foreach ($params as $key => $value) {
+            $path = str_replace('{' . $key . '}', (string) $value, $path);
+        }
+        return $path;
     }
 
     /**

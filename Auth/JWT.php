@@ -291,8 +291,7 @@ final class JWT
             return true;
         }
 
-        // Only allow previous secret during key rotation grace period (max 5 min window)
-        // This prevents indefinite forgery if previous secret is compromised
+        // Allow previous secret during key rotation — verifies version-gated
         $prevSecret = self::previousSecret();
         if ($prevSecret !== '' && hash_equals(self::signHs256WithSecret($data, $prevSecret), $signature)) {
             $prevVersion = (int) self::getKeyVersion() - 1;

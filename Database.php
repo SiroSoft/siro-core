@@ -270,7 +270,8 @@ final class Database
         $rows = 0;
         try {
             $rows = $stmt->rowCount();
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Logger::error(new \RuntimeException('Failed to get rowCount: ' . $e->getMessage()));
         }
 
         $connName = $connection ?? self::$defaultConnection;

@@ -36,7 +36,7 @@ final class Logger
         // Create app.log if it doesn't exist
         $appLog = self::$logDir . DIRECTORY_SEPARATOR . 'app.log';
         if (!file_exists($appLog)) {
-            @touch($appLog);
+            touch($appLog);
         }
 
         // Protect log directory from web access
@@ -283,7 +283,7 @@ final class Logger
         }
 
         if (!is_dir(self::$logDir)) {
-            @mkdir(self::$logDir, 0775, true);
+            mkdir(self::$logDir, 0775, true);
         }
 
         $dailyFile = self::$logDir . DIRECTORY_SEPARATOR . $type . '-' . date('Y-m-d') . '.log';
@@ -298,7 +298,7 @@ final class Logger
 
         if ($alsoDaily && is_file($mainFile) && filesize($mainFile) > self::$maxFileSize) {
             $rotated = $mainFile . '.' . date('Y-m-d-Hi');
-            @rename($mainFile, $rotated);
+            rename($mainFile, $rotated);
         }
 
         static $cleaned = false;
@@ -313,7 +313,7 @@ final class Logger
     {
         $traceDir = self::$logDir . DIRECTORY_SEPARATOR . 'traces';
         if (!is_dir($traceDir)) {
-            @mkdir($traceDir, 0775, true);
+            mkdir($traceDir, 0775, true);
         }
 
         $traceFile = $traceDir . DIRECTORY_SEPARATOR . $traceId . '.json';
@@ -333,7 +333,7 @@ final class Logger
 
         $cutoff = time() - (self::$retentionDays * 86400);
         foreach (glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [] as $file) {
-            if (filemtime($file) < $cutoff) @unlink($file);
+            if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
         }
     }
 
@@ -344,10 +344,10 @@ final class Logger
         $cutoff = time() - (self::$retentionDays * 86400);
 
         foreach (glob(self::$logDir . DIRECTORY_SEPARATOR . '*-????-??-??.log') ?: [] as $file) {
-            if (filemtime($file) < $cutoff) @unlink($file);
+            if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
         }
         foreach (glob(self::$logDir . DIRECTORY_SEPARATOR . '*.log.*') ?: [] as $file) {
-            if (filemtime($file) < $cutoff) @unlink($file);
+            if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
         }
     }
 

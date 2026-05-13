@@ -140,7 +140,7 @@ final class Config
         $cacheDir = dirname(self::$configPath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework';
         if (!is_dir($cacheDir)) {
-            @mkdir($cacheDir, 0775, true);
+            mkdir($cacheDir, 0775, true);
         }
 
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'config.php';
@@ -158,7 +158,7 @@ final class Config
         $cacheFile = dirname(self::$configPath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'config.php';
         if (is_file($cacheFile)) {
-            @unlink($cacheFile);
+            unlink($cacheFile);
         }
         self::$cache = [];
     }

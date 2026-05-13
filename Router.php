@@ -294,7 +294,7 @@ final class Router
     {
         $dir = dirname($cacheFile);
         if (!is_dir($dir)) {
-            @mkdir($dir, 0775, true);
+            !is_dir($dir) && mkdir($dir, 0775, true);
         }
 
         $data = $this->exportRoutes();
@@ -372,7 +372,8 @@ final class Router
             $this->staticRoutes[$method][$fullPath] = $routeData;
         }
 
-        return new Route($this, $method, $fullPath);
+        $routeObj = new Route($this, $method, $fullPath);
+        return $routeObj;
     }
 
     /**

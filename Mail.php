@@ -298,9 +298,11 @@ final class Mail
             $body = $this->buildMultipartBody($boundary);
         }
 
-        $result = @mail($this->to, $this->subject, $body, implode("\r\n", $headers));
-        if (!$result && error_get_last() !== null) {
-            error_clear_last();
+        try {
+            $result = mail($this->to, $this->subject, $body, implode("\r\n", $headers));
+        } catch (\Throwable $e) {
+            \Siro\Core\Logger::error('mail() failed: ' . $e->getMessage());
+            $result = false;
         }
         return $result;
     }
@@ -320,7 +322,7 @@ final class Mail
 
         $errno = 0;
         $errstr = '';
-        $socket = @fsockopen($host, $port, $errno, $errstr, 30);
+        $socket = fsockopen($host, $port, $errno, $errstr, 30);
 
         if ($socket === false) {
             throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");

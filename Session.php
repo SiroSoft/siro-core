@@ -145,7 +145,7 @@ final class Session
 
         $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
         if (is_file($path)) {
-            @unlink($path);
+            unlink($path);
         }
 
         if (!headers_sent()) {
@@ -162,7 +162,7 @@ final class Session
         if ($this->driver !== self::DRIVER_REDIS) {
             $oldPath = $this->filePath . DIRECTORY_SEPARATOR . $oldId . '.json';
             if (is_file($oldPath)) {
-                @unlink($oldPath);
+                unlink($oldPath);
             }
         }
 
@@ -241,7 +241,7 @@ final class Session
 
         foreach ($files as $file) {
             if (is_file($file) && filemtime($file) < $expireTime) {
-                @unlink($file);
+                unlink($file);
                 $deleted++;
             }
         }
@@ -265,7 +265,7 @@ final class Session
     private function loadFromFile(): void
     {
         if (!is_dir($this->filePath)) {
-            @mkdir($this->filePath, 0775, true);
+            mkdir($this->filePath, 0775, true);
         }
 
         $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
@@ -283,7 +283,7 @@ final class Session
     private function saveToFile(): void
     {
         if (!is_dir($this->filePath)) {
-            @mkdir($this->filePath, 0775, true);
+            mkdir($this->filePath, 0775, true);
         }
 
         $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';

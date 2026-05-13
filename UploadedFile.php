@@ -53,7 +53,7 @@ final class UploadedFile
     public function getMimeType(): string
     {
         if ($this->isValid()) {
-            $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
             if ($finfo === false) {
                 return $this->mimeType;
             }

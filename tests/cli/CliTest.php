@@ -44,12 +44,12 @@ final class CliTest extends TestCase
 
     public function testConsoleVersion(): void
     {
-        $this->assertEquals('0.23.1', Console::VERSION);
+        $this->assertEquals('0.24.0', Console::VERSION);
     }
 
     public function testGetVersion(): void
     {
-        $this->assertEquals('0.23.1', Console::getVersion());
+        $this->assertEquals('0.24.0', Console::getVersion());
     }
 
     public function testConsoleCanBeInstantiated(): void
@@ -276,8 +276,7 @@ final class CliTest extends TestCase
         }
 
         $ungrouped = array_diff(array_keys($registry), $groupedCmds);
-        $this->assertNotEmpty($ungrouped, 'Expected some commands to be ungrouped');
-        $this->assertCount(10, $ungrouped, 'Expected 10 ungrouped commands (debug:health added)');
+        $this->assertCount(0, $ungrouped, 'All commands should be grouped; ungrouped: ' . implode(', ', array_keys($ungrouped)));
     }
 
     // ==================== ALIASES ====================
