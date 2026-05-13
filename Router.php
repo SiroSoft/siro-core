@@ -279,7 +279,7 @@ final class Router
             return false;
         }
 
-        $data = require $cacheFile;
+        $data = json_decode(substr((string) file_get_contents($cacheFile), 14), true);
         if (!is_array($data) || !isset($data['static'], $data['dynamic'])) {
             return false;
         }
@@ -314,7 +314,7 @@ final class Router
             }
         }
 
-        $content = '<?php return ' . var_export($data, true) . ';' . PHP_EOL;
+        $content = '<?php exit; ?>' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 
         return file_put_contents($cacheFile, $content) !== false;
     }

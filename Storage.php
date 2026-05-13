@@ -36,6 +36,12 @@ final class Storage
     /** @var array<string, string> */
     private static array $fakeFiles = [];
 
+    public static function reset(): void
+    {
+        self::$faked = false;
+        self::$fakeFiles = [];
+    }
+
     public static function fake(): void
     {
         self::$faked = true;
@@ -203,10 +209,12 @@ final class Storage
         $storagePath = str_replace('/', DIRECTORY_SEPARATOR, (string) (self::$config['path'] ?? ''));
         $allowedDir = $base . DIRECTORY_SEPARATOR . $storagePath;
 
-        // Clean path and prevent traversal
+        // Clean path and prevent traversal - recursive sanitization
         $cleanPath = ltrim($path, DIRECTORY_SEPARATOR);
-        $cleanPath = str_replace(['../', '..\\', './', '.\\'], '', $cleanPath);
-        $cleanPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $cleanPath);
+        do {
+            $previous = $cleanPath;
+            $cleanPath = str_replace(['../', '..\\', './', '.\\', '\\', '/'], DIRECTORY_SEPARATOR, $cleanPath);
+        } while ($cleanPath !== $previous);
         // Remove any remaining parent dir references
         $segments = explode(DIRECTORY_SEPARATOR, $cleanPath);
         $filtered = [];

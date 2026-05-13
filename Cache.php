@@ -42,6 +42,14 @@ final class Cache
         self::$driver = new FileDriver($cachePath);
     }
 
+    public static function reset(): void
+    {
+        self::$driver = null;
+        self::$prefix = 'siro:';
+        self::$defaultTtl = 60;
+        self::$requestHadCacheHit = false;
+    }
+
     public static function resetRequestState(): void
     {
         self::$requestHadCacheHit = false;

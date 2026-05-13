@@ -1,4 +1,4 @@
-# Siro Core Framework v0.23.0
+# Siro Core Framework v0.24.0
 
 **Siro API Framework Core** — The Fastest PHP Micro-Framework for API Development with DI Container, RBAC, and Advanced Debugging
 
@@ -15,14 +15,15 @@
 
 ---
 
-## 📢 What's New in v0.23.0
+## 📢 What's New in v0.24.0
 
-- ⚡ **Performance**: Lazy-loaded boot, sub-1ms cold start, Model refactored (908→457 lines)
-- 🛡️ **Security**: CspMiddleware (strict CSP + nonce), AuditMiddleware (SIEM audit trail), MIME-extension validation
-- 🆕 **API Versioning**: Header-based via `Accept: application/vnd.siro.v2+json`
-- 🆕 **ETag**: Conditional requests → `304 Not Modified` (save mobile bandwidth)
-- 🆕 **Prometheus Metrics**: `/metrics` endpoint with counters + histograms
-- 🔧 **CI/CD**: GitHub Actions with composer audit + PHPStan, pre-commit hooks, coverage reports
+- 🛡️ **Security Hardened**: XSS, SQLi, Cache RCE, Path Traversal, Session Fixation — all P0/P1 fixed
+- 🔑 **JWT Enhanced**: JTI blacklist for individual token revocation, key rotation with version tracking
+- 🧪 **190 tests, 1450 assertions**: Security pentest (42), Performance (24), CLI (116), Debug (13), Integration (18)
+- 🖥️ **69 CLI commands**: New `debug:health` command, full help system, Levenshtein suggestions
+- 🐛 **Critical fixes**: Event::dispatch crash, Config/Router cache dead code, Middleware alias conflict
+- 🧩 **TestHelper trait**: `resetStaticState()`, `assertTiming()`, `createInMemorySqlite()` — easy test isolation
+- 📊 **Debug score**: 9.2/10, **Overall score**: 9.0/10
 - 📊 **Benchmark**: `php benchmark.php` — 8 benchmarks, 2.97M JSON responses/sec
 
 ## 🚀 Why SiroPHP?

@@ -58,6 +58,7 @@ use Siro\Core\Commands\LogCleanupCommand;
 use Siro\Core\Commands\LogTailCommand;
 use Siro\Core\Commands\LogStatsCommand;
 use Siro\Core\Commands\MakeFactoryCommand;
+use Siro\Core\Commands\DebugHealthCommand;
 use Siro\Core\Commands\MakeServiceCommand;
 use Siro\Core\Commands\MakeRepositoryCommand;
 use Siro\Core\Commands\DbShowCommand;
@@ -75,7 +76,7 @@ use Siro\Core\Commands\BenchmarkCommand;
 
 final class Console
 {
-    public const VERSION = '0.23.1';
+    public const VERSION = '0.24.0';
 
     public static function getVersion(): string
     {
@@ -133,7 +134,8 @@ final class Console
             'log:tail'    => ['handler' => LogTailCommand::class, 'desc' => 'Tail log files in real-time', 'usage' => 'php siro log:tail [--type=request|error|slow] [--lines=N] [--follow|-f]'],
             'log:stats'   => ['handler' => LogStatsCommand::class, 'desc' => 'Request statistics with charts', 'usage' => 'php siro log:stats [--days=N]'],
             'log:top'     => ['handler' => LogTopCommand::class, 'desc' => 'Top slowest APIs by total time', 'usage' => 'php siro log:top [--limit=N] [--min=MS]'],
-            'debug:last'  => ['handler' => DebugLastCommand::class, 'desc' => 'Show why last request failed (alias: why)', 'usage' => 'php siro debug:last'],
+            'debug:last'    => ['handler' => DebugLastCommand::class, 'desc' => 'Show why last request failed (alias: why)', 'usage' => 'php siro debug:last'],
+            'debug:health'  => ['handler' => DebugHealthCommand::class, 'desc' => 'Check debug system health and configuration', 'usage' => 'php siro debug:health'],
 
             'test:run'      => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite (legacy)', 'usage' => 'php siro test:run'],
             'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API (--loop, --as=admin/guest)', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]'],

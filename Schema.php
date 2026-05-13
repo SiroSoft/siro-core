@@ -79,7 +79,7 @@ final class Schema
             default => "SHOW TABLES LIKE :table",
         };
         $stmt = self::pdo()->prepare($sql);
-        $stmt->execute([':table' => $table]);
+        $stmt->execute([':table' => str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $table)]);
         return (bool) $stmt->fetch(PDO::FETCH_COLUMN);
     }
 

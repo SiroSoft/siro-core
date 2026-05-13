@@ -48,10 +48,27 @@ final class Session
 
         $this->sessionId = $sessionId ?? ($_COOKIE['siro_session'] ?? $this->generateId());
 
-        if ($this->driver === self::DRIVER_REDIS) {
-            $this->loadFromRedis();
+        // Validate session ID exists in storage when provided from cookie (prevent fixation)
+        if ($sessionId === null && isset($_COOKIE['siro_session'])) {
+            if ($this->driver === self::DRIVER_REDIS) {
+                $this->loadFromRedis();
+                if ($this->data === []) {
+                    $this->sessionId = $this->generateId();
+                }
+            } else {
+                $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
+                if (!is_file($path)) {
+                    $this->sessionId = $this->generateId();
+                } else {
+                    $this->loadFromFile();
+                }
+            }
         } else {
-            $this->loadFromFile();
+            if ($this->driver === self::DRIVER_REDIS) {
+                $this->loadFromRedis();
+            } else {
+                $this->loadFromFile();
+            }
         }
 
         $this->started = true;

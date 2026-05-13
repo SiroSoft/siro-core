@@ -21,12 +21,12 @@ trait SoftDeletes
         $table = $this->getTable();
         $timestamp = date('Y-m-d H:i:s');
         if (\Siro\Core\Event::hasListeners("{$table}.deleting")) {
-            \Siro\Core\Event::dispatch("{$table}.deleting", [$this]);
+            \Siro\Core\Event::emit("{$table}.deleting", $this);
         }
         $this->setAttribute('deleted_at', $timestamp);
         $result = $this->save();
         if ($result && \Siro\Core\Event::hasListeners("{$table}.deleted")) {
-            \Siro\Core\Event::dispatch("{$table}.deleted", [$this]);
+            \Siro\Core\Event::emit("{$table}.deleted", $this);
         }
         return $result;
     }

@@ -185,8 +185,9 @@ final class Logger
         // Escape log injection first
         $message = self::escapeLog($message);
 
-        // Redact sensitive patterns in any context
+        // Redact sensitive patterns in any context (plain text + JSON formats)
         $sensitive = [
+            // Plain text formats: key=value, key: value
             '/(authorization\s*[:=]\s*)([^\s,;&]+)/i' => '$1[REDACTED]',
             '/(bearer\s+)([^\s,;&]{8,})/i' => '$1[REDACTED]',
             '/(password\s*[:=]\s*["\']?)([^\s,;&"\']{3,})/i' => '$1[REDACTED]',
@@ -197,7 +198,19 @@ final class Logger
             '/(credit_card|card_number|cvv|ssn|passport)\s*[:=]\s*["\']?([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
             '/(\bapi[_-]?key\b\s*[:=]\s*["\']?)([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
             '/(session[_-]?id\s*[:=]\s*["\']?)([^\s,;&"\']{4,})/i' => '$1[REDACTED]',
-            '/\b\d{13,19}\b/' => '[REDACTED-CARD]', // Credit card number pattern
+
+            // JSON formats: "key":"value"
+            '/"authorization"\s*:\s*"[^"]+"/i' => '"authorization":"[REDACTED]"',
+            '/"(bearer|token)"\s*:\s*"[^"]{8,}"/i' => '"$1":"[REDACTED]"',
+            '/"(password|passwd|pass)"\s*:\s*"[^"]{3,}"/i' => '"$1":"[REDACTED]"',
+            '/"(secret|api_key|apikey)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
+            '/"(otp|otp_code|otp_secret)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
+            '/"(credit_card|card_number|cvv|cvc|ssn|passport)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
+            '/"(session_id|sessionid)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
+            '/"(refresh_token|access_token)"\s*:\s*"[^"]{8,}"/i' => '"$1":"[REDACTED]"',
+
+            // Credit card number pattern (13-19 digits)
+            '/\b\d{13,19}\b/' => '[REDACTED-CARD]',
         ];
 
         return (string) preg_replace(array_keys($sensitive), array_values($sensitive), $message);

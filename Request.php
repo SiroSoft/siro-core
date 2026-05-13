@@ -582,7 +582,7 @@ final class Request
     private static function normalizePath(string $path): string
     {
         // Strip null bytes and URL-encoded null bytes
-        $path = str_replace(["\0", "\x00", '%00', '%0'], '', $path);
+        $path = str_replace(["\0", "\x00", '%00'], '', $path);
 
         if ($path === '') {
             return '/';

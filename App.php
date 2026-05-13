@@ -78,16 +78,24 @@ final class App
         // Defer Lang & Storage — they're rarely needed on every request
         // Accessed via __call or explicit boot methods when first used
 
-        // Middleware aliases
-        Router::registerMiddlewareAlias('auth', \Siro\Core\Middleware\AuthMiddleware::class);
-        Router::registerMiddlewareAlias('throttle', \Siro\Core\Middleware\ThrottleMiddleware::class);
-        Router::registerMiddlewareAlias('cors', \Siro\Core\Middleware\CorsMiddleware::class);
-        Router::registerMiddlewareAlias('json', \Siro\Core\Middleware\JsonMiddleware::class);
-        Router::registerMiddlewareAlias('audit', \Siro\Core\Middleware\AuditMiddleware::class);
-        Router::registerMiddlewareAlias('csp', \Siro\Core\Middleware\CspMiddleware::class);
-        Router::registerMiddlewareAlias('version', \Siro\Core\Middleware\VersionMiddleware::class);
-        Router::registerMiddlewareAlias('etag', \Siro\Core\Middleware\EtagMiddleware::class);
-        Router::registerMiddlewareAlias('metrics', \Siro\Core\Middleware\MetricsMiddleware::class);
+        // Middleware aliases (only set if not already defined by application)
+        $existingAliases = Router::getMiddlewareAliases();
+        $defaultAliases = [
+            'auth' => \Siro\Core\Middleware\AuthMiddleware::class,
+            'throttle' => \Siro\Core\Middleware\ThrottleMiddleware::class,
+            'cors' => \Siro\Core\Middleware\CorsMiddleware::class,
+            'json' => \Siro\Core\Middleware\JsonMiddleware::class,
+            'audit' => \Siro\Core\Middleware\AuditMiddleware::class,
+            'csp' => \Siro\Core\Middleware\CspMiddleware::class,
+            'version' => \Siro\Core\Middleware\VersionMiddleware::class,
+            'etag' => \Siro\Core\Middleware\EtagMiddleware::class,
+            'metrics' => \Siro\Core\Middleware\MetricsMiddleware::class,
+        ];
+        foreach ($defaultAliases as $name => $class) {
+            if (!isset($existingAliases[$name])) {
+                Router::registerMiddlewareAlias($name, $class);
+            }
+        }
 
         /** @var class-string $userModelClass */
         $userModelClass = 'App\\Models\\User';
@@ -176,7 +184,22 @@ final class App
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (Throwable $e) {
             if ($this->showDebugTrace) {
-                $errors = ['type' => $e::class, 'message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), 'trace' => $e->getTraceAsString()];
+                $previous = '';
+                $prev = $e->getPrevious();
+                while ($prev !== null) {
+                    $previous .= $prev::class . ': ' . $prev->getMessage() . ' in ' . $prev->getFile() . ':' . $prev->getLine() . "\n";
+                    $prev = $prev->getPrevious();
+                }
+                $errors = [
+                    'type' => $e::class,
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                    'previous' => $previous !== '' ? rtrim($previous) : null,
+                    'method' => $method,
+                    'path' => $path,
+                ];
             } else {
                 $errors = [];
             }
@@ -233,19 +256,9 @@ final class App
             || str_contains($lower, 'your_secret');
 
         if ($jwtSecret === '' || strlen($jwtSecret) < 32 || $looksLikePlaceholder) {
-            $envPath = $this->basePath . DIRECTORY_SEPARATOR . '.env';
-            if (!is_file($envPath)) {
-                throw new RuntimeException('.env file not found. Copy .env.example to .env first.');
-            }
-            $secret = bin2hex(random_bytes(32));
-            $content = (string) file_get_contents($envPath);
-            if (preg_match('/^JWT_SECRET=.*/m', $content) === 1) {
-                $content = (string) preg_replace('/^JWT_SECRET=.*/m', 'JWT_SECRET=' . $secret, $content);
-            } else {
-                $content = rtrim($content) . PHP_EOL . 'JWT_SECRET=' . $secret . PHP_EOL;
-            }
-            file_put_contents($envPath, $content);
-            Env::load($envPath);
+            throw new RuntimeException(
+                'JWT_SECRET is missing or too weak (min 32 chars). Run: php siro key:generate'
+            );
         }
     }
 }
