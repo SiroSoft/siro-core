@@ -199,7 +199,7 @@ final class DatabaseInstance implements DatabaseInterface
     public function cache(int $ttl = 60): static
     {
         $this->queryCacheTtl = max(0, $ttl);
-        return new self();
+        return $this;
     }
 
     public function table(string $table, ?string $connection = null): QueryBuilder

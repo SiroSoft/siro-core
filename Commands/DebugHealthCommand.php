@@ -71,6 +71,6 @@ class DebugHealthCommand implements CommandInterface
         foreach ($issues as $i => $issue) {
             $this->error('  ' . ($i + 1) . '. ' . $issue);
         }
-        return count($issues);
+        return 1;
     }
 }

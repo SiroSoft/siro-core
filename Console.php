@@ -331,7 +331,7 @@ final class Console
         $this->write('');
         $this->write('  Usage:');
         $this->write('    php siro <command> [options]');
-        $this->write('    php siro list                  All 59 commands');
+        $this->write('    php siro list                  All 70 commands');
         $this->write('    php siro <command> --help      Command details');
         $this->write('    php siro --version             Version info');
         $this->write('');
@@ -359,7 +359,7 @@ final class Console
     private function printList(): void
     {
         $this->write('');
-        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 59 Commands');
+        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 70 Commands');
         $this->write('  ' . str_repeat('=', 60));
         $this->write('');
 

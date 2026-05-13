@@ -391,6 +391,12 @@ final class Response
         echo $this->rawContent;
     }
 
+    /** @return array<string, string> */
+    public function headers(): array
+    {
+        return $this->extraHeaders;
+    }
+
     /** @return array<string, mixed> */
     public function payload(): array
     {

@@ -2,7 +2,7 @@
 
 SiroPHP is designed with defense-in-depth. Every layer — from JWT authentication to output encoding, rate limiting, and audit logging — is built to be secure by default.
 
-> See [JWT.md](api/JWT.md) for full JWT implementation details.
+> See [JWT.md](JWT.md) for full JWT implementation details.
 
 ---
 

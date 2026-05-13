@@ -148,11 +148,17 @@ final class Router
             $cacheKey = 'route:' . $request->cacheKey();
             $cached = Cache::get($cacheKey);
 
-            if (is_array($cached) && isset($cached['payload']) && isset($cached['status'])) {
-                return Response::json(
+            if (is_array($cached) && isset($cached['payload']) && isset($cached['status']) && isset($cached['headers'])) {
+                $response = Response::json(
                     is_array($cached['payload']) ? $cached['payload'] : [],
                     (int) $cached['status']
                 );
+                if (is_array($cached['headers'])) {
+                    foreach ($cached['headers'] as $name => $value) {
+                        $response->header($name, $value);
+                    }
+                }
+                return $response;
             }
         }
 
@@ -174,6 +180,7 @@ final class Router
             Cache::set($cacheKey, [
                 'payload' => $response->payload(),
                 'status' => $response->statusCode(),
+                'headers' => $response->headers(),
             ], $cacheTtl);
         }
 

@@ -319,9 +319,13 @@ final class Session
         }
     }
 
+    private static ?\Redis $redisInstance = null;
+
     private function getRedis(): ?\Redis
     {
         if (!class_exists(\Redis::class)) return null;
+
+        if (self::$redisInstance !== null) return self::$redisInstance;
 
         try {
             $redis = new \Redis();
@@ -335,6 +339,7 @@ final class Session
             $password = (string) Env::get('REDIS_PASSWORD', '');
             if ($password !== '') $redis->auth($password);
 
+            self::$redisInstance = $redis;
             return $redis;
         } catch (\Throwable) {
             return null;

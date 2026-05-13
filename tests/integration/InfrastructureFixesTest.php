@@ -25,7 +25,7 @@ final class InfrastructureFixesTest extends TestCase
 
     public function testConsoleVersionIs0231(): void
     {
-        $this->assertSame('0.23.1', Console::VERSION);
+        $this->assertSame('0.24.0', Console::VERSION);
     }
 
     public function testDockerfileExists(): void
@@ -73,7 +73,7 @@ final class InfrastructureFixesTest extends TestCase
         $this->assertIsArray($composer);
         $this->assertSame('sirosoft/demo', $composer['name']);
         $this->assertArrayHasKey('sirosoft/core', $composer['require']);
-        $this->assertSame('^0.23.1', $composer['require']['sirosoft/core']);
+        $this->assertSame('^0.24.0', $composer['require']['sirosoft/core']);
     }
 
     public function testDemoV1PublicIndexHasExpectedRoutes(): void

@@ -57,10 +57,9 @@ final class FrankenphpServeCommand implements \Siro\Core\Commands\CommandInterfa
     private function runLocal(string $port): int
     {
         // Check if FrankenPHP binary exists
-        $frankenphpBin = PHP_BINARY === '' ? 'frankenphp' : 'frankenphp';
         $which = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'where' : 'which';
 
-        $output = shell_exec("{$which} {$frankenphpBin} 2>/dev/null");
+        $output = shell_exec("{$which} frankenphp 2>/dev/null");
         if ($output === null || $output === '') {
             $this->write('');
             $this->write('  ⚠ FrankenPHP binary not found.');
