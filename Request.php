@@ -79,9 +79,6 @@ final class Request
 
         // BLOCK: Content-Length header can be spoofed, validate actual body size
         if ($contentLength > 0 && $contentLength > $maxBodySize) {
-            http_response_code(413);
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
             throw new \RuntimeException('Request body too large (max ' . ($maxBodySize / 1024 / 1024) . 'MB)');
         }
 

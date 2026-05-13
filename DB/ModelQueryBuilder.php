@@ -23,6 +23,11 @@ final class ModelQueryBuilder extends QueryBuilder
         $this->modelClass = $modelClass;
     }
 
+    public function find(int|string $id): ?\Siro\Core\Model
+    {
+        return $this->where('id', '=', $id)->first();
+    }
+
     /**
      * @param array<int, string> $columns
      */
