@@ -45,7 +45,7 @@ class DebugHealthCommand implements CommandInterface
             $this->success('[PASS] Debug mode is active');
             $passed++;
         } else {
-            $this->warning('[WARN] Debug mode not active');
+            $this->warn('[WARN] Debug mode not active');
         }
 
         $checks++;
@@ -67,7 +67,7 @@ class DebugHealthCommand implements CommandInterface
             $this->success("[RESULT] {$passed}/{$checks} checks passed - Debug system healthy");
             return 0;
         }
-        $this->warning("[RESULT] {$passed}/{$checks} checks passed");
+        $this->warn("[RESULT] {$passed}/{$checks} checks passed");
         foreach ($issues as $i => $issue) {
             $this->error('  ' . ($i + 1) . '. ' . $issue);
         }
