@@ -36,7 +36,9 @@ final class CorsMiddleware implements MiddlewareInterface
 
     private function appendHeaders(Response $response, string $allowOrigin, string $allowedMethods, string $allowedHeaders, bool $allowCredentials): void
     {
-        $response->header('Access-Control-Allow-Origin', $allowOrigin);
+        if ($allowOrigin !== '') {
+            $response->header('Access-Control-Allow-Origin', $allowOrigin);
+        }
         $response->header('Access-Control-Allow-Methods', $allowedMethods);
         $response->header('Access-Control-Allow-Headers', $allowedHeaders);
         $response->header('Access-Control-Allow-Credentials', $allowCredentials ? 'true' : 'false');
