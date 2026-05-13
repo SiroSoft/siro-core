@@ -231,7 +231,7 @@ final class AuthFixesTest extends TestCase
             mkdir($this->sessionDir, 0775, true);
         }
 
-        $malformedId = 'malformed_session_id_that_has_corrupted_file';
+        $malformedId = bin2hex(random_bytes(32));
         file_put_contents(
             $this->sessionDir . DIRECTORY_SEPARATOR . $malformedId . '.json',
             'not valid json{{{'
@@ -245,7 +245,20 @@ final class AuthFixesTest extends TestCase
         $this->assertNull($session->get('user_id'));
     }
 
-    public function testEmptySessionFilePreservesSessionId(): void
+    public function testMalformedSessionIdRegeneratesOnInvalidFormat(): void
+    {
+        $session = new Session('file');
+        Session::setInstance($session);
+
+        $_COOKIE['siro_session'] = 'not-a-valid-hex-session-id!!!';
+
+        $session->start();
+
+        $this->assertNotEquals('not-a-valid-hex-session-id!!!', $session->getId());
+        $this->assertEquals(64, strlen($session->getId()));
+    }
+
+    public function testEmptySessionFileWithValidFormatPreservesSessionId(): void
     {
         $session = new Session('file');
         Session::setInstance($session);
@@ -254,7 +267,7 @@ final class AuthFixesTest extends TestCase
             mkdir($this->sessionDir, 0775, true);
         }
 
-        $emptyId = 'empty_session_file_id_that_exists_but_has_no_data';
+        $emptyId = bin2hex(random_bytes(32));
         file_put_contents(
             $this->sessionDir . DIRECTORY_SEPARATOR . $emptyId . '.json',
             ''

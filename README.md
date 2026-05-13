@@ -29,6 +29,7 @@ use Siro\Core\App;
 use Siro\Core\Route;
 
 $app = new App(__DIR__);
+Route::setRouter($app->router);
 $app->boot();
 
 Route::get('/hello/{name}', function ($req) {
