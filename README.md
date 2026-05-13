@@ -26,12 +26,12 @@ Memory per request:       ~2KB
 
 ```php
 use Siro\Core\App;
-use Siro\Core\Router;
+use Siro\Core\Route;
 
 $app = new App(__DIR__);
 $app->boot();
 
-Router::get('/hello/{name}', function ($req) {
+Route::get('/hello/{name}', function ($req) {
     return ['message' => 'Hello ' . $req->param('name')];
 });
 

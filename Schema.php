@@ -138,6 +138,9 @@ final class Schema
 
     private static function quoteIdentifier(string $identifier): string
     {
-        return '`' . str_replace('`', '``', $identifier) . '`';
+        $driver = self::driver();
+        $char = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? '"' : '`';
+        $escaped = str_replace($char, $char . $char, $identifier);
+        return $char . $escaped . $char;
     }
 }

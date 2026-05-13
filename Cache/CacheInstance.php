@@ -82,8 +82,9 @@ final class CacheInstance implements CacheInterface
 
     public function remember(string $key, int $ttl, callable $callback): mixed
     {
-        if ($this->has($key)) {
-            return $this->get($key);
+        $value = $this->get($key);
+        if ($value !== null) {
+            return $value;
         }
 
         $value = $callback();

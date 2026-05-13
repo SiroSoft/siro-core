@@ -82,7 +82,7 @@ final class Request
             http_response_code(413);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
-            exit(1);
+            throw new \RuntimeException('Request body too large (max ' . ($maxBodySize / 1024 / 1024) . 'MB)');
         }
 
         // For non-multipart requests, read and validate actual body size
@@ -91,10 +91,7 @@ final class Request
             $actualSize = strlen($body);
 
             if ($actualSize > $maxBodySize) {
-                http_response_code(413);
-                header('Content-Type: application/json; charset=utf-8');
-                echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
-                exit(1);
+                throw new \RuntimeException('Request body too large (max ' . ($maxBodySize / 1024 / 1024) . 'MB)');
             }
 
             // Cache body for reuse (JsonMiddleware etc.)
