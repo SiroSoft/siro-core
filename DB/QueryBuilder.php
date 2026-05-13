@@ -125,7 +125,7 @@ class QueryBuilder
             'type' => 'raw',
             'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
             'sql' => $sql,
-            'bindings' => array_values($bindings),
+            'bindings' => $bindings,
         ];
 
         return $this;

@@ -76,7 +76,7 @@ final class CacheInstance implements CacheInterface
 
     public function set(string $key, mixed $value, int $ttl = 60): bool
     {
-        $ttl = $ttl > 0 ? $ttl : $this->defaultTtl;
+        $ttl = $ttl >= 0 ? $ttl : $this->defaultTtl;
         return $this->driver()->set($this->normalizeKey($key), $value, $ttl);
     }
 
