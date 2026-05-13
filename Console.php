@@ -73,6 +73,7 @@ use Siro\Core\Commands\MakeMiddlewareCommand;
 use Siro\Core\Commands\MakeListenerCommand;
 use Siro\Core\Commands\TestCommand;
 use Siro\Core\Commands\BenchmarkCommand;
+use Siro\Core\Commands\FrankenphpServeCommand;
 
 final class Console
 {
@@ -147,7 +148,8 @@ final class Console
 
             'schedule:run'  => ['handler' => ScheduleRunCommand::class, 'desc' => 'Run scheduled tasks', 'usage' => 'php siro schedule:run'],
 
-            'serve'        => ['handler' => ServeCommand::class, 'desc' => 'Start dev server', 'usage' => 'php siro serve [--port=8080]'],
+            'serve'             => ['handler' => ServeCommand::class, 'desc' => 'Start dev server (php -S)', 'usage' => 'php siro serve [--port=8080]'],
+            'frankenphp:serve'  => ['handler' => FrankenphpServeCommand::class, 'desc' => 'Start FrankenPHP production server (--docker)', 'usage' => 'php siro frankenphp:serve [--docker] [--port=80]'],
             'live'         => ['handler' => LiveCommand::class, 'desc' => 'Live reload dev server', 'usage' => 'php siro live [--port=9090]'],
             'deploy'       => ['handler' => DeployCommand::class, 'desc' => 'Deploy application', 'usage' => 'php siro deploy [--init]'],
             'storage:link' => ['handler' => StorageLinkCommand::class, 'desc' => 'Create storage symlink', 'usage' => 'php siro storage:link'],
@@ -409,7 +411,7 @@ final class Console
             'Logs'               => ['log:', 'debug:'],
             'Test'               => ['test', 'test:', 'api:test'],
             'Queue & Schedule'   => ['queue:', 'schedule:'],
-            'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link'],
+            'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link', 'frankenphp:'],
         ];
 
         $fallbackGroup = 'System & Config';

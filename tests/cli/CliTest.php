@@ -134,12 +134,13 @@ final class CliTest extends TestCase
             ['new', 'Create new project from skeleton', 'php siro new'],
             ['benchmark', 'Performance benchmark', 'php siro benchmark'],
             ['debug:health', 'Check debug system health', 'php siro debug:health'],
+            ['frankenphp:serve', 'Start FrankenPHP production', 'php siro frankenphp:serve'],
         ];
     }
 
     public function testAllCommandsExist(): void
     {
-        $this->assertCount(69, $this->getRegistry());
+        $this->assertCount(70, $this->getRegistry());
     }
 
     /**
