@@ -77,7 +77,7 @@ use Siro\Core\Commands\FrankenphpServeCommand;
 
 final class Console
 {
-    public const VERSION = '0.23.1';
+    public const VERSION = '0.24.0';
 
     public static function getVersion(): string
     {
