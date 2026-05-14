@@ -11,6 +11,13 @@ use Siro\Core\Storage;
 
 final class SecurityFixesTest extends TestCase
 {
+    private static function extractJsonFromCache(string $content): string
+    {
+        $after = substr($content, strlen('<?php exit; ?>'));
+        $sep = strrpos($after, '.hmac.');
+        return $sep !== false ? substr($after, 0, $sep) : trim($after);
+    }
+
     private string $tempDir;
 
     protected function setUp(): void
@@ -154,7 +161,7 @@ final class SecurityFixesTest extends TestCase
         $content = file_get_contents($cacheFile);
         $this->assertStringStartsWith('<?php exit; ?>', $content, 'Cache should start with PHP exit guard');
 
-        $jsonPart = substr($content, 14);
+        $jsonPart = self::extractJsonFromCache($content);
         $this->assertJson($jsonPart, 'Cache content after exit guard should be valid JSON');
 
         $decoded = json_decode($jsonPart, true);
@@ -177,7 +184,7 @@ final class SecurityFixesTest extends TestCase
         $this->assertNotNull($cacheFile);
 
         $content = file_get_contents($cacheFile);
-        $jsonPart = substr($content, 14);
+        $jsonPart = self::extractJsonFromCache($content);
         $decoded = json_decode($jsonPart, true);
 
         $this->assertIsArray($decoded);
@@ -255,7 +262,7 @@ final class SecurityFixesTest extends TestCase
         $content = file_get_contents($cacheFile);
         $this->assertStringStartsWith('<?php exit; ?>', $content, 'Cache should start with PHP exit guard');
 
-        $jsonPart = substr($content, 14);
+        $jsonPart = self::extractJsonFromCache($content);
         $this->assertJson($jsonPart, 'Cache content should be valid JSON');
 
         $data = json_decode($jsonPart, true);
@@ -287,7 +294,10 @@ final class SecurityFixesTest extends TestCase
             'dynamic' => [],
         ];
 
-        $content = '<?php exit; ?>' . json_encode($exported, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        $json = json_encode($exported, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $secret = 'test_jwt_secret_key_for_unit_tests_only_32chars!!';
+        $hmac = hash_hmac('sha256', $json, $secret);
+        $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
         file_put_contents($cacheFile, $content);
 
         $router = new Router();
@@ -310,7 +320,10 @@ final class SecurityFixesTest extends TestCase
     {
         $cacheFile = $this->tempDir . '/routes.php';
         mkdir(dirname($cacheFile), 0777, true);
-        file_put_contents($cacheFile, '<?php exit; ?>{"invalid": true}' . PHP_EOL);
+        $json = '{"invalid": true}';
+        $secret = 'test_jwt_secret_key_for_unit_tests_only_32chars!!';
+        $hmac = hash_hmac('sha256', $json, $secret);
+        file_put_contents($cacheFile, '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL);
 
         $router = new Router();
         $result = $router->loadFromCache($cacheFile);
@@ -329,7 +342,7 @@ final class SecurityFixesTest extends TestCase
         $this->assertTrue($result);
 
         $content = file_get_contents($cacheFile);
-        $jsonPart = substr($content, 14);
+        $jsonPart = self::extractJsonFromCache($content);
         $data = json_decode($jsonPart, true);
 
         $this->assertIsArray($data);

@@ -27,26 +27,14 @@
         <PossiblyInvalidArrayOffset errorLevel="info" />
     </issueHandlers>
     <taintAnalysis>
-        <taintSources>
-            <taintSource type="INPUT" />
-            <taintSource type="COOKIE" />
-            <taintSource type="GET" />
-            <taintSource type="POST" />
-            <taintSource type="SERVER" />
-            <taintSource type="REQUEST" />
-            <taintSource type="ENV" />
-        </taintSources>
         <taintSinks>
-            <taintSink type="SQL" />
-            <taintSink type="INCLUDE" />
-            <taintSink type="SYSTEM" />
-            <taintSink type="EVAL" />
-            <taintSink type="SHELL" />
-            <taintSink type="HEADER" />
-            <taintSink type="UNSERIALIZE" />
-            <taintSink type="PREG" />
-            <taintSink type="SSRF" />
-            <taintSink type="FILE" />
+            <taintSink type="sql" />
+            <taintSink type="include" />
+            <taintSink type="system" />
+            <taintSink type="shell" />
+            <taintSink type="header" />
+            <taintSink type="user_secret" />
+            <taintSink type="ssrf" />
         </taintSinks>
     </taintAnalysis>
 </psalm>

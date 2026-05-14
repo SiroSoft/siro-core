@@ -209,6 +209,9 @@ final class Router
      */
     public function getRoutes(): array
     {
+        if ($this->matcherDirty) {
+            $this->rebuildMatcher();
+        }
         return $this->matcher->getRoutes();
     }
 
@@ -227,6 +230,9 @@ final class Router
      */
     public function exportRoutes(): array
     {
+        if ($this->matcherDirty) {
+            $this->rebuildMatcher();
+        }
         return $this->matcher->export();
     }
 
