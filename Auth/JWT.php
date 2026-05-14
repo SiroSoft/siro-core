@@ -314,6 +314,7 @@ final class JWT
             return true;
         }
 
+        // Allow previous secret during key rotation — verifies version-gated
         $prevSecret = self::previousSecret();
         if ($prevSecret !== '' && hash_equals(self::signHs256WithSecret($data, $prevSecret), $signature)) {
             $prevVersion = (int) self::getKeyVersion() - 1;
