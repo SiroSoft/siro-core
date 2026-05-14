@@ -253,6 +253,9 @@ final class SqlCompiler
     /**
      * @param array<int, array{column:string, direction:string}> $orders
      */
+    /**
+     * @param array<int, array{column:string, direction:string, raw?:bool}> $orders
+     */
     public function compileOrderBy(array $orders): string
     {
         if ($orders === []) {
@@ -261,7 +264,9 @@ final class SqlCompiler
 
         $parts = [];
         foreach ($orders as $order) {
-            $parts[] = $this->quoteIdentifier($order['column']) . ' ' . $order['direction'];
+            $isRaw = isset($order['raw']) && $order['raw'];
+            $column = $isRaw ? $order['column'] : $this->quoteIdentifier($order['column']);
+            $parts[] = $column . ' ' . $order['direction'];
         }
 
         return ' ORDER BY ' . implode(', ', $parts);

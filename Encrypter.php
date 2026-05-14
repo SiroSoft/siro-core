@@ -63,10 +63,7 @@ final class Encrypter
     {
         $key ??= (string) Env::get('APP_KEY', '');
         if ($key === '') {
-            $key = (string) Env::get('JWT_SECRET', '');
-        }
-        if ($key === '') {
-            throw new RuntimeException('Encryption key not configured. Set APP_KEY or JWT_SECRET in .env.');
+            throw new RuntimeException('Encryption key not configured. Set APP_KEY in .env.');
         }
         $raw = hash('sha256', $key, true);
         // Derive separate keys using HKDF-like expansion

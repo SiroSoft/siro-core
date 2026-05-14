@@ -208,7 +208,7 @@ final class LoggerInstance implements LoggerInterface
             '/"(credit_card|card_number|cvv|cvc|ssn|passport)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
             '/"(session_id|sessionid)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
             '/"(refresh_token|access_token)"\s*:\s*"[^"]{8,}"/i' => '"$1":"[REDACTED]"',
-            '/\b\d{13,19}\b/' => '[REDACTED-CARD]',
+            '/\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/' => '[REDACTED-CARD]',
         ];
 
         $this->compiledSanitizePatterns = [

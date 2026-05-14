@@ -403,7 +403,7 @@ class QueryBuilder
             default => $seed !== null ? 'RAND(' . (int) $seed . ')' : 'RAND()',
         };
 
-        $this->orders[] = ['column' => $sql, 'direction' => 'ASC'];
+        $this->orders[] = ['column' => $sql, 'direction' => 'ASC', 'raw' => true];
         return $this;
     }
 

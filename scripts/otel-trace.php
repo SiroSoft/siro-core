@@ -27,7 +27,7 @@ final class OtelTrace
     {
         $traceId = bin2hex(random_bytes(16));
         $spanId = bin2hex(random_bytes(8));
-        return sprintf('%s-%s-%s-%02s', self::VERSION, $traceId, $spanId, random_int(0, 255));
+        return sprintf('%s-%s-%s-%02x', self::VERSION, $traceId, $spanId, random_int(0, 255));
     }
 
     /**
@@ -38,7 +38,7 @@ final class OtelTrace
         $parts = explode('-', $traceparent);
         $traceId = $parts[1] ?? bin2hex(random_bytes(16));
         $spanId = bin2hex(random_bytes(8));
-        return sprintf('%s-%s-%s-%02s', self::VERSION, $traceId, $spanId, random_int(0, 255));
+        return sprintf('%s-%s-%s-%02x', self::VERSION, $traceId, $spanId, random_int(0, 255));
     }
 
     /**

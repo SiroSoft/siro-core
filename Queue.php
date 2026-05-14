@@ -175,14 +175,10 @@ final class Queue
         $pdo->beginTransaction();
 
         try {
-            $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
-            $lockCheck = $driver === 'sqlite'
-                ? "(locked_until IS NULL OR locked_until < :now)"
-                : "(locked_until IS NULL OR locked_until < UNIX_TIMESTAMP())";
-
+            $now = time();
             $row = Database::first(
-                "SELECT * FROM jobs WHERE available_at <= :now AND {$lockCheck} ORDER BY priority DESC, id ASC LIMIT 1",
-                ['now' => time()]
+                "SELECT * FROM jobs WHERE available_at <= :now AND (locked_until IS NULL OR locked_until < :now2) ORDER BY priority DESC, id ASC LIMIT 1",
+                ['now' => $now, 'now2' => $now]
             );
 
             if ($row === null) {
@@ -190,9 +186,10 @@ final class Queue
                 return false;
             }
 
+            $lockDuration = min(is_numeric($row['timeout'] ?? null) ? (int) $row['timeout'] : 60, 3600);
             $affected = Database::execute(
-                "UPDATE jobs SET locked_until = :lock WHERE id = :id AND locked_until IS NULL",
-                ['lock' => time() + 60, 'id' => $row['id']]
+                "UPDATE jobs SET locked_until = :lock WHERE id = :id AND (locked_until IS NULL OR locked_until < :now3)",
+                ['lock' => $now + $lockDuration, 'id' => $row['id'], 'now3' => $now]
             );
 
             if ($affected === 0) {

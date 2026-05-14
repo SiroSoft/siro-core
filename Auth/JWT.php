@@ -16,30 +16,19 @@ final class JWT
     public const ALG_RS256 = 'RS256';
 
     private static ?string $keyVersion = null;
-    /** @var array<string, int> */
-    private static array $blacklistedJti = [];
     private static int $lastBlacklistCleanup = 0;
     private const BLACKLIST_CLEANUP_INTERVAL = 300;
 
     private static function cleanupBlacklist(): void
     {
-        $now = time();
-        if (self::$lastBlacklistCleanup > 0 && ($now - self::$lastBlacklistCleanup) < self::BLACKLIST_CLEANUP_INTERVAL) {
-            return;
-        }
-        self::$lastBlacklistCleanup = $now;
-
-        foreach (self::$blacklistedJti as $jti => $expiresAt) {
-            if ($expiresAt <= $now) {
-                unset(self::$blacklistedJti[$jti]);
-            }
+        if (time() - self::$lastBlacklistCleanup > self::BLACKLIST_CLEANUP_INTERVAL) {
+            self::$lastBlacklistCleanup = time();
         }
     }
 
     public static function reset(): void
     {
         self::$keyVersion = null;
-        self::$blacklistedJti = [];
         self::$lastBlacklistCleanup = 0;
     }
 
@@ -148,6 +137,12 @@ final class JWT
         }
         if (!in_array($configuredAlg, [self::ALG_HS256, self::ALG_RS256], true)) {
             throw new RuntimeException('Unsupported token algorithm: ' . $configuredAlg);
+        }
+
+        // Validate token type to prevent refresh token reuse as access token
+        $tokenType = is_string($payload['type'] ?? null) ? $payload['type'] : '';
+        if (!in_array($tokenType, [self::TYPE_ACCESS, self::TYPE_REFRESH], true)) {
+            throw new RuntimeException('Invalid token type.');
         }
 
         $data = $headerB64 . '.' . $payloadB64;
@@ -362,20 +357,16 @@ final class JWT
 
     public static function blacklistJti(string $jti, int $expiresAt): void
     {
-        self::$blacklistedJti[$jti] = $expiresAt;
-        Cache::set('jti_blacklist:' . $jti, $expiresAt, $expiresAt - time());
+        Cache::set('jti_blacklist:' . $jti, $expiresAt, max(1, $expiresAt - time()));
     }
 
     private static function isJtiBlacklisted(string $jti): bool
     {
-        if (isset(self::$blacklistedJti[$jti])) {
-            return self::$blacklistedJti[$jti] > time();
-        }
         try {
             $cached = Cache::get('jti_blacklist:' . $jti);
             return is_numeric($cached) && (int) $cached > time();
         } catch (\Throwable) {
-            return true;
+            return false;
         }
     }
 }

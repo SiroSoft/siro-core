@@ -168,7 +168,7 @@ final class App
         $method = 'GET'; $path = '/'; $status = 500;
         // W3C Trace Context: accept incoming, propagate outgoing
         $incomingTraceparent = isset($_SERVER['HTTP_TRACEPARENT']) && is_string($_SERVER['HTTP_TRACEPARENT']) ? $_SERVER['HTTP_TRACEPARENT'] : '';
-        $traceId = bin2hex(random_bytes(8));
+        $traceId = bin2hex(random_bytes(16));
         $spanId = bin2hex(random_bytes(8));
 
         if (preg_match('/^[0-9a-f]{2}-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/', $incomingTraceparent, $m) === 1) {

@@ -33,6 +33,10 @@ final class AuthMiddleware implements MiddlewareInterface
         try {
             /** @var array<string, mixed> $claims */
             $claims = JWT::decode($token);
+            $tokenType = is_string($claims['type'] ?? null) ? $claims['type'] : '';
+            if ($tokenType !== \Siro\Core\Auth\JWT::TYPE_ACCESS) {
+                return Response::error('Forbidden', 403, ['token' => ['Invalid token type. Use an access token.']]);
+            }
             $sub = $claims['sub'] ?? 0;
             $ver = $claims['ver'] ?? 0;
             $userId = is_numeric($sub) ? (int) $sub : 0;

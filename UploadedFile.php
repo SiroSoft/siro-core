@@ -24,6 +24,9 @@ final class UploadedFile
 
     private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'pht', 'phar', 'phps', 'exe', 'sh', 'bat', 'cmd', 'pl', 'py', 'rb', 'cgi', 'asp', 'aspx', 'jsp', 'htaccess', 'user.ini', 'env', 'shtml', 'stm', 'shtm', 'inc', 'war', 'jar', 'svg', 'svgz'];
 
+    /** Whitelist of allowed extensions for upload. Use this instead of BLOCKED_EXTENSIONS for stricter security. */
+    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'csv', 'json', 'xml', 'doc', 'docx', 'zip'];
+
     /** @param array<string, string|int> $file */
     public function __construct(array $file)
     {
@@ -117,6 +120,9 @@ final class UploadedFile
         if (in_array($ext, self::BLOCKED_EXTENSIONS, true)) {
             throw new \RuntimeException('File type not allowed: .' . $ext);
         }
+        if (!in_array($ext, self::ALLOWED_EXTENSIONS, true) && $ext !== '') {
+            throw new \RuntimeException('File type not allowed: .' . $ext . ' (allowed: ' . implode(', ', self::ALLOWED_EXTENSIONS) . ')');
+        }
         $path = $directory . '/' . $filename;
 
         if ($useStorage) {
@@ -207,7 +213,7 @@ final class UploadedFile
     {
         $ext = $this->getClientOriginalExtension();
         if ($ext === '' || !isset(self::MIME_MAP[$ext])) {
-            return true;
+            return false;
         }
 
         $expectedMimes = self::MIME_MAP[$ext];
