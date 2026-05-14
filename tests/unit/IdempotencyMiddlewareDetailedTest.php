@@ -14,18 +14,27 @@ final class IdempotencyMiddlewareDetailedTest extends TestCase
 {
     private IdempotencyMiddleware $middleware;
 
+    private string $dbPath;
+
     protected function setUp(): void
     {
         parent::setUp();
-        \Siro\Core\Database::configure(['driver' => 'sqlite', 'database' => ':memory:', 'charset' => 'utf8']);
+        $this->dbPath = sys_get_temp_dir() . '/siro_idempotency_test_' . uniqid() . '.db';
+        \Siro\Core\Database::purge();
+        \Siro\Core\Database::configure(['driver' => 'sqlite', 'database' => $this->dbPath, 'charset' => 'utf8']);
+        // Force connection to ensure DB file is created
+        \Siro\Core\Database::connection();
         Idempotency::createTable();
         $this->middleware = new IdempotencyMiddleware();
     }
 
     protected function tearDown(): void
     {
-        try { \Siro\Core\Database::connection()->rollBack(); } catch (\Throwable) {}
         \Siro\Core\Database::purge();
+        \Siro\Core\Database::setInstance(null);
+        if (isset($this->dbPath) && is_file($this->dbPath)) {
+            @unlink($this->dbPath);
+        }
         parent::tearDown();
     }
 

@@ -20,6 +20,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 // Set required env for tests
+$_ENV['APP_KEY'] = 'test_app_key_for_encryption_tests_32chars!!';
+putenv('APP_KEY=' . $_ENV['APP_KEY']);
 $_ENV['JWT_SECRET'] = 'test_jwt_secret_key_for_unit_tests_only_32chars!!';
 putenv('JWT_SECRET=' . $_ENV['JWT_SECRET']);
 $_ENV['APP_ENV'] = 'testing';

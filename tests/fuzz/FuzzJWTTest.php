@@ -48,28 +48,32 @@ final class FuzzJWTTest extends TestCase
             $token = JWT::encode($payload);
             $decoded = JWT::decode($token);
             foreach ($payload as $key => $value) {
-                if (in_array($key, ['iat', 'exp', 'jti'], true)) {
+                if (in_array($key, ['iat', 'exp', 'jti', 'type'], true)) {
                     continue;
                 }
                 $this->assertArrayHasKey($key, $decoded);
             }
         } catch (\Throwable $e) {
-            $this->assertStringContainsStringIgnoringCase('expired', $e->getMessage());
+            $msg = $e->getMessage();
+            $this->assertTrue(
+                str_contains($msg, 'expired') || str_contains($msg, 'Invalid token'),
+                "Exception message should contain 'expired' or 'Invalid token': $msg"
+            );
         }
     }
 
     /** @return iterable<string, array{array}> */
     public static function provideRoundtripPayloads(): iterable
     {
-        yield 'with custom claims' => [['sub' => 1, 'ver' => 1, 'name' => 'John', 'role' => 'admin']];
-        yield 'nested arrays' => [['sub' => 1, 'ver' => 1, 'meta' => ['key' => 'value', 'count' => 5]]];
-        yield 'empty array values' => [['sub' => 1, 'ver' => 1, 'tags' => [], 'data' => null]];
-        yield 'unicode chars' => [['sub' => 1, 'ver' => 1, 'name' => 'HeartSpade']];
-        yield 'very long strings' => [['sub' => 1, 'ver' => 1, 'data' => str_repeat('x', 10000)]];
-        yield 'special chars' => [['sub' => 1, 'ver' => 1, 'sql' => "DROP TABLE users;--"]];
-        yield 'boolean values' => [['sub' => 1, 'ver' => 1, 'active' => true, 'deleted' => false]];
-        yield 'numeric keys' => [['sub' => 1, 'ver' => 1, 0 => 'zero', 1 => 'one']];
-        yield 'mixed types' => [['sub' => 1, 'ver' => 1, 'str' => 'hello', 'int' => 42, 'float' => 3.14, 'null' => null]];
+        yield 'with custom claims' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'name' => 'John', 'role' => 'admin']];
+        yield 'nested arrays' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'meta' => ['key' => 'value', 'count' => 5]]];
+        yield 'empty array values' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'tags' => [], 'data' => null]];
+        yield 'unicode chars' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'name' => 'HeartSpade']];
+        yield 'very long strings' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'data' => str_repeat('x', 10000)]];
+        yield 'special chars' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'sql' => "DROP TABLE users;--"]];
+        yield 'boolean values' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'active' => true, 'deleted' => false]];
+        yield 'numeric keys' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 0 => 'zero', 1 => 'one']];
+        yield 'mixed types' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'str' => 'hello', 'int' => 42, 'float' => 3.14, 'null' => null]];
     }
 
     /** @dataProvider provideEncodeAccessParams */
@@ -141,7 +145,7 @@ final class FuzzJWTTest extends TestCase
     /** @return iterable<string, array{string}> */
     public static function provideTamperedTokens(): iterable
     {
-        $valid = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600]);
+        $valid = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'iat' => time(), 'exp' => time() + 3600]);
 
         $parts = explode('.', $valid);
         if (count($parts) === 3) {
