@@ -58,6 +58,7 @@ use Siro\Core\Commands\LogCleanupCommand;
 use Siro\Core\Commands\LogTailCommand;
 use Siro\Core\Commands\LogStatsCommand;
 use Siro\Core\Commands\MakeFactoryCommand;
+use Siro\Core\Commands\DebugHealthCommand;
 use Siro\Core\Commands\MakeServiceCommand;
 use Siro\Core\Commands\MakeRepositoryCommand;
 use Siro\Core\Commands\DbShowCommand;
@@ -72,6 +73,7 @@ use Siro\Core\Commands\MakeMiddlewareCommand;
 use Siro\Core\Commands\MakeListenerCommand;
 use Siro\Core\Commands\TestCommand;
 use Siro\Core\Commands\BenchmarkCommand;
+use Siro\Core\Commands\FrankenphpServeCommand;
 
 final class Console
 {
@@ -133,7 +135,8 @@ final class Console
             'log:tail'    => ['handler' => LogTailCommand::class, 'desc' => 'Tail log files in real-time', 'usage' => 'php siro log:tail [--type=request|error|slow] [--lines=N] [--follow|-f]'],
             'log:stats'   => ['handler' => LogStatsCommand::class, 'desc' => 'Request statistics with charts', 'usage' => 'php siro log:stats [--days=N]'],
             'log:top'     => ['handler' => LogTopCommand::class, 'desc' => 'Top slowest APIs by total time', 'usage' => 'php siro log:top [--limit=N] [--min=MS]'],
-            'debug:last'  => ['handler' => DebugLastCommand::class, 'desc' => 'Show why last request failed (alias: why)', 'usage' => 'php siro debug:last'],
+            'debug:last'    => ['handler' => DebugLastCommand::class, 'desc' => 'Show why last request failed (alias: why)', 'usage' => 'php siro debug:last'],
+            'debug:health'  => ['handler' => DebugHealthCommand::class, 'desc' => 'Check debug system health and configuration', 'usage' => 'php siro debug:health'],
 
             'test:run'      => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite (legacy)', 'usage' => 'php siro test:run'],
             'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API (--loop, --as=admin/guest)', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]'],
@@ -145,7 +148,8 @@ final class Console
 
             'schedule:run'  => ['handler' => ScheduleRunCommand::class, 'desc' => 'Run scheduled tasks', 'usage' => 'php siro schedule:run'],
 
-            'serve'        => ['handler' => ServeCommand::class, 'desc' => 'Start dev server', 'usage' => 'php siro serve [--port=8080]'],
+            'serve'             => ['handler' => ServeCommand::class, 'desc' => 'Start dev server (php -S)', 'usage' => 'php siro serve [--port=8080]'],
+            'frankenphp:serve'  => ['handler' => FrankenphpServeCommand::class, 'desc' => 'Start FrankenPHP production server (--docker)', 'usage' => 'php siro frankenphp:serve [--docker] [--port=80]'],
             'live'         => ['handler' => LiveCommand::class, 'desc' => 'Live reload dev server', 'usage' => 'php siro live [--port=9090]'],
             'deploy'       => ['handler' => DeployCommand::class, 'desc' => 'Deploy application', 'usage' => 'php siro deploy [--init]'],
             'storage:link' => ['handler' => StorageLinkCommand::class, 'desc' => 'Create storage symlink', 'usage' => 'php siro storage:link'],
@@ -327,12 +331,11 @@ final class Console
         $this->write('');
         $this->write('  Usage:');
         $this->write('    php siro <command> [options]');
-        $this->write('    php siro list                  All 59 commands');
+        $this->write('    php siro list                  All 70 commands');
         $this->write('    php siro <command> --help      Command details');
         $this->write('    php siro --version             Version info');
         $this->write('');
 
-        $groups = $this->groupedCommands();
         $layers = [
             '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'why', 'fix', 'replay', 'trace:list'],
             '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
@@ -356,7 +359,7 @@ final class Console
     private function printList(): void
     {
         $this->write('');
-        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 59 Commands');
+        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 70 Commands');
         $this->write('  ' . str_repeat('=', 60));
         $this->write('');
 
@@ -380,7 +383,7 @@ final class Console
             $this->write('');
         }
 
-        $this->write('Run "php siro list" for all 59 commands with usage examples.');
+        $this->write('Run "php siro <command> --help" for command details.');
     }
 
     /** @param array{handler: class-string, desc: string, usage: string} $info */
@@ -400,34 +403,50 @@ final class Console
     private function groupedCommands(): array
     {
         $registry = $this->commandRegistry();
+
         $groups = [
-            'Make / Generate'    => ['make:auth', 'make:controller', 'make:model', 'make:migration',
-                'make:queue-table', 'make:resource', 'make:seeder', 'make:crud', 'make:test',
-                'make:job', 'make:mail', 'make:event', 'make:lang', 'make:factory',
-                'make:service', 'make:repository',
-                'make:openapi', 'make:postman'],
+            'Make / Generate'    => 'make:',
             'New Project'        => ['new'],
-            'Database'           => ['migrate', 'migrate:rollback', 'migrate:status', 'db:seed', 'db:show'],
-            'Logs'               => ['log:trace', 'log:replay', 'log:export', 'log:cleanup', 'log:slow', 'log:tail', 'log:stats', 'log:top', 'debug:last'],
-            'Test'               => ['test', 'api:test'],
-            'Queue & Schedule'   => ['queue:work', 'queue:retry', 'queue:flush', 'queue:status', 'schedule:run'],
-            'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link'],
-            'System & Config'    => ['key:generate', 'config:cache', 'optimize', 'env:check',
-                'env:switch', 'doctor', 'fix', 'down', 'up', 'replay', 'trace:list', 'route:list', 'route:search', 'route:rules', 'rate:status'],
+            'Database'           => ['migrate', 'migrate:', 'db:'],
+            'Logs'               => ['log:', 'debug:'],
+            'Test'               => ['test', 'test:', 'api:test'],
+            'Queue & Schedule'   => ['queue:', 'schedule:'],
+            'Server & Deploy'    => ['serve', 'live', 'deploy', 'storage:link', 'frankenphp:'],
         ];
 
+        $fallbackGroup = 'System & Config';
+
         $result = [];
-        foreach ($groups as $group => $cmds) {
+        $mapped = [];
+
+        foreach ($groups as $group => $prefixes) {
+            $prefixes = (array) $prefixes;
             $entries = [];
-            foreach ($cmds as $cmd) {
-                if (isset($registry[$cmd])) {
-                    $entries[$cmd] = $registry[$cmd]['desc'];
+            foreach ($registry as $cmd => $info) {
+                foreach ($prefixes as $prefix) {
+                    if (str_starts_with($cmd, $prefix)) {
+                        $entries[$cmd] = $info['desc'];
+                        $mapped[$cmd] = true;
+                        break;
+                    }
                 }
             }
             if ($entries !== []) {
                 $result[$group] = $entries;
             }
         }
+
+        // Unmatched commands go to System & Config
+        $remaining = [];
+        foreach ($registry as $cmd => $info) {
+            if (!isset($mapped[$cmd])) {
+                $remaining[$cmd] = $info['desc'];
+            }
+        }
+        if ($remaining !== []) {
+            $result[$fallbackGroup] = $remaining;
+        }
+
         return $result;
     }
 

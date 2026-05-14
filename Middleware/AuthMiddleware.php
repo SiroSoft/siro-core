@@ -18,14 +18,14 @@ final class AuthMiddleware implements MiddlewareInterface
         $matches = [];
         if (!preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {
             return Response::error('Unauthorized', 401, [
-                'token' => ['Missing bearer token'],
+                'token' => ['Invalid or expired token'],
             ]);
         }
 
         $token = trim((string) $matches[1]);
         if ($token === '') {
             return Response::error('Unauthorized', 401, [
-                'token' => ['Missing bearer token'],
+                'token' => ['Invalid or expired token'],
             ]);
         }
 
@@ -36,13 +36,13 @@ final class AuthMiddleware implements MiddlewareInterface
 
             if ($userId <= 0) {
                 return Response::error('Unauthorized', 401, [
-                    'token' => ['Invalid token subject'],
+                    'token' => ['Invalid or expired token'],
                 ]);
             }
 
             if ($tokenVersion <= 0) {
                 return Response::error('Unauthorized', 401, [
-                    'token' => ['Invalid token version'],
+                    'token' => ['Invalid or expired token'],
                 ]);
             }
 
@@ -59,14 +59,14 @@ final class AuthMiddleware implements MiddlewareInterface
 
             if ($user === null || ((int) ($user->getAttribute('status') ?? 0) !== 1)) {
                 return Response::error('Unauthorized', 401, [
-                    'token' => ['User not found or inactive'],
+                    'token' => ['Invalid or expired token'],
                 ]);
             }
 
             $userData = $user->toArray();
             if ((int) ($userData['token_version'] ?? 1) !== $tokenVersion) {
                 return Response::error('Unauthorized', 401, [
-                    'token' => ['Token has been revoked'],
+                    'token' => ['Invalid or expired token'],
                 ]);
             }
 

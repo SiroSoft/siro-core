@@ -495,6 +495,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
 
         $rules = [];
 
+        // Pattern 1: validate() with nested arrays (e.g., 'items' => [1,2])
         if (preg_match('/\->validate\s*\(\s*\[([^\]]*\[[^\]]*\]\s*,*\s*)+\s*\)/s', $body, $vMatch)) {
             preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[0], $pairs);
             foreach ($pairs[1] as $i => $field) {
@@ -502,7 +503,16 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        if (preg_match('/Validator::make\s*\([^,]+,\s*\[([^\]]+)\]/s', $body, $vMatch)) {
+        // Pattern 2: validate() with simple flat array (most common)
+        if ($rules === [] && preg_match('/\->validate\s*\((\s*\[[^]]+\])\s*\)/s', $body, $vMatch)) {
+            preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[1], $pairs);
+            foreach ($pairs[1] as $i => $field) {
+                $rules[$field] = explode('|', $pairs[2][$i]);
+            }
+        }
+
+        // Pattern 3: Validator::make() with flat array
+        if ($rules === [] && preg_match('/Validator::make\s*\([^,]+,\s*\[([^\]]+)\]/s', $body, $vMatch)) {
             preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[1], $pairs);
             foreach ($pairs[1] as $i => $field) {
                 $rules[$field] = explode('|', $pairs[2][$i]);
@@ -530,14 +540,15 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private function extractMethodBody(string $content, int $startPos): string
     {
         $depth = 0;
+        $entered = false;
         $len = strlen($content);
         $body = '';
         for ($i = $startPos; $i < $len; $i++) {
             $ch = $content[$i];
             $body .= $ch;
-            if ($ch === '{') $depth++;
+            if ($ch === '{') { $depth++; $entered = true; }
             if ($ch === '}') $depth--;
-            if ($depth === 0) break;
+            if ($entered && $depth === 0) break;
         }
         return $body;
     }

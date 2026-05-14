@@ -79,10 +79,7 @@ final class Request
 
         // BLOCK: Content-Length header can be spoofed, validate actual body size
         if ($contentLength > 0 && $contentLength > $maxBodySize) {
-            http_response_code(413);
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
-            exit(1);
+            throw new \RuntimeException('Request body too large (max ' . ($maxBodySize / 1024 / 1024) . 'MB)');
         }
 
         // For non-multipart requests, read and validate actual body size
@@ -91,10 +88,7 @@ final class Request
             $actualSize = strlen($body);
 
             if ($actualSize > $maxBodySize) {
-                http_response_code(413);
-                header('Content-Type: application/json; charset=utf-8');
-                echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
-                exit(1);
+                throw new \RuntimeException('Request body too large (max ' . ($maxBodySize / 1024 / 1024) . 'MB)');
             }
 
             // Cache body for reuse (JsonMiddleware etc.)
@@ -582,7 +576,7 @@ final class Request
     private static function normalizePath(string $path): string
     {
         // Strip null bytes and URL-encoded null bytes
-        $path = str_replace(["\0", "\x00", '%00', '%0'], '', $path);
+        $path = str_replace(["\0", "\x00", '%00'], '', $path);
 
         if ($path === '') {
             return '/';

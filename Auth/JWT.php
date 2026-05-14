@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core\Auth;
 
 use RuntimeException;
+use Siro\Core\Cache;
 use Siro\Core\Env;
 
 final class JWT
@@ -15,6 +16,14 @@ final class JWT
     public const ALG_RS256 = 'RS256';
 
     private static ?string $keyVersion = null;
+    /** @var array<string, int> */
+    private static array $blacklistedJti = [];
+
+    public static function reset(): void
+    {
+        self::$keyVersion = null;
+        self::$blacklistedJti = [];
+    }
 
     private static function algorithm(): string
     {
@@ -151,6 +160,11 @@ final class JWT
             throw new RuntimeException('JWT token missing required "ver" claim (token version). Token may be from an incompatible system.');
         }
 
+        // Check JTI blacklist for token revocation
+        if (isset($payload['jti']) && is_string($payload['jti']) && self::isJtiBlacklisted($payload['jti'])) {
+            throw new RuntimeException('Token has been revoked.');
+        }
+
         return $payload;
     }
 
@@ -277,9 +291,13 @@ final class JWT
             return true;
         }
 
+        // Allow previous secret during key rotation — verifies version-gated
         $prevSecret = self::previousSecret();
         if ($prevSecret !== '' && hash_equals(self::signHs256WithSecret($data, $prevSecret), $signature)) {
-            return true;
+            $prevVersion = (int) self::getKeyVersion() - 1;
+            if ($prevVersion > 0) {
+                return true;
+            }
         }
 
         return false;
@@ -308,5 +326,20 @@ final class JWT
         }
 
         return $decoded;
+    }
+
+    public static function blacklistJti(string $jti, int $expiresAt): void
+    {
+        self::$blacklistedJti[$jti] = $expiresAt;
+        Cache::set('jti_blacklist:' . $jti, $expiresAt, $expiresAt - time());
+    }
+
+    private static function isJtiBlacklisted(string $jti): bool
+    {
+        if (isset(self::$blacklistedJti[$jti])) {
+            return self::$blacklistedJti[$jti] > time();
+        }
+        $cached = Cache::get('jti_blacklist:' . $jti);
+        return $cached !== null && (int) $cached > time();
     }
 }

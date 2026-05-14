@@ -153,7 +153,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         return $result;
     }
 
-    private static function createInstance(): self
+    private static function createInstance(): static
     {
         return new static();
     }
@@ -505,7 +505,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     }
 
     /** @param array<string, mixed> $attributes */
-    public function forceFill(array $attributes): self
+    protected function forceFill(array $attributes): self
     {
         foreach ($attributes as $key => $value) {
             $this->setAttribute($key, $value);

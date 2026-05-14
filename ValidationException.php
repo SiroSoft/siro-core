@@ -42,8 +42,9 @@ final class ValidationException extends RuntimeException
             'success' => false,
             'message' => $this->getMessage(),
             'data' => null,
-            'errors' => $this->errors,
-            'meta' => [],
+            'meta' => [
+                'errors' => $this->errors,
+            ],
         ];
         return new Response($payload, 422);
     }

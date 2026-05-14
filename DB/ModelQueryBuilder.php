@@ -23,6 +23,11 @@ final class ModelQueryBuilder extends QueryBuilder
         $this->modelClass = $modelClass;
     }
 
+    public function find(int|string $id): ?\Siro\Core\Model
+    {
+        return $this->where('id', '=', $id)->first();
+    }
+
     /**
      * @param array<int, string> $columns
      */
@@ -215,8 +220,8 @@ final class ModelQueryBuilder extends QueryBuilder
             return;
         }
 
-        $uses = class_uses($this->modelClass) ?: [];
-        if (in_array(SoftDeletes::class, $uses, true)) {
+        $uses = class_uses_recursive($this->modelClass) ?: [];
+        if (in_array(\Siro\Core\DB\SoftDeletes::class, $uses, true)) {
             $this->whereRaw('deleted_at IS NULL');
         }
     }

@@ -30,6 +30,8 @@ jobs:
           tools: composer:v2
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Regenerate autoloader
+        run: composer dump-autoload
       - name: PHP_CodeSniffer (PSR-12)
         continue-on-error: true
         run: vendor/bin/phpcs --standard=PSR12 --ignore=vendor .
@@ -51,6 +53,8 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Regenerate autoloader
+        run: composer dump-autoload
       - name: PHPStan Level 7
         run: php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
 
@@ -71,6 +75,22 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Regenerate autoloader
+        run: composer dump-autoload
+      - name: Prepare env
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.testing ]; then
+              cp .env.testing .env
+            elif [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              echo "ERROR: No .env template found!"
+              exit 1
+            fi
+          fi
+          sed -i 's|DB_DATABASE=.*|DB_DATABASE=:memory:|g' .env
+          sed -i 's|CACHE_DRIVER=.*|CACHE_DRIVER=file|g' .env
       - name: PHPUnit tests
         run: php vendor/bin/phpunit --no-progress
 
@@ -85,5 +105,7 @@ jobs:
           tools: composer:v2
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Regenerate autoloader
+        run: composer dump-autoload
       - name: Run release technical gate
         run: composer release:check
