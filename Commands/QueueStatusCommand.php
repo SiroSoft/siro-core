@@ -9,9 +9,10 @@ use Siro\Core\Database;
 use Siro\Core\Queue;
 
 /**
- * Display the current queue status.
+ * Display the current queue status and detailed statistics.
  *
- * Shows pending job count, failed job count, and recent failures.
+ * Shows pending/processing/failed counts, average attempts,
+ * oldest pending job, and recent failures.
  *
  * Usage:
  *   php siro queue:status
@@ -42,15 +43,36 @@ final class QueueStatusCommand implements \Siro\Core\Commands\CommandInterface {
         $pending = Queue::pendingCount();
         $failed = Queue::failedCount();
 
-        $this->write('Queue Status');
-        $this->write('────────────');
-        $this->write("Pending jobs: {$pending}");
-        $this->write("Failed jobs:  {$failed}");
+        // Extended stats
+        $processing = 0;
+        $avgAttempts = 0;
+        $oldestPending = 0;
+        try {
+            $now = time();
+            $procRow = Database::first("SELECT COUNT(*) AS cnt FROM jobs WHERE locked_until > {$now}");
+            $processing = is_numeric($procRow['cnt'] ?? null) ? (int) $procRow['cnt'] : 0;
+            $avgRow = Database::first("SELECT COALESCE(AVG(attempts), 0) AS avg_attempts FROM jobs");
+            $avgAttempts = is_numeric($avgRow['avg_attempts'] ?? null) ? (int) $avgRow['avg_attempts'] : 0;
+            $oldestRow = Database::first("SELECT MIN(available_at) AS oldest FROM jobs WHERE available_at <= {$now}");
+            $oldestPending = is_numeric($oldestRow['oldest'] ?? null) ? (int) $oldestRow['oldest'] : 0;
+        } catch (\Throwable) {
+        }
+
+        $this->write('');
+        $this->write('  Queue Status');
+        $this->write('  ' . str_repeat('=', 40));
+        $this->write("  Pending:      " . number_format($pending));
+        $this->write("  Processing:   " . number_format($processing));
+        $this->write("  Failed:       " . number_format($failed));
+        $this->write("  Avg attempts: " . number_format($avgAttempts, 1));
+        if ($oldestPending > 0) {
+            $this->write("  Oldest:       " . date('Y-m-d H:i:s', $oldestPending));
+        }
+        $this->write('  ' . str_repeat('=', 40));
 
         if ($failed > 0) {
             $this->write('');
-            $this->write("Recent failures (last {$failedLimit}):");
-            $this->write('');
+            $this->write("  Recent failures (last {$failedLimit}):");
 
             $failedJobs = Queue::getFailedJobs($failedLimit);
             $this->table(
@@ -66,10 +88,11 @@ final class QueueStatusCommand implements \Siro\Core\Commands\CommandInterface {
             );
 
             $this->write('');
-            $this->write('Use "php siro queue:retry all" to retry all failed jobs.');
-            $this->write('Use "php siro queue:flush" to clear failed jobs.');
+            $this->write('  Use "php siro queue:retry all" to retry all failed jobs.');
+            $this->write('  Use "php siro queue:flush" to clear failed jobs.');
         }
 
+        $this->write('');
         return 0;
     }
 }
