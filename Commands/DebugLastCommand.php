@@ -7,9 +7,10 @@ namespace Siro\Core\Commands;
 /**
  * Show details of the last request trace.
  *
- * Displays method, path, status, timing, headers,
- * request/response body, SQL queries, and validation
- * errors with quick-fix suggestions.
+ * Displays method, path, status, timing, trace ID,
+ * SQL queries with slow warnings, middleware status,
+ * exception info, and replay commands.
+ *
  * Alias: php siro why
  *
  * @package Siro\Core\Commands
@@ -21,13 +22,15 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
     {
     }
 
+    private const SLOW_SQL_MS = 100;
+
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
 
         if (!is_dir($traceDir)) {
-            $this->write('  ⚠ No traces found. Enable APP_DEBUG=true to capture traces.');
+            $this->write('  No traces found. Enable APP_DEBUG=true to capture traces.');
             return 1;
         }
 
@@ -46,30 +49,74 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $traceId = basename($latest, '.json');
-        $statusVal = $data['status'] ?? 0;
-        $status = is_numeric($statusVal) ? (int) $statusVal : 0;
         $method = $this->safeStr($data['method'] ?? 'GET');
         $path = $this->safeStr($data['path'] ?? '/');
-        $timeMs = $data['time_ms'] ?? 0;
-        $statusColor = $status >= 200 && $status < 300 ? 'green' : ($status >= 400 ? 'red' : 'yellow');
-        $statusText = $status >= 200 && $status < 300 ? 'OK' : ($status === 422 ? 'Unprocessable Entity' : ($status === 401 ? 'Unauthorized' : ($status === 404 ? 'Not Found' : ($status === 500 ? 'Server Error' : 'Unknown'))));
+        $statusVal = $data['status'] ?? 0;
+        $status = is_numeric($statusVal) ? (int) $statusVal : 0;
+        $timeMs = is_numeric($data['time_ms'] ?? null) ? (float) $data['time_ms'] : 0.0;
 
         $this->write('');
-        $this->write('  ' . str_repeat('=', 56));
-        $this->write('  ⚡ LAST REQUEST');
-        $this->write('  ' . str_repeat('=', 56));
-        $this->write('  ' . $method . ' ' . $path);
-        $timeMsFloat = is_numeric($timeMs) ? (float) $timeMs : 0;
-        $this->write('  Status:   ' . $status . ' ' . $statusText . ' (' . round($timeMsFloat, 1) . 'ms)');
-        $this->write('  Trace ID: ' . $traceId);
-        $this->write('  ' . str_repeat('-', 56));
-        $this->write('  💡 Replay: php siro log:replay ' . $traceId);
-        $this->write('  ' . str_repeat('-', 56));
-        $this->write('  Time:     ' . $this->safeStr($data['timestamp'] ?? '?'));
-        $this->write('  IP:       ' . $this->safeStr($data['ip'] ?? '?'));
-        $this->write('  Memory:   ' . $this->safeStr($data['memory_mb'] ?? '?') . 'MB');
+        $this->write('  Last Request Summary');
+        $this->write('  ' . str_repeat('─', 50));
 
-        // Parse response body for errors
+        // Route
+        $this->write('  Route:    ' . $method . ' ' . $path);
+
+        // Status with color hint
+        $statusColor = $status >= 500 ? '❌' : ($status >= 400 ? '⚠' : ($status >= 200 && $status < 300 ? '✅' : ''));
+        $this->write("  Status:   $statusColor $status ($timeMs" . "ms)");
+
+        // Trace ID
+        $this->write('  Trace ID: ' . $traceId);
+        $this->write('  ' . str_repeat('─', 50));
+
+        // SQL Queries
+        $queries = $data['queries'] ?? [];
+        if (is_array($queries) && $queries !== []) {
+            $this->write('  SQL Queries:');
+            $totalSqlTime = 0.0;
+            foreach ($queries as $q) {
+                if (!is_array($q)) continue;
+                $qTime = is_numeric($q['time_ms'] ?? null) ? (float) $q['time_ms'] : 0.0;
+                $totalSqlTime += $qTime;
+                $qSql = $this->safeStr(is_string($q['sql'] ?? null) ? $q['sql'] : '?');
+                $qRows = is_numeric($q['rows'] ?? null) ? (int) $q['rows'] : 0;
+                $slow = $qTime > self::SLOW_SQL_MS ? ' ⚠ SLOW' : '';
+                $this->write(sprintf('    - %s (%s%.1fms)%s', $qSql, $qRows > 0 ? $qRows . ' rows, ' : '', $qTime, $slow));
+            }
+            $this->write(sprintf('    Total SQL: %.1fms', $totalSqlTime));
+            $this->write('');
+        }
+
+        // Middleware status (if trace captures it)
+        $middleware = $data['middleware'] ?? null;
+        if (is_array($middleware)) {
+            $this->write('  Middleware:');
+            foreach ($middleware as $mw) {
+                if (!is_array($mw)) continue;
+                $name = $this->safeStr(is_string($mw['name'] ?? null) ? $mw['name'] : '?');
+                $passed = (bool) ($mw['passed'] ?? true);
+                $icon = $passed ? '✅' : '✗';
+                $this->write("    $icon $name");
+            }
+            $this->write('');
+        }
+
+        // Exception
+        $exception = $data['exception'] ?? $data['error'] ?? null;
+        if (is_string($exception) && $exception !== '') {
+            $this->write('  Exception:');
+            $this->write('    ' . $exception);
+            $this->write('');
+        } elseif (is_array($exception)) {
+            $this->write('  Exception:');
+            $exClass = is_string($exception['class'] ?? null) ? $exception['class'] : 'Error';
+            $exMsg = is_string($exception['message'] ?? null) ? $exception['message'] : '';
+            $this->write("    $exClass: $exMsg");
+            $this->write('');
+        }
+
+        // Response body for validation errors
         $responseBody = $this->safeStr($data['response_body'] ?? '');
         if ($responseBody !== '' && $responseBody !== '{}') {
             $decoded = json_decode($responseBody, true);
@@ -79,28 +126,19 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
                     $errors = $decoded['data']['errors'] ?? [];
                 }
                 if (is_array($errors) && $errors !== []) {
-                    $this->write('');
-                    $this->write('  ❌ Validation failed:');
-                    $hasBodyKeys = false;
+                    $this->write('  Validation failed:');
                     foreach ($errors as $field => $msgs) {
                         $fieldStr = is_array($msgs) ? implode(', ', array_map(fn($v): string => $this->safeStr($v), (array) $msgs)) : $this->safeStr($msgs);
-                        $this->write('    - ' . $this->safeStr($field) . ': ' . $fieldStr);
-                        if ($method !== 'GET') $hasBodyKeys = true;
+                        $this->write('    - ' . $this->safeStr((string) $field) . ': ' . $fieldStr);
                     }
                     $this->write('');
-                    if ($hasBodyKeys) {
-                        $this->write('  💡 Fix now:');
-                        foreach ($errors as $field => $msgs) {
-                            $this->write('    php siro replay ' . $traceId . ' --set body.' . $this->safeStr($field) . '=1');
-                        }
-                    }
-                    $this->write('  💡 Or edit request body:');
-                    $this->write('    php siro log:replay ' . $traceId . ' --edit');
+                    $this->write('  Fix: php siro log:replay ' . $traceId . ' --edit');
+                    $this->write('');
                 }
             }
         }
 
-        // Show auth status
+        // Auth hint
         $headers = $data['request_headers'] ?? [];
         $hasAuth = false;
         if (is_array($headers)) {
@@ -112,70 +150,20 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
         if ($status === 401 && !$hasAuth) {
+            $this->write('  Requires authentication: add --as=admin or login first');
             $this->write('');
-            $this->write('  🔐 Requires authentication: add --as=admin or login first');
         }
 
-        // Show request body
-        $requestBody = $this->safeStr($data['request_body'] ?? '');
-        if ($requestBody !== '' && $requestBody !== '[]' && $requestBody !== '{}') {
-            $this->write('');
-            $this->write('  --- Request Body ---');
-            $formatted = $this->prettyJson($requestBody);
-            foreach (explode("\n", $formatted) as $line) {
-                $this->write('  ' . $line);
-            }
-        }
-
-        // Show response body
-        if ($responseBody !== '' && $responseBody !== '{}') {
-            $this->write('');
-            $this->write('  --- Response Body ---');
-            $formatted = $this->prettyJson($responseBody);
-            foreach (explode("\n", $formatted) as $line) {
-                $this->write('  ' . $line);
-            }
-        }
-
-        // SQL queries
-        if (isset($data['queries']) && is_array($data['queries']) && $data['queries'] !== []) {
-            $this->write('');
-            $this->write('  --- SQL Queries (' . count($data['queries']) . ') ---');
-            $totalTime = 0;
-            foreach ($data['queries'] as $i => $q) {
-                /** @var array<string, mixed> $q */
-                $qTime = $q['time_ms'] ?? 0;
-                $totalTime += is_numeric($qTime) ? (float) $qTime : 0;
-                $qSql = $this->safeStr($q['sql'] ?? '?');
-                $qRows = $q['rows'] ?? 0;
-                $qMs = $q['time_ms'] ?? 0;
-                $this->write(sprintf(
-                    '  %d. %s [%d rows, %.2fms]',
-                    $i + 1,
-                    $qSql,
-                    is_numeric($qRows) ? (int) $qRows : 0,
-                    is_numeric($qMs) ? (float) $qMs : 0
-                ));
-            }
-            $this->write(sprintf('  Total SQL time: %.2fms', $totalTime));
-        }
-
+        // Replay commands
+        $this->write('  Replay:');
+        $this->write('    php siro replay ' . $traceId);
+        $this->write('    php siro replay ' . $traceId . ' --dry-run');
+        $this->write('    php siro replay ' . $traceId . ' --edit');
+        $this->write('    php siro log:export ' . $traceId . ' --postman');
+        $this->write('    php siro log:replay ' . $traceId . ' --diff');
         $this->write('');
-        $this->write('  ' . str_repeat('-', 56));
-        $this->write('  🔄 Replay:  php siro log:replay ' . $traceId);
-        $this->write('  📤 Export:  php siro log:export ' . $traceId . ' --postman');
-        $this->write('  🔧 Fix & auto-replay: edit code then: php siro fix');
-        $this->write('  ' . str_repeat('=', 56));
 
+        $this->write('  ' . str_repeat('─', 50));
         return 0;
-    }
-
-    private function prettyJson(string $json): string
-    {
-        $decoded = json_decode($json, true);
-        if (is_array($decoded)) {
-            return (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        }
-        return $json;
     }
 }
