@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
-[![Tests](https://img.shields.io/badge/tests-19037%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-19037%20total-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-brightgreen.svg)](https://phpstan.org)
 [![Psalm](https://img.shields.io/badge/Psalm-Level%201-brightgreen.svg)](https://psalm.dev)
 [![Security](https://img.shields.io/badge/security-OWASP%20Top%2010%20Mitigated-brightgreen)](docs/SECURITY.md)
@@ -21,23 +21,23 @@
 
 ## Why Siro?
 
-Most PHP frameworks are bloated. Siro is the opposite — every byte in this framework exists for a reason. We ship **zero** third-party dependencies, boot in under a millisecond, and maintain a perfect PHPStan Level Max score across the entire codebase.
+Siro is a **debugging-first, observability-first, security-first** PHP framework. It ships **zero** third-party dependencies, boots in under a millisecond, and achieves PHPStan Level Max + Psalm Level 1 across the entire codebase. Every design decision prioritizes developer experience, production safety, and auditability.
 
-| Capability | Siro | Laravel | Symfony |
-|-----------|:----:|:-------:|:--------:|
-| Runtime Dependencies | **0** | ~60 | ~80 |
-| Cold Boot | **~1ms** | ~50ms | ~80ms |
-| Memory per Request | **~2KB** | ~8MB | ~12MB |
-| Static Route Dispatch | **488K ops/sec** | ~100K | ~80K |
-| Fuzz Testing | **✅ 17,851 tests** | ❌ | ❌ |
-| Mutation Testing | **✅ MSI ≥80%** | ❌ | ❌ |
-| Chaos Engineering | **✅ 7 scenarios** | ❌ | ❌ |
-| Request Replay | **✅ Unique** | ❌ | ❌ |
-| SLSA Provenance | **✅** | ❌ | ❌ |
-| SBOM (CycloneDX) | **✅** | ❌ | ❌ |
-| Level Max Static Analysis | **✅ PHPStan + Psalm** | ❌ | ❌ |
-| PHPStan Errors | **0** | ~200+ | ~500+ |
-| Prometheus Metrics | **✅ Built-in** | ❌ | ❌ |
+| Capability | Siro |
+|-----------|:----:|
+| Runtime Dependencies | **0** |
+| Cold Boot | **~1ms** |
+| Memory per Request | **~2KB** |
+| Static Route Dispatch | **488K ops/sec** |
+| Fuzz Testing | **17,851 tests** |
+| Mutation Testing | **MSI ≥80%** |
+| Chaos Engineering | **7 scenarios** |
+| Request Replay | **Built-in** |
+| SLSA Provenance | **Supported** |
+| SBOM (CycloneDX) | **Auto-generated** |
+| PHPStan | **Level Max — 0 errors** |
+| Psalm | **Level 1 — 0 errors** |
+| Prometheus Metrics | **Built-in** |
 
 | Metric | Siro |
 |--------|:----:|
