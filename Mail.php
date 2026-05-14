@@ -285,8 +285,10 @@ final class Mail
             $headers[] = 'CC: ' . $ccAddr;
         }
 
+        // BCC recipients are added to the envelope (to parameter) but NOT to headers
+        $allRecipients = $this->to;
         foreach ($this->bcc as $bccAddr) {
-            $headers[] = 'BCC: ' . $bccAddr;
+            $allRecipients .= ', ' . $bccAddr;
         }
 
         $body = chunk_split(base64_encode($this->body), 76, "\r\n");
@@ -299,7 +301,7 @@ final class Mail
         }
 
         try {
-            $result = mail($this->to, $this->subject, $body, implode("\r\n", $headers));
+            $result = mail($allRecipients, $this->subject, $body, implode("\r\n", $headers));
         } catch (\Throwable $e) {
             \Siro\Core\Logger::error('mail() failed: ' . $e->getMessage());
             $result = false;

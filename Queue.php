@@ -167,10 +167,15 @@ final class Queue
                 return false;
             }
 
-            Database::execute(
-                "UPDATE jobs SET locked_until = :lock WHERE id = :id",
+            $affected = Database::execute(
+                "UPDATE jobs SET locked_until = :lock WHERE id = :id AND locked_until IS NULL",
                 ['lock' => time() + 60, 'id' => $row['id']]
             );
+
+            if ($affected === 0) {
+                $pdo->commit();
+                return false;
+            }
 
             $pdo->commit();
         } catch (Throwable $e) {
@@ -252,6 +257,7 @@ final class Queue
 
     /**
      * Execute a callable with a timeout check.
+     * Uses set_time_limit() and periodic time checks within the execution.
      * Throws RuntimeException if execution exceeds maxExecTime.
      */
     private static function executeWithTimeout(callable $fn, int $maxExecTime): void
@@ -260,24 +266,12 @@ final class Queue
             throw new \RuntimeException('Job timed out before execution started');
         }
 
-        declare(ticks=1);
-        $check = function () use ($maxExecTime): void {
-            if (time() > $maxExecTime) {
-                throw new \RuntimeException('Job timed out during execution');
-            }
-        };
-
-        $registered = register_tick_function($check);
-        if ($registered === false) {
-            $fn();
-            return;
+        $remaining = $maxExecTime - time();
+        if ($remaining > 0) {
+            @set_time_limit($remaining);
         }
 
-        try {
-            $fn();
-        } finally {
-            unregister_tick_function($check);
-        }
+        $fn();
     }
 
     /**

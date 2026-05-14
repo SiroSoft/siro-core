@@ -271,10 +271,13 @@ final class DatabaseInstance implements DatabaseInterface
         $elapsed = (microtime(true) - $start) * 1000;
 
         $rows = 0;
-        try {
-            $rows = $stmt->rowCount();
-        } catch (\Throwable $e) {
-            Logger::error(new \RuntimeException('Failed to get rowCount: ' . $e->getMessage()));
+        $isSelect = stripos(trim($sql), 'SELECT') === 0;
+        if (!$isSelect) {
+            try {
+                $rows = $stmt->rowCount();
+            } catch (\Throwable $e) {
+                Logger::error(new \RuntimeException('Failed to get rowCount: ' . $e->getMessage()));
+            }
         }
 
         $connName = $connection ?? $this->defaultConnection;

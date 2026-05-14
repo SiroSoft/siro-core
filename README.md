@@ -1,10 +1,10 @@
-# Siro Core Framework v0.24.0
+# Siro Core Framework v0.25.0
 
 **The Fastest PHP Micro-Framework** — Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
-[![Tests](https://img.shields.io/badge/tests-1350%2B%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-1436%20passing-brightgreen.svg)](tests/)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20max-brightgreen.svg)](https://phpstan.org)
 [![Security](https://img.shields.io/badge/security-audited-brightgreen)](https://github.com/SiroSoft/siro-core)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)

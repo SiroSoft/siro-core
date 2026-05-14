@@ -72,7 +72,7 @@ final class Request
         $contentType = (string) ($headers['content-type'] ?? '');
         $isMultipart = str_contains($contentType, 'multipart/form-data');
 
-        $maxBodySize = 2 * 1024 * 1024; // 2MB limit
+        $maxBodySize = (int) (\Siro\Core\Env::get('MAX_BODY_SIZE_MB', '2')) * 1024 * 1024;
 
         // Validate request size using ACTUAL content length, not just header
         $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);

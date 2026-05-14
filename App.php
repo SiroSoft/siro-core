@@ -103,7 +103,7 @@ final class App
         }
 
         /** @var class-string $userModelClass */
-        $userModelClass = 'App\\Models\\User';
+        $userModelClass = \Siro\Core\Env::get('USER_MODEL_CLASS', 'App\\Models\\User');
         if (class_exists($userModelClass)) {
             $container->bind('auth.provider', function () use ($userModelClass) {
                 return new \Siro\Core\Auth\ModelUserProvider($userModelClass);

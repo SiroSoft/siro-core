@@ -18,11 +18,29 @@ final class JWT
     private static ?string $keyVersion = null;
     /** @var array<string, int> */
     private static array $blacklistedJti = [];
+    private static int $lastBlacklistCleanup = 0;
+    private const BLACKLIST_CLEANUP_INTERVAL = 300;
+
+    private static function cleanupBlacklist(): void
+    {
+        $now = time();
+        if (self::$lastBlacklistCleanup > 0 && ($now - self::$lastBlacklistCleanup) < self::BLACKLIST_CLEANUP_INTERVAL) {
+            return;
+        }
+        self::$lastBlacklistCleanup = $now;
+
+        foreach (self::$blacklistedJti as $jti => $expiresAt) {
+            if ($expiresAt <= $now) {
+                unset(self::$blacklistedJti[$jti]);
+            }
+        }
+    }
 
     public static function reset(): void
     {
         self::$keyVersion = null;
         self::$blacklistedJti = [];
+        self::$lastBlacklistCleanup = 0;
     }
 
     private static function algorithm(): string
@@ -123,7 +141,6 @@ final class JWT
             throw new RuntimeException('Invalid token payload.');
         }
 
-        // Always use server-configured algorithm, never trust the token's alg header
         $alg = self::algorithm();
         if (!in_array($alg, [self::ALG_HS256, self::ALG_RS256], true)) {
             throw new RuntimeException('Unsupported token algorithm: ' . $alg);
@@ -150,6 +167,11 @@ final class JWT
             throw new RuntimeException('Token issued in the future.');
         }
 
+        $nbf = isset($payload['nbf']) ? (int) $payload['nbf'] : 0;
+        if ($nbf > 0 && $nbf > $now) {
+            throw new RuntimeException('Token is not yet valid (nbf).');
+        }
+
         $sub = isset($payload['sub']) ? (int) $payload['sub'] : 0;
         if ($sub <= 0) {
             throw new RuntimeException('JWT token missing required "sub" claim (user ID). Token may be malformed or tampered.');
@@ -160,7 +182,8 @@ final class JWT
             throw new RuntimeException('JWT token missing required "ver" claim (token version). Token may be from an incompatible system.');
         }
 
-        // Check JTI blacklist for token revocation
+        self::cleanupBlacklist();
+
         if (isset($payload['jti']) && is_string($payload['jti']) && self::isJtiBlacklisted($payload['jti'])) {
             throw new RuntimeException('Token has been revoked.');
         }

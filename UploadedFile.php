@@ -22,7 +22,7 @@ final class UploadedFile
     private readonly int $size;
     private readonly int $error;
 
-    private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'pht', 'phar', 'phps', 'exe', 'sh', 'bat', 'cmd', 'pl', 'py', 'rb', 'cgi', 'asp', 'aspx', 'jsp'];
+    private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'pht', 'phar', 'phps', 'exe', 'sh', 'bat', 'cmd', 'pl', 'py', 'rb', 'cgi', 'asp', 'aspx', 'jsp', 'htaccess', 'user.ini', 'env', 'shtml', 'stm', 'shtm', 'inc', 'war', 'jar'];
 
     /** @param array<string, mixed> $file */
     public function __construct(array $file)
