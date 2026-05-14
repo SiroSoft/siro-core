@@ -75,6 +75,7 @@
         "audit:supply-chain": "@php scripts/audit-supply-chain.php",
         "health": "@php scripts/health-check.php",
         "docs:generate": "@php scripts/generate-docs.php",
+        "sdk:generate": "@php scripts/generate-sdk.php",
         "check": [
             "@phpstan analyse --level=max --no-progress --memory-limit=512M",
             "@phpunit --no-coverage",

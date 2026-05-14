@@ -76,6 +76,36 @@ final class Response
         return new self($payload, $statusCode);
     }
 
+    /**
+     * RFC 7807 Problem Details response.
+     *
+     * Returns application/problem+json with standard error fields.
+     *
+     * @param string $title Human-readable error title
+     * @param int $statusCode HTTP status code
+     * @param string $detail Detailed error explanation
+     * @param string $type URI identifying the problem type
+     * @param string $instance URI identifying the specific occurrence
+     */
+    public static function problem(
+        string $title = 'An error occurred',
+        int $statusCode = 400,
+        string $detail = '',
+        string $type = 'about:blank',
+        string $instance = '',
+    ): self {
+        $payload = [
+            'type' => $type,
+            'title' => $title,
+            'status' => $statusCode,
+            'detail' => $detail,
+        ];
+        if ($instance !== '') {
+            $payload['instance'] = $instance;
+        }
+        return new self($payload, $statusCode);
+    }
+
     public static function created(mixed $data = null, string $message = 'Created'): self
     {
         return self::success($data, $message, 201);

@@ -1,4 +1,4 @@
-.PHONY: help test test-coverage test-fuzz test-chaos test-all analyse psalm benchmark lint fix audit sbom loadtest health docs check elite-check production-check clean
+.PHONY: help test test-coverage test-fuzz test-chaos test-all analyse psalm benchmark lint fix audit sbom loadtest health docs sdk check elite-check production-check clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -46,6 +46,9 @@ health: ## Run health check
 
 docs: ## Generate API documentation
 	@php scripts/generate-docs.php
+
+sdk: ## Generate PHP SDK from OpenAPI spec
+	@php scripts/generate-sdk.php
 
 check: analyse test audit sbom ## Run all code quality checks
 
