@@ -103,7 +103,11 @@ composer create-project sirosoft/api my-api
 
 ```bash
 composer test              # Run unit tests
-composer check             # PHPStan static analysis + PHPUnit
+composer check             # PHPStan static analysis + PHPUnit + SBOM
+make health                # Health check (CLI)
+make docs                  # Generate API documentation
+composer docs:generate     # Generate API docs (Composer)
+make production-check      # Full production readiness check
 php siro benchmark         # Performance benchmark suite
 php vendor/bin/phpunit --coverage-html coverage/
 ```
