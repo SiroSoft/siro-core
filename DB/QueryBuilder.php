@@ -19,39 +19,45 @@ use Siro\Core\Database;
  */
 class QueryBuilder
 {
-    private string $table = '';
+    protected string $table = '';
     /** @var array<int, string> */
-    private array $columns = ['*'];
+    protected array $columns = ['*'];
     /** @var array<int, array<string, mixed>> */
-    private array $wheres = [];
+    protected array $wheres = [];
     /** @var array<int, array<string, mixed>> */
-    private array $havings = [];
+    protected array $havings = [];
     /** @var array<int, array{type:string,table:string,first:string,operator:string,second:string}> */
-    private array $joins = [];
+    protected array $joins = [];
     /** @var array<int, string> */
-    private array $groups = [];
+    protected array $groups = [];
     /** @var array<int, array{column:string,direction:string}> */
-    private array $orders = [];
+    protected array $orders = [];
     /** @var array<string, mixed> */
-    private array $bindings = [];
-    private ?int $limitValue = null;
-    private ?int $offsetValue = null;
-    private int $whereCounter = 0;
-    private int $havingCounter = 0;
-    private int $inCounter = 0;
-    private int $cacheTtl = 0;
-    private string $cacheTable = '';
-    private ?string $connectionName = null;
-    private string $primaryKey = 'id';
+    protected array $bindings = [];
+    protected ?int $limitValue = null;
+    protected ?int $offsetValue = null;
+    protected int $whereCounter = 0;
+    protected int $havingCounter = 0;
+    protected int $inCounter = 0;
+    protected int $cacheTtl = 0;
+    protected string $cacheTable = '';
+    protected ?string $connectionName = null;
+    protected string $primaryKey = 'id';
+
+    private SqlCompiler $compiler;
+
+    private const CHUNK_SIZE = 500;
 
     public function __construct(string $table)
     {
+        $this->compiler = new SqlCompiler();
         $this->table($table);
     }
 
     public function connection(?string $name): self
     {
         $this->connectionName = $name;
+        $this->compiler->setConnection($name);
         return $this;
     }
 
@@ -61,9 +67,8 @@ class QueryBuilder
         if ($this->table === '') {
             throw new RuntimeException('QueryBuilder table name cannot be empty.');
         }
-
-        $this->cacheTable = $this->detectTableName($this->table);
-
+        $this->cacheTable = $this->compiler->detectTableName($this->table);
+        $this->compiler->setTable($this->table);
         return $this;
     }
 
@@ -125,9 +130,8 @@ class QueryBuilder
             'type' => 'raw',
             'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
             'sql' => $sql,
-            'bindings' => array_values($bindings),
+            'bindings' => $bindings,
         ];
-
         return $this;
     }
 
@@ -149,10 +153,9 @@ class QueryBuilder
             'type' => 'INNER',
             'table' => trim($table),
             'first' => trim($first),
-            'operator' => $this->normalizeOperator($operator),
+            'operator' => $this->compiler->normalizeOperator($operator),
             'second' => trim($second),
         ];
-
         return $this;
     }
 
@@ -162,10 +165,9 @@ class QueryBuilder
             'type' => 'LEFT',
             'table' => trim($table),
             'first' => trim($first),
-            'operator' => $this->normalizeOperator($operator),
+            'operator' => $this->compiler->normalizeOperator($operator),
             'second' => trim($second),
         ];
-
         return $this;
     }
 
@@ -175,14 +177,12 @@ class QueryBuilder
         if (is_string($columns)) {
             $columns = [$columns];
         }
-
         foreach ($columns as $column) {
             $column = trim((string) $column);
             if ($column !== '') {
                 $this->groups[] = $column;
             }
         }
-
         return $this;
     }
 
@@ -205,76 +205,9 @@ class QueryBuilder
         return $this;
     }
 
-    /** @var array<string, string> */
-    private static array $driverNames = [];
-
     public static function resetDriverNames(): void
     {
-        self::$driverNames = [];
-    }
-
-    private function detectDriver(?string $connectionName = null): string
-    {
-        $key = $connectionName ?? 'default';
-        if (!isset(self::$driverNames[$key])) {
-            try {
-                self::$driverNames[$key] = \Siro\Core\Database::connection($connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
-            } catch (\Throwable) {
-                self::$driverNames[$key] = 'mysql';
-            }
-        }
-        return self::$driverNames[$key];
-    }
-
-    private function quoteIdentifier(string $identifier): string
-    {
-        if ($identifier === '*') {
-            return $identifier;
-        }
-
-        // BLOCK dangerous characters to prevent SQL injection
-        if (preg_match('/[^a-zA-Z0-9_.\s\-]/', $identifier)) {
-            throw new \RuntimeException('Invalid identifier: contains illegal characters');
-        }
-
-        // Prevent multi-statement injection
-        if (stripos($identifier, ';') !== false ||
-            stripos($identifier, '--') !== false ||
-            stripos($identifier, '/*') !== false) {
-            throw new \RuntimeException('Invalid identifier: SQL injection attempt detected');
-        }
-
-        // Don't quote function calls or expressions with parentheses
-        if (str_contains($identifier, '(')) {
-            return $identifier;
-        }
-
-        $driver = $this->detectDriver($this->connectionName);
-        $char = match ($driver) {
-            'pgsql', 'postgres', 'postgresql' => '"',
-            default => '`',
-        };
-        $escaped = str_replace($char, $char . $char, $identifier);
-
-        $parts = explode('.', $escaped);
-        foreach ($parts as $i => $part) {
-            $part = trim($part);
-            if ($part !== '*' && $part !== '') {
-                $parts[$i] = $char . $part . $char;
-            }
-        }
-
-        return implode('.', $parts);
-    }
-
-    private function quoteColumnList(string $columns): string
-    {
-        $parts = explode(',', $columns);
-        foreach ($parts as $i => $part) {
-            $parts[$i] = $this->quoteIdentifier(trim($part));
-        }
-
-        return implode(', ', $parts);
+        SqlCompiler::resetDriverNames();
     }
 
     public function limit(int $limit): self
@@ -298,7 +231,11 @@ class QueryBuilder
     /** @return array<int, array<string, mixed>> */
     public function get(): array
     {
-        [$sql, $bindings] = $this->buildSelectQuery();
+        [$sql, $bindings] = $this->compiler->buildSelectQuery(
+            $this->columns, $this->table, $this->wheres, $this->havings,
+            $this->joins, $this->groups, $this->orders,
+            $this->limitValue, $this->offsetValue, $this->bindings
+        );
         return $this->runSelect($sql, $bindings);
     }
 
@@ -323,11 +260,10 @@ class QueryBuilder
         $this->wheres[] = [
             'type' => 'raw',
             'boolean' => 'AND',
-            'sql' => $this->quoteIdentifier($column) . ' BETWEEN :' . $paramMin . ' AND :' . $paramMax,
+            'sql' => $this->compiler->quoteIdentifier($column) . ' BETWEEN :' . $paramMin . ' AND :' . $paramMax,
         ];
         $this->bindings[$paramMin] = $min;
         $this->bindings[$paramMax] = $max;
-
         return $this;
     }
 
@@ -343,11 +279,10 @@ class QueryBuilder
         $this->wheres[] = [
             'type' => 'raw',
             'boolean' => 'AND',
-            'sql' => $this->quoteIdentifier($column) . ' NOT BETWEEN :' . $paramMin . ' AND :' . $paramMax,
+            'sql' => $this->compiler->quoteIdentifier($column) . ' NOT BETWEEN :' . $paramMin . ' AND :' . $paramMax,
         ];
         $this->bindings[$paramMin] = $min;
         $this->bindings[$paramMax] = $max;
-
         return $this;
     }
 
@@ -356,9 +291,8 @@ class QueryBuilder
         $this->wheres[] = [
             'type' => 'raw',
             'boolean' => 'AND',
-            'sql' => $this->quoteIdentifier($column) . ' IS NULL',
+            'sql' => $this->compiler->quoteIdentifier($column) . ' IS NULL',
         ];
-
         return $this;
     }
 
@@ -367,9 +301,8 @@ class QueryBuilder
         $this->wheres[] = [
             'type' => 'raw',
             'boolean' => 'AND',
-            'sql' => $this->quoteIdentifier($column) . ' IS NOT NULL',
+            'sql' => $this->compiler->quoteIdentifier($column) . ' IS NOT NULL',
         ];
-
         return $this;
     }
 
@@ -378,9 +311,8 @@ class QueryBuilder
         $this->wheres[] = [
             'type' => 'raw',
             'boolean' => 'OR',
-            'sql' => $this->quoteIdentifier($column) . ' IS NULL',
+            'sql' => $this->compiler->quoteIdentifier($column) . ' IS NULL',
         ];
-
         return $this;
     }
 
@@ -389,9 +321,8 @@ class QueryBuilder
         $this->wheres[] = [
             'type' => 'raw',
             'boolean' => 'OR',
-            'sql' => $this->quoteIdentifier($column) . ' IS NOT NULL',
+            'sql' => $this->compiler->quoteIdentifier($column) . ' IS NOT NULL',
         ];
-
         return $this;
     }
 
@@ -402,7 +333,6 @@ class QueryBuilder
         $result = [];
 
         foreach ($rows as $row) {
-            /** @var array<string, mixed> $row */
             $value = $row[$column] ?? null;
             if ($key !== null && isset($row[$key])) {
                 $result[(string) ($row[$key] ?? '')] = $value;
@@ -410,14 +340,12 @@ class QueryBuilder
                 $result[] = $value;
             }
         }
-
         return $result;
     }
 
     public function value(string $column): mixed
     {
         $row = $this->select([$column])->first();
-        /** @var array<string, mixed> $row */
         return $row[$column] ?? null;
     }
 
@@ -462,15 +390,14 @@ class QueryBuilder
     {
         $driver = 'mysql';
         try {
-            $driver = \Siro\Core\Database::connection($this->connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
+            $driver = Database::connection($this->connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
         } catch (\Throwable) {
         }
 
         $sql = match ($driver) {
             'pgsql', 'postgres', 'postgresql' => 'RANDOM()',
             'sqlite' => 'RANDOM()',
-            default => $seed !== null
-                ? "RAND({$seed})" : 'RAND()',
+            default => $seed !== null ? "RAND({$seed})" : 'RAND()',
         };
 
         $this->orders[] = ['column' => $sql, 'direction' => 'ASC'];
@@ -479,7 +406,11 @@ class QueryBuilder
 
     public function dump(): self
     {
-        [$sql, $bindings] = $this->buildSelectQuery();
+        [$sql, $bindings] = $this->compiler->buildSelectQuery(
+            $this->columns, $this->table, $this->wheres, $this->havings,
+            $this->joins, $this->groups, $this->orders,
+            $this->limitValue, $this->offsetValue, $this->bindings
+        );
         echo PHP_EOL . 'SQL: ' . $sql . PHP_EOL;
         echo 'Bindings: ' . json_encode($bindings, JSON_UNESCAPED_UNICODE) . PHP_EOL . PHP_EOL;
         return $this;
@@ -493,7 +424,11 @@ class QueryBuilder
 
     public function toSql(): string
     {
-        [$sql] = $this->buildSelectQuery();
+        [$sql] = $this->compiler->buildSelectQuery(
+            $this->columns, $this->table, $this->wheres, $this->havings,
+            $this->joins, $this->groups, $this->orders,
+            $this->limitValue, $this->offsetValue, $this->bindings
+        );
         return $sql;
     }
 
@@ -522,6 +457,21 @@ class QueryBuilder
         return $this->aggregate('MIN', $column);
     }
 
+    private function aggregate(string $function, string $column): float|int
+    {
+        [$sql, $bindings] = $this->compiler->buildAggregateQuery(
+            $function, $column, $this->table, $this->wheres, $this->havings,
+            $this->joins, $this->groups, $this->bindings
+        );
+        $rows = $this->runSelect($sql, $bindings);
+        $value = $rows[0]['aggregate'] ?? 0;
+
+        if (is_numeric($value)) {
+            return str_contains((string) $value, '.') ? (float) $value : (int) $value;
+        }
+        return 0;
+    }
+
     /** @param array<string, mixed> $data */
     public function insert(array $data): int
     {
@@ -529,28 +479,7 @@ class QueryBuilder
             return 0;
         }
 
-        $columns = [];
-        $holders = [];
-        $bindings = [];
-
-        foreach ($data as $column => $value) {
-            $name = 'i_' . preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $column);
-            $columns[] = (string) $column;
-            $holders[] = ':' . $name;
-            $bindings[$name] = $value;
-        }
-
-        $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
-        $driver = $this->detectDriver($this->connectionName);
-        $primaryKey = $this->primaryKey;
-        $returning = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? ' RETURNING ' . $this->quoteIdentifier($primaryKey) : '';
-        $sql = sprintf(
-            'INSERT INTO %s (%s) VALUES (%s)%s',
-            $this->quoteIdentifier($this->table),
-            implode(', ', $quotedColumns),
-            implode(', ', $holders),
-            $returning
-        );
+        [$sql, $bindings, $returning] = $this->compiler->buildInsertSql($this->table, $data, $this->primaryKey);
 
         $stmt = Database::connection($this->connectionName)->prepare($sql);
         $stmt->execute($bindings);
@@ -578,20 +507,10 @@ class QueryBuilder
             return 0;
         }
 
-        $sets = [];
-        $bindings = [];
-
-        foreach ($data as $column => $value) {
-            $name = 'u_' . preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $column);
-            $sets[] = sprintf('%s = :%s', $this->quoteIdentifier($column), $name);
-            $bindings[$name] = $value;
-        }
-
-        [$whereSql, $whereBindings] = $this->compileWhere();
-        $sql = sprintf('UPDATE %s SET %s%s', $this->quoteIdentifier($this->table), implode(', ', $sets), $whereSql);
+        [$sql, $allBindings] = $this->compiler->buildUpdateSql($this->table, $data, $this->wheres, $this->bindings);
 
         $stmt = Database::connection($this->connectionName)->prepare($sql);
-        $stmt->execute([...$bindings, ...$whereBindings]);
+        $stmt->execute($allBindings);
         Cache::flushQueryBuilderTable($this->cacheTable);
 
         return $stmt->rowCount();
@@ -599,11 +518,10 @@ class QueryBuilder
 
     public function delete(): int
     {
-        [$whereSql, $whereBindings] = $this->compileWhere();
-        $sql = sprintf('DELETE FROM %s%s', $this->quoteIdentifier($this->table), $whereSql);
+        [$sql, $bindings] = $this->compiler->buildDeleteSql($this->table, $this->wheres, $this->bindings);
 
         $stmt = Database::connection($this->connectionName)->prepare($sql);
-        $stmt->execute($whereBindings);
+        $stmt->execute($bindings);
         Cache::flushQueryBuilderTable($this->cacheTable);
 
         return $stmt->rowCount();
@@ -626,7 +544,7 @@ class QueryBuilder
         $bindings = [];
         foreach ($data as $column => $value) {
             $name = 'u_' . preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $column);
-            $sets[] = sprintf('%s = :%s', $this->quoteIdentifier($column), $name);
+            $sets[] = sprintf('%s = :%s', $this->compiler->quoteIdentifier($column), $name);
             $bindings[$name] = $value;
         }
 
@@ -640,7 +558,7 @@ class QueryBuilder
 
         $sql = sprintf(
             'UPDATE %s SET %s WHERE id IN (%s)',
-            $this->quoteIdentifier($this->table),
+            $this->compiler->quoteIdentifier($this->table),
             implode(', ', $sets),
             implode(', ', $placeholders)
         );
@@ -674,7 +592,7 @@ class QueryBuilder
 
         $sql = sprintf(
             'DELETE FROM %s WHERE id IN (%s)',
-            $this->quoteIdentifier($this->table),
+            $this->compiler->quoteIdentifier($this->table),
             implode(', ', $placeholders)
         );
 
@@ -686,7 +604,7 @@ class QueryBuilder
     }
 
     /**
-     * Bulk insert multiple rows.
+     * Bulk insert multiple rows with chunking to prevent max_allowed_packet issues.
      *
      * @param array<int, array<string, mixed>> $rows
      * @return int Number of inserted rows
@@ -697,43 +615,26 @@ class QueryBuilder
             return 0;
         }
 
-        $columns = array_keys($rows[0]);
-        $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
+        $totalInserted = 0;
+        $chunks = array_chunk($rows, self::CHUNK_SIZE);
 
-        $placeholders = [];
-        $allBindings = [];
-        foreach ($rows as $rowIndex => $row) {
-            $rowPlaceholders = [];
-            foreach ($columns as $colIndex => $col) {
-                $key = 'r' . $rowIndex . '_c' . $colIndex;
-                $rowPlaceholders[] = ':' . $key;
-                $allBindings[$key] = $row[$col] ?? null;
-            }
-            $placeholders[] = '(' . implode(', ', $rowPlaceholders) . ')';
+        foreach ($chunks as $chunk) {
+            [$sql, $allBindings] = $this->compiler->buildInsertManySql($this->table, $chunk);
+
+            $stmt = Database::connection($this->connectionName)->prepare($sql);
+            $stmt->execute($allBindings);
+            $totalInserted += $stmt->rowCount();
         }
 
-        $sql = sprintf(
-            'INSERT INTO %s (%s) VALUES %s',
-            $this->quoteIdentifier($this->table),
-            implode(', ', $quotedColumns),
-            implode(', ', $placeholders)
-        );
-
-        $stmt = Database::connection($this->connectionName)->prepare($sql);
-        $stmt->execute($allBindings);
         Cache::flushQueryBuilderTable($this->cacheTable);
-
-        return $stmt->rowCount();
+        return $totalInserted;
     }
 
     /**
      * Cursor-based pagination for large datasets.
      *
-     * Uses (id, created_at) cursor for stable pagination.
-     * Pass cursor from previous response to get next page.
-     *
      * @param int $perPage Items per page
-     * @param array<string, mixed>|null $cursor ['id' => int, 'created_at' => string] or null for first page
+     * @param array<string, mixed>|null $cursor
      * @param string $order 'asc' or 'desc'
      * @return array{data: array<int, array<string, mixed>>, meta: array<string, mixed>, next_cursor: array<string, mixed>|null}
      */
@@ -742,7 +643,6 @@ class QueryBuilder
         $perPage = max(1, $perPage);
         $order = strtolower($order) === 'desc' ? 'DESC' : 'ASC';
 
-        // Compute total BEFORE adding cursor filter
         $total = $this->count();
 
         $clone = clone $this;
@@ -802,7 +702,10 @@ class QueryBuilder
         $page = max(1, $page ?? 1);
         $offset = ($page - 1) * $perPage;
 
-        [$countSql, $countBindings] = $this->buildCountQuery();
+        [$countSql, $countBindings] = $this->compiler->buildCountQuery(
+            $this->table, $this->wheres, $this->havings,
+            $this->joins, $this->groups, $this->bindings
+        );
         $countRows = $this->runSelect($countSql, $countBindings);
         $total = (int) (($countRows[0]['aggregate'] ?? 0));
 
@@ -820,19 +723,6 @@ class QueryBuilder
                 'last_page' => $lastPage,
             ],
         ];
-    }
-
-    private function aggregate(string $function, string $column): float|int
-    {
-        [$sql, $bindings] = $this->buildAggregateQuery($function, $column);
-        $rows = $this->runSelect($sql, $bindings);
-        $value = $rows[0]['aggregate'] ?? 0;
-
-        if (is_numeric($value)) {
-            return str_contains((string) $value, '.') ? (float) $value : (int) $value;
-        }
-
-        return 0;
     }
 
     private function addWhere(string $boolean, string $column, mixed $operatorOrValue, mixed $value, bool $hasExplicitValue): self
@@ -909,229 +799,13 @@ class QueryBuilder
         if (!$hasExplicitValue) {
             return ['=', $operatorOrValue];
         }
-
-        $operator = $this->normalizeOperator((string) $operatorOrValue);
+        $operator = $this->compiler->normalizeOperator((string) $operatorOrValue);
         return [$operator, $value];
     }
 
-    private function normalizeOperator(string $operator): string
-    {
-        $operator = strtoupper(trim($operator));
-        $allowed = ['=', '!=', '<>', '>', '>=', '<', '<=', 'LIKE', 'NOT LIKE'];
-
-        if (!in_array($operator, $allowed, true)) {
-            throw new RuntimeException('Unsupported SQL operator: ' . $operator);
-        }
-
-        return $operator;
-    }
-
-    /** @return array{0:string,1:array<string,mixed>} */
-    private function buildSelectQuery(): array
-    {
-        [$whereSql, $whereBindings] = $this->compileWhere();
-        [$havingSql, $havingBindings] = $this->compileHaving();
-        $columns = $this->quoteColumnList(implode(', ', $this->columns));
-
-        $sql = sprintf('SELECT %s FROM %s', $columns, $this->quoteIdentifier($this->table));
-        $sql .= $this->compileJoins();
-        $sql .= $whereSql;
-        $sql .= $this->compileGroupBy();
-        $sql .= $havingSql;
-        $sql .= $this->compileOrderBy();
-
-        if ($this->limitValue !== null) {
-            $sql .= ' LIMIT ' . $this->limitValue;
-        }
-
-        if ($this->offsetValue !== null) {
-            $sql .= ' OFFSET ' . $this->offsetValue;
-        }
-
-        return [$sql, [...$whereBindings, ...$havingBindings]];
-    }
-
-    /** @return array{0:string,1:array<string,mixed>} */
-    private function buildCountQuery(): array
-    {
-        [$whereSql, $whereBindings] = $this->compileWhere();
-        [$havingSql, $havingBindings] = $this->compileHaving();
-
-        if ($this->groups === []) {
-            $sql = sprintf('SELECT COUNT(*) AS aggregate FROM %s', $this->quoteIdentifier($this->table));
-            $sql .= $this->compileJoins() . $whereSql . $havingSql;
-            return [$sql, [...$whereBindings, ...$havingBindings]];
-        }
-
-        $subQuery = sprintf('SELECT 1 FROM %s', $this->quoteIdentifier($this->table))
-            . $this->compileJoins()
-            . $whereSql
-            . $this->compileGroupBy()
-            . $havingSql;
-
-        return ['SELECT COUNT(*) AS aggregate FROM (' . $subQuery . ') AS siro_count_table', [...$whereBindings, ...$havingBindings]];
-    }
-
-    /** @return array{0:string,1:array<string,mixed>} */
-    private function buildAggregateQuery(string $function, string $column): array
-    {
-        [$whereSql, $whereBindings] = $this->compileWhere();
-        [$havingSql, $havingBindings] = $this->compileHaving();
-
-        if ($this->groups === []) {
-            $sql = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteIdentifier($this->table));
-            $sql .= $this->compileJoins() . $whereSql . $havingSql;
-            return [$sql, [...$whereBindings, ...$havingBindings]];
-        }
-
-        $subQuery = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteIdentifier($this->table))
-            . $this->compileJoins()
-            . $whereSql
-            . $this->compileGroupBy()
-            . $havingSql;
-
-        return ['SELECT ' . strtoupper($function) . '(aggregate) AS aggregate FROM (' . $subQuery . ') AS siro_aggregate_table', [...$whereBindings, ...$havingBindings]];
-    }
-
-    private function compileJoins(): string
-    {
-        if ($this->joins === []) {
-            return '';
-        }
-
-        $parts = [];
-        foreach ($this->joins as $join) {
-            $parts[] = sprintf(
-                ' %s JOIN %s ON %s %s %s',
-                $join['type'],
-                $this->quoteIdentifier($join['table']),
-                $this->quoteIdentifier($join['first']),
-                $join['operator'],
-                $this->quoteIdentifier($join['second'])
-            );
-        }
-
-        return implode('', $parts);
-    }
-
-    private function compileGroupBy(): string
-    {
-        if ($this->groups === []) {
-            return '';
-        }
-
-        $quoted = array_map(fn (string $col): string => $this->quoteIdentifier($col), $this->groups);
-        return ' GROUP BY ' . implode(', ', $quoted);
-    }
-
-    private function compileOrderBy(): string
-    {
-        if ($this->orders === []) {
-            return '';
-        }
-
-        $parts = [];
-        foreach ($this->orders as $order) {
-            $parts[] = $this->quoteIdentifier($order['column']) . ' ' . $order['direction'];
-        }
-
-        return ' ORDER BY ' . implode(', ', $parts);
-    }
-
-    /** @return array{0:string,1:array<string,mixed>} */
-    private function compileWhere(): array
-    {
-        if ($this->wheres === []) {
-            return ['', []];
-        }
-
-        $parts = [];
-        $bindings = [];
-
-        foreach ($this->wheres as $index => $where) {
-            $prefix = $index === 0 ? '' : ' ' . $where['boolean'] . ' ';
-
-            if (($where['type'] ?? 'basic') === 'raw') {
-                $parts[] = $prefix . $where['sql'];
-                if (isset($where['bindings']) && is_array($where['bindings'])) {
-                    foreach ($where['bindings'] as $bk => $bv) {
-                        if (is_string($bk)) {
-                            $bindings[$bk] = $bv;
-                        } else {
-                            $bindings[] = $bv;
-                        }
-                    }
-                }
-                continue;
-            }
-
-            if (($where['type'] ?? 'basic') === 'in') {
-                $holderParts = [];
-                foreach ($where['params'] as $param) {
-                    $holderParts[] = ':' . $param;
-                    $bindings[$param] = $this->bindings[$param];
-                }
-
-                $parts[] = $prefix . $this->quoteIdentifier($where['column']) . ($where['not'] ? ' NOT IN (' : ' IN (') . implode(', ', $holderParts) . ')';
-                continue;
-            }
-
-            $parts[] = $prefix . $this->quoteIdentifier($where['column']) . ' ' . $where['operator'] . ' :' . $where['param'];
-            $bindings[$where['param']] = $this->bindings[$where['param']];
-        }
-
-        return [' WHERE ' . implode('', $parts), $bindings];
-    }
-
-    /** @return array{0:string,1:array<string,mixed>} */
-    private function compileHaving(): array
-    {
-        if ($this->havings === []) {
-            return ['', []];
-        }
-
-        $parts = [];
-        $bindings = [];
-
-        foreach ($this->havings as $index => $having) {
-            $prefix = $index === 0 ? '' : ' ' . $having['boolean'] . ' ';
-            $parts[] = $prefix . $this->quoteIdentifier($having['column']) . ' ' . $having['operator'] . ' :' . $having['param'];
-            $bindings[$having['param']] = $this->bindings[$having['param']];
-        }
-
-        return [' HAVING ' . implode('', $parts), $bindings];
-    }
-
-    /** @param array<string,mixed> $bindings
-     *  @return array<int, array<string,mixed>>
-     */
     private function runSelect(string $sql, array $bindings): array
     {
         $cachePrefix = 'qb:' . $this->cacheTable . ':';
         return Database::selectCached($sql, $bindings, $this->cacheTtl, $cachePrefix);
-    }
-
-    private function detectTableName(string $table): string
-    {
-        $normalized = strtolower(trim($table));
-        if ($normalized === '') {
-            return 'default';
-        }
-
-        /** @var list<string>|false $parts */
-        $parts = preg_split('/\s+/', $normalized);
-        $first = (string) ($parts !== false ? ($parts[0] ?? '') : '');
-        $first = trim($first, "`\" ");
-
-        if ($first === '') {
-            return 'default';
-        }
-
-        if (str_contains($first, '.')) {
-            $segments = explode('.', $first);
-            $first = (string) end($segments);
-        }
-
-        return $first !== '' ? $first : 'default';
     }
 }

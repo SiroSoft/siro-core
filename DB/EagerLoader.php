@@ -150,7 +150,7 @@ final class EagerLoader
         }
 
         $selectCols = $columns !== ['*']
-            ? implode(', ', array_map(fn ($c) => 'r.' . $c, $columns))
+            ? implode(', ', array_map(fn ($c) => 'r.' . $rel->quoteIdentifier(ltrim($c, 'r.')), $columns))
             : 'r.*';
         $pivotCols = 'p.' . $relatedKey . ' AS pivot_related_id, p.' . $foreignKey . ' AS pivot_foreign_id';
 

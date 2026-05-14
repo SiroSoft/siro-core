@@ -18,14 +18,14 @@ final class AuthMiddleware implements MiddlewareInterface
         $matches = [];
         if (!preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {
             return Response::error('Unauthorized', 401, [
-                'token' => ['Missing bearer token'],
+                'token' => ['Invalid or expired token'],
             ]);
         }
 
         $token = trim((string) $matches[1]);
         if ($token === '') {
             return Response::error('Unauthorized', 401, [
-                'token' => ['Missing bearer token'],
+                'token' => ['Invalid or expired token'],
             ]);
         }
 
@@ -36,37 +36,52 @@ final class AuthMiddleware implements MiddlewareInterface
 
             if ($userId <= 0) {
                 return Response::error('Unauthorized', 401, [
-                    'token' => ['Invalid token subject'],
+                    'token' => ['Invalid or expired token'],
                 ]);
             }
 
             if ($tokenVersion <= 0) {
                 return Response::error('Unauthorized', 401, [
-                    'token' => ['Invalid token version'],
+                    'token' => ['Invalid or expired token'],
                 ]);
             }
 
-            $user = null;
-            $container = \Siro\Core\Container::getInstance();
-            $userModel = $container->has('user.model') ? $container->make('user.model') : null;
-            if ($userModel === null && class_exists(\App\Models\User::class)) {
-                $userModel = new \App\Models\User();
-            }
-            if ($userModel !== null) {
-                /** @var \Siro\Core\Model $userModel */
-                $user = $userModel->find($userId);
+            $user = $request->getAttribute('_auth_user');
+            if ($user === null) {
+                $container = \Siro\Core\Container::getInstance();
+                $userModel = $container->has('user.model') ? $container->make('user.model') : null;
+                if ($userModel === null && class_exists(\App\Models\User::class)) {
+                    $userModel = new \App\Models\User();
+                }
+                if ($userModel !== null) {
+                    $user = $userModel->find($userId);
+                }
+                $request->setAttribute('_auth_user', $user);
+            } else {
+                $cachedId = (int) ($user instanceof \Siro\Core\Model ? ($user->getAttribute('id') ?? 0) : 0);
+                if ($cachedId !== $userId) {
+                    $container = \Siro\Core\Container::getInstance();
+                    $userModel = $container->has('user.model') ? $container->make('user.model') : null;
+                    if ($userModel === null && class_exists(\App\Models\User::class)) {
+                        $userModel = new \App\Models\User();
+                    }
+                    if ($userModel !== null) {
+                        $user = $userModel->find($userId);
+                    }
+                    $request->setAttribute('_auth_user', $user);
+                }
             }
 
             if ($user === null || ((int) ($user->getAttribute('status') ?? 0) !== 1)) {
                 return Response::error('Unauthorized', 401, [
-                    'token' => ['User not found or inactive'],
+                    'token' => ['Invalid or expired token'],
                 ]);
             }
 
             $userData = $user->toArray();
             if ((int) ($userData['token_version'] ?? 1) !== $tokenVersion) {
                 return Response::error('Unauthorized', 401, [
-                    'token' => ['Token has been revoked'],
+                    'token' => ['Invalid or expired token'],
                 ]);
             }
 

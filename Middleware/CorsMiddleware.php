@@ -36,7 +36,9 @@ final class CorsMiddleware implements MiddlewareInterface
 
     private function appendHeaders(Response $response, string $allowOrigin, string $allowedMethods, string $allowedHeaders, bool $allowCredentials): void
     {
-        $response->header('Access-Control-Allow-Origin', $allowOrigin);
+        if ($allowOrigin !== '') {
+            $response->header('Access-Control-Allow-Origin', $allowOrigin);
+        }
         $response->header('Access-Control-Allow-Methods', $allowedMethods);
         $response->header('Access-Control-Allow-Headers', $allowedHeaders);
         $response->header('Access-Control-Allow-Credentials', $allowCredentials ? 'true' : 'false');
@@ -46,7 +48,8 @@ final class CorsMiddleware implements MiddlewareInterface
 
     private function resolveOrigin(string $origin, string $allowedOrigins): string
     {
-        $origins = array_map('trim', explode(',', $allowedOrigins));
+        $origins = array_filter(array_map('trim', explode(',', $allowedOrigins)));
+        if ($origin === '' || $origin === 'null') return '';
         return in_array($origin, $origins, true) ? $origin : '';
     }
 }

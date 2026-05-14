@@ -22,6 +22,8 @@ final class UploadedFile
     private readonly int $size;
     private readonly int $error;
 
+    private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'pht', 'phar', 'phps', 'exe', 'sh', 'bat', 'cmd', 'pl', 'py', 'rb', 'cgi', 'asp', 'aspx', 'jsp', 'htaccess', 'user.ini', 'env', 'shtml', 'stm', 'shtm', 'inc', 'war', 'jar'];
+
     /** @param array<string, mixed> $file */
     public function __construct(array $file)
     {
@@ -53,7 +55,7 @@ final class UploadedFile
     public function getMimeType(): string
     {
         if ($this->isValid()) {
-            $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
             if ($finfo === false) {
                 return $this->mimeType;
             }
@@ -111,6 +113,10 @@ final class UploadedFile
         }
 
         $filename = $name ?? $this->generateFilename();
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        if (in_array($ext, self::BLOCKED_EXTENSIONS, true)) {
+            throw new \RuntimeException('File type not allowed: .' . $ext);
+        }
         $path = $directory . '/' . $filename;
 
         if ($useStorage) {

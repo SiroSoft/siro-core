@@ -27,6 +27,11 @@
             "Siro\\Core\\": ""
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Siro\\Core\\Tests\\": "tests/"
+        }
+    },
     "require": {
         "php": ">=8.2",
         "ext-pdo": "*",

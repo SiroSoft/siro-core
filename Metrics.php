@@ -32,14 +32,27 @@ final class Metrics
 
     private static string $namespace = 'siro';
     private static bool $persist = false;
+    private static int $flushInterval = 0;
+    private static int $opsSinceFlush = 0;
 
-    public static function init(string $namespace = 'siro', bool $persist = false): void
+    public static function init(string $namespace = 'siro', bool $persist = false, int $flushInterval = 100): void
     {
         self::$namespace = $namespace;
         self::$persist = $persist;
+        self::$flushInterval = max(1, $flushInterval);
+        self::$opsSinceFlush = 0;
         if ($persist) {
             self::load();
         }
+    }
+
+    public static function persistNow(): void
+    {
+        if (!self::$persist) { return; }
+        $data = ['counters' => self::$counters, 'histograms' => self::$histograms, 'gauges' => self::$gauges];
+        $dir = dirname(self::METRICS_CACHE_FILE);
+        if (!is_dir($dir)) { @mkdir($dir, 0775, true); }
+        file_put_contents(self::METRICS_CACHE_FILE, '<?php return ' . var_export($data, true) . ';');
     }
 
     /**
@@ -54,7 +67,7 @@ final class Metrics
             self::$counters[$key] = ['type' => 'counter', 'help' => $help ?: "Counter {$name}", 'labels' => $labels, 'value' => 0];
         }
         self::$counters[$key]['value'] += $value;
-        self::flush();
+        self::maybeFlush();
     }
 
     /**
@@ -91,7 +104,7 @@ final class Metrics
             }
         }
 
-        self::flush();
+        self::maybeFlush();
     }
 
     /**
@@ -103,7 +116,7 @@ final class Metrics
     {
         $key = self::key($name, $labels);
         self::$gauges[$key] = ['help' => $help ?: "Gauge {$name}", 'value' => $value, 'labels' => $labels];
-        self::flush();
+        self::maybeFlush();
     }
 
     /**
@@ -197,13 +210,13 @@ final class Metrics
         return $labels;
     }
 
-    private static function flush(): void
+    private static function maybeFlush(): void
     {
         if (!self::$persist) { return; }
-        $data = ['counters' => self::$counters, 'histograms' => self::$histograms, 'gauges' => self::$gauges];
-        $dir = dirname(self::METRICS_CACHE_FILE);
-        if (!is_dir($dir)) { @mkdir($dir, 0775, true); }
-        file_put_contents(self::METRICS_CACHE_FILE, '<?php return ' . var_export($data, true) . ';');
+        self::$opsSinceFlush++;
+        if (self::$opsSinceFlush < self::$flushInterval) { return; }
+        self::$opsSinceFlush = 0;
+        self::persistNow();
     }
 
     private static function load(): void

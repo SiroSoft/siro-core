@@ -72,17 +72,14 @@ final class Request
         $contentType = (string) ($headers['content-type'] ?? '');
         $isMultipart = str_contains($contentType, 'multipart/form-data');
 
-        $maxBodySize = 2 * 1024 * 1024; // 2MB limit
+        $maxBodySize = (int) (\Siro\Core\Env::get('MAX_BODY_SIZE_MB', '2')) * 1024 * 1024;
 
         // Validate request size using ACTUAL content length, not just header
         $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
 
         // BLOCK: Content-Length header can be spoofed, validate actual body size
         if ($contentLength > 0 && $contentLength > $maxBodySize) {
-            http_response_code(413);
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
-            exit(1);
+            throw new \RuntimeException('Request body too large (max ' . ($maxBodySize / 1024 / 1024) . 'MB)');
         }
 
         // For non-multipart requests, read and validate actual body size
@@ -91,10 +88,7 @@ final class Request
             $actualSize = strlen($body);
 
             if ($actualSize > $maxBodySize) {
-                http_response_code(413);
-                header('Content-Type: application/json; charset=utf-8');
-                echo json_encode(['success' => false, 'message' => 'Request body too large'], JSON_UNESCAPED_UNICODE);
-                exit(1);
+                throw new \RuntimeException('Request body too large (max ' . ($maxBodySize / 1024 / 1024) . 'MB)');
             }
 
             // Cache body for reuse (JsonMiddleware etc.)
@@ -582,7 +576,7 @@ final class Request
     private static function normalizePath(string $path): string
     {
         // Strip null bytes and URL-encoded null bytes
-        $path = str_replace(["\0", "\x00", '%00', '%0'], '', $path);
+        $path = str_replace(["\0", "\x00", '%00'], '', $path);
 
         if ($path === '') {
             return '/';

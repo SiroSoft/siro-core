@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace Siro\Core;
 
 /**
- * HTTP method constants for type-safe route registration.
+ * HTTP method enum for type-safe route registration.
  *
  * Usage:
- *   $router->add(Method::GET, '/path', $handler);
+ *   $router->add(Method::GET->value, '/path', $handler);
  *
  * @package Siro\Core
  */
-final class Method
+enum Method: string
 {
-    public const GET = 'GET';
-    public const POST = 'POST';
-    public const PUT = 'PUT';
-    public const PATCH = 'PATCH';
-    public const DELETE = 'DELETE';
-    public const OPTIONS = 'OPTIONS';
-    public const HEAD = 'HEAD';
+    case GET = 'GET';
+    case POST = 'POST';
+    case PUT = 'PUT';
+    case PATCH = 'PATCH';
+    case DELETE = 'DELETE';
+    case OPTIONS = 'OPTIONS';
+    case HEAD = 'HEAD';
 }

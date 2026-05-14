@@ -32,7 +32,7 @@ final class Env
         self::$cachedFile = dirname($filePath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php';
         if (is_file(self::$cachedFile)) {
-            $cached = require self::$cachedFile;
+            $cached = json_decode(substr((string) file_get_contents(self::$cachedFile), strlen('<?php exit; ?>')), true);
             if (is_array($cached)) {
                 foreach ($cached as $key => $value) {
                     $_ENV[$key] = $value;
@@ -118,8 +118,7 @@ final class Env
         }
         unset($data['APP_KEY'], $data['JWT_SECRET']);
 
-        $export = var_export($data, true);
-        $content = "<?php return {$export};" . PHP_EOL;
+        $content = '<?php exit; ?>' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'env.php';
         return file_put_contents($cacheFile, $content) !== false;
     }
@@ -128,7 +127,7 @@ final class Env
     {
         $cacheFile = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php';
         if (is_file($cacheFile)) {
-            @unlink($cacheFile);
+            unlink($cacheFile);
         }
     }
 

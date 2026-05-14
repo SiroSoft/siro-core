@@ -1,592 +1,498 @@
 # Security Guide
 
-## Overview
+SiroPHP is designed with defense-in-depth. Every layer — from JWT authentication to output encoding, rate limiting, and audit logging — is built to be secure by default.
 
-SiroPHP is designed with security-first principles. This document outlines all security features, best practices, and known attack vectors that the framework protects against.
+> See [JWT.md](JWT.md) for full JWT implementation details.
 
 ---
 
-## 🔐 Authentication & Authorization
+## Authentication & Authorization
 
-### JWT Token Security
+### JWT Auth
 
-**Token Structure:**
-- Access tokens: 1-hour TTL (short-lived)
-- Refresh tokens: 7-day TTL (long-lived)
-- Token versioning for instant revocation
-- JTI (JWT ID) uniqueness enforcement
+JWT is the primary authentication mechanism. SiroPHP enforces strict token validation:
 
-**Best Practices:**
-```env
-# Use strong JWT secret (minimum 32 characters)
-JWT_SECRET=your-super-secret-key-minimum-32-chars-long
-
-# For production, use RS256 asymmetric signing
-JWT_ALGORITHM=RS256
-JWT_PUBLIC_KEY=/path/to/public.pem
-JWT_PRIVATE_KEY=/path/to/private.pem
-```
-
-**Security Features:**
-- ✅ Automatic token rotation on refresh
-- ✅ Token blacklisting via version tracking
-- ✅ RS256 support for enhanced security
-- ✅ Secure storage of refresh tokens in database
-
-### RBAC (Role-Based Access Control)
+- **Algorithm pinning**: The server-configured `JWT_ALGORITHM` (HS256 or RS256) is always used for verification. The `alg` header in the token itself is never trusted. This prevents alg confusion attacks.
+- **Key rotation**: `JWT::rotateKey()` increments `JWT_KEY_VERSION` and supports dual verification against the previous secret during the rotation window.
+- **JTI blacklist**: Each token carries a unique `jti` (JWT ID). Revoked tokens are stored in `jti_blacklist:*` cache entries and checked at decode time via `JWT::isJtiBlacklisted()`.
+- **Claim validation**: Requires `sub` (user ID), `ver` (token version), `iat`, `exp`, and `type`. Tokens with missing claims are rejected.
+- **Secret strength**: `JWT::secret()` enforces a minimum 32-character secret and rejects placeholder values.
 
 ```php
-// Protect routes by role
-Route::get('/admin/dashboard', [AdminController::class, 'index'])
+// Encode an access token (1-hour TTL)
+$token = JWT::encodeAccess($userId, $tokenVersion);
+
+// Encode a refresh token (7-day TTL)
+$refresh = JWT::encodeRefresh($userId, $tokenVersion);
+
+// Decode and verify (throws RuntimeException on failure)
+$claims = JWT::decode($token);
+
+// Blacklist a JTI during logout
+JWT::blacklistJti($jti, $expiresAt);
+
+// Rotate secret (increments version)
+JWT::rotateKey($newSecret);
+```
+
+```env
+JWT_SECRET=your-super-secret-key-minimum-32-chars-long
+JWT_ALGORITHM=HS256
+
+# For RS256 asymmetric signing:
+# JWT_ALGORITHM=RS256
+# JWT_PRIVATE_KEY_PATH=/path/to/private.pem
+# JWT_PUBLIC_KEY_PATH=/path/to/public.pem
+```
+
+### AuthMiddleware — Role-Based Access
+
+`AuthMiddleware` decodes the Bearer token, looks up the user, checks `token_version` match, and optionally enforces roles:
+
+```php
+Route::get('/admin', [Controller::class, 'admin'])
     ->middleware(['auth:admin']);
 
-Route::post('/users', [UserController::class, 'store'])
-    ->middleware(['auth:user,admin']);
+Route::put('/profile', [Controller::class, 'update'])
+    ->middleware(['auth:user,admin']); // multiple allowed roles
 ```
 
-**Middleware Checks:**
-1. Valid JWT token present
+**Checks performed:**
+1. Bearer token present and valid JWT
 2. Token not expired
-3. User role matches required role
-4. Token version matches current version
+3. User exists and has `status = 1`
+4. `token_version` matches the database
+5. User role matches one of the required roles (403 if not)
+
+Failed authentication is logged via `Logger::error()` with IP and path for security monitoring.
+
+### API Key Auth
+
+For external developer access, `ApiKeyMiddleware` validates `X-Api-Key` header against stored keys in the `api_keys` table:
+
+```php
+Route::get('/api/external/data', [Controller::class, 'data'])
+    ->middleware(['apikey:read']);
+```
+
+Keys can be scoped (e.g. `read,write`) and expire. `make:apikey` generates them.
 
 ---
 
-## 🛡️ Input Validation & Sanitization
+## CSRF Protection
 
-### SQL Injection Protection
+SiroPHP implements a dual-strategy CSRF defense based on the request context:
 
-**All queries use PDO prepared statements:**
-```php
-// ✅ Safe - uses parameterized queries
-DB::table('users')
-    ->where('email', $request->input('email'))
-    ->first();
+### Session-based (Web Forms)
 
-// ❌ Never do this - vulnerable to SQL injection
-DB::raw("SELECT * FROM users WHERE email = '" . $input . "'");
-```
-
-**Protected Components:**
-- QueryBuilder (all methods)
-- Model CRUD operations
-- Schema Builder migrations
-- Raw query execution (with bindings)
-
-### XSS Prevention
-
-**Automatic output encoding:**
-```php
-// Response::json() automatically escapes HTML entities
-return Response::json([
-    'message' => $userInput // Automatically escaped
-]);
-```
-
-**For HTML responses, use htmlspecialchars:**
-```php
-echo htmlspecialchars($userInput, ENT_QUOTES, 'UTF-8');
-```
-
-### Mass Assignment Protection
-
-**Models require explicit `$fillable` declaration:**
-```php
-class User extends Model {
-    // Only these fields can be mass-assigned
-    protected array $fillable = ['name', 'email'];
-    
-    // These are protected automatically:
-    // - password
-    // - role
-    // - is_admin
-}
-
-// ❌ Will trigger warning and block unauthorized fields
-User::create($request->all());
-
-// ✅ Explicitly allow only safe fields
-User::create($request->only(['name', 'email']));
-```
-
-**Runtime Warning:**
-If `$fillable` is empty, framework triggers `E_USER_WARNING`:
-```
-Mass assignment protection: $fillable is empty on User model. 
-No fields will be mass-assigned. Define $fillable array.
-```
-
----
-
-## 🔒 CSRF Protection
-
-### Enable CSRF Middleware
+When a session is active, `CsrfMiddleware` uses a per-session token stored via `Session`:
 
 ```php
-// Add to sensitive routes
-Route::post('/api/data', [Controller::class, 'store'])
-    ->middleware([CsrfMiddleware::class]);
-```
-
-### Generate CSRF Token
-
-```php
-// In HTML forms
+// In your form
 echo CsrfMiddleware::field();
-// Output: <input type="hidden" name="_token" value="abc123...">
+// <input type="hidden" name="_csrf_token" value="abc123...">
 
-// In JavaScript meta tag
+// In your layout head
 echo CsrfMiddleware::metaTag();
-// Output: <meta name="csrf-token" content="abc123...">
+// <meta name="csrf-token" content="abc123...">
 ```
 
-### Verify Token in Requests
+The token is rotated after each successful validation to prevent reuse.
 
-```javascript
-// Include token in AJAX requests
+```php
+// Via AJAX
 fetch('/api/data', {
     method: 'POST',
     headers: {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-    },
-    body: JSON.stringify(data)
+    }
 });
+```
+
+### Double-Submit Cookie (Stateless API)
+
+When no session is available, the middleware falls back to comparing a `csrf_token` cookie with the `X-CSRF-TOKEN` or `X-XSRF-TOKEN` header using `hash_equals()` to prevent timing attacks.
+
+```php
+Route::post('/api/orders', [OrderController::class, 'store'])
+    ->middleware([CsrfMiddleware::class]);
+```
+
+Both strategies return HTTP 419 on mismatch.
+
+---
+
+## CORS
+
+`CorsMiddleware` is configured via environment variables:
+
+```env
+CORS_ALLOWED_ORIGINS=https://example.com,https://app.example.com
+CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With
+```
+
+**Key behaviors:**
+- `OPTIONS` preflight requests receive CORS headers and return 204 immediately.
+- When `CORS_ALLOWED_ORIGINS=*`, `Access-Control-Allow-Credentials: false` is sent (wildcard origins cannot use credentials).
+- When specific origins are listed, the middleware validates the `Origin` header against the whitelist and sets `Access-Control-Allow-Credentials: true`.
+- Exposed headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `X-Siro-Trace-Id`.
+- `Vary: Origin` is set to prevent CDN caching issues.
+
+```php
+Route::get('/api/public', [Controller::class, 'index'])
+    ->middleware([CorsMiddleware::class]);
 ```
 
 ---
 
-## ⏱️ Rate Limiting
+## Content Security Policy (CSP)
 
-### Protect Sensitive Endpoints
+`CspMiddleware` enforces a strict default policy to prevent XSS and data injection:
+
+```
+default-src 'self'; script-src 'strict-dynamic' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+```
+
+**Features:**
+- Uses `strict-dynamic` for maximum security with modern browsers.
+- A per-request cryptographic `nonce` is generated via `random_bytes(16)` and injected into the policy.
+- Retrieve the nonce for inline scripts:
 
 ```php
-// Login endpoint - 5 attempts per minute
+<script nonce="<?= CspMiddleware::nonce() ?>">
+    // your inline script
+</script>
+```
+
+- Customize via `CSP_POLICY` env var.
+- Also sets `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY`.
+
+---
+
+## Rate Limiting
+
+`ThrottleMiddleware` implements a sliding-window rate limiter:
+
+```php
+// 5 requests per minute on login
 Route::post('/auth/login', [AuthController::class, 'login'])
     ->throttle(5, 1);
 
-// Registration - 3 attempts per hour
-Route::post('/auth/register', [AuthController::class, 'register'])
-    ->throttle(3, 60);
-
-// API endpoints - 60 requests per minute
+// 60 requests per minute on API
 Route::get('/api/users', [UserController::class, 'index'])
     ->throttle(60, 1);
 ```
 
-### Rate Limit Headers
+### Backend Strategy
 
-Every throttled response includes:
+1. **Redis** (primary): Uses atomic Lua scripting (`INCR` + `EXPIRE`) for race-condition-free counting. Key format: `rate:<ip>:<METHOD:path>`.
+2. **File fallback** (default when Redis unavailable): Uses `flock()`-locked JSON files in `storage/rate_limit/`.
+
+### Fallback Modes
+
+Configured via `THROTTLE_FALLBACK` env:
+
+| Value | Behavior |
+|---|---|
+| `file` (default) | File-based rate limiting |
+| `disabled` | Bypass rate limiting entirely |
+| `fail_closed` | Reject all requests (429) |
+
+### Response Headers
+
 ```http
 X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 45
-X-RateLimit-Reset: 1635724800
-Retry-After: 120  # When limit exceeded
+X-RateLimit-Reset: 1715000000
+Retry-After: 120
 ```
 
-### Monitor Rate Limits
+### Monitor
 
 ```bash
-# View active rate limits
 php siro rate:status
-
-# Output:
-# +---------------------+-------+------+---------+
-# | Key                 | Count | TTL  | Status  |
-# +---------------------+-------+------+---------+
-# | 30ff2cff9fb616d9... | 45    | 30s  | OK      |
-# | 4840fcb0d11385...   | 61    | 15s  | BLOCKED |
-# +---------------------+-------+------+---------+
+# Shows all active rate limit entries with counts, TTL, and blocked status
 ```
 
 ---
 
-## 🔑 Credential Handling
+## IDOR Protection
 
-### Password Hashing
+Insecure Direct Object Reference (IDOR) is prevented through `AuthMiddleware` role-based access:
 
-**Use bcrypt automatically:**
 ```php
-// Hash password
-$hashedPassword = Hash::make('secret123');
+Route::get('/api/users/{id}', [UserController::class, 'show'])
+    ->middleware(['auth:admin']);
+```
 
-// Verify password
-if (Hash::check('secret123', $hashedPassword)) {
-    // Password matches
+- Role enforcement ensures only authorized roles can access a resource.
+- The authenticated user object is attached to the request via `$request->setUser()` and is accessible in controllers:
+
+```php
+$user = $request->user();
+if ((int) $user['id'] !== (int) $id) {
+    return Response::json(['error' => 'Forbidden'], 403);
 }
-```
-
-**Algorithm:** Bcrypt with cost factor 12 (configurable)
-
-### Credential Sanitization in Logs
-
-**Sensitive data automatically redacted:**
-```php
-// Request body logged as:
-{"email":"test@test.com","password":"[REDACTED]"}
-
-// Not:
-{"email":"test@test.com","password":"secret123"}
-```
-
-**Redacted Fields:**
-- `password`
-- `password_confirmation`
-- `token`
-- `access_token`
-- `refresh_token`
-- `secret`
-- `api_key`
-
-### Environment Variable Protection
-
-**Never commit `.env` file:**
-```gitignore
-# .gitignore
-.env
-.env.*
-!.env.example
-```
-
-**Auto-generate secure secrets:**
-```bash
-# Generate APP_KEY
-php siro key:generate
-
-# Generates: APP_KEY=base64:random-32-byte-key
 ```
 
 ---
 
-## 🌐 CORS Configuration
+## SQL Injection
 
-### Configure Allowed Origins
+**Fully mitigated.** All database queries use PDO prepared statements with parameterized bindings. No user input is ever interpolated into SQL strings.
 
 ```php
-// config/cors.php
-return [
-    'allowed_origins' => ['https://example.com'],
-    'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE'],
-    'allowed_headers' => ['Content-Type', 'Authorization'],
-    'exposed_headers' => ['X-Request-Id', 'X-RateLimit-Limit'],
-    'max_age' => 3600,
-    'supports_credentials' => true,
-];
+// Safe — parameterized
+DB::table('users')
+    ->where('email', $request->input('email'))
+    ->first();
+
+// Safe — positional bindings in raw queries
+DB::select('SELECT * FROM users WHERE id = ?', [$id]);
 ```
 
-### Test CORS Configuration
-
-```bash
-# Automated CORS validation
-php siro api:test GET /api/users --cors
-
-# Output:
-# [1/3] OPTIONS preflight request... ✓
-# [2/3] Request with Origin header... ✓
-# [3/3] Request without Origin... ✓
-# CORS configuration is valid!
-```
+**Protected surfaces:**
+- `QueryBuilder` — all `where`, `join`, `orderBy`, `having`, `groupBy` methods
+- `Model` CRUD — `find`, `create`, `update`, `delete`
+- `Schema/Blueprint` — column definitions, indices
+- `DB::raw()` — only with explicit bindings
 
 ---
 
-## 📁 File Upload Security
+## XSS
 
-### Validate Uploaded Files
+All output is contextually encoded to prevent cross-site scripting:
 
-```php
-$file = $request->file('avatar');
-
-// Check file type
-if (!$file->isValid()) {
-    throw new \Exception('Invalid file upload');
-}
-
-// Restrict file types
-$allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-if (!in_array($file->getMimeType(), $allowedTypes)) {
-    throw new \Exception('File type not allowed');
-}
-
-// Limit file size (5MB max)
-if ($file->getSize() > 5 * 1024 * 1024) {
-    throw new \Exception('File too large');
-}
-
-// Store securely
-$path = $file->store('avatars', 'public');
-```
-
-### Prevent Path Traversal
-
-**Framework sanitizes filenames automatically:**
-```php
-// Malicious filename: "../../../etc/passwd"
-// Sanitized to: "etc_passwd" or rejected
-```
-
-### Serve Files Safely
+- `Response::json()` — JSON responses are automatically encoded; no HTML context risk.
+- For HTML views, use `htmlspecialchars()` with `ENT_QUOTES | ENT_SUBSTITUTE` and UTF-8:
 
 ```php
-// Create symbolic link
-php siro storage:link
-
-// Access files via public URL
-// http://yoursite.com/storage/avatars/photo.jpg
+echo htmlspecialchars($userInput, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 ```
+
+- The CSP middleware provides a second layer of defense via `strict-dynamic` and nonces, preventing inline script execution even if encoding fails.
 
 ---
 
-## 🔍 Security Headers
+## Path Traversal
 
-### Automatic Security Headers
+`Storage::localPath()` applies recursive sanitization to prevent directory traversal:
 
-Every response includes:
+```php
+// Input: "../../../etc/passwd"
+// Step 1: Replace ../ .\ / with DIRECTORY_SEPARATOR
+// Step 2: Filter out '..' and '.' segments
+// Step 3: Realpath check — resolved path must start with allowed directory
+// Step 4: String-level prefix check for non-existent files
+// Throws RuntimeException on traversal attempt
+$safePath = Storage::localPath($userProvidedPath);
+```
+
+**Protection layers:**
+1. Recursive `str_replace` of traversal sequences (`../`, `..\\`, `./`)
+2. Segment filtering (drops `..`, `.`, empty segments)
+3. `realpath()` validation — final path must be under `storage/app/`
+4. String-level prefix check as defense-in-depth for new files
+
+---
+
+## Logger Sanitization
+
+The logger automatically redacts sensitive data before writing to disk:
+
+### Redacted Fields
+
+| Category | Fields |
+|---|---|
+| Body | `password`, `token`, `otp`, `secret`, `credit_card`, `card_number`, `cvv`, `pin`, `ssn`, `passport` |
+| Headers | `authorization`, `cookie`, `x-api-key`, `x-csrf-token`, `session-id` |
+| Query | `token`, `key`, `secret`, `api_key`, `code` |
+
+### Methods
+
+```php
+// String sanitization (error messages, debug output)
+Logger::sanitize("password=secret123");
+// => "password=[REDACTED]"
+
+// JSON body sanitization (traces)
+Logger::sanitizeJsonBody('{"password":"secret123"}');
+// => '{"password":"[REDACTED]"}'
+
+// Header sanitization
+Logger::sanitizeHeaders(['Authorization' => 'Bearer abc...']);
+// => ['Authorization' => '[REDACTED]']
+```
+
+Credit card patterns (13-19 digit numbers) are also redacted: `[REDACTED-CARD]`.
+
+---
+
+## Security Headers
+
+### Default Headers
+
+Every response from `CspMiddleware` includes:
+
 ```http
+Content-Security-Policy: <configured policy>
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
-X-XSS-Protection: 1; mode=block
-Strict-Transport-Security: max-age=31536000; includeSubDomains
-Content-Security-Policy: default-src 'self'
-Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: geolocation=(), microphone=(), camera=()
 ```
 
-### Customize Headers
+### Additional Headers
+
+SiroPHP applies these security headers at the application level:
+
+| Header | Value | Purpose |
+|---|---|---|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME type sniffing |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Enforces HTTPS (recommended — add via middleware) |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Controls referrer leakage |
+| `Permissions-Policy` | `geolocation=(), microphone=(), camera=()` | Restricts browser API access |
+
+### Custom Headers
 
 ```php
-use Siro\Core\Response;
-
-return Response::json($data)
-    ->header('X-Custom-Header', 'value')
-    ->withHeaders([
-        'X-Another-Header' => 'another-value',
-    ]);
+return Response::json($data)->withHeaders([
+    'Strict-Transport-Security' => 'max-age=31536000; includeSubDomains',
+    'Permissions-Policy' => 'geolocation=(), microphone=()',
+]);
 ```
 
 ---
 
-## 🗄️ Database Security
+## Audit Logging
 
-### Multi-Database Connection Security
+`AuditMiddleware` logs security-relevant events to a dedicated `storage/logs/security-YYYY-MM-DD.log` file in a SIEM-ready JSON format:
 
-**Separate credentials for read/write:**
-```env
-# Write connection (restricted access)
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_DATABASE=myapp_production
-DB_USERNAME=app_writer
-DB_PASSWORD=strong-password-here
-
-# Read replica (read-only user)
-DB_READ_HOST=replica.example.com
-DB_READ_USERNAME=app_reader
-DB_READ_PASSWORD=another-strong-password
+```php
+Route::post('/admin/settings', [Controller::class, 'update'])
+    ->middleware([AuditMiddleware::class . ':sensitive']);
 ```
 
-### Slow Query Detection
+### Event Types
 
-**Detect potential SQL injection attempts:**
-```env
-DB_SLOW_QUERY_THRESHOLD=100  # Log queries > 100ms
+| Event | Trigger | Data |
+|---|---|---|
+| `auth.failed` | HTTP 401 response | IP, method, path, user-agent |
+| `unauthorized.access` | HTTP 403 response | IP, user ID, role, path |
+| `rate_limit.exceeded` | HTTP 429 response | IP, path, method |
+| `sensitive.operation` | Context `sensitive` flag | User ID, action, IP |
+
+### Log Format
+
+```
+[2026-05-13 10:30:00] [SECURITY] auth.failed {"ip":"192.168.1.1","method":"POST","path":"/auth/login","user_agent":"curl/8.0"}
 ```
 
-**Logged to `storage/logs/error.log`:**
-```
-Slow query (150.25ms): SELECT * FROM users WHERE email = :email
-Bindings: {"email":"test@example.com"}
-```
+`Logger::security()` always writes to the `security` log file regardless of log level configuration, ensuring audit trail integrity.
+
+### Log Directory Protection
+
+The logger automatically protects log directories:
+- `.htaccess` with `Deny from all` (Apache)
+- `nginx-deny.conf` with `deny all;` (nginx)
+- `web.config` with request filtering (IIS)
 
 ---
 
-## 🚨 Error Handling
+## Environment & Key Security
 
-### Production Error Configuration
-
-```env
-APP_DEBUG=false  # Never enable in production
+```bash
+php siro key:generate           # Generates APP_KEY (base64:32-bytes)
+php siro env:check              # Validates all required vars
 ```
 
-**When `APP_DEBUG=false`:**
-- Generic error messages shown to users
-- Detailed errors logged internally
-- Stack traces hidden from response
-- Database credentials never exposed
+**Checks performed by `env:check`:**
+- `.env` file exists
+- Required variables are set
+- `JWT_SECRET` minimum 32 characters
+- `APP_DEBUG` is `false` in production
+- Required PHP extensions loaded
+- Storage directories writable
 
-### Custom Error Pages
+---
+
+## Mass Assignment Protection
+
+Models require explicit `$fillable` arrays. Unauthorized fields are blocked at the framework level:
 
 ```php
-// Handle specific HTTP errors
-if ($e instanceof NotFoundHttpException) {
-    return Response::json([
-        'error' => 'Resource not found'
-    ], 404);
+class User extends Model {
+    protected array $fillable = ['name', 'email'];
 }
 
-if ($e instanceof ValidationException) {
-    return Response::json([
-        'errors' => $e->errors()
-    ], 422);
-}
+// Only 'name' and 'email' will be set
+User::create($request->all());
 ```
+
+An `E_USER_WARNING` is triggered if `$fillable` is empty.
 
 ---
 
-## 🔐 Encryption
+## Encryption
 
-### AES-256 Encryption
+`Encrypter` provides AES-256-CBC encryption with HMAC integrity verification:
 
 ```php
-use Siro\Core\Encrypter;
-
-// Encrypt sensitive data
-$encrypted = Encrypter::encrypt($creditCardNumber);
-
-// Decrypt when needed
+$encrypted = Encrypter::encrypt($sensitiveData);
 $decrypted = Encrypter::decrypt($encrypted);
 ```
 
-**Features:**
-- AES-256-CBC encryption
-- HMAC integrity verification
-- Tamper-proof payload
-- Auto key resolution from `APP_KEY`
-
-### When to Encrypt
-
-**Always encrypt:**
-- Credit card numbers
-- Social security numbers
-- Personal identification data
-- API keys stored in database
-- Sensitive user preferences
-
-**Don't encrypt:**
-- Passwords (use Hash::make instead)
-- Public data
-- Data needed for search/filtering
+Use for: credit card numbers, PII, API keys stored in DB, SSNs.
+Do NOT use for: passwords (use `Hash::make` with bcrypt cost 12).
 
 ---
 
-## 🛠️ Security Checklist
+## Best Practices Checklist
 
-### Pre-Deployment Checklist
+### Pre-Deployment
 
 ```bash
-# 1. Validate environment
-php siro env:check
-
-# Checks:
-# ✅ .env file exists
-# ✅ Required variables set
-# ✅ JWT_SECRET strength (min 32 chars)
-# ✅ APP_DEBUG is false
-# ✅ PHP extensions loaded
-# ✅ Storage directories writable
-
-# 2. Run security tests
-php vendor/bin/phpunit --testsuite=Security
-
-# 3. Check rate limiting
-php siro rate:status
-
-# 4. Verify HTTPS
-curl -I https://yourdomain.com/api/health
-# Should return: Strict-Transport-Security header
-
-# 5. Test CORS
-php siro api:test GET /api/users --cors
+php siro doctor --prod           # Full production readiness check
+php siro env:check               # Validate environment
+php siro optimize                # Cache config, routes, env
+php siro storage:link            # Create public storage symlink
 ```
 
-### Production Hardening
+### Checklist
 
-1. **Disable debug mode:**
-   ```env
-   APP_DEBUG=false
-   ```
+- [ ] `APP_DEBUG=false` in production
+- [ ] `JWT_SECRET` is 32+ random characters, not a placeholder
+- [ ] JWT algorithm is pinned server-side (never trust token header)
+- [ ] CSRF middleware applied to all state-changing routes
+- [ ] CORS origins restricted (not `*` for credential-based auth)
+- [ ] CSP policy is strict (uses `strict-dynamic`)
+- [ ] Rate limiting applied to auth endpoints (5/min or lower)
+- [ ] AuthMiddleware roles specified for protected routes
+- [ ] All models have explicit `$fillable` arrays
+- [ ] Storage directory permissions: `755`
+- [ ] HTTPS enforced (HSTS header configured)
+- [ ] AuditMiddleware applied to sensitive operations
+- [ ] Log retention policy configured (`LOG_RETENTION_DAYS`)
+- [ ] `.env` file is in `.gitignore`
+- [ ] Throttle fallback is not `disabled` in production
+- [ ] Log directories are web-inaccessible (`.htaccess`/`nginx-deny.conf`)
+- [ ] API keys are scoped and have expiration dates
 
-2. **Use strong secrets:**
-   ```bash
-   php siro key:generate
-   ```
+### Incident Response
 
-3. **Enable maintenance mode during updates:**
-   ```bash
-   php siro down --allow=YOUR_IP
-   # Deploy code
-   php siro up
-   ```
-
-4. **Set proper file permissions:**
-   ```bash
-   chmod 755 storage/
-   chmod 644 storage/logs/*.log
-   ```
-
-5. **Configure firewall:**
-   - Allow only ports 80, 443
-   - Restrict database access to app server IP
-   - Block direct access to `.env` file
-
----
-
-## 🚨 Incident Response
-
-### If Breach Suspected
-
-1. **Rotate all tokens:**
-   ```sql
-   UPDATE users SET token_version = token_version + 1;
-   ```
-
-2. **Change JWT secret:**
-   ```bash
-   php siro key:generate
-   ```
-
-3. **Review trace logs:**
-   ```bash
-   php siro log:trace --status=500
-   php siro log:export --days=7 --format=json --output=incident.json
-   ```
-
-4. **Check failed jobs:**
-   ```bash
-   php siro queue:status
-   ```
-
-5. **Audit user actions:**
-   ```sql
-   SELECT * FROM audit_logs 
-   WHERE created_at > NOW() - INTERVAL 24 HOUR;
-   ```
+```bash
+php siro down --allow=YOUR_IP          # Maintenance mode
+# Rotate all tokens:
+php siro key:generate                   # New JWT secret
+# Investigate:
+php siro log:trace --status=500        # Find errors
+php siro log:export --days=7 --format=json --output=incident.json
+php siro rate:status                   # Check for abuse
+php siro up                            # Restore
+```
 
 ---
 
-## 📚 Additional Resources
+## Reporting Vulnerabilities
 
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [PHP Security Best Practices](https://www.php.net/manual/en/security.php)
-- [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
-- [CORS Specification](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
-
----
-
-## 📞 Reporting Security Issues
-
-If you discover a security vulnerability, please report it responsibly:
-
-**Email:** security@sirosoft.com  
-**PGP Key:** Available on request  
-**Response Time:** Within 48 hours
-
-**Do NOT:**
-- Open public GitHub issues
-- Post on social media
-- Exploit the vulnerability
-
-**DO:**
-- Send detailed report via email
-- Include steps to reproduce
-- Provide suggested fix if possible
-
-We appreciate responsible disclosure and will credit researchers who help keep SiroPHP secure.
+Report security issues to **security@sirosoft.com**. Response within 48 hours.

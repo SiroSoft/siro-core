@@ -36,6 +36,12 @@ final class Storage
     /** @var array<string, string> */
     private static array $fakeFiles = [];
 
+    public static function reset(): void
+    {
+        self::$faked = false;
+        self::$fakeFiles = [];
+    }
+
     public static function fake(): void
     {
         self::$faked = true;
@@ -203,10 +209,12 @@ final class Storage
         $storagePath = str_replace('/', DIRECTORY_SEPARATOR, (string) (self::$config['path'] ?? ''));
         $allowedDir = $base . DIRECTORY_SEPARATOR . $storagePath;
 
-        // Clean path and prevent traversal
+        // Clean path and prevent traversal - recursive sanitization
         $cleanPath = ltrim($path, DIRECTORY_SEPARATOR);
-        $cleanPath = str_replace(['../', '..\\', './', '.\\'], '', $cleanPath);
-        $cleanPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $cleanPath);
+        do {
+            $previous = $cleanPath;
+            $cleanPath = str_replace(['../', '..\\', './', '.\\', '\\', '/'], DIRECTORY_SEPARATOR, $cleanPath);
+        } while ($cleanPath !== $previous);
         // Remove any remaining parent dir references
         $segments = explode(DIRECTORY_SEPARATOR, $cleanPath);
         $filtered = [];
@@ -230,24 +238,19 @@ final class Storage
             return $fullPath;
         }
 
-        // For new files, validate that the path structure is safe without checking realpath
-        // Check that no '..' segments remain after filtering
-        $remainingPath = str_replace(DIRECTORY_SEPARATOR, '/', $fullPath);
-        $normalized = str_replace('\\', '/', $fullPath);
-        $segments = explode('/', str_replace('\\', '/', $fullPath));
-        foreach ($segments as $seg) {
+        // For new files, validate path structure is safe without requiring realpath
+        $normalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $fullPath);
+        $pathSegments = explode(DIRECTORY_SEPARATOR, $normalized);
+        foreach ($pathSegments as $seg) {
             if ($seg === '..') {
                 throw new RuntimeException('Path traversal detected: ' . $path);
             }
         }
-        // Validate parent if exists
-        $parentDir = dirname($fullPath);
-        if (is_dir($parentDir)) {
-            $realParent = realpath($parentDir);
-            $realAllowed = realpath($allowedDir);
-            if ($realParent === false || $realAllowed === false || !str_starts_with($realParent, $realAllowed)) {
-                throw new RuntimeException('Path traversal detected: ' . $path);
-            }
+        // Verify path starts with the allowed directory (string-level check)
+        $allowedNormalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $allowedDir);
+        $pathNormalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $fullPath);
+        if (!str_starts_with($pathNormalized, $allowedNormalized)) {
+            throw new RuntimeException('Path traversal detected: ' . $path);
         }
 
         return $fullPath;
@@ -368,7 +371,12 @@ final class Storage
             ],
         ]);
 
-        $result = @file_get_contents($url, false, $context);
+        try {
+            $result = file_get_contents($url, false, $context);
+        } catch (\Throwable $e) {
+            \Siro\Core\Logger::error('S3 operation failed: ' . $e->getMessage());
+            $result = false;
+        }
         return $result !== false;
     }
 
@@ -393,7 +401,12 @@ final class Storage
             ],
         ]);
 
-        $result = @file_get_contents($url, false, $context);
+        try {
+            $result = file_get_contents($url, false, $context);
+        } catch (\Throwable $e) {
+            \Siro\Core\Logger::error('S3 operation failed: ' . $e->getMessage());
+            $result = false;
+        }
         return $result !== false ? $result : null;
     }
 
@@ -418,7 +431,12 @@ final class Storage
             ],
         ]);
 
-        $result = @file_get_contents($url, false, $context);
+        try {
+            $result = file_get_contents($url, false, $context);
+        } catch (\Throwable $e) {
+            \Siro\Core\Logger::error('S3 operation failed: ' . $e->getMessage());
+            $result = false;
+        }
         return $result !== false;
     }
 
@@ -442,7 +460,12 @@ final class Storage
             ],
         ]);
 
-        $result = @get_headers($url, false, $context);
+        try {
+            $result = get_headers($url, false, $context);
+        } catch (\Throwable $e) {
+            \Siro\Core\Logger::error('S3 HEAD operation failed: ' . $e->getMessage());
+            $result = false;
+        }
         if ($result === false) return false;
         $statusLine = $result[0] ?? '';
         preg_match('/\s(\d{3})\s/', $statusLine, $matches);

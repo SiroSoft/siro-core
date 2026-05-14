@@ -52,9 +52,20 @@ final class Blueprint
         return $this->addColumn('text', $name);
     }
 
+    public function increments(string $name = 'id'): Column
+    {
+        return $this->addColumn('increments', $name);
+    }
+
     public function integer(string $name): Column
     {
         return $this->addColumn('integer', $name);
+    }
+
+    public function foreignId(string $name): ForeignKey
+    {
+        $this->addColumn('bigint', $name, ['unsigned' => true]);
+        return new ForeignKey($name);
     }
 
     public function smallint(string $name): Column

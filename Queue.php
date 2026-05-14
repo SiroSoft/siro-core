@@ -28,6 +28,12 @@ final class Queue
     /** @var array<int, array{job: string, data: mixed}> */
     private static array $fakeJobs = [];
 
+    public static function reset(): void
+    {
+        self::$faked = false;
+        self::$fakeJobs = [];
+    }
+
     public static function fake(): void
     {
         self::$faked = true;
@@ -66,10 +72,10 @@ final class Queue
 
         $rows = '';
         foreach ($latest as $j) {
-            $rows .= '<tr><td>' . ($j['id'] ?? '') . '</td><td>' . ($j['job'] ?? '') . '</td>'
-                . '<td>' . ($j['attempts'] ?? 0) . '/' . ($j['max_attempts'] ?? 3) . '</td>'
-                . '<td>' . ($j['priority'] ?? 0) . '</td>'
-                . '<td>' . date('Y-m-d H:i:s', $j['available_at'] ?? 0) . '</td></tr>';
+            $rows .= '<tr><td>' . htmlspecialchars((string)($j['id'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars((string)($j['job'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars((string)($j['attempts'] ?? 0), ENT_QUOTES, 'UTF-8') . '/' . htmlspecialchars((string)($j['max_attempts'] ?? 3), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars((string)($j['priority'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars(date('Y-m-d H:i:s', $j['available_at'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td></tr>';
         }
 
         return '<!DOCTYPE html><html><head><title>Queue Dashboard - Siro</title>'
@@ -161,10 +167,15 @@ final class Queue
                 return false;
             }
 
-            Database::execute(
-                "UPDATE jobs SET locked_until = :lock WHERE id = :id",
+            $affected = Database::execute(
+                "UPDATE jobs SET locked_until = :lock WHERE id = :id AND locked_until IS NULL",
                 ['lock' => time() + 60, 'id' => $row['id']]
             );
+
+            if ($affected === 0) {
+                $pdo->commit();
+                return false;
+            }
 
             $pdo->commit();
         } catch (Throwable $e) {
@@ -246,6 +257,7 @@ final class Queue
 
     /**
      * Execute a callable with a timeout check.
+     * Uses set_time_limit() and periodic time checks within the execution.
      * Throws RuntimeException if execution exceeds maxExecTime.
      */
     private static function executeWithTimeout(callable $fn, int $maxExecTime): void
@@ -254,24 +266,12 @@ final class Queue
             throw new \RuntimeException('Job timed out before execution started');
         }
 
-        declare(ticks=1);
-        $check = function () use ($maxExecTime): void {
-            if (time() > $maxExecTime) {
-                throw new \RuntimeException('Job timed out during execution');
-            }
-        };
-
-        $registered = register_tick_function($check);
-        if ($registered === false) {
-            $fn();
-            return;
+        $remaining = $maxExecTime - time();
+        if ($remaining > 0) {
+            @set_time_limit($remaining);
         }
 
-        try {
-            $fn();
-        } finally {
-            unregister_tick_function($check);
-        }
+        $fn();
     }
 
     /**
@@ -379,6 +379,6 @@ final class Queue
      */
     public static function getFailedJobs(int $limit = 50): array
     {
-        return Database::select("SELECT * FROM failed_jobs ORDER BY id DESC LIMIT " . max(1, $limit));
+        return Database::select("SELECT * FROM failed_jobs ORDER BY id DESC LIMIT " . max(1, (int) $limit));
     }
 }

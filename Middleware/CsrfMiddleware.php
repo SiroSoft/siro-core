@@ -18,6 +18,39 @@ final class CsrfMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        // API/SPA: validate origin/referer header
+        $origin = $request->header('origin', '');
+        $referer = $request->header('referer', '');
+        $hasSession = false;
+
+        try {
+            $session = Session::instance();
+            $session->start();
+            $hasSession = $session->isStarted();
+        } catch (\Throwable) {
+            $hasSession = false;
+        }
+
+        if (!$hasSession) {
+            // Double-submit cookie pattern for stateless API
+            $cookieToken = (string) ($_COOKIE['csrf_token'] ?? '');
+            $headerToken = $request->header('X-CSRF-TOKEN', '') ?: $request->header('X-XSRF-TOKEN', '');
+            if ($cookieToken === '' || $headerToken === '') {
+                return Response::json([
+                    'success' => false,
+                    'message' => 'CSRF token missing.',
+                ], 419);
+            }
+            if (!hash_equals($cookieToken, $headerToken)) {
+                return Response::json([
+                    'success' => false,
+                    'message' => 'CSRF token mismatch.',
+                ], 419);
+            }
+            return $next($request);
+        }
+
+        // Session-based CSRF for web apps
         $token = $this->getTokenFromRequest($request);
 
         if ($token === null || $token === '') {
@@ -35,8 +68,6 @@ final class CsrfMiddleware implements MiddlewareInterface
         }
 
         // Rotate token after successful validation to prevent reuse
-        $session = Session::instance();
-        $session->start();
         $newToken = self::generateToken();
         $session->set('_csrf_token', $newToken);
 

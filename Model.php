@@ -6,6 +6,7 @@ namespace Siro\Core;
 
 use RuntimeException;
 use Siro\Core\DB\ModelQueryBuilder;
+use Siro\Core\ModelNotFoundException;
 
 /** @implements \ArrayAccess<string, mixed> */
 abstract class Model implements \JsonSerializable, \ArrayAccess
@@ -153,7 +154,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         return $result;
     }
 
-    private static function createInstance(): self
+    private static function createInstance(): static
     {
         return new static();
     }
@@ -262,7 +263,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         $model = self::find($id);
 
         if ($model === null) {
-            throw new RuntimeException(sprintf('Model not found with id %s', (string) $id));
+            throw new ModelNotFoundException(static::class, $id);
         }
 
         return $model;
@@ -505,7 +506,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     }
 
     /** @param array<string, mixed> $attributes */
-    public function forceFill(array $attributes): self
+    protected function forceFill(array $attributes): self
     {
         foreach ($attributes as $key => $value) {
             $this->setAttribute($key, $value);

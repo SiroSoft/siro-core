@@ -7,6 +7,22 @@ namespace Siro\Core\DB;
 use RuntimeException;
 use Siro\Core\Model;
 
+if (!function_exists(__NAMESPACE__ . '\class_uses_recursive')) {
+    function class_uses_recursive(object|string $class): array
+    {
+        $traits = [];
+        do {
+            $traits += \class_uses($class);
+        } while ($class = \get_parent_class($class));
+
+        foreach ($traits as $trait => $same) {
+            $traits += \class_uses($trait);
+        }
+
+        return $traits;
+    }
+}
+
 final class ModelQueryBuilder extends QueryBuilder
 {
     private string $modelClass;
@@ -21,6 +37,11 @@ final class ModelQueryBuilder extends QueryBuilder
     {
         parent::__construct($table);
         $this->modelClass = $modelClass;
+    }
+
+    public function find(int|string $id): ?\Siro\Core\Model
+    {
+        return $this->where('id', '=', $id)->first();
     }
 
     /**
@@ -118,8 +139,9 @@ final class ModelQueryBuilder extends QueryBuilder
     public function first(): ?Model
     {
         $this->applySoftDeleteFilter();
-        $rows = $this->limit(1)->get();
-        return $rows[0] ?? null;
+        $clone = clone $this;
+        $clone->limit(1);
+        return ($clone->get())[0] ?? null;
     }
 
     /** @return array{data: array<int, Model>, meta: array{page:int, per_page:int, total:int, last_page:int}} */
@@ -215,8 +237,8 @@ final class ModelQueryBuilder extends QueryBuilder
             return;
         }
 
-        $uses = class_uses($this->modelClass) ?: [];
-        if (in_array(SoftDeletes::class, $uses, true)) {
+        $uses = class_uses_recursive($this->modelClass) ?: [];
+        if (in_array(\Siro\Core\DB\SoftDeletes::class, $uses, true)) {
             $this->whereRaw('deleted_at IS NULL');
         }
     }

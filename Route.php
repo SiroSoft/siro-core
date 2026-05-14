@@ -21,6 +21,9 @@ final class Route
 {
     /** @var Router|null */
     private static ?Router $routerInstance = null;
+
+    /** @var array<string, array{method:string, path:string}> */
+    private static array $namedRoutes = [];
     
     public function __construct(
         private readonly Router $router,
@@ -51,7 +54,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function get(string $path, callable|array|string $handler): self
+    public static function get(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('GET', $path, $handler);
     }
@@ -62,7 +65,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function post(string $path, callable|array|string $handler): self
+    public static function post(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('POST', $path, $handler);
     }
@@ -73,7 +76,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function put(string $path, callable|array|string $handler): self
+    public static function put(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('PUT', $path, $handler);
     }
@@ -84,7 +87,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function delete(string $path, callable|array|string $handler): self
+    public static function delete(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('DELETE', $path, $handler);
     }
@@ -95,7 +98,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ public static function patch(string $path, callable|array|string $handler): self
+    public static function patch(string $path, callable|array|string $handler): self
     {
         return self::registerRoute('PATCH', $path, $handler);
     }
@@ -146,6 +149,30 @@ final class Route
         return $this;
     }
 
+    public function name(string $name): self
+    {
+        if ($name !== '') {
+            self::$namedRoutes[$name] = [
+                'method' => $this->method,
+                'path' => $this->path,
+            ];
+        }
+        return $this;
+    }
+
+    public static function url(string $name, array $params = []): ?string
+    {
+        $route = self::$namedRoutes[$name] ?? null;
+        if ($route === null) {
+            return null;
+        }
+        $path = $route['path'];
+        foreach ($params as $key => $value) {
+            $path = str_replace('{' . $key . '}', (string) $value, $path);
+        }
+        return $path;
+    }
+
     /**
      * Add rate limiting to route
      * 
@@ -178,5 +205,81 @@ final class Route
         $route = $router->{$lowerMethod}($path, $handler);
         
         return $route;
+    }
+
+    /**
+     * Auto-register routes from PHP 8 attributes on controllers.
+     * Scans all files in the given directory and registers #[Route] attributes.
+     *
+     * Usage in routes/api.php:
+     *   Route::registerAttributes(__DIR__ . '/../app/Controllers');
+     *
+     * @param string $controllerDir Directory containing controller files
+     * @param array<int, string> $globalMiddleware Middleware applied to all attribute routes
+     * @param string $prefix URL prefix for all routes
+     */
+    public static function registerAttributes(string $controllerDir, array $globalMiddleware = [], string $prefix = ''): void
+    {
+        $router = self::$routerInstance;
+        if ($router === null) return;
+
+        if (!is_dir($controllerDir)) return;
+
+        $files = glob(rtrim($controllerDir, '/') . '/*Controller.php');
+        if ($files === false) return;
+
+        foreach ($files as $file) {
+            $className = self::pathToClassName($file);
+            if ($className === null) continue;
+
+            // Reflect on class to find attribute-routed methods
+            try {
+                $refClass = new \ReflectionClass($className);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            foreach ($refClass->getMethods() as $refMethod) {
+                $attributes = $refMethod->getAttributes(RouteAttribute::class);
+                foreach ($attributes as $attr) {
+                    /** @var RouteAttribute $route */
+                    $route = $attr->newInstance();
+
+                    $fullPath = $prefix . $route->path;
+                    $handler = [$className, $refMethod->getName()];
+
+                    foreach ($route->methods as $method) {
+                        $lowerMethod = strtolower($method);
+                        $routeObj = $router->{$lowerMethod}($fullPath, $handler);
+                        if ($route->middleware !== []) {
+                            $routeObj->middleware([...$globalMiddleware, ...$route->middleware]);
+                        }
+                        if ($route->cacheTtl > 0) {
+                            $routeObj->cache($route->cacheTtl);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static function pathToClassName(string $file): ?string
+    {
+        // Extract namespace from file content
+        $content = (string) file_get_contents($file);
+        $namespace = '';
+
+        if (preg_match('/^namespace\s+([^;]+);/m', $content, $m)) {
+            $namespace = $m[1];
+        }
+
+        $basename = basename($file, '.php');
+        if ($basename === '') return null;
+
+        $fqcn = $namespace !== '' ? $namespace . '\\' . $basename : $basename;
+
+        if (!class_exists($fqcn)) return null;
+
+        return $fqcn;
     }
 }

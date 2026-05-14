@@ -188,7 +188,7 @@ final class EnvTest extends TestCase
         $cacheFile = $cacheDir . '/storage/framework/env.php';
         $this->assertFileExists($cacheFile);
 
-        $loaded = require $cacheFile;
+        $loaded = json_decode(substr((string) file_get_contents($cacheFile), 14), true);
         $this->assertIsArray($loaded);
 
         array_map('unlink', glob($cacheDir . '/storage/framework/*.php'));
