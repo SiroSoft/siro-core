@@ -64,10 +64,13 @@
         "audit": "composer audit --format=table",
         "sbom": "@php scripts/generate-sbom.php",
         "audit:supply-chain": "@php scripts/audit-supply-chain.php",
+        "health": "@php scripts/health-check.php",
+        "docs:generate": "@php scripts/generate-docs.php",
         "check": [
-            "@composer audit --format=table || true",
             "@phpstan analyse --level=max --no-progress --memory-limit=512M",
-            "@phpunit --no-coverage"
+            "@phpunit --no-coverage",
+            "@composer audit --format=table || true",
+            "@php scripts/generate-sbom.php"
         ],
         "optimize": [
             "@php -r \"echo 'OPcache: ' . (extension_loaded('Zend OPcache') ? 'enabled' : 'disabled') . PHP_EOL;\"",

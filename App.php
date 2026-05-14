@@ -269,4 +269,36 @@ final class App
             );
         }
     }
+
+    /**
+     * Graceful shutdown handler.
+     * Flushes session, persists metrics, releases queue locks.
+     * Call on SIGTERM/SIGINT for clean container/process termination.
+     */
+    public static function shutdown(): void
+    {
+        if (class_exists(Session::class)) {
+            try {
+                $session = Session::instance();
+                if ($session->isStarted()) {
+                    $session->save();
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        if (class_exists(Cache::class)) {
+            try {
+                Cache::resetRequestState();
+            } catch (\Throwable) {
+            }
+        }
+
+        if (class_exists(\Siro\Core\Metrics::class)) {
+            try {
+                \Siro\Core\Metrics::persistNow();
+            } catch (\Throwable) {
+            }
+        }
+    }
 }

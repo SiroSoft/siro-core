@@ -1,4 +1,4 @@
-.PHONY: help test test-coverage analyse benchmark lint fix audit sbom loadtest check production-check clean
+.PHONY: help test test-coverage analyse benchmark lint fix audit sbom loadtest health docs check production-check clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -9,8 +9,8 @@ test: ## Run tests
 test-coverage: ## Run tests with coverage
 	@php -d zend_extension=xdebug vendor/bin/phpunit --coverage-html coverage/html
 
-analyse: ## Run PHPStan
-	@php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress --memory-limit=512M
+analyse: ## Run PHPStan (level max)
+	@php -d memory_limit=512M vendor/bin/phpstan analyse --level=max --no-progress --memory-limit=512M
 
 benchmark: ## Run benchmarks
 	@php benchmark.php --quick
@@ -30,9 +30,15 @@ sbom: ## Generate CycloneDX SBOM
 loadtest: ## Run basic load test (requires Apache Bench)
 	@php scripts/loadtest.php
 
-check: audit sbom analyse test ## Run all quality checks (audit → sbom → analyse → test)
+health: ## Run health check
+	@php scripts/health-check.php
 
-production-check: audit sbom analyse test test-coverage loadtest ## Full production readiness check
+docs: ## Generate API documentation
+	@php scripts/generate-docs.php
+
+check: analyse test audit sbom ## Run all code quality checks
+
+production-check: analyse test test-coverage sbom audit loadtest ## Full production readiness check
 
 clean: ## Clean cache and coverage
 	@rm -rf coverage/ .phpunit.cache storage/framework/routes.php storage/framework/config.php

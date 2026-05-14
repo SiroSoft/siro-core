@@ -12,6 +12,10 @@ Thumbs.db
 
 /coverage/
 /storage/sbom/
+/storage/framework/routes.php
+/storage/framework/config.php
+/.phpdoc/
+/docs/api/
 
 # Temporary verification files
 *.VERIFICATION.md

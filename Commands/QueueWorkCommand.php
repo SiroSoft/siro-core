@@ -29,6 +29,8 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface {
     {
     }
 
+    private static bool $shouldStop = false;
+
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
@@ -49,6 +51,12 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface {
         $app = new App($this->basePath);
         $app->boot();
 
+        if (extension_loaded('pcntl')) {
+            pcntl_async_signals(true);
+            pcntl_signal(SIGTERM, function (): void { self::$shouldStop = true; });
+            pcntl_signal(SIGINT, function (): void { self::$shouldStop = true; });
+        }
+
         $this->write('Queue worker started.');
         $startTime = date('Y-m-d H:i:s');
         $this->write("Started at: {$startTime}");
@@ -61,7 +69,7 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface {
             $processed = 0;
             $errors = 0;
 
-            while (true) {
+            while (!self::$shouldStop) {
                 try {
                     $count = Queue::workAll(10);
                     if ($count > 0) {
@@ -80,8 +88,12 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface {
                     }
                 }
 
-                sleep($sleep);
+                if (!self::$shouldStop) {
+                    sleep($sleep);
+                }
             }
+
+            $this->write("Worker stopped after processing {$processed} job(s).");
         } else {
             $count = Queue::workAll();
             $this->write("Processed {$count} job(s).");

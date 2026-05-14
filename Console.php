@@ -192,6 +192,21 @@ final class Console
         $command = isset($argv[1]) ? trim($argv[1]) : '';
         $args = array_slice($argv, 2);
 
+        if (extension_loaded('pcntl')) {
+            $shutdown = function (int $signal): void {
+                $name = match ($signal) {
+                    SIGTERM => 'SIGTERM',
+                    SIGINT => 'SIGINT',
+                    default => "signal($signal)",
+                };
+                fwrite(STDERR, "\nReceived $name. Shutting down gracefully...\n");
+                App::shutdown();
+                exit(0);
+            };
+            pcntl_signal(SIGTERM, $shutdown);
+            pcntl_signal(SIGINT, $shutdown);
+        }
+
         if ($command === '--version' || $command === '-V') {
             $this->write('SiroPHP v' . self::VERSION);
             return 0;
