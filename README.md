@@ -1,6 +1,28 @@
 # Siro Core Framework v0.26.0
 
-**The Fastest PHP Micro-Framework** — Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default. Built for developers who demand raw speed, enterprise-grade security, and a ridiculously clean codebase.
+**The debugging-first PHP framework.** Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default. Built for developers who want to fix production bugs in seconds, not hours.
+
+```bash
+# Production API fails → php siro why
+# 5 seconds later you see: route, SQL, middleware, exception, possible cause, suggested fix
+$ php siro why
+
+  Last Request Summary
+  ────────────────────────────────────────────────────────
+  Route:    POST /api/orders
+  Status:   ✗ 500 (842ms)
+  ────────────────────────────────────────────────────────
+  Timeline
+    ✓ AuthMiddleware           [2ms]
+    ✗ PaymentMiddleware        [800ms]  ← failure here
+    ▸ INSERT INTO orders (…)   [812ms]  ⚠ SLOW
+  Exception
+    PDOException: Deadlock found when trying to get lock
+  Suggested Fix
+    ▸ Wrap transaction in retry loop
+    ▸ php siro replay siro_a1b2c3d4 --edit
+  ────────────────────────────────────────────────────────
+```
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
