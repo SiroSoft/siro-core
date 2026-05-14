@@ -255,9 +255,13 @@ final class UploadedFile
             $allowedExts = array_keys(self::MIME_MAP);
             if (!in_array($ext, $allowedExts, true)) {
                 $mime = $this->getMimeType();
-                $ext = array_search($mime, self::MIME_MAP, true) !== false
-                    ? (string) array_search($mime, self::MIME_MAP, true)
-                    : 'bin';
+                $ext = 'bin';
+                foreach (self::MIME_MAP as $mapExt => $mapMimes) {
+                    if (in_array($mime, $mapMimes, true)) {
+                        $ext = $mapExt;
+                        break;
+                    }
+                }
             }
         }
         $base = bin2hex(random_bytes(16));

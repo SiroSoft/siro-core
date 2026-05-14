@@ -141,7 +141,7 @@ final class JWT
             throw new RuntimeException('Invalid token payload.');
         }
 
-        $headerAlg = $header['alg'] ?? '';
+        $headerAlg = is_string($header['alg'] ?? null) ? $header['alg'] : '';
         $configuredAlg = self::algorithm();
         if ($headerAlg !== $configuredAlg) {
             throw new RuntimeException('Algorithm mismatch: header declares ' . $headerAlg . ' but server expects ' . $configuredAlg);

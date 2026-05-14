@@ -104,13 +104,15 @@ final class EagerLoader
         $indexed = [];
         foreach ($rows as $row) {
             /** @var Model $row */
-            $idxVal = $row->{$foreignKey} ?? 0;
-            $indexed[(string) $idxVal] = $row;
+            $idxVal = $row->{$foreignKey} ?? '0';
+            if (!is_scalar($idxVal)) { $idxVal = '0'; }
+            $indexed[strval($idxVal)] = $row;
         }
 
         foreach ($models as $m) {
-            $id = $m->{$localKey};
-            $m->setRelation($relation, $indexed[(string) $id] ?? null);
+            $id = $m->{$localKey} ?? '0';
+            if (!is_scalar($id)) { $id = '0'; }
+            $m->setRelation($relation, $indexed[strval($id)] ?? null);
         }
     }
 
@@ -149,7 +151,7 @@ final class EagerLoader
         }
 
         $selectCols = $columns !== ['*']
-            ? implode(', ', array_map(fn ($c) => 'r.' . $rel->quoteIdentifier(preg_replace('/^r\./', '', $c)), $columns))
+            ? implode(', ', array_map(fn (string $c) => 'r.' . $rel->quoteIdentifier(strval(preg_replace('/^r\./', '', $c))), $columns))
             : 'r.*';
         $pivotCols = 'p.' . $relatedKey . ' AS pivot_related_id, p.' . $foreignKey . ' AS pivot_foreign_id';
 
@@ -172,14 +174,15 @@ final class EagerLoader
         $grouped = [];
         foreach ($rows as $row) {
             $fkVal = $row['pivot_foreign_id'] ?? 0;
-            $fk = (string) $fkVal;
+            $fk = is_scalar($fkVal) ? (string) $fkVal : '0';
             unset($row['pivot_related_id'], $row['pivot_foreign_id']);
             $grouped[$fk][] = $row;
         }
 
         foreach ($models as $m) {
             $id = $m->getAttribute('id');
-            $m->setRelation($relation, $grouped[(string) $id] ?? []);
+            $idStr = is_scalar($id) ? (string) $id : '0';
+            $m->setRelation($relation, $grouped[$idStr] ?? []);
         }
     }
 
@@ -219,13 +222,15 @@ final class EagerLoader
         $grouped = [];
         foreach ($rows as $row) {
             /** @var Model $row */
-            $fkVal = $row->{$foreignKey} ?? 0;
-            $grouped[(string) $fkVal][] = $row;
+            $fkVal = $row->{$foreignKey} ?? '0';
+            if (!is_scalar($fkVal)) { $fkVal = '0'; }
+            $grouped[strval($fkVal)][] = $row;
         }
 
         foreach ($models as $m) {
-            $id = $m->{$localKey};
-            $m->setRelation($relation, $grouped[(string) $id] ?? []);
+            $id = $m->{$localKey} ?? '0';
+            if (!is_scalar($id)) { $id = '0'; }
+            $m->setRelation($relation, $grouped[strval($id)] ?? []);
         }
     }
 
@@ -267,13 +272,15 @@ final class EagerLoader
         $indexed = [];
         foreach ($rows as $row) {
             /** @var Model $row */
-            $idxVal = $row->{$ownerKeyCol} ?? 0;
-            $indexed[(string) $idxVal] = $row;
+            $idxVal = $row->{$ownerKeyCol} ?? '0';
+            if (!is_scalar($idxVal)) { $idxVal = '0'; }
+            $indexed[strval($idxVal)] = $row;
         }
 
         foreach ($models as $m) {
-            $fk = $m->{$foreignKey};
-            $m->setRelation($relation, $indexed[(string) $fk] ?? null);
+            $fk = $m->{$foreignKey} ?? '0';
+            if (!is_scalar($fk)) { $fk = '0'; }
+            $m->setRelation($relation, $indexed[strval($fk)] ?? null);
         }
     }
 }
