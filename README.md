@@ -41,6 +41,46 @@ $ php siro why
 
 ---
 
+## The Siro Flow — All From Terminal
+
+**No Postman. No APM dashboard. No SSH log grepping. One tool: `php siro`.**
+
+```bash
+# ── BUILD ──────────────────────────────────────────────
+composer create-project sirosoft/api my-api
+cd my-api
+php siro key:generate
+php siro make:crud Product       # Controller + Service + Repository + Model + Migration + Test
+php siro make:auth               # Auth: register/login/refresh/forgot/reset
+php siro migrate
+php siro serve                   # Start at :8080
+
+# ── TEST ───────────────────────────────────────────────
+php siro t POST /api/auth/login --body='{"email":"test@test.com","password":"123456"}'
+php siro t GET /api/products
+php siro t POST /api/orders --body='{"product_id":1,"quantity":5}'
+
+# ── DEBUG ──────────────────────────────────────────────
+php siro why                      # Why did production fail? (5 seconds)
+php siro replay siro_a1b2c3       # Replay exact failed request
+php siro replay siro_a1b2c3 --edit # Edit body → test fix
+
+# ── MONITOR ────────────────────────────────────────────
+php siro log:tail
+php siro log:stats
+php siro doctor
+curl localhost:8080/health
+curl localhost:8080/metrics       # Prometheus built-in
+
+# ── DOCUMENT ───────────────────────────────────────────
+php siro make:openapi --with-swagger
+php siro route:list
+```
+
+**Everything above is built-in. Zero packages. Zero external services. Zero config.**
+
+---
+
 ## Why Siro?
 
 Siro is a **debugging-first, observability-first, security-first** PHP framework. It ships **zero** third-party dependencies, boots in under a millisecond, and achieves PHPStan Level Max + Psalm Level 1 across the entire codebase. Every design decision prioritizes developer experience, production safety, and auditability.
