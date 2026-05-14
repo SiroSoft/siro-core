@@ -166,7 +166,18 @@ final class App
         Cache::resetRequestState();
         $requestStartedAt = microtime(true);
         $method = 'GET'; $path = '/'; $status = 500;
+        // W3C Trace Context: accept incoming, propagate outgoing
+        $incomingTraceparent = isset($_SERVER['HTTP_TRACEPARENT']) && is_string($_SERVER['HTTP_TRACEPARENT']) ? $_SERVER['HTTP_TRACEPARENT'] : '';
         $traceId = bin2hex(random_bytes(8));
+        $spanId = bin2hex(random_bytes(8));
+
+        if (preg_match('/^[0-9a-f]{2}-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/', $incomingTraceparent, $m) === 1) {
+            $traceId = $m[1];
+            $traceparent = sprintf('00-%s-%s-01', $traceId, $spanId);
+        } else {
+            $traceparent = sprintf('00-%s-%s-01', $traceId, $spanId);
+        }
+
         Response::setRequestMeta($traceId, $requestStartedAt);
 
         try {
@@ -194,9 +205,10 @@ final class App
             $status = $response->statusCode();
             $this->attachDebugMeta();
 
-            // Always add security headers (fastest path — single header set)
+            // Always add security and trace headers
             $response->header('X-Siro-Trace-Id', $traceId)
-                     ->header('X-Response-Time', (string) round((microtime(true) - $requestStartedAt) * 1000, 2));
+                     ->header('X-Response-Time', (string) round((microtime(true) - $requestStartedAt) * 1000, 2))
+                     ->header('traceparent', $traceparent);
             $response->send();
         } catch (ValidationException $e) {
             $this->attachDebugMeta();

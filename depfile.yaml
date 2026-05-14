@@ -1,0 +1,68 @@
+# Deptrac config — enforce module boundaries
+# Run: php vendor/bin/deptrac analyse --config-file=depfile.yaml
+
+parameters:
+  paths:
+    - .
+  exclude_files:
+    - vendor/.*
+    - tests/.*
+    - scripts/.*
+    - storage/.*
+  layers:
+    - name: Auth
+      collectors:
+        - type: directory
+          value: Auth/.*
+    - name: Cache
+      collectors:
+        - type: directory
+          value: Cache/.*
+    - name: DB
+      collectors:
+        - type: directory
+          value: DB/.*
+    - name: Middleware
+      collectors:
+        - type: directory
+          value: Middleware/.*
+    - name: Commands
+      collectors:
+        - type: directory
+          value: Commands/.*
+    - name: Core
+      collectors:
+        - type: className
+          value: .*Siro\\Core\\.*
+  ruleset:
+    Auth:
+      - Core
+    Cache:
+      - Core
+      - Cache
+    DB:
+      - Core
+    Middleware:
+      - Core
+      - Auth
+    Commands:
+      - Core
+      - DB
+      - Cache
+      - Auth
+      - Logger
+    Core:
+      - Auth
+      - Cache
+      - DB
+      - Logger
+  formatters:
+    graphviz:
+      pointToGroups: true
+      groups:
+        Auth: "Authentication Layer"
+        Cache: "Caching Layer"
+        DB: "Database Layer"
+        Core: "Framework Core"
+        Middleware: "Middleware Pipeline"
+        Commands: "CLI Commands"

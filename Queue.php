@@ -61,14 +61,24 @@ final class Queue
     public static function dashboardHtml(): string
     {
         $pending = 0;
+        $processing = 0;
         $failed = 0;
         $latest = [];
+        $avgAttempts = 0;
+        $totalProcessed = 0;
         try {
+            $now = time();
             $pending = Database::table('jobs')->where('locked_until', null)->count();
+            $processing = Database::table('jobs')->where('locked_until', '>', $now)->count();
             $failed = Database::table('failed_jobs')->count();
+            $totalRow = Database::first("SELECT COUNT(*) AS cnt FROM jobs");
+            $totalProcessed = is_numeric($totalRow['cnt'] ?? null) ? (int) $totalRow['cnt'] : 0;
+            $avgRow = Database::first("SELECT COALESCE(AVG(attempts), 0) AS avg FROM jobs");
+            $avgAttempts = round(is_numeric($avgRow['avg'] ?? null) ? (float) $avgRow['avg'] : 0.0, 1);
             $latest = Database::table('jobs')->orderBy('id', 'desc')->limit(10)->get();
         } catch (\Throwable) {
         }
+        $successRate = $totalProcessed > 0 ? round((($totalProcessed - $failed) / $totalProcessed) * 100, 1) : 100;
 
         $rows = '';
         foreach ($latest as $j) {
@@ -78,7 +88,10 @@ final class Queue
             $jMaxAttempts = $j['max_attempts'] ?? 3;
             $jPriority = $j['priority'] ?? 0;
             $jAvailable = $j['available_at'] ?? 0;
-            $rows .= '<tr><td>' . htmlspecialchars(is_scalar($jId) ? (string) $jId : '', ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars(is_scalar($jJob) ? (string) $jJob : '', ENT_QUOTES, 'UTF-8') . '</td>'
+            $lockedUntil = $j['locked_until'] ?? null;
+            $status = (is_numeric($lockedUntil) && (int) $lockedUntil > time()) ? 'processing' : 'pending';
+            $badge = $status === 'processing' ? '<span class="badge badge-blue">PROCESSING</span>' : '<span class="badge badge-green">PENDING</span>';
+            $rows .= '<tr><td>' . htmlspecialchars(is_scalar($jId) ? (string) $jId : '', ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars(is_scalar($jJob) ? (string) $jJob : '', ENT_QUOTES, 'UTF-8') . ' ' . $badge . '</td>'
                 . '<td>' . htmlspecialchars(is_scalar($jAttempts) ? (string) $jAttempts : '0', ENT_QUOTES, 'UTF-8') . '/' . htmlspecialchars(is_scalar($jMaxAttempts) ? (string) $jMaxAttempts : '3', ENT_QUOTES, 'UTF-8') . '</td>'
                 . '<td>' . htmlspecialchars(is_scalar($jPriority) ? (string) $jPriority : '0', ENT_QUOTES, 'UTF-8') . '</td>'
                 . '<td>' . htmlspecialchars(date('Y-m-d H:i:s', is_numeric($jAvailable) ? (int) $jAvailable : 0), ENT_QUOTES, 'UTF-8') . '</td></tr>';
@@ -86,8 +99,9 @@ final class Queue
 
         return '<!DOCTYPE html><html><head><title>Queue Dashboard - Siro</title>'
             . '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            . '<meta http-equiv="refresh" content="10">'
             . '<style>body{font-family:-apple-system,sans-serif;max-width:960px;margin:0 auto;padding:20px;background:#f5f5f5}'
-            . '.stat{display:inline-block;background:#fff;border-radius:8px;padding:20px 30px;margin:10px;box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center}'
+            . '.stat{display:inline-block;background:#fff;border-radius:8px;padding:20px 30px;margin:10px;box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center;min-width:160px}'
             . '.stat h3{margin:0;font-size:14px;color:#666}'
             . '.stat .num{font-size:32px;font-weight:700;color:#333}'
             . 'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}'
@@ -96,15 +110,18 @@ final class Queue
             . 'h1{color:#333}'
             . '.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600}'
             . '.badge-green{background:#e6ffe6;color:#0a0}'
+            . '.badge-blue{background:#e6f0ff;color:#06c}'
             . '.badge-red{background:#ffe6e6;color:#c00}</style></head><body>'
-            . '<h1>Queue Dashboard</h1>'
-            . '<div class="stat"><h3>Pending Jobs</h3><div class="num">' . htmlspecialchars((string) $pending, ENT_QUOTES, 'UTF-8') . '</div></div>'
-            . '<div class="stat"><h3>Failed Jobs</h3><div class="num">' . htmlspecialchars((string) $failed, ENT_QUOTES, 'UTF-8') . '</div></div>'
-            . '<div class="stat"><h3>Jobs / Table</h3><div class="num">jobs</div></div>'
+            . '<h1>Queue Dashboard <span style="font-size:14px;color:#999">auto-refresh 10s</span></h1>'
+            . '<div class="stat"><h3>Pending</h3><div class="num">' . htmlspecialchars((string) $pending, ENT_QUOTES, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Processing</h3><div class="num">' . htmlspecialchars((string) $processing, ENT_QUOTES, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Failed</h3><div class="num">' . htmlspecialchars((string) $failed, ENT_QUOTES, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Success Rate</h3><div class="num">' . htmlspecialchars((string) $successRate, ENT_QUOTES, 'UTF-8') . '%</div></div>'
+            . '<div class="stat"><h3>Avg Attempts</h3><div class="num">' . htmlspecialchars((string) $avgAttempts, ENT_QUOTES, 'UTF-8') . '</div></div>'
             . '<h2>Recent Jobs</h2>'
             . '<table><thead><tr><th>ID</th><th>Job</th><th>Attempts</th><th>Priority</th><th>Available</th></tr></thead><tbody>'
             . $rows . '</tbody></table>'
-            . '<p style="color:#999;font-size:12px;margin-top:20px">Siro Queue Dashboard</p></body></html>';
+            . '<p style="color:#999;font-size:12px;margin-top:20px">Siro Queue Dashboard · <a href="/metrics">Metrics</a></p></body></html>';
     }
 
     private const DEFAULT_MAX_ATTEMPTS = 3;

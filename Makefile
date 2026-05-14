@@ -1,4 +1,4 @@
-.PHONY: help test test-coverage test-fuzz test-chaos test-all analyse psalm benchmark lint fix audit sbom loadtest health docs sdk check elite-check production-check clean
+.PHONY: help test test-coverage test-fuzz test-chaos test-all analyse psalm benchmark lint fix audit sbom loadtest health docs sdk otel deptrac check elite-check production-check clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -49,6 +49,12 @@ docs: ## Generate API documentation
 
 sdk: ## Generate PHP SDK from OpenAPI spec
 	@php scripts/generate-sdk.php
+
+otel: ## Generate W3C trace context for current request
+	@php scripts/otel-trace.php --generate
+
+deptrac: ## Validate module boundaries (requires deptrac)
+	@php vendor/bin/deptrac analyse --config-file=depfile.yaml 2>/dev/null || echo "deptrac not installed (composer require --dev qossmic/deptrac)"
 
 check: analyse test audit sbom ## Run all code quality checks
 
