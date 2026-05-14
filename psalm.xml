@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<psalm
+    errorLevel="1"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="true"
+    findUnusedCode="true"
+>
+    <projectFiles>
+        <directory name="." />
+        <ignoreFiles>
+            <directory name="vendor" />
+            <directory name="tests" />
+            <directory name="scripts" />
+            <directory name="storage" />
+        </ignoreFiles>
+    </projectFiles>
+    <issueHandlers>
+        <MissingReturnType errorLevel="info" />
+        <MissingPropertyType errorLevel="info" />
+        <MissingParamType errorLevel="info" />
+        <PropertyNotSetInConstructor errorLevel="info" />
+        <RedundantConditionGivenDocblockType errorLevel="info" />
+        <ImplicitToStringCast errorLevel="info" />
+        <PossiblyInvalidArrayOffset errorLevel="info" />
+    </issueHandlers>
+    <taintAnalysis>
+        <taintSources>
+            <taintSource type="INPUT" />
+            <taintSource type="COOKIE" />
+            <taintSource type="GET" />
+            <taintSource type="POST" />
+            <taintSource type="SERVER" />
+            <taintSource type="REQUEST" />
+            <taintSource type="ENV" />
+        </taintSources>
+        <taintSinks>
+            <taintSink type="SQL" />
+            <taintSink type="INCLUDE" />
+            <taintSink type="SYSTEM" />
+            <taintSink type="EVAL" />
+            <taintSink type="SHELL" />
+            <taintSink type="HEADER" />
+            <taintSink type="UNSERIALIZE" />
+            <taintSink type="PREG" />
+            <taintSink type="SSRF" />
+            <taintSink type="FILE" />
+        </taintSinks>
+    </taintAnalysis>
+</psalm>

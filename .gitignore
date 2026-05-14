@@ -14,8 +14,10 @@ Thumbs.db
 /storage/sbom/
 /storage/framework/routes.php
 /storage/framework/config.php
+/storage/benchmark/
 /.phpdoc/
 /docs/api/
+/siro-core-*.tar.gz
 
 # Temporary verification files
 *.VERIFICATION.md

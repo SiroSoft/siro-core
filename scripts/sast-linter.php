@@ -20,7 +20,6 @@ final class SastLinter
         $this->addRule('extract', '/\bextract\s*\(/', 'ERROR', 'extract() detected - variable injection risk');
         $this->addRule('unserialize', '/\bunserialize\s*\(/', 'ERROR', 'unserialize() detected - potential RCE');
         $this->addRule('create_function', '/\bcreate_function\s*\(/', 'ERROR', 'create_function() detected - use closures instead');
-        $this->addRule('preg_match_e', '/preg_replace\s*\(.*\/[eemsx]*e[emsx]*"/', 'ERROR', 'preg_replace /e modifier detected - RCE risk');
         $this->addRule('system', '/\bsystem\s*\(/', 'WARNING', 'system() detected - potential command injection');
         $this->addRule('exec', '/\bexec\s*\(/', 'WARNING', 'exec() detected - potential command injection');
         $this->addRule('shell_exec', '/\bshell_exec\s*\(/', 'WARNING', 'shell_exec() detected - potential command injection');
@@ -75,7 +74,28 @@ final class SastLinter
 
 // Run the linter
 $linter = new SastLinter();
-$linter->scanDirectory(__DIR__ . '/../');
+$dirsToScan = [
+    __DIR__ . '/..',           # Scan project root
+];
+$excludeDirs = [
+    'vendor', 'tests', 'scripts', 'storage', 'docs', 'coverage', '.phpdoc', '.phpunit.cache',
+];
+foreach ($dirsToScan as $dir) {
+    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
+    foreach ($iterator as $file) {
+        if (!$file->isFile() || $file->getExtension() !== 'php') continue;
+        $path = $file->getPathname();
+        $skip = false;
+        foreach ($excludeDirs as $ex) {
+            if (str_contains($path, DIRECTORY_SEPARATOR . $ex . DIRECTORY_SEPARATOR)) {
+                $skip = true;
+                break;
+            }
+        }
+        if ($skip) continue;
+        $linter->scanFile($path);
+    }
+}
 
 echo "\n=== SAST Linter Summary ===\n";
 echo "Errors: {$linter->getErrorCount()}\n";

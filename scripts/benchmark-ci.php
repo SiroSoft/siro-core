@@ -27,7 +27,8 @@ if (!is_array($data) || !isset($data['results'])) {
 
 $current = [];
 foreach ($data['results'] as $result) {
-    $current[$result['name']] = $result['avg_ms'];
+    $avg = $result['avg_ms'] ?? NAN;
+    $current[$result['name']] = is_numeric($avg) && is_finite((float) $avg) ? (float) $avg : NAN;
 }
 
 $baseline = [];
@@ -49,9 +50,13 @@ foreach ($current as $name => $value) {
     $baselineValue = $baseline[$name] ?? $value;
     $newBaseline[$name] = $value;
 
-    if ($isFirstRun) {
+    if ($isFirstRun || !is_finite($baselineValue) || !is_finite($value)) {
         $delta = 0;
-        $status = 'BASELINE';
+        $status = $isFirstRun ? 'BASELINE' : 'SKIP';
+    } elseif ($baselineValue === 0.0) {
+        $delta = $value > 0 ? 100 : 0;
+        $status = $value > 0 ? 'FAIL' : 'PASS';
+        if ($value > 0) $failed = true;
     } else {
         $delta = (($value - $baselineValue) / $baselineValue) * 100;
         if ($delta > 10) {

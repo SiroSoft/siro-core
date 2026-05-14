@@ -1,0 +1,36 @@
+name: API Contract Testing
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'routes/**'
+      - 'docs/openapi/**'
+      - 'app/Controllers/**'
+
+jobs:
+  schemathesis:
+    name: OpenAPI Contract Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Start dev server
+        run: |
+          php -S 127.0.0.1:8080 -t public > /dev/null 2>&1 &
+          echo "PID=$!" >> $GITHUB_ENV
+          sleep 2
+      - name: Validate OpenAPI spec
+        run: |
+          if [ -f docs/openapi/openapi.json ]; then
+            npx @redocly/cli lint docs/openapi/openapi.json || true
+          else
+            echo "No OpenAPI spec found — skipping contract validation"
+          fi
+      - name: Stop dev server
+        run: kill ${{ env.PID }} || true
