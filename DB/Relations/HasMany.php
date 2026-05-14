@@ -49,6 +49,16 @@ class HasMany
     }
 
     /** @param array<int, mixed> $parameters */
+    public function create(array $data): \Siro\Core\Model
+    {
+        $data[$this->foreignKey] = $this->localValue;
+        $modelClass = $this->relatedClass;
+        $model = new $modelClass();
+        $model->fill($data);
+        $model->save();
+        return $model;
+    }
+
     public function __call(string $method, array $parameters): mixed
     {
         return $this->query()->{$method}(...$parameters);
