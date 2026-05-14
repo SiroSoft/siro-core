@@ -14,7 +14,7 @@ final class Session
     private string $sessionId;
     /** @var array<string, mixed> */
     private array $data = [];
-    /** @var array<string, mixed> */
+    /** @var array<mixed> */
     private array $flash = [];
     private bool $started = false;
 
@@ -23,9 +23,15 @@ final class Session
 
     public function __construct(?string $driver = null)
     {
-        $this->driver = $driver ?? Env::get('SESSION_DRIVER', self::DRIVER_FILE);
-        $basePath = defined('BASE_PATH') ? (string) BASE_PATH
-            : (defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd());
+        $this->driver = $driver ?? (is_string(Env::get('SESSION_DRIVER', self::DRIVER_FILE)) ? Env::get('SESSION_DRIVER', self::DRIVER_FILE) : self::DRIVER_FILE);
+        $basePath = '';
+        if (defined('BASE_PATH') && is_string(BASE_PATH)) {
+            $basePath = BASE_PATH;
+        } elseif (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH)) {
+            $basePath = SIRO_BASE_PATH;
+        } else {
+            $basePath = (string) getcwd();
+        }
         $this->filePath = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'sessions';
     }
 
@@ -46,7 +52,8 @@ final class Session
     {
         if ($this->started) return;
 
-        $this->sessionId = $sessionId ?? ($_COOKIE['siro_session'] ?? $this->generateId());
+        $cookieSession = isset($_COOKIE['siro_session']) && is_string($_COOKIE['siro_session']) ? $_COOKIE['siro_session'] : null;
+        $this->sessionId = $sessionId ?? ($cookieSession ?? $this->generateId());
 
         // Validate session ID format (prevent path traversal via cookie)
         if (!preg_match('/^[a-f0-9]{64}$/', $this->sessionId)) {
@@ -79,18 +86,18 @@ final class Session
         $this->started = true;
 
         // Migrate flash from old to current
-        $this->flash = $this->data['_flash'] ?? [];
+        $flashData = $this->data['_flash'] ?? [];
+        $this->flash = is_array($flashData) ? (array) $flashData : [];
         unset($this->data['_flash']);
-        $this->data['_flash_next'] = $this->data['_flash_next'] ?? [];
+        $flashNext = $this->data['_flash_next'] ?? [];
+        $this->data['_flash_next'] = is_array($flashNext) ? $flashNext : [];
 
         // Set session cookie
         if (!headers_sent()) {
-            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
             setcookie('siro_session', $this->sessionId, [
-                'expires' => time() + 86400 * 30,
+                'expires' => time() + 86400,
                 'path' => '/',
-                'secure' => $isHttps,
+                'secure' => true,
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
@@ -172,12 +179,10 @@ final class Session
         }
 
         if (!headers_sent()) {
-            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
             setcookie('siro_session', $this->sessionId, [
-                'expires' => time() + 86400 * 30,
+                'expires' => time() + 86400,
                 'path' => '/',
-                'secure' => $isHttps,
+                'secure' => true,
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
@@ -186,7 +191,13 @@ final class Session
 
     public function flash(string $key, mixed $value): void
     {
-        $this->data['_flash_next'][$key] = $value;
+        if (!isset($this->data['_flash_next']) || !is_array($this->data['_flash_next'])) {
+            $this->data['_flash_next'] = [];
+        }
+        /** @var array<string, mixed> $flashNext */
+        $flashNext = $this->data['_flash_next'];
+        $flashNext[$key] = $value;
+        $this->data['_flash_next'] = $flashNext;
     }
 
     public function getFlash(string $key, mixed $default = null): mixed
@@ -201,16 +212,22 @@ final class Session
 
     public function reflash(): void
     {
-        $this->data['_flash_next'] = array_merge($this->data['_flash_next'] ?? [], $this->flash);
+        $flashNext = $this->data['_flash_next'] ?? [];
+        $this->data['_flash_next'] = array_merge(is_array($flashNext) ? $flashNext : [], $this->flash);
     }
 
     public function keep(string ...$keys): void
     {
+        $flashNext = $this->data['_flash_next'] ?? [];
+        if (!is_array($flashNext)) {
+            $flashNext = [];
+        }
         foreach ($keys as $key) {
             if (array_key_exists($key, $this->flash)) {
-                $this->data['_flash_next'][$key] = $this->flash[$key];
+                $flashNext[$key] = $this->flash[$key];
             }
         }
+        $this->data['_flash_next'] = $flashNext;
     }
 
     public function ageFlashData(): void
@@ -231,8 +248,14 @@ final class Session
      */
     public static function gc(int $maxLifetime = 2592000): int
     {
-        $basePath = defined('BASE_PATH') ? (string) BASE_PATH
-            : (defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd());
+        $basePath = '';
+        if (defined('BASE_PATH') && is_string(BASE_PATH)) {
+            $basePath = BASE_PATH;
+        } elseif (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH)) {
+            $basePath = SIRO_BASE_PATH;
+        } else {
+            $basePath = (string) getcwd();
+        }
         $filePath = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'sessions';
 
         if (!is_dir($filePath)) {
@@ -280,6 +303,7 @@ final class Session
         if (is_file($path)) {
             $content = file_get_contents($path);
             if ($content !== false) {
+                /** @var array<string, mixed>|null $decoded */
                 $decoded = json_decode($content, true);
                 if (is_array($decoded)) {
                     $this->data = $decoded;
@@ -305,6 +329,7 @@ final class Session
             if ($redis !== null) {
                 $data = $redis->get('session:' . $this->sessionId);
                 if (is_string($data)) {
+                    /** @var array<string, mixed>|null $decoded */
                     $decoded = json_decode($data, true);
                     if (is_array($decoded)) {
                         $this->data = $decoded;

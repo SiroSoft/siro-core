@@ -1,4 +1,4 @@
-# Siro Core Framework v0.25.0
+# Siro Core Framework v0.26.0
 
 **The Fastest PHP Micro-Framework** — Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default.
 

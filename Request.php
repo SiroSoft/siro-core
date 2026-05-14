@@ -27,6 +27,8 @@ final class Request
     private array $routeParams = [];
     /** @var array<string, mixed>|null */
     private ?array $authenticatedUser = null;
+    /** @var array<string, mixed> */
+    private array $attributes = [];
     /** @var array<string, UploadedFile> */
     private array $uploadedFiles = [];
     private readonly string $clientIp;
@@ -62,9 +64,10 @@ final class Request
 
     public static function fromGlobals(): self
     {
-        $method = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
-        $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
-        $path = parse_url((string) $uri, PHP_URL_PATH) ?: '/';
+        $method = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
+        $uriStr = $_SERVER['REQUEST_URI'] ?? '/';
+        $uri = is_string($uriStr) ? $uriStr : '/';
+        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
         $path = self::normalizePath($path);
 
         $query = $_GET;
@@ -75,7 +78,7 @@ final class Request
         $maxBodySize = (int) (\Siro\Core\Env::get('MAX_BODY_SIZE_MB', '2')) * 1024 * 1024;
 
         // Validate request size using ACTUAL content length, not just header
-        $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        $contentLength = isset($_SERVER['CONTENT_LENGTH']) && is_numeric($_SERVER['CONTENT_LENGTH']) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
 
         // BLOCK: Content-Length header can be spoofed, validate actual body size
         if ($contentLength > 0 && $contentLength > $maxBodySize) {
@@ -118,6 +121,7 @@ final class Request
         }
 
         $clientIp = self::resolveClientIp();
+        /** @var array<string, mixed> $jsonBody */
         $request = new self($method, $path, $query, $headers, $jsonBody, $clientIp);
 
         if ($isMultipart) {
@@ -135,9 +139,11 @@ final class Request
             }
 
             if (is_array($file['tmp_name'])) {
+                /** @var array<string, mixed> $file */
                 $this->parseNestedFiles($key, $file);
             } elseif ($file['error'] !== UPLOAD_ERR_NO_FILE) {
-                $this->uploadedFiles[$key] = new UploadedFile($file);
+                /** @var array<string, string|int> $file */
+                $this->uploadedFiles[(string) $key] = new UploadedFile($file);
             }
         }
     }
@@ -151,17 +157,21 @@ final class Request
         $errors = is_array($file['error']) ? $file['error'] : [];
 
         foreach ($tmpNames as $index => $tmpName) {
-            if (isset($errors[$index]) && (int) $errors[$index] === UPLOAD_ERR_NO_FILE) {
+            $errVal = $errors[$index] ?? null;
+            if (is_numeric($errVal) && (int) $errVal === UPLOAD_ERR_NO_FILE) {
                 continue;
             }
 
-            $this->uploadedFiles[$key . '.' . $index] = new UploadedFile([
-                'name' => $names[$index] ?? '',
-                'tmp_name' => $tmpName,
-                'type' => $types[$index] ?? '',
-                'size' => $sizes[$index] ?? 0,
-                'error' => $errors[$index] ?? UPLOAD_ERR_NO_FILE,
-            ]);
+            $sizeVal = $sizes[$index] ?? 0;
+            $fileData = [
+                'name' => is_scalar($names[$index] ?? null) ? (string) $names[$index] : '',
+                'tmp_name' => is_scalar($tmpName ?? null) ? (string) $tmpName : '',
+                'type' => is_scalar($types[$index] ?? null) ? (string) $types[$index] : '',
+                'size' => is_numeric($sizeVal) ? (int) $sizeVal : 0,
+                'error' => $errVal ?? UPLOAD_ERR_NO_FILE,
+            ];
+            /** @var array<string, string|int> $fileData */
+            $this->uploadedFiles[$key . '.' . $index] = new UploadedFile($fileData);
         }
     }
 
@@ -197,10 +207,12 @@ final class Request
         return $this->queryParams[$key] ?? $default;
     }
 
-    /** @return array<string, mixed> */
+    /** @return array<int|string, mixed> */
     public function queryAll(): array
     {
-        return $this->query();
+        /** @var array<int|string, mixed> $result */
+        $result = $this->query();
+        return $result;
     }
 
     /** @return array<string, string> */
@@ -271,12 +283,12 @@ final class Request
         return $this->apiVersion;
     }
 
+    /** @param callable|string|array<int, mixed> $handler */
     public function setVersionedHandler(callable|string|array $handler): void
     {
         $this->versionedHandler = $handler;
     }
 
-    /** @return callable|string|array|null */
     public function versionedHandler(): mixed
     {
         return $this->versionedHandler;
@@ -292,6 +304,16 @@ final class Request
     public function user(): ?array
     {
         return $this->authenticatedUser;
+    }
+
+    public function setAttribute(string $name, mixed $value): void
+    {
+        $this->attributes[$name] = $value;
+    }
+
+    public function getAttribute(string $name): mixed
+    {
+        return $this->attributes[$name] ?? null;
     }
 
     public function ip(): string
@@ -498,7 +520,7 @@ final class Request
     public function int(string $key, int $default = 0): int
     {
         $value = $this->input($key, $default);
-        return (int) $value;
+        return is_numeric($value) ? (int) $value : $default;
     }
 
     /**
@@ -510,7 +532,7 @@ final class Request
         if (is_array($value)) {
             return $default;
         }
-        return trim((string) $value);
+        return trim(is_string($value) ? $value : (is_scalar($value) ? (string) $value : $default));
     }
 
     /**
@@ -549,7 +571,7 @@ final class Request
     public function float(string $key, float $default = 0.0): float
     {
         $value = $this->input($key, $default);
-        return (float) $value;
+        return is_numeric($value) ? (float) $value : $default;
     }
 
     /**
@@ -558,7 +580,7 @@ final class Request
     public function queryInt(string $key, int $default = 0): int
     {
         $value = $this->query($key, $default);
-        return (int) $value;
+        return is_numeric($value) ? (int) $value : $default;
     }
 
     /**
@@ -645,10 +667,10 @@ final class Request
         $headers = [];
 
         if (function_exists('getallheaders')) {
-            foreach (getallheaders() as $name => $value) {
-                $headers[strtolower((string) $name)] = (string) $value;
+            $allHeaders = getallheaders();
+            foreach ($allHeaders as $name => $value) {
+                $headers[strtolower((string) $name)] = is_string($value) ? $value : '';
             }
-
             return $headers;
         }
 
@@ -658,21 +680,21 @@ final class Request
             }
 
             $name = strtolower(str_replace('_', '-', substr($key, 5)));
-            $headers[$name] = (string) $value;
+            $headers[$name] = is_string($value) ? $value : '';
         }
 
         if (isset($_SERVER['CONTENT_TYPE'])) {
-            $headers['content-type'] = (string) $_SERVER['CONTENT_TYPE'];
+            $headers['content-type'] = is_string($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : '';
         }
 
         if (isset($_SERVER['CONTENT_LENGTH'])) {
-            $headers['content-length'] = (string) $_SERVER['CONTENT_LENGTH'];
+            $headers['content-length'] = is_string($_SERVER['CONTENT_LENGTH']) ? $_SERVER['CONTENT_LENGTH'] : '';
         }
 
         if (isset($_SERVER['PHP_AUTH_USER'])) {
-            $headers['authorization'] = 'Basic ' . base64_encode(
-                (string) $_SERVER['PHP_AUTH_USER'] . ':' . (string) ($_SERVER['PHP_AUTH_PW'] ?? '')
-            );
+            $authUser = is_string($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '';
+            $authPw = isset($_SERVER['PHP_AUTH_PW']) && is_string($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : '';
+            $headers['authorization'] = 'Basic ' . base64_encode($authUser . ':' . $authPw);
         }
 
         return $headers;

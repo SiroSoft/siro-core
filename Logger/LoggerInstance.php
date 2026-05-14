@@ -155,7 +155,9 @@ final class LoggerInstance implements LoggerInterface
         $data['trace_id'] = $traceId;
 
         if (isset($data['request_headers']) && is_array($data['request_headers'])) {
-            $data['request_headers'] = $this->sanitizeHeaders($data['request_headers']);
+            /** @var array<string, string> $reqHeaders */
+            $reqHeaders = $data['request_headers'];
+            $data['request_headers'] = $this->sanitizeHeaders($reqHeaders);
         }
 
         if (isset($data['request_body']) && is_string($data['request_body'])) {
@@ -180,6 +182,7 @@ final class LoggerInstance implements LoggerInterface
     /** @var array{patterns: array<int, string>, replacements: array<int, string>}|null */
     private ?array $compiledSanitizePatterns = null;
 
+    /** @return array{patterns: array<int, string>, replacements: array<int, string>} */
     private function getSanitizePatterns(): array
     {
         if ($this->compiledSanitizePatterns !== null) {
@@ -222,7 +225,11 @@ final class LoggerInstance implements LoggerInterface
 
         $patterns = $this->getSanitizePatterns();
 
-        return (string) preg_replace($patterns['patterns'], $patterns['replacements'], $message);
+        /** @var array<int, string> $patternList */
+        $patternList = $patterns['patterns'];
+        /** @var array<int, string> $replacementList */
+        $replacementList = $patterns['replacements'];
+        return (string) preg_replace($patternList, $replacementList, $message);
     }
 
     /**
@@ -242,6 +249,7 @@ final class LoggerInstance implements LoggerInterface
 
     public function sanitizeJsonBody(string $json): string
     {
+        /** @var array<string, mixed>|null $decoded */
         $decoded = json_decode($json, true);
         if (!is_array($decoded)) return $json;
 
@@ -252,9 +260,9 @@ final class LoggerInstance implements LoggerInterface
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<mixed, mixed> $data
      * @param array<int, string> $sensitiveFields
-     * @return array<string, mixed>
+     * @return array<mixed, mixed>
      */
     private function sanitizeRecursive(array $data, array $sensitiveFields): array
     {
@@ -302,11 +310,10 @@ final class LoggerInstance implements LoggerInterface
         if ($alsoDaily) {
             $mainFile = $this->logDir . DIRECTORY_SEPARATOR . $type . '.log';
             error_log($line, 3, $mainFile);
-        }
-
-        if ($alsoDaily && isset($mainFile) && is_file($mainFile) && filesize($mainFile) > $this->maxFileSize) {
-            $rotated = $mainFile . '.' . date('Y-m-d-Hi');
-            rename($mainFile, $rotated);
+            if (is_file($mainFile) && filesize($mainFile) > $this->maxFileSize) {
+                $rotated = $mainFile . '.' . date('Y-m-d-Hi');
+                rename($mainFile, $rotated);
+            }
         }
 
         if ($this->shouldCleanLogs()) {

@@ -1,0 +1,18 @@
+rules:
+  - id: dangerous-functions
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: assert(...)
+          - pattern: create_function(...)
+          - pattern: preg_replace("/.../e", ...)
+          - pattern: extract(...)
+          - pattern: parse_str(...)
+          - pattern: compact(...)
+    message: "Dangerous PHP function used - potential RCE"
+    languages: [php]
+    severity: ERROR
+    paths:
+      exclude:
+        - "tests/"
+        - "vendor/"

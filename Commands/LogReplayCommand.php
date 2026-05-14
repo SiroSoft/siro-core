@@ -112,14 +112,14 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
-        $method = strtoupper($data['method'] ?? 'GET');
-        $host = $data['host'] ?? 'localhost:8080';
-        $path = $data['path'] ?? '/';
+        $method = strtoupper($this->safeStr($data['method'] ?? 'GET'));
+        $host = $this->safeStr($data['host'] ?? 'localhost:8080');
+        $path = $this->safeStr($data['path'] ?? '/');
         $url = 'http://' . $host . $path;
-        $headers = $data['request_headers'] ?? [];
-        $body = $data['request_body'] ?? '';
-        $auth = $data['auth_header'] ?? '';
-        $ct = $data['content_type'] ?? '';
+        $headers = is_array($data['request_headers'] ?? null) ? $data['request_headers'] : [];
+        $body = $this->safeStr($data['request_body'] ?? '');
+        $auth = $this->safeStr($data['auth_header'] ?? '');
+        $ct = $this->safeStr($data['content_type'] ?? '');
 
         // --edit: interactive edit
         if ($editMode) {
@@ -129,14 +129,15 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $decoded = json_decode($body, true);
             if (is_array($decoded)) {
                 foreach ($decoded as $key => $value) {
-                    $this->write("  {$key}: \033[33m{$value}\033[0m");
+                    $this->write('  ' . $this->safeStr($key) . ': \033[33m' . $this->safeStr($value) . '\033[0m');
                     $input = readline("  New value (Enter to keep): ");
                     if ($input !== '') {
                         $decoded[$key] = $input;
                     }
                 }
             }
-            $body = (string) json_encode($decoded ?? [], JSON_UNESCAPED_UNICODE);
+            $body = json_encode($decoded ?? [], JSON_UNESCAPED_UNICODE);
+            $body = is_string($body) ? $body : '';
             $this->write('  ' . str_repeat('-', 40));
             $this->write('  Updated body: ' . $this->prettyPrint($body));
         }
@@ -151,7 +152,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $decoded = json_decode($body, true);
             if (is_array($decoded)) {
                 $decoded[$key] = $value;
-                $body = json_encode($decoded);
+                $encoded = json_encode($decoded);
+                $body = is_string($encoded) ? $encoded : $body;
             }
         }
 
@@ -160,7 +162,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             if (is_array($seedData)) {
                 unset($seedData['id'], $seedData['created_at'], $seedData['updated_at']);
                 $this->write('Seed command:');
-                $this->write((string) '  $db->table("' . ($data['table'] ?? 'table') . '")->insert(' . json_encode($seedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . ');');
+                $this->write('  $db->table("' . $this->safeStr($data['table'] ?? 'table') . '")->insert(' . json_encode($seedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . ');');
                 $this->write('  Then run: php siro db:seed');
             }
             return 0;
@@ -205,35 +207,49 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  🔄 Replaying with diff...');
             $this->write('  ' . str_repeat('=', 40));
 
-            $beforeStatus = $data['status'] ?? 0;
-            $beforeBody = $data['response_body'] ?? '';
+            $beforeStatusVal = $data['status'] ?? 0;
+            $beforeStatus = is_numeric($beforeStatusVal) ? (int) $beforeStatusVal : 0;
+            $beforeBody = $this->safeStr($data['response_body'] ?? '');
 
+            /** @var array<string, string> $headers */
+            /** @var array<string, mixed> $data */
             $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data);
 
             $this->write('');
             $this->write('  === BEFORE ===');
             $this->write('  Status: ' . $beforeStatus);
             $decodedBefore = json_decode((string) $beforeBody, true);
-            $beforeErrors = $decodedBefore['errors'] ?? ($decodedBefore['data']['errors'] ?? []);
-            if ($beforeErrors !== []) {
-                foreach ($beforeErrors as $f => $m) {
-                    $msgs = implode(', ', (array) $m);
-                    $this->write('  ❌ ' . $f . ': ' . $msgs);
+            if (is_array($decodedBefore)) {
+                $beforeErrors = $decodedBefore['errors'] ?? [];
+                if ($beforeErrors === [] && isset($decodedBefore['data']) && is_array($decodedBefore['data'])) {
+                    $beforeErrors = $decodedBefore['data']['errors'] ?? [];
+                }
+                if (is_array($beforeErrors) && $beforeErrors !== []) {
+                    foreach ($beforeErrors as $f => $m) {
+                        $msgs = is_array($m) ? implode(', ', array_map(fn($v): string => $this->safeStr($v), (array) $m)) : $this->safeStr($m);
+                        $this->write('  ❌ ' . $this->safeStr($f) . ': ' . $msgs);
+                    }
                 }
             }
 
             $this->write('');
             $this->write('  === AFTER ===');
-            $this->write('  Status: ' . $result['status']);
-            $decodedAfter = json_decode((string) ($result['body'] ?? '{}'), true);
-            $afterErrors = $decodedAfter['errors'] ?? ($decodedAfter['data']['errors'] ?? []);
-            if ($afterErrors !== []) {
-                foreach ($afterErrors as $f => $m) {
-                    $msgs = implode(', ', (array) $m);
-                    $this->write('  ❌ ' . $f . ': ' . $msgs);
+            $statusAfter = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
+            $this->write('  Status: ' . $statusAfter);
+            $decodedAfter = json_decode($this->safeStr($result['body'] ?? '{}'), true);
+            if (is_array($decodedAfter)) {
+                $afterErrors = $decodedAfter['errors'] ?? [];
+                if ($afterErrors === [] && isset($decodedAfter['data']) && is_array($decodedAfter['data'])) {
+                    $afterErrors = $decodedAfter['data']['errors'] ?? [];
                 }
-            } elseif ((int) $result['status'] >= 200 && (int) $result['status'] < 300) {
-                $this->write('  ✅ Fixed!');
+                if (is_array($afterErrors) && $afterErrors !== []) {
+                    foreach ($afterErrors as $f => $m) {
+                        $msgs = is_array($m) ? implode(', ', array_map(fn($v): string => $this->safeStr($v), (array) $m)) : $this->safeStr($m);
+                        $this->write('  ❌ ' . $this->safeStr($f) . ': ' . $msgs);
+                    }
+                } elseif ($statusAfter >= 200 && $statusAfter < 300) {
+                    $this->write('  ✅ Fixed!');
+                }
             }
 
             return 0;
@@ -249,6 +265,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  (Or use --format=curl to see the curl command without executing)');
         }
 
+        /** @var array<string, string> $headers */
+        /** @var array<string, mixed> $data */
         if ($format === 'httpie') {
             $this->outputHttpie($method, $url, $body, $headers, $auth);
         } else {
@@ -285,7 +303,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * @param array<string, mixed> $headers
+     * @param array<string, string> $headers
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
@@ -295,7 +313,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $curlHeaders = [];
         foreach ($headers as $k => $v) {
             if (strtolower((string) $k) !== 'host' && strtolower((string) $k) !== 'content-length') {
-                $curlHeaders[] = $k . ': ' . $v;
+                $curlHeaders[] = (string) $k . ': ' . (string) $v;
             }
         }
         if ($auth !== '') $curlHeaders[] = 'Authorization: ' . $auth;
@@ -317,7 +335,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * @param array<string, mixed> $headers
+     * @param array<string, string> $headers
      * @param array<string, mixed> $data
      */
     private function outputCurl(string $method, string $url, string $body, array $headers, string $auth, array $data): void
@@ -334,7 +352,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             if ($lk === 'host' || $lk === 'content-length' || isset($seen[$lk])) continue;
             $seen[$lk] = true;
             $this->write('  -H \\');
-            $this->write('  ' . escapeshellarg($k . ': ' . $v) . ' \\');
+            $this->write('  ' . escapeshellarg((string) $k . ': ' . (string) $v) . ' \\');
         }
 
         if ($auth !== '') {
@@ -351,7 +369,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * @param array<string, mixed> $headers
+     * @param array<string, string> $headers
      */
     private function outputHttpie(string $method, string $url, string $body, array $headers, string $auth): void
     {
@@ -361,7 +379,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
             if ($lk === 'host' || $lk === 'content-length') continue;
-            $parts[] = $k . ':' . $v;
+            $parts[] = (string) $k . ':' . (string) $v;
         }
         if ($auth !== '') {
             $parts[] = 'Authorization:' . $auth;

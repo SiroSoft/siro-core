@@ -338,7 +338,11 @@ final class Mail
         if ($username !== '' && $password !== '') {
             $this->smtpCommand($socket, "STARTTLS");
             $this->smtpReadResponse($socket);
-            stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            $sslContext = stream_context_create(['ssl' => [
+                'verify_peer' => filter_var(Env::get('MAIL_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
+                'verify_peer_name' => filter_var(Env::get('MAIL_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
+            ]]);
+            stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT, $sslContext);
             $this->smtpCommand($socket, "EHLO localhost");
             $this->smtpReadResponse($socket);
 
@@ -424,7 +428,9 @@ final class Mail
     private function smtpCommand(mixed $socket, string $command): void
     {
         if ($command !== 'QUIT') {
-            fwrite($socket, $command . "\r\n");
+            if (is_resource($socket)) {
+                fwrite($socket, $command . "\r\n");
+            }
         }
     }
 
@@ -435,6 +441,9 @@ final class Mail
      */
     private function smtpReadResponse(mixed $socket): string
     {
+        if (!is_resource($socket)) {
+            throw new \RuntimeException('SMTP socket is not a valid resource');
+        }
         $response = '';
         while ($line = fgets($socket, 512)) {
             $response .= $line;

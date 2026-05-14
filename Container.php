@@ -67,6 +67,7 @@ final class Container
         $concrete = $this->bindings[$abstract] ?? $abstract;
 
         if ($concrete instanceof Closure) {
+            /** @var object $object */
             $object = $concrete($this);
         } elseif (is_string($concrete)) {
             /** @var class-string $concrete */
@@ -107,7 +108,7 @@ final class Container
 
         if (count($callable) === 2) {
             [$class, $method] = $callable;
-            $instance = is_object($class) ? $class : $this->make($class);
+            $instance = is_object($class) ? $class : $this->make(is_string($class) ? $class : '');
             return $instance->{$method}(...$parameters);
         }
 

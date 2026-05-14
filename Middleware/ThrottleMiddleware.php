@@ -45,7 +45,8 @@ final class ThrottleMiddleware implements MiddlewareInterface
             );
 
             $resultArr = is_array($result) ? $result : [0, 0];
-            $count = (int) (($resultArr[0] ?? 0));
+            /** @var array<int, string|int|float|bool|null> $resultArr */
+            $count = (int) ($resultArr[0] ?? 0);
             $retryAfter = max(0, (int) ($resultArr[1] ?? 0));
 
             if ($count <= 0) {
@@ -100,8 +101,8 @@ final class ThrottleMiddleware implements MiddlewareInterface
 
     private function enforceFileFallback(Request $request, callable $next, int $limit, int $windowMinutes, int $ttl): mixed
     {
-        $basePath = defined('BASE_PATH') ? (string) BASE_PATH
-            : (defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd());
+        $basePath = defined('BASE_PATH') && is_string(BASE_PATH) ? BASE_PATH
+            : (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : (string) getcwd());
 
         $ip = $request->ip();
         $route = rawurlencode($request->method() . ':' . $request->path());
@@ -137,6 +138,7 @@ final class ThrottleMiddleware implements MiddlewareInterface
             if (is_string($raw) && $raw !== '') {
                 $decoded = json_decode($raw, true);
                 if (is_array($decoded)) {
+                    /** @var array<string, string|int|float|bool|null> $decoded */
                     $storedExpires = (int) ($decoded['expires_at'] ?? 0);
                     $storedCount = (int) ($decoded['count'] ?? 0);
                     if ($storedExpires > $now) {

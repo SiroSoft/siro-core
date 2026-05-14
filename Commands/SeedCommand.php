@@ -88,6 +88,7 @@ final class SeedCommand implements \Siro\Core\Commands\CommandInterface {
                 if (property_exists($dbSeeder, 'calls') && is_array($dbSeeder->calls)) {
                     $this->write('Running seeders (ordered)...');
                     foreach ($dbSeeder->calls as $class) {
+                        if (!is_string($class)) continue;
                         $path = $seedDir . DIRECTORY_SEPARATOR . $class . '.php';
                         if (is_file($path)) {
                             require $path;

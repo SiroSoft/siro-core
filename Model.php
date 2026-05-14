@@ -45,7 +45,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         }
 
         $className = basename(str_replace('\\', '/', static::class));
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $className)) . 's';
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $className) ?? $className) . 's';
     }
 
     /** @param array<string, mixed> $attributes */
@@ -118,7 +118,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function offsetSet(mixed $offset, mixed $value): void
     {
-        $this->setAttribute($offset, $value);
+        $this->setAttribute(strval($offset), $value);
     }
 
     public function offsetUnset(mixed $offset): void

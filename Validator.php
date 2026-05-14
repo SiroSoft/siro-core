@@ -42,10 +42,11 @@ final class Validator
         self::$customRules[$name] = $callback;
     }
 
+    /** @param array<string, string> $messages */
     public static function messages(array $messages): void
     {
         foreach ($messages as $rule => $message) {
-            self::$customMessages[$rule] = $message;
+            self::$customMessages[(string) $rule] = (string) $message;
         }
     }
 
@@ -94,7 +95,7 @@ final class Validator
 
         // Date validation
         self::registerStrategy('date', function ($value) {
-            $ts = is_int($value) || is_float($value) ? $value : strtotime((string) $value);
+            $ts = is_int($value) || is_float($value) ? $value : strtotime(is_scalar($value) ? (string) $value : '');
             return ($ts === false || $ts <= 0) ? self::message('date', 'validation.date') : null;
         });
 
@@ -173,7 +174,7 @@ final class Validator
         self::registerStrategy('in', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
             if ($param === null) return null;
             $allowedValues = array_map('trim', explode(',', $param));
-            return !in_array((string) $value, $allowedValues, true)
+            return !in_array(is_scalar($value) ? (string) $value : '', $allowedValues, true)
                 ? [self::message('in', 'validation.in'), ['values' => implode(', ', $allowedValues)]]
                 : null;
         });
@@ -187,7 +188,7 @@ final class Validator
                 \Siro\Core\Logger::error('Regex validation failed: ' . $e->getMessage());
                 return null;
             }
-            return !preg_match($param, (string) $value) ? self::message('regex', 'validation.regex') : null;
+            return !preg_match($param, is_scalar($value) ? (string) $value : '') ? self::message('regex', 'validation.regex') : null;
         });
     }
 
@@ -289,11 +290,13 @@ final class Validator
                     if ($result !== null) {
                         // Result can be string key or [key, replacements]
                         if (is_array($result)) {
-                            [$key, $replacements] = $result;
+                            $key = isset($result[0]) && is_scalar($result[0]) ? (string) $result[0] : '';
+                            $replacements = isset($result[1]) && is_array($result[1]) ? $result[1] : [];
+                            /** @var array<string, string> $replacements */
                             $replacements['field'] = self::label($field);
                             $errors[$field][] = self::msg($key, $replacements);
                         } else {
-                            $errors[$field][] = self::msg($result, ['field' => self::label($field)]);
+                            $errors[$field][] = self::msg(is_scalar($result) ? (string) $result : '', ['field' => self::label($field)]);
                         }
                         continue;
                     }

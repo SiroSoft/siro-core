@@ -8,15 +8,18 @@ use RuntimeException;
 use Siro\Core\Model;
 
 if (!function_exists(__NAMESPACE__ . '\class_uses_recursive')) {
+    /** @return array<string, string> */
     function class_uses_recursive(object|string $class): array
     {
         $traits = [];
         do {
-            $traits += \class_uses($class);
+            $t = \class_uses($class);
+            $traits += is_array($t) ? $t : [];
         } while ($class = \get_parent_class($class));
 
         foreach ($traits as $trait => $same) {
-            $traits += \class_uses($trait);
+            $t = \class_uses($trait);
+            $traits += is_array($t) ? $t : [];
         }
 
         return $traits;
@@ -252,7 +255,9 @@ final class ModelQueryBuilder extends QueryBuilder
     private function hydrateModel(array $row): Model
     {
         $modelClass = $this->modelClass;
-        return $modelClass::hydrate($row);
+        /** @var Model $result */
+        $result = $modelClass::hydrate($row);
+        return $result;
     }
 
     /**

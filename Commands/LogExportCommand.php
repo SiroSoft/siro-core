@@ -70,13 +70,18 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
                 continue;
             }
 
-            if ($status !== null && ((int) ($data['status'] ?? 0)) !== $status) {
+            $dataStatusVal = $data['status'] ?? 0;
+            $dataStatus = is_numeric($dataStatusVal) ? (int) $dataStatusVal : 0;
+            $dataMethod = $this->safeStr($data['method'] ?? '');
+            $dataTimeMsVal = $data['time_ms'] ?? 0;
+            $dataTimeMs = is_numeric($dataTimeMsVal) ? (float) $dataTimeMsVal : 0;
+            if ($status !== null && $dataStatus !== $status) {
                 continue;
             }
-            if ($method !== null && strtoupper($data['method'] ?? '') !== $method) {
+            if ($method !== null && strtoupper($dataMethod) !== $method) {
                 continue;
             }
-            if ($slow && (float) ($data['time_ms'] ?? 0) < 100) {
+            if ($slow && $dataTimeMs < 100) {
                 continue;
             }
 
@@ -89,8 +94,9 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         if ($format === 'json') {
-            $content = (string) json_encode($traces, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+            $content = $this->safeStr(json_encode($traces, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
         } elseif ($format === 'csv') {
+            /** @var list<array<string, mixed>> $traces */
             $content = $this->toCsv($traces);
         } else {
             $this->write('Unsupported format. Use: json, csv, or --postman');
@@ -132,8 +138,8 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
-        $method = $data['method'] ?? 'GET';
-        $path = $data['path'] ?? '/';
+        $method = $this->safeStr($data['method'] ?? 'GET');
+        $path = $this->safeStr($data['path'] ?? '/');
         $host = 'http://localhost:8000';
         $headers = [];
         $body = '';
@@ -141,22 +147,22 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
         $requestHeaders = $data['request_headers'] ?? [];
         if (is_array($requestHeaders)) {
             foreach ($requestHeaders as $k => $v) {
-                if (strtolower($k) !== 'host') {
-                    $headers[] = "-H '{$k}: {$v}'";
+                if (strtolower($this->safeStr($k)) !== 'host') {
+                    $headers[] = "-H '" . $this->safeStr($k) . ": " . $this->safeStr($v) . "'";
                 }
             }
         }
 
         if (isset($data['auth_header']) && $data['auth_header'] !== '') {
-            $headers[] = "-H 'Authorization: " . $data['auth_header'] . "'";
+            $headers[] = "-H 'Authorization: " . $this->safeStr($data['auth_header']) . "'";
         }
 
-        $requestBody = $data['request_body'] ?? '';
+        $requestBody = $this->safeStr($data['request_body'] ?? '');
         if ($requestBody !== '' && $requestBody !== '[]' && $requestBody !== '{}') {
             $body = "  -d '" . str_replace("'", "'\\''", $requestBody) . "'";
         }
 
-        $curlCmd = "curl -X {$method} {$host}{$path}";
+        $curlCmd = "curl -X " . $method . " " . $host . $path;
         if ($headers !== []) {
             $curlCmd .= " \\\n  " . implode(" \\\n  ", $headers);
         }
@@ -178,7 +184,7 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * @param list<array<mixed>> $traces
+     * @param list<array<string, mixed>> $traces
      */
     private function toCsv(array $traces): string
     {
@@ -189,13 +195,14 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
         fputcsv($handle, ['timestamp', 'method', 'path', 'status', 'time_ms', 'ip']);
 
         foreach ($traces as $t) {
+            /** @var array<string, mixed> $t */
             fputcsv($handle, [
-                $t['timestamp'] ?? '',
-                $t['method'] ?? '',
-                $t['path'] ?? '',
-                $t['status'] ?? '',
-                $t['time_ms'] ?? '',
-                $t['ip'] ?? '',
+                $this->safeStr($t['timestamp'] ?? ''),
+                $this->safeStr($t['method'] ?? ''),
+                $this->safeStr($t['path'] ?? ''),
+                $this->safeStr($t['status'] ?? ''),
+                $this->safeStr($t['time_ms'] ?? ''),
+                $this->safeStr($t['ip'] ?? ''),
             ]);
         }
 

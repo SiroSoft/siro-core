@@ -44,9 +44,8 @@ class BelongsToMany
             throw new \RuntimeException('Invalid identifier: SQL injection attempt detected');
         }
 
-        // Don't quote function calls or expressions with parentheses
-        if (str_contains($identifier, '(')) {
-            return $identifier;
+        if (str_contains($identifier, '(') || str_contains($identifier, ')')) {
+            throw new \RuntimeException('Invalid identifier: function calls and parentheses not allowed');
         }
 
         $driver = Database::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
@@ -112,6 +111,7 @@ class BelongsToMany
         $foreignKey = $this->quoteIdentifier($this->foreignKey);
         $relatedKey = $this->quoteIdentifier($this->relatedKey);
 
+        /** @var array<int, array<string, mixed>> $exists */
         $exists = Database::select(
             "SELECT COUNT(*) FROM {$pivotTable} WHERE {$foreignKey} = ? AND {$relatedKey} = ?",
             [$this->localValue, $relatedId]
@@ -167,6 +167,7 @@ class BelongsToMany
         $foreignKey = $this->quoteIdentifier($this->foreignKey);
         $relatedKey = $this->quoteIdentifier($this->relatedKey);
 
+        /** @var array<int, array<string, mixed>> $exists */
         $exists = Database::select(
             "SELECT COUNT(*) FROM {$pivotTable} WHERE {$foreignKey} = ? AND {$relatedKey} = ?",
             [$this->localValue, $relatedId]

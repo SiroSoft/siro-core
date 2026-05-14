@@ -11,7 +11,6 @@ use Siro\Core\Database;
 final class SqlCompiler
 {
     private ?string $connectionName = null;
-    private string $table = '';
 
     public function setConnection(?string $name): void
     {
@@ -20,7 +19,6 @@ final class SqlCompiler
 
     public function setTable(string $table): void
     {
-        $this->table = $table;
     }
 
     /** @var array<string, string> */
@@ -36,7 +34,8 @@ final class SqlCompiler
         $key = $connectionName ?? $this->connectionName ?? 'default';
         if (!isset(self::$driverNames[$key])) {
             try {
-                self::$driverNames[$key] = Database::connection($connectionName ?? $this->connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
+                $driver = Database::connection($connectionName ?? $this->connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
+                self::$driverNames[$key] = is_string($driver) ? $driver : 'mysql';
             } catch (\Throwable) {
                 self::$driverNames[$key] = 'mysql';
             }
@@ -60,8 +59,8 @@ final class SqlCompiler
             throw new \RuntimeException('Invalid identifier: SQL injection attempt detected');
         }
 
-        if (str_contains($identifier, '(')) {
-            return $identifier;
+        if (str_contains($identifier, '(') || str_contains($identifier, ')')) {
+            throw new \RuntimeException('Invalid identifier: function calls and parentheses not allowed');
         }
 
         $driver = $this->detectDriver();
@@ -91,6 +90,16 @@ final class SqlCompiler
         return implode(', ', $parts);
     }
 
+    /**
+     * @param array<int, string> $columns
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
+     * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
+     * @param array<int, string> $groups
+     * @param array<int, array{column:string, direction:string}> $orders
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
     public function buildSelectQuery(
         array $columns,
         string $table,
@@ -124,6 +133,14 @@ final class SqlCompiler
         return [$sql, [...$whereBindings, ...$havingBindings]];
     }
 
+    /**
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
+     * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
+     * @param array<int, string> $groups
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
     public function buildCountQuery(
         string $table,
         array $wheres,
@@ -150,6 +167,14 @@ final class SqlCompiler
         return ['SELECT COUNT(*) AS aggregate FROM (' . $subQuery . ') AS siro_count_table', [...$whereBindings, ...$havingBindings]];
     }
 
+    /**
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
+     * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
+     * @param array<int, string> $groups
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
     public function buildAggregateQuery(
         string $function,
         string $column,
@@ -178,6 +203,9 @@ final class SqlCompiler
         return ['SELECT ' . strtoupper($function) . '(aggregate) AS aggregate FROM (' . $subQuery . ') AS siro_aggregate_table', [...$whereBindings, ...$havingBindings]];
     }
 
+    /**
+     * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
+     */
     public function compileJoins(array $joins): string
     {
         if ($joins === []) {
@@ -199,6 +227,9 @@ final class SqlCompiler
         return implode('', $parts);
     }
 
+    /**
+     * @param array<int, string> $groups
+     */
     public function compileGroupBy(array $groups): string
     {
         if ($groups === []) {
@@ -209,6 +240,9 @@ final class SqlCompiler
         return ' GROUP BY ' . implode(', ', $quoted);
     }
 
+    /**
+     * @param array<int, array{column:string, direction:string}> $orders
+     */
     public function compileOrderBy(array $orders): string
     {
         if ($orders === []) {
@@ -223,6 +257,11 @@ final class SqlCompiler
         return ' ORDER BY ' . implode(', ', $parts);
     }
 
+    /**
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
     public function compileWhere(array $wheres, array $bindings): array
     {
         if ($wheres === []) {
@@ -235,7 +274,7 @@ final class SqlCompiler
         foreach ($wheres as $index => $where) {
             $prefix = $index === 0 ? '' : ' ' . $where['boolean'] . ' ';
 
-            if (($where['type'] ?? 'basic') === 'raw') {
+            if ($where['type'] === 'raw') {
                 $parts[] = $prefix . $where['sql'];
                 if (isset($where['bindings']) && is_array($where['bindings'])) {
                     foreach ($where['bindings'] as $bk => $bv) {
@@ -249,7 +288,7 @@ final class SqlCompiler
                 continue;
             }
 
-            if (($where['type'] ?? 'basic') === 'in') {
+            if ($where['type'] === 'in') {
                 $holderParts = [];
                 foreach ($where['params'] as $param) {
                     $holderParts[] = ':' . $param;
@@ -266,6 +305,11 @@ final class SqlCompiler
         return [' WHERE ' . implode('', $parts), $resultBindings];
     }
 
+    /**
+     * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<string, mixed>}
+     */
     public function compileHaving(array $havings, array $bindings): array
     {
         if ($havings === []) {
@@ -284,6 +328,10 @@ final class SqlCompiler
         return [' HAVING ' . implode('', $parts), $resultBindings];
     }
 
+    /**
+     * @param array<string, mixed> $bindings
+     * @return array<int, array<string, mixed>>
+     */
     public function runSelect(string $sql, array $bindings, int $cacheTtl, string $cachePrefix): array
     {
         return Database::selectCached($sql, $bindings, $cacheTtl, $cachePrefix);
@@ -297,7 +345,7 @@ final class SqlCompiler
         }
 
         $parts = preg_split('/\s+/', $normalized);
-        $first = (string) ($parts !== false ? ($parts[0] ?? '') : '');
+        $first = (string) ($parts !== false ? $parts[0] : '');
         $first = trim($first, "`\" ");
 
         if ($first === '') {
@@ -312,6 +360,10 @@ final class SqlCompiler
         return $first !== '' ? $first : 'default';
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return array{0: string, 1: array<string, mixed>, 2: string}
+     */
     public function buildInsertSql(string $table, array $data, string $primaryKey): array
     {
         $columns = [];
@@ -340,6 +392,10 @@ final class SqlCompiler
         return [$sql, $bindings, $returning];
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array{0: string, 1: array<string, mixed>}
+     */
     public function buildInsertManySql(string $table, array $rows): array
     {
         $columns = array_keys($rows[0]);
@@ -367,6 +423,12 @@ final class SqlCompiler
         return [$sql, $allBindings];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
     public function buildUpdateSql(string $table, array $data, array $wheres, array $bindings): array
     {
         $sets = [];
@@ -384,6 +446,11 @@ final class SqlCompiler
         return [$sql, [...$setBindings, ...$whereBindings]];
     }
 
+    /**
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
     public function buildDeleteSql(string $table, array $wheres, array $bindings): array
     {
         [$whereSql, $whereBindings] = $this->compileWhere($wheres, $bindings);

@@ -16,7 +16,8 @@ final class Cache
         if (self::$instance === null) {
             $container = Container::getInstance();
             if ($container->has(CacheInterface::class)) {
-                self::$instance = $container->make(CacheInterface::class);
+                $instance = $container->make(CacheInterface::class);
+                self::$instance = $instance instanceof CacheInterface ? $instance : new CacheInstance();
             } else {
                 self::$instance = new CacheInstance();
             }
@@ -32,7 +33,9 @@ final class Cache
     public static function boot(string $basePath): void { self::getInstance()->boot($basePath); }
     public static function reset(): void { self::getInstance()->reset(); }
     public static function resetRequestState(): void { self::getInstance()->resetRequestState(); }
-    public static function requestStatus(): array { return self::getInstance()->requestStatus(); }
+    /** @return array<string, mixed> */
+    /** @return array<string, mixed> */
+    public static function requestStatus(): array { $result = self::getInstance()->requestStatus(); return $result; }
     public static function get(string $key): mixed { return self::getInstance()->get($key); }
     public static function set(string $key, mixed $value, int $ttl = 60): bool { return self::getInstance()->set($key, $value, $ttl); }
     public static function remember(string $key, int $ttl, callable $callback): mixed { return self::getInstance()->remember($key, $ttl, $callback); }

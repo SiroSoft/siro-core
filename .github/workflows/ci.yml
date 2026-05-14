@@ -23,8 +23,17 @@ jobs:
         run: composer install --no-progress --prefer-dist
       - name: Composer Audit
         run: composer audit --format=table || echo "::warning::Composer audit found vulnerabilities"
-      - name: PHPStan
-        run: php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress --memory-limit=512M
+      - name: Generate SBOM
+        run: php scripts/generate-sbom.php
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: storage/sbom/
+      - name: Supply Chain Audit
+        run: php scripts/audit-supply-chain.php
+      - name: PHPStan (Level Max)
+        run: php -d memory_limit=512M vendor/bin/phpstan analyse --level=max --no-progress --memory-limit=512M
 
   test:
     name: Tests
@@ -48,3 +57,53 @@ jobs:
         with:
           name: coverage
           path: coverage/
+
+  sast:
+    name: SAST Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: SAST Linter
+        run: php scripts/sast-linter.php
+
+  dast:
+    name: DAST Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Run DAST tests
+        run: bash scripts/dast.sh
+
+  benchmark:
+    name: Performance Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Run benchmark regression check
+        run: php scripts/benchmark-ci.php
+      - name: Upload benchmark baseline artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-baseline
+          path: storage/benchmark/

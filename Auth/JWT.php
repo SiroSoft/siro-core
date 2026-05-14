@@ -141,13 +141,17 @@ final class JWT
             throw new RuntimeException('Invalid token payload.');
         }
 
-        $alg = self::algorithm();
-        if (!in_array($alg, [self::ALG_HS256, self::ALG_RS256], true)) {
-            throw new RuntimeException('Unsupported token algorithm: ' . $alg);
+        $headerAlg = $header['alg'] ?? '';
+        $configuredAlg = self::algorithm();
+        if ($headerAlg !== $configuredAlg) {
+            throw new RuntimeException('Algorithm mismatch: header declares ' . $headerAlg . ' but server expects ' . $configuredAlg);
+        }
+        if (!in_array($configuredAlg, [self::ALG_HS256, self::ALG_RS256], true)) {
+            throw new RuntimeException('Unsupported token algorithm: ' . $configuredAlg);
         }
 
         $data = $headerB64 . '.' . $payloadB64;
-        $valid = match ($alg) {
+        $valid = match ($configuredAlg) {
             self::ALG_RS256 => self::verifyRs256($data, $signature),
             self::ALG_HS256 => self::verifyHs256($data, $signature),
         };
@@ -157,27 +161,27 @@ final class JWT
         }
 
         $now = time();
-        $exp = isset($payload['exp']) ? (int) $payload['exp'] : 0;
+        $exp = is_numeric($payload['exp'] ?? null) ? (int) $payload['exp'] : 0;
         if ($exp <= 0 || $exp < $now) {
             throw new RuntimeException('Token expired.');
         }
 
-        $iat = isset($payload['iat']) ? (int) $payload['iat'] : 0;
+        $iat = is_numeric($payload['iat'] ?? null) ? (int) $payload['iat'] : 0;
         if ($iat > $now + 60) {
             throw new RuntimeException('Token issued in the future.');
         }
 
-        $nbf = isset($payload['nbf']) ? (int) $payload['nbf'] : 0;
+        $nbf = is_numeric($payload['nbf'] ?? null) ? (int) $payload['nbf'] : 0;
         if ($nbf > 0 && $nbf > $now) {
             throw new RuntimeException('Token is not yet valid (nbf).');
         }
 
-        $sub = isset($payload['sub']) ? (int) $payload['sub'] : 0;
+        $sub = is_numeric($payload['sub'] ?? null) ? (int) $payload['sub'] : 0;
         if ($sub <= 0) {
             throw new RuntimeException('JWT token missing required "sub" claim (user ID). Token may be malformed or tampered.');
         }
 
-        $ver = isset($payload['ver']) ? (int) $payload['ver'] : 0;
+        $ver = is_numeric($payload['ver'] ?? null) ? (int) $payload['ver'] : 0;
         if ($ver <= 0) {
             throw new RuntimeException('JWT token missing required "ver" claim (token version). Token may be from an incompatible system.');
         }
@@ -223,7 +227,7 @@ final class JWT
         $result = openssl_sign($data, $signature, $key, OPENSSL_ALGO_SHA256);
         openssl_free_key($key);
 
-        if (!$result) {
+        if (!$result || !is_string($signature)) {
             throw new RuntimeException('Failed to sign token with RS256.');
         }
 
@@ -361,7 +365,11 @@ final class JWT
         if (isset(self::$blacklistedJti[$jti])) {
             return self::$blacklistedJti[$jti] > time();
         }
-        $cached = Cache::get('jti_blacklist:' . $jti);
-        return $cached !== null && (int) $cached > time();
+        try {
+            $cached = Cache::get('jti_blacklist:' . $jti);
+            return is_numeric($cached) && (int) $cached > time();
+        } catch (\Throwable) {
+            return true;
+        }
     }
 }

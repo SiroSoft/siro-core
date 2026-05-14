@@ -22,6 +22,8 @@ final class CsrfMiddleware implements MiddlewareInterface
         $origin = $request->header('origin', '');
         $referer = $request->header('referer', '');
         $hasSession = false;
+        /** @var \Siro\Core\Session|null $session */
+        $session = null;
 
         try {
             $session = Session::instance();
@@ -33,8 +35,8 @@ final class CsrfMiddleware implements MiddlewareInterface
 
         if (!$hasSession) {
             // Double-submit cookie pattern for stateless API
-            $cookieToken = (string) ($_COOKIE['csrf_token'] ?? '');
-            $headerToken = $request->header('X-CSRF-TOKEN', '') ?: $request->header('X-XSRF-TOKEN', '');
+            $cookieToken = isset($_COOKIE['csrf_token']) && is_string($_COOKIE['csrf_token']) ? $_COOKIE['csrf_token'] : '';
+            $headerToken = (string) ($request->header('X-CSRF-TOKEN', '') ?: $request->header('X-XSRF-TOKEN', ''));
             if ($cookieToken === '' || $headerToken === '') {
                 return Response::json([
                     'success' => false,
@@ -69,7 +71,9 @@ final class CsrfMiddleware implements MiddlewareInterface
 
         // Rotate token after successful validation to prevent reuse
         $newToken = self::generateToken();
-        $session->set('_csrf_token', $newToken);
+        if ($session !== null) {
+            $session->set('_csrf_token', $newToken);
+        }
 
         return $next($request);
     }
@@ -85,7 +89,7 @@ final class CsrfMiddleware implements MiddlewareInterface
         $session->start();
 
         $token = $session->get('_csrf_token');
-        if ($token === null) {
+        if (!is_string($token) || $token === '') {
             $token = self::generateToken();
             $session->set('_csrf_token', $token);
         }
@@ -108,12 +112,12 @@ final class CsrfMiddleware implements MiddlewareInterface
     private function getTokenFromRequest(Request $request): ?string
     {
         $headerToken = $request->header('X-CSRF-TOKEN') ?? $request->header('X-XSRF-TOKEN');
-        if ($headerToken !== null && $headerToken !== '') {
+        if (is_string($headerToken) && $headerToken !== '') {
             return $headerToken;
         }
 
         $postToken = $request->input('_csrf_token') ?? $request->input('_token');
-        if ($postToken !== null && $postToken !== '') {
+        if (is_string($postToken) && $postToken !== '') {
             return $postToken;
         }
 
@@ -126,7 +130,7 @@ final class CsrfMiddleware implements MiddlewareInterface
         $session->start();
 
         $sessionToken = $session->get('_csrf_token');
-        if ($sessionToken === null || $sessionToken === '') {
+        if (!is_string($sessionToken) || $sessionToken === '') {
             return false;
         }
 

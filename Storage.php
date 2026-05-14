@@ -204,9 +204,9 @@ final class Storage
 
     public static function localPath(string $path): string
     {
-        $base = defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd();
+        $base = defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : (string) getcwd();
         $base = rtrim($base, DIRECTORY_SEPARATOR);
-        $storagePath = str_replace('/', DIRECTORY_SEPARATOR, (string) (self::$config['path'] ?? ''));
+        $storagePath = str_replace('/', DIRECTORY_SEPARATOR, is_string(self::$config['path'] ?? null) ? self::$config['path'] : '');
         $allowedDir = $base . DIRECTORY_SEPARATOR . $storagePath;
 
         // Clean path and prevent traversal - recursive sanitization
@@ -343,7 +343,9 @@ final class Storage
     /** @return array<string, string> */
     private static function s3Config(): array
     {
-        return self::$config['s3'];
+        $config = self::$config['s3'];
+        /** @var array<string, string> $config */
+        return $config;
     }
 
     private static function s3Put(string $path, string $content): bool

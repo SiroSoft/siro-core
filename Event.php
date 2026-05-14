@@ -163,6 +163,7 @@ final class Event
         }
     }
 
+    /** @return array<int, array{callback: callable, once: bool}> */
     private function getListeners(string $event): array
     {
         $matched = $this->listeners[$event] ?? [];
@@ -171,10 +172,12 @@ final class Event
             $this->buildWildcardIndex();
         }
 
-        foreach ($this->wildcardIndex as $pattern => $listeners) {
-            if (preg_match($pattern, $event)) {
-                foreach ($listeners as $listener) {
-                    $matched[] = $listener;
+        if (is_array($this->wildcardIndex)) {
+            foreach ($this->wildcardIndex as $pattern => $listeners) {
+                if (preg_match($pattern, $event)) {
+                    foreach ($listeners as $listener) {
+                        $matched[] = $listener;
+                    }
                 }
             }
         }

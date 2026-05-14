@@ -43,7 +43,7 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface {
         if ($isUnit) {
             file_put_contents($path, $this->unitTemplate($name));
         } else {
-            $endpoint = '/api/' . strtolower(preg_replace('/Test$/', '', $name));
+            $endpoint = '/api/' . strtolower((string) preg_replace('/Test$/', '', $name));
             file_put_contents($path, $this->featureTemplate($name, $endpoint));
         }
 

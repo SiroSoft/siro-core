@@ -170,7 +170,7 @@ final class Lang
         }
 
         if (self::$basePath === '' && defined('BASE_PATH')) {
-            self::boot(BASE_PATH);
+            self::boot(is_string(BASE_PATH) ? BASE_PATH : '');
         }
 
         $path = self::$basePath . DIRECTORY_SEPARATOR . $locale
@@ -180,6 +180,7 @@ final class Lang
             return null;
         }
 
+        /** @var array<string, mixed> $lines */
         $lines = (array) require $path;
         self::$loaded[$cacheKey] = $lines;
         return $lines;
@@ -191,7 +192,7 @@ final class Lang
      */
     private static function dotGet(array $array, string $key): ?string
     {
-        if (isset($array[$key])) {
+        if (isset($array[$key]) && is_scalar($array[$key])) {
             return (string) $array[$key];
         }
 
@@ -211,7 +212,7 @@ final class Lang
     /**
      * Replace :param placeholders with values.
      */
-    /** @param array<string, string> $replace */ private static function replace(string $message, array $replace): string
+    /** @param array<string, mixed> $replace */ private static function replace(string $message, array $replace): string
     {
         if ($replace === []) {
             return $message;
@@ -222,7 +223,7 @@ final class Lang
 
         foreach ($replace as $key => $value) {
             $search[] = ':' . $key;
-            $replacements[] = (string) $value;
+            $replacements[] = is_scalar($value) ? (string) $value : '';
         }
 
         return str_replace($search, $replacements, $message);

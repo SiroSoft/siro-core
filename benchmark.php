@@ -79,17 +79,20 @@ $results[] = bench('Container::make(stdClass)', 10000, fn() => (new Container())
 $results[] = bench('Router: register static route', 10000, function () { $r = new Router(); $r->get('/test', fn() => 'ok'); });
 
 $results[] = bench('Router: dispatch static O(1)', 10000, function () {
+    /** @var Router|null $r */
     static $r = null; if ($r === null) { $r = new Router(); $r->get('/bench/test', fn(Request $req) => Response::success()); }
     $r->dispatch(new Request('GET', '/bench/test'));
 });
 
 $results[] = bench('Router: dispatch dynamic {id}', 10000, function () {
+    /** @var Router|null $r */
     static $r = null; if ($r === null) { $r = new Router(); $r->get('/bench/user/{id}', fn(Request $req) => Response::success()); }
     $r->dispatch(new Request('GET', '/bench/user/12345'));
 });
 
 $results[] = bench('Response::success()', 10000, fn() => Response::success(['id' => 1, 'name' => 'Test']));
 $results[] = bench('Middleware 5-layer pipeline', 5000, function () {
+    /** @var Router|null $r */
     static $r = null;
     if ($r === null) {
         $r = new Router();

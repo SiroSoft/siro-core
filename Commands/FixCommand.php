@@ -48,18 +48,30 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
                 $this->write('  ⚠ Invalid trace file.');
                 return 1;
             }
-            $method = $data['method'] ?? 'GET';
-            $host = $data['host'] ?? 'localhost:8080';
-            $path = $data['path'] ?? '/';
-            $body = $data['request_body'] ?? '';
+            $method = $this->safeStr($data['method'] ?? 'GET');
+            $host = $this->safeStr($data['host'] ?? 'localhost:8080');
+            $path = $this->safeStr($data['path'] ?? '/');
+            $body = $this->safeStr($data['request_body'] ?? '');
 
             $ch = curl_init('http://' . $host . $path);
-            curl_setopt_array($ch, [
-                CURLOPT_CUSTOMREQUEST => $method,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 10,
-                CURLOPT_POSTFIELDS => $body,
-            ] + ($body ? [CURLOPT_HTTPHEADER => ['Content-Type: application/json']] : []));
+            $safeMethod = $method !== '' ? $method : 'GET';
+            if ($body !== '') {
+                curl_setopt_array($ch, [
+                    CURLOPT_CUSTOMREQUEST => $safeMethod,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 10,
+                    CURLOPT_POSTFIELDS => $body,
+                    CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                ]);
+            } else {
+                curl_setopt_array($ch, [
+                    CURLOPT_CUSTOMREQUEST => $safeMethod,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 10,
+                    CURLOPT_POSTFIELDS => '',
+                    CURLOPT_HTTPHEADER => [],
+                ]);
+            }
             $response = curl_exec($ch);
             $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
@@ -145,7 +157,7 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             if (!is_dir($dir)) continue;
             $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
             foreach ($files as $file) {
-                if ($file->isFile() && $file->getExtension() === 'php') {
+                if ($file instanceof \SplFileInfo && $file->isFile() && $file->getExtension() === 'php') {
                     $mtime = $file->getMTime();
                     if ($mtime > $max) $max = $mtime;
                 }
@@ -171,7 +183,7 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $history = json_decode((string) file_get_contents($historyFile), true);
             if (is_array($history) && $history !== []) {
                 $last = end($history);
-                if (isset($last['command'])) {
+                if (is_array($last) && isset($last['command']) && is_string($last['command'])) {
                     return $last['command'];
                 }
             }

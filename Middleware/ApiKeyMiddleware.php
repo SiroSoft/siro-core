@@ -40,15 +40,16 @@ final class ApiKeyMiddleware implements MiddlewareInterface
             return Response::error('Invalid or expired API key', 401, ['api_key' => ['Invalid API key.']]);
         }
 
+        /** @var array<string, string|int|float|bool|null> $keyData */
         if ($requiredScope !== '') {
-            $scopes = array_map('trim', explode(',', $keyData['scopes']));
+            $scopes = array_map('trim', explode(',', (string) ($keyData['scopes'] ?? '')));
             $requiredScope = strtolower(trim($requiredScope));
 
             $hasScope = in_array('admin', $scopes, true) || in_array($requiredScope, $scopes, true);
 
             if (!$hasScope) {
                 return Response::error('Insufficient scope', 403, [
-                    'scope' => ["Required scope: {$requiredScope}, key scopes: {$keyData['scopes']}"]
+                    'scope' => ['Required scope: ' . $requiredScope . ', key scopes: ' . (string) ($keyData['scopes'] ?? '')]
                 ]);
             }
         }

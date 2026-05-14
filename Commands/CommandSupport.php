@@ -152,4 +152,19 @@ trait CommandSupport
         // Default: add 's'
         return $value . 's';
     }
+
+    /**
+     * Safely convert a mixed value to string (satisfies PHPStan level=max).
+     * @param mixed $value
+     */
+    protected function safeStr(mixed $value, string $default = ''): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_numeric($value) || is_bool($value)) {
+            return (string) $value;
+        }
+        return $default;
+    }
 }

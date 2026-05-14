@@ -25,7 +25,7 @@ final class RedisDriver
             return null;
         }
 
-        $decoded = json_decode((string) $value, true);
+        $decoded = json_decode(is_string($value) ? $value : '', true);
         if (!is_array($decoded)) {
             return null;
         }

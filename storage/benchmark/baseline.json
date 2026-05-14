@@ -1,0 +1,10 @@
+{
+    "Container::make(stdClass)": 0.000619,
+    "Router: register static route": 0.0015639999999999999,
+    "Router: dispatch static O(1)": 0.001634,
+    "Router: dispatch dynamic {id}": 0.001843,
+    "Response::success()": 0.0003,
+    "Middleware 5-layer pipeline": 0.0035639999999999995,
+    "Request::validate 5 rules": 0.007075,
+    "Request::fromGlobals simulation": 0.0005489999999999999
+}

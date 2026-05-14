@@ -55,8 +55,8 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
       - name: Regenerate autoloader
         run: composer dump-autoload
-      - name: PHPStan Level 7
-        run: php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
+      - name: PHPStan Level Max
+        run: php -d memory_limit=512M vendor/bin/phpstan analyse --level=max --no-progress
 
   phpunit:
     runs-on: ubuntu-latest
@@ -93,6 +93,37 @@ jobs:
           sed -i 's|CACHE_DRIVER=.*|CACHE_DRIVER=file|g' .env
       - name: PHPUnit tests
         run: php vendor/bin/phpunit --no-progress
+
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          extensions: pdo, json, mbstring
+          coverage: xdebug
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Infection Mutation Testing (min MSI 80%)
+        run: php -d zend_extension=xdebug vendor/bin/infection --min-msi=80 --threads=4 --no-progress
+
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          extensions: pdo, json, mbstring
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Run benchmarks
+        run: php benchmark.php
 
   technical-gate:
     runs-on: ubuntu-latest

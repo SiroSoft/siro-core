@@ -39,9 +39,10 @@ final class FileDriver
     public function set(string $key, mixed $value, int $ttl): bool
     {
         $file = $this->pathFor($key);
+        $expiresAt = $ttl === 0 ? 0 : time() + $ttl;
         $payload = json_encode([
             'key' => $key,
-            'expires_at' => time() + max(1, $ttl),
+            'expires_at' => $expiresAt,
             'value' => $value,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
@@ -123,6 +124,7 @@ final class FileDriver
             @unlink($file);
             return null;
         }
+        /** @var array<string, string|int|float|bool|null> $decoded */
 
         $expiresAt = (int) ($decoded['expires_at'] ?? 0);
         if ($expiresAt > 0 && $expiresAt < time()) {

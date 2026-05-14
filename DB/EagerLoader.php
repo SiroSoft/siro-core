@@ -83,7 +83,7 @@ final class EagerLoader
         $localIds = [];
         foreach ($models as $m) {
             $id = $m->{$localKey};
-            if ($id !== null) {
+            if (is_numeric($id) || is_string($id)) {
                 $localIds[] = $id;
             }
         }
@@ -91,8 +91,6 @@ final class EagerLoader
         if ($localIds === []) {
             return;
         }
-
-        $localIds = array_unique($localIds);
 
         /** @var Model $relatedInstance */
         $relatedInstance = new $relatedClass();
@@ -106,13 +104,13 @@ final class EagerLoader
         $indexed = [];
         foreach ($rows as $row) {
             /** @var Model $row */
-            $fk = (int) ($row->{$foreignKey} ?? 0);
-            $indexed[$fk] = $row;
+            $idxVal = $row->{$foreignKey} ?? 0;
+            $indexed[(string) $idxVal] = $row;
         }
 
         foreach ($models as $m) {
             $id = $m->{$localKey};
-            $m->setRelation($relation, $indexed[(int) ($id ?? 0)] ?? null);
+            $m->setRelation($relation, $indexed[(string) $id] ?? null);
         }
     }
 
@@ -127,10 +125,11 @@ final class EagerLoader
         $foreignKey = $rel->getForeignKey();
         $relatedKey = $rel->getRelatedKey();
 
+        /** @var list<int|string> $localIds */
         $localIds = [];
         foreach ($models as $m) {
             $id = $m->getAttribute('id');
-            if ($id !== null) {
+            if (is_numeric($id) || is_string($id)) {
                 $localIds[] = $id;
             }
         }
@@ -150,7 +149,7 @@ final class EagerLoader
         }
 
         $selectCols = $columns !== ['*']
-            ? implode(', ', array_map(fn ($c) => 'r.' . $rel->quoteIdentifier(ltrim($c, 'r.')), $columns))
+            ? implode(', ', array_map(fn ($c) => 'r.' . $rel->quoteIdentifier(preg_replace('/^r\./', '', $c)), $columns))
             : 'r.*';
         $pivotCols = 'p.' . $relatedKey . ' AS pivot_related_id, p.' . $foreignKey . ' AS pivot_foreign_id';
 
@@ -167,18 +166,20 @@ final class EagerLoader
             implode(', ', $placeholders)
         );
 
+        /** @var array<int, array<string, mixed>> $rows */
         $rows = \Siro\Core\Database::select($sql, $bindings);
 
         $grouped = [];
         foreach ($rows as $row) {
-            $fk = (int) ($row['pivot_foreign_id'] ?? 0);
+            $fkVal = $row['pivot_foreign_id'] ?? 0;
+            $fk = (string) $fkVal;
             unset($row['pivot_related_id'], $row['pivot_foreign_id']);
             $grouped[$fk][] = $row;
         }
 
         foreach ($models as $m) {
             $id = $m->getAttribute('id');
-            $m->setRelation($relation, $grouped[(int) ($id ?? 0)] ?? []);
+            $m->setRelation($relation, $grouped[(string) $id] ?? []);
         }
     }
 
@@ -195,7 +196,7 @@ final class EagerLoader
         $localIds = [];
         foreach ($models as $m) {
             $id = $m->{$localKey};
-            if ($id !== null) {
+            if (is_numeric($id) || is_string($id)) {
                 $localIds[] = $id;
             }
         }
@@ -218,13 +219,13 @@ final class EagerLoader
         $grouped = [];
         foreach ($rows as $row) {
             /** @var Model $row */
-            $fk = (int) ($row->{$foreignKey} ?? 0);
-            $grouped[$fk][] = $row;
+            $fkVal = $row->{$foreignKey} ?? 0;
+            $grouped[(string) $fkVal][] = $row;
         }
 
         foreach ($models as $m) {
             $id = $m->{$localKey};
-            $m->setRelation($relation, $grouped[(int) ($id ?? 0)] ?? []);
+            $m->setRelation($relation, $grouped[(string) $id] ?? []);
         }
     }
 
@@ -238,10 +239,11 @@ final class EagerLoader
         $foreignKey = $rel->getForeignKey();
         $ownerKey = $rel->getOwnerKey();
 
+        /** @var list<int|string> $foreignIds */
         $foreignIds = [];
         foreach ($models as $m) {
             $id = $m->{$foreignKey};
-            if ($id !== null) {
+            if (is_numeric($id) || is_string($id)) {
                 $foreignIds[] = $id;
             }
         }
@@ -265,12 +267,13 @@ final class EagerLoader
         $indexed = [];
         foreach ($rows as $row) {
             /** @var Model $row */
-            $indexed[(int) ($row->{$ownerKeyCol} ?? 0)] = $row;
+            $idxVal = $row->{$ownerKeyCol} ?? 0;
+            $indexed[(string) $idxVal] = $row;
         }
 
         foreach ($models as $m) {
             $fk = $m->{$foreignKey};
-            $m->setRelation($relation, $indexed[(int) ($fk ?? 0)] ?? null);
+            $m->setRelation($relation, $indexed[(string) $fk] ?? null);
         }
     }
 }

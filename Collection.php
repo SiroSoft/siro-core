@@ -106,7 +106,9 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
             $itemArray = is_array($item) ? $item : (array) $item;
             $value = $itemArray[$column] ?? null;
             if ($key !== null) {
-                $results[($itemArray[$key] ?? null)] = $value;
+                /** @var string|int|null $itemKey */
+                $itemKey = $itemArray[$key] ?? null;
+                $results[$itemKey ?? ''] = $value;
             } else {
                 $results[] = $value;
             }
@@ -264,7 +266,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
     {
         $keys = [];
         foreach ($this->items as $key) {
-            $keys[] = (string) $key;
+            $keys[] = is_scalar($key) ? (string) $key : '';
         }
         return new self(array_combine($keys, array_values($values)));
     }
@@ -305,7 +307,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     public function implode(string $glue = ','): string
     {
-        return implode($glue, array_map('strval', $this->items));
+        return implode($glue, array_map(fn ($v) => is_scalar($v) ? (string) $v : '', $this->items));
     }
 
     public function sum(?string $column = null): float|int

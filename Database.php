@@ -18,7 +18,8 @@ final class Database
         if (self::$instance === null) {
             $container = Container::getInstance();
             if ($container->has(DatabaseInterface::class)) {
-                self::$instance = $container->make(DatabaseInterface::class);
+                $instance = $container->make(DatabaseInterface::class);
+                self::$instance = $instance instanceof DatabaseInterface ? $instance : new DatabaseInstance();
             } else {
                 self::$instance = new DatabaseInstance();
             }
@@ -31,6 +32,7 @@ final class Database
         self::$instance = $instance;
     }
 
+    /** @param array<string, mixed> $config */
     public static function configure(array $config, string $name = 'default'): void
     {
         self::getInstance()->configure($config, $name);
@@ -56,11 +58,13 @@ final class Database
         self::getInstance()->purgeAll();
     }
 
+    /** @return array<int, string> */
     public static function connections(): array
     {
         return self::getInstance()->connections();
     }
 
+    /** @return array<int, array{sql:string,bindings:array<int|string,mixed>,time_ms:float,rows:int,connection:string}> */
     public static function getCapturedQueries(): array
     {
         return self::getInstance()->getCapturedQueries();
@@ -71,16 +75,25 @@ final class Database
         self::getInstance()->resetCapturedQueries();
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     * @return array<int, array<string, mixed>>
+     */
     public static function select(string $sql, array $params = [], ?string $connection = null): array
     {
         return self::getInstance()->select($sql, $params, $connection);
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     * @return array<string, mixed>|null
+     */
     public static function first(string $sql, array $params = [], ?string $connection = null): ?array
     {
         return self::getInstance()->first($sql, $params, $connection);
     }
 
+    /** @param array<int|string, mixed> $params */
     public static function execute(string $sql, array $params = [], ?string $connection = null): int
     {
         return self::getInstance()->execute($sql, $params, $connection);
@@ -101,6 +114,10 @@ final class Database
         return self::getInstance()->transaction($callback, $connection);
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     * @return array<int, array<string, mixed>>
+     */
     public static function selectCached(string $sql, array $params, int $ttl, string $cachePrefix = 'qb:default:', ?string $connection = null): array
     {
         return self::getInstance()->selectCached($sql, $params, $ttl, $cachePrefix, $connection);

@@ -22,11 +22,12 @@ final class SendMailJob
      */
     public function handle(array $data = []): void
     {
-        $mail = Mail::to((string) ($data['to'] ?? ''))
-            ->subject((string) ($data['subject'] ?? ''));
+        $to = isset($data['to']) && is_scalar($data['to']) ? (string) $data['to'] : '';
+        $subject = isset($data['subject']) && is_scalar($data['subject']) ? (string) $data['subject'] : '';
+        $body = isset($data['body']) && is_scalar($data['body']) ? (string) $data['body'] : '';
+        $contentType = isset($data['content_type']) && is_scalar($data['content_type']) ? (string) $data['content_type'] : 'text/plain';
 
-        $contentType = (string) ($data['content_type'] ?? 'text/plain');
-        $body = (string) ($data['body'] ?? '');
+        $mail = Mail::to($to)->subject($subject);
 
         if ($contentType === 'text/html') {
             $mail->html($body);
@@ -34,24 +35,35 @@ final class SendMailJob
             $mail->text($body);
         }
 
-        if (!empty($data['reply_to'])) {
+        if (isset($data['reply_to']) && is_scalar($data['reply_to'])) {
             $mail->replyTo((string) $data['reply_to']);
         }
 
         foreach ((array) ($data['cc'] ?? []) as $ccAddr) {
-            $mail->cc((string) $ccAddr);
+            if (is_scalar($ccAddr)) {
+                $mail->cc((string) $ccAddr);
+            }
         }
 
         foreach ((array) ($data['bcc'] ?? []) as $bccAddr) {
-            $mail->bcc((string) $bccAddr);
+            if (is_scalar($bccAddr)) {
+                $mail->bcc((string) $bccAddr);
+            }
         }
 
         foreach ((array) ($data['attachments'] ?? []) as $attachment) {
             if (is_array($attachment) && isset($attachment['path'])) {
-                $mail->attach(
-                    (string) $attachment['path'],
-                    (string) ($attachment['name'] ?? '')
-                );
+                /** @var array<string, mixed> $attachment */
+                $path = $attachment['path'];
+                $name = $attachment['name'] ?? '';
+                $pathStr = '';
+                if (is_string($path)) {
+                    $pathStr = $path;
+                } elseif (is_scalar($path)) {
+                    $pathStr = (string) $path;
+                }
+                $nameStr = is_scalar($name) ? (string) $name : '';
+                $mail->attach($pathStr, $nameStr);
             }
         }
 

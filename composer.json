@@ -42,14 +42,16 @@
     "prefer-stable": true,
     "config": {
         "allow-plugins": {
-            "infection/extension-installer": true
+            "infection/extension-installer": true,
+            "cyclonedx/cyclonedx-php-composer": true
         }
     },
     "require-dev": {
         "phpunit/phpunit": "11.5.55",
         "phpstan/phpstan": "*",
         "squizlabs/php_codesniffer": "^3.0",
-        "infection/infection": "^0.29"
+        "infection/infection": "^0.29",
+        "cyclonedx/cyclonedx-php-composer": "*"
     },
     "scripts": {
         "analyse": "phpstan analyse --level=max",
@@ -57,10 +59,14 @@
         "test:coverage": "php -d zend_extension=xdebug phpunit --coverage-html coverage/html",
         "test:mutation": "infection --min-msi=80 --threads=4",
         "test:benchmark": "@php benchmark.php",
+        "benchmark:ci": "@php scripts/benchmark-ci.php",
+        "test:fuzz": "@php scripts/fuzz.php",
         "audit": "composer audit --format=table",
+        "sbom": "@php scripts/generate-sbom.php",
+        "audit:supply-chain": "@php scripts/audit-supply-chain.php",
         "check": [
             "@composer audit --format=table || true",
-            "@phpstan analyse --no-progress --memory-limit=512M",
+            "@phpstan analyse --level=max --no-progress --memory-limit=512M",
             "@phpunit --no-coverage"
         ],
         "optimize": [

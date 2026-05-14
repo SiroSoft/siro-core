@@ -22,9 +22,9 @@ class QueryBuilder
     protected string $table = '';
     /** @var array<int, string> */
     protected array $columns = ['*'];
-    /** @var array<int, array<string, mixed>> */
+    /** @var array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> */
     protected array $wheres = [];
-    /** @var array<int, array<string, mixed>> */
+    /** @var array<int, array{boolean:string, column:string, operator:string, param:string}> */
     protected array $havings = [];
     /** @var array<int, array{type:string,table:string,first:string,operator:string,second:string}> */
     protected array $joins = [];
@@ -333,9 +333,12 @@ class QueryBuilder
         $result = [];
 
         foreach ($rows as $row) {
+            /** @var array<string, mixed> $row */
             $value = $row[$column] ?? null;
             if ($key !== null && isset($row[$key])) {
-                $result[(string) ($row[$key] ?? '')] = $value;
+                /** @var string|int $rowKey */
+                $rowKey = $row[$key];
+                $result[strval($rowKey)] = $value;
             } else {
                 $result[] = $value;
             }
@@ -397,7 +400,7 @@ class QueryBuilder
         $sql = match ($driver) {
             'pgsql', 'postgres', 'postgresql' => 'RANDOM()',
             'sqlite' => 'RANDOM()',
-            default => $seed !== null ? "RAND({$seed})" : 'RAND()',
+            default => $seed !== null ? 'RAND(' . (int) $seed . ')' : 'RAND()',
         };
 
         $this->orders[] = ['column' => $sql, 'direction' => 'ASC'];
@@ -486,8 +489,14 @@ class QueryBuilder
         Cache::flushQueryBuilderTable($this->cacheTable);
 
         if ($returning !== '') {
+            /** @var array<string, mixed>|false $row */
             $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-            return $row !== false && isset($row['id']) ? (int) $row['id'] : $stmt->rowCount();
+            if ($row !== false && isset($row['id'])) {
+                /** @var int|string $id */
+                $id = $row['id'];
+                return intval($id);
+            }
+            return $stmt->rowCount();
         }
 
         $lastId = Database::connection($this->connectionName)->lastInsertId();
@@ -634,7 +643,7 @@ class QueryBuilder
      * Cursor-based pagination for large datasets.
      *
      * @param int $perPage Items per page
-     * @param array<string, mixed>|null $cursor
+     * @param array{id?: int|string, created_at?: string}|null $cursor
      * @param string $order 'asc' or 'desc'
      * @return array{data: array<int, array<string, mixed>>, meta: array<string, mixed>, next_cursor: array<string, mixed>|null}
      */
@@ -674,9 +683,14 @@ class QueryBuilder
         $lastRow = $countRows[count($countRows) - 1] ?? null;
         $nextCursor = null;
         if ($hasMore && $lastRow !== null) {
+            /** @var array<string, mixed> $lastRow */
+            /** @var int|string $idVal */
+            $idVal = $lastRow['id'] ?? 0;
+            /** @var string|int|float|null $createdAtVal */
+            $createdAtVal = $lastRow['created_at'] ?? date('Y-m-d H:i:s');
             $nextCursor = [
-                'id' => (int) ($lastRow['id'] ?? 0),
-                'created_at' => (string) ($lastRow['created_at'] ?? date('Y-m-d H:i:s')),
+                'id' => intval($idVal),
+                'created_at' => strval($createdAtVal),
             ];
         }
 
@@ -707,7 +721,9 @@ class QueryBuilder
             $this->joins, $this->groups, $this->bindings
         );
         $countRows = $this->runSelect($countSql, $countBindings);
-        $total = (int) (($countRows[0]['aggregate'] ?? 0));
+        /** @var int|string $aggregate */
+        $aggregate = $countRows[0]['aggregate'] ?? 0;
+        $total = intval($aggregate);
 
         $clone = clone $this;
         $rows = $clone->limit($perPage)->offset($offset)->get();
@@ -799,10 +815,15 @@ class QueryBuilder
         if (!$hasExplicitValue) {
             return ['=', $operatorOrValue];
         }
-        $operator = $this->compiler->normalizeOperator((string) $operatorOrValue);
+        /** @var string $operatorOrValue */
+        $operator = $this->compiler->normalizeOperator($operatorOrValue);
         return [$operator, $value];
     }
 
+    /**
+     * @param array<int|string, mixed> $bindings
+     * @return array<int, array<string, mixed>>
+     */
     private function runSelect(string $sql, array $bindings): array
     {
         $cachePrefix = 'qb:' . $this->cacheTable . ':';

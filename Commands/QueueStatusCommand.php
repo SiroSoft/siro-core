@@ -55,12 +55,14 @@ final class QueueStatusCommand implements \Siro\Core\Commands\CommandInterface {
             $failedJobs = Queue::getFailedJobs($failedLimit);
             $this->table(
                 ['ID', 'Job', 'Error', 'Failed At'],
-                array_map(fn (array $job): array => [
-                    (string) ($job['id'] ?? ''),
-                    $job['job'] ?? '',
-                    mb_substr((string) ($job['error'] ?? ''), 0, 60),
-                    $job['failed_at'] ?? '',
-                ], $failedJobs)
+                array_map(function (array $job): array {
+                    return [
+                        $this->safeStr($job['id'] ?? ''),
+                        $this->safeStr($job['job'] ?? ''),
+                        mb_substr($this->safeStr($job['error'] ?? ''), 0, 60),
+                        $this->safeStr($job['failed_at'] ?? ''),
+                    ];
+                }, $failedJobs)
             );
 
             $this->write('');

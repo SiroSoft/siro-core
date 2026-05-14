@@ -116,7 +116,7 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
             );
 
             foreach ($iterator as $file) {
-                if ($file->isFile() && $file->getMTime() > $since) {
+                if ($file instanceof \SplFileInfo && $file->isFile() && $file->getMTime() > $since) {
                     $ext = $file->getExtension();
                     if (in_array($ext, ['php', 'env', 'json', 'neon'], true)) {
                         return $file->getFilename();

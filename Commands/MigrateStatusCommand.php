@@ -75,7 +75,8 @@ final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
 
     private function ensureMigrationTable(PDO $pdo): void
     {
-        $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driverAttr = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
 
         $sql = match ($driver) {
             'pgsql' => 'CREATE TABLE IF NOT EXISTS migrations (id BIGSERIAL PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
@@ -84,7 +85,8 @@ final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
 
         $pdo->exec($sql);
 
-        $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        $driverAttr = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
         if ($driver === 'pgsql') {
             $pdo->exec('ALTER TABLE migrations ADD COLUMN IF NOT EXISTS batch INT NOT NULL DEFAULT 1');
         } else {
@@ -107,12 +109,13 @@ final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
 
         $result = [];
         foreach ($rows as $row) {
-            $migration = (string) ($row['migration'] ?? '');
+            /** @var array<string, mixed> $row */
+            $migration = $this->safeStr($row['migration'] ?? '');
             if ($migration === '') {
                 continue;
             }
-
-            $result[$migration] = (int) ($row['batch'] ?? 0);
+            $batchVal = $row['batch'] ?? 0;
+            $result[$migration] = is_numeric($batchVal) ? (int) $batchVal : 0;
         }
 
         return $result;

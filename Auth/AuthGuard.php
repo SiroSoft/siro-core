@@ -36,6 +36,7 @@ final class AuthGuard
             if (is_callable($resolver)) {
                 $user = $resolver($request);
                 if (is_array($user)) {
+                    /** @var array<string, mixed> $user */
                     $this->userData = $user;
                     return $user;
                 }
@@ -50,14 +51,17 @@ final class AuthGuard
         try {
             $claims = JWT::decode(trim($matches[1]));
             $provider = $this->getUserProvider();
+            $sub = $claims['sub'] ?? 0;
+            $userId = is_numeric($sub) ? (int) $sub : 0;
             $user = $provider !== null
-                ? $provider->retrieveById((int) ($claims['sub'] ?? 0))
+                ? $provider->retrieveById($userId)
                 : null;
 
             if ($user === null) {
                 return null;
             }
 
+            /** @var array<string, mixed> $user */
             $this->userData = $user;
             $this->userData['claims'] = $claims;
             return $this->userData;
@@ -74,7 +78,8 @@ final class AuthGuard
 
     public function id(): ?int
     {
-        return isset($this->userData['id']) ? (int) $this->userData['id'] : null;
+        $id = $this->userData['id'] ?? null;
+        return is_numeric($id) ? (int) $id : null;
     }
 
     public function check(): bool
@@ -90,7 +95,8 @@ final class AuthGuard
     public function hasRole(string ...$roles): bool
     {
         if ($this->userData === null) return false;
-        $userRole = (string) ($this->userData['role'] ?? 'user');
+        $userRoleVal = $this->userData['role'] ?? 'user';
+        $userRole = is_scalar($userRoleVal) ? (string) $userRoleVal : 'user';
         foreach ($roles as $role) {
             if (strtolower($userRole) === strtolower(trim($role))) {
                 return true;

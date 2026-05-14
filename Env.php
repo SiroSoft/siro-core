@@ -35,9 +35,11 @@ final class Env
             $cached = json_decode(substr((string) file_get_contents(self::$cachedFile), strlen('<?php exit; ?>')), true);
             if (is_array($cached)) {
                 foreach ($cached as $key => $value) {
-                    $_ENV[$key] = $value;
-                    $_SERVER[$key] = $value;
-                    putenv((string) $key . '=' . (string) $value);
+                    $strKey = (string) $key;
+                    $strValue = is_scalar($value) ? (string) $value : '';
+                    $_ENV[$strKey] = $strValue;
+                    $_SERVER[$strKey] = $strValue;
+                    putenv($strKey . '=' . $strValue);
                 }
                 self::$loaded = true;
                 // Load any keys from .env not already in $_ENV (cache excludes some)
@@ -116,7 +118,13 @@ final class Env
         foreach ($_ENV as $key => $value) {
             $data[$key] = $value;
         }
-        unset($data['APP_KEY'], $data['JWT_SECRET']);
+        $secretKeys = ['APP_KEY', 'JWT_SECRET', 'DB_PASSWORD', 'MAIL_PASSWORD', 'REDIS_PASSWORD',
+            'DB_USERNAME', 'MAIL_USERNAME', 'STORAGE_S3_KEY', 'STORAGE_S3_SECRET',
+            'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY',
+            'JWT_PREVIOUS_SECRET'];
+        foreach ($secretKeys as $key) {
+            unset($data[$key]);
+        }
 
         $content = '<?php exit; ?>' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'env.php';
@@ -145,7 +153,8 @@ final class Env
     public static function get(string $key, ?string $default = null): ?string
     {
         if (array_key_exists($key, $_ENV)) {
-            return $_ENV[$key];
+            $val = $_ENV[$key];
+            return is_scalar($val) ? (string) $val : $default;
         }
 
         $value = getenv($key);

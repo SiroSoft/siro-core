@@ -22,9 +22,9 @@ final class UploadedFile
     private readonly int $size;
     private readonly int $error;
 
-    private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'pht', 'phar', 'phps', 'exe', 'sh', 'bat', 'cmd', 'pl', 'py', 'rb', 'cgi', 'asp', 'aspx', 'jsp', 'htaccess', 'user.ini', 'env', 'shtml', 'stm', 'shtm', 'inc', 'war', 'jar'];
+    private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'pht', 'phar', 'phps', 'exe', 'sh', 'bat', 'cmd', 'pl', 'py', 'rb', 'cgi', 'asp', 'aspx', 'jsp', 'htaccess', 'user.ini', 'env', 'shtml', 'stm', 'shtm', 'inc', 'war', 'jar', 'svg', 'svgz'];
 
-    /** @param array<string, mixed> $file */
+    /** @param array<string, string|int> $file */
     public function __construct(array $file)
     {
         $this->path = (string) ($file['tmp_name'] ?? '');
@@ -251,6 +251,15 @@ final class UploadedFile
     private function generateFilename(): string
     {
         $ext = $this->getClientOriginalExtension();
+        if ($ext !== '') {
+            $allowedExts = array_keys(self::MIME_MAP);
+            if (!in_array($ext, $allowedExts, true)) {
+                $mime = $this->getMimeType();
+                $ext = array_search($mime, self::MIME_MAP, true) !== false
+                    ? (string) array_search($mime, self::MIME_MAP, true)
+                    : 'bin';
+            }
+        }
         $base = bin2hex(random_bytes(16));
 
         return $ext !== '' ? $base . '.' . $ext : $base;

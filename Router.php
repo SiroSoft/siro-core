@@ -8,15 +8,6 @@ use Closure;
 use RuntimeException;
 use Siro\Core\Middleware\MiddlewareInterface;
 
-/**
- * HTTP request router and middleware pipeline.
- *
- * Supports static and dynamic routes ({param}), route groups with
- * prefix and middleware inheritance. Middleware uses an onion model
- * pipeline. Automatically handles OPTIONS preflight requests.
- *
- * @package Siro\Core
- */
 final class Router
 {
     private RouteMatcher $matcher;
@@ -24,6 +15,7 @@ final class Router
     /** @var array<int, callable|string> */
     private array $groupMiddleware = [];
     private bool $routesLoadedFromCache = false;
+    private bool $matcherDirty = false;
 
     public function __construct()
     {
@@ -70,6 +62,15 @@ final class Router
      * @param callable|array{0:class-string,1:string}|string $handler
      * @param array<int, callable|string> $middleware
      */
+    public function patch(string $path, callable|array|string $handler, array $middleware = []): Route
+    {
+        return $this->add(Method::PATCH->value, $path, $handler, $middleware);
+    }
+
+    /**
+     * @param callable|array{0:class-string,1:string}|string $handler
+     * @param array<int, callable|string> $middleware
+     */
     public function options(string $path, callable|array|string $handler, array $middleware = []): Route
     {
         return $this->add(Method::OPTIONS->value, $path, $handler, $middleware);
@@ -88,6 +89,7 @@ final class Router
     public function group(string $prefix, callable|array $arg2, callable|array|null $arg3 = null): void
     {
         $callback = null;
+        /** @var array<int, callable|string> $middleware */
         $middleware = [];
 
         if (is_callable($arg2)) {
@@ -106,6 +108,7 @@ final class Router
         $previousMiddleware = $this->groupMiddleware;
 
         $this->groupPrefix = RouteMatcher::normalizePath($previousPrefix . '/' . trim($prefix, '/'));
+        /** @var array<int, callable|string> $middleware */
         $this->groupMiddleware = [...$previousMiddleware, ...$middleware];
 
         $callback($this);
@@ -124,10 +127,14 @@ final class Router
     private function rebuildMatcher(): void
     {
         $this->matcher = new RouteMatcher($this->dynamicRoutes, $this->staticRoutes, $this->whereConstraints);
+        $this->matcherDirty = false;
     }
 
     public function dispatch(Request $request): Response
     {
+        if ($this->matcherDirty) {
+            $this->rebuildMatcher();
+        }
         $method = $request->method();
         $path = $request->path();
 
@@ -147,17 +154,24 @@ final class Router
 
         $cacheTtl = $route['cache_ttl'];
         $canUseCache = $method === 'GET' && $cacheTtl > 0;
+        $cacheKey = '';
         if ($canUseCache) {
             $cacheKey = 'route:' . $request->cacheKey();
             $cached = Cache::get($cacheKey);
 
-            if (is_array($cached) && isset($cached['payload']) && isset($cached['status']) && isset($cached['headers'])) {
+                if (is_array($cached) && isset($cached['payload'], $cached['status'], $cached['headers'])) {
+                /** @var int $status */
+                $status = $cached['status'];
+                /** @var array<string, mixed> $payload */
+                $payload = is_array($cached['payload']) ? $cached['payload'] : [];
                 $response = Response::json(
-                    is_array($cached['payload']) ? $cached['payload'] : [],
-                    (int) $cached['status']
+                    $payload,
+                    $status
                 );
                 if (is_array($cached['headers'])) {
-                    foreach ($cached['headers'] as $name => $value) {
+                    /** @var array<string, string> $headers */
+                    $headers = $cached['headers'];
+                    foreach ($headers as $name => $value) {
                         $response->header($name, $value);
                     }
                 }
@@ -190,6 +204,9 @@ final class Router
         return $response;
     }
 
+    /**
+     * @return array<int, array{method:string,path:string,handler:string,middleware:string,cache_ttl:int}>
+     */
     public function getRoutes(): array
     {
         return $this->matcher->getRoutes();
@@ -205,6 +222,9 @@ final class Router
         $this->rebuildMatcher();
     }
 
+    /**
+     * @return array{static:array<string,array<string,array{path:string,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>,dynamic:array<string,array<int,array{path:string,segments:array<int,string>,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>}
+     */
     public function exportRoutes(): array
     {
         return $this->matcher->export();
@@ -221,6 +241,7 @@ final class Router
             return false;
         }
 
+        /** @var array{static:array<string,array<string,array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>,dynamic:array<string,array<int,array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>} $data */
         $this->staticRoutes = $data['static'];
         $this->dynamicRoutes = $data['dynamic'];
         $this->rebuildMatcher();
@@ -235,6 +256,7 @@ final class Router
             !is_dir($dir) && mkdir($dir, 0775, true);
         }
 
+        /** @var array{}|array{static:array<string,array<string,array{path:string,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>,dynamic:array<string,array<int,array{path:string,segments:array<int,string>,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>} $data */
         $data = $this->matcher->export();
 
         foreach (['static', 'dynamic'] as $type) {
@@ -261,10 +283,15 @@ final class Router
         return $this->routesLoadedFromCache;
     }
 
+    /**
+     * @param callable|array{0:class-string,1:string}|string $handler
+     * @param array<int, callable|string> $middleware
+     */
     private function add(string $method, string $path, callable|array|string $handler, array $middleware = []): Route
     {
         $method = strtoupper($method);
         $fullPath = RouteMatcher::normalizePath($this->groupPrefix . '/' . trim($path, '/'));
+        /** @var array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $routeData */
         $routeData = [
             'path' => $fullPath,
             'handler' => $handler,
@@ -281,7 +308,7 @@ final class Router
             $this->staticRoutes[$method][$fullPath] = $routeData;
         }
 
-        $this->rebuildMatcher();
+        $this->matcherDirty = true;
 
         return new Route($this, $method, $fullPath);
     }
@@ -434,6 +461,7 @@ final class Router
         }
 
         if (is_array($result)) {
+            /** @var array<string, mixed> $result */
             return Response::json($result);
         }
 
@@ -444,6 +472,9 @@ final class Router
         throw new RuntimeException('Route handler result must be Response|array|null.');
     }
 
+    /**
+     * @return array<int, string>
+     */
     private function splitSegments(string $path): array
     {
         $trimmed = trim($path, '/');
@@ -547,6 +578,7 @@ final class Router
             };
         }
 
+        /** @var array<string, string> $reqHeaders */
         $reqHeaders = function_exists('getallheaders') ? (getallheaders() ?: []) : [];
         $req = new Request('OPTIONS', $path, $_GET, $reqHeaders, []);
         return $finalHandler($req);

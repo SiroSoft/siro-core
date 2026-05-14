@@ -30,6 +30,7 @@ final class Config
             if ($cacheModified !== false && $configModified !== false && $cacheModified >= $configModified) {
                 $cached = json_decode(substr((string) file_get_contents($cacheFile), strlen('<?php exit; ?>')), true);
                 if (is_array($cached)) {
+                    /** @var array<string, mixed> $cached */
                     self::$items = $cached;
                     self::$loaded = true;
                     return;
@@ -52,7 +53,8 @@ final class Config
             $key = pathinfo($file, PATHINFO_FILENAME);
             $config = require $file;
             if (is_array($config)) {
-                self::$items[$key] = $config;
+                /** @var array<string, mixed> $config */
+                self::$items[(string) $key] = $config;
             }
         }
 

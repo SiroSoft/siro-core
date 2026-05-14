@@ -18,7 +18,7 @@ use RuntimeException;
 final class Response
 {
     private static bool $debugEnabled = false;
-    /** @var array<string, float|int|string|bool|null> */
+    /** @var array<string, mixed> */
     private static array $debugMeta = [];
     private static string $requestId = '';
     private static float $requestStartedAt = 0.0;
@@ -46,6 +46,7 @@ final class Response
      * @param array<string, mixed> $data
      * @param array<string, mixed> $meta
      */
+    /** @param array<string, mixed> $meta */
     public static function success(mixed $data = null, string $message = 'OK', int $statusCode = 200, array $meta = []): self
     {
         return new self([
@@ -123,7 +124,7 @@ final class Response
             throw new RuntimeException('File not found: ' . $filePath);
         }
         // Ensure file is within project directory to prevent path traversal
-        $base = defined('SIRO_BASE_PATH') ? (string) SIRO_BASE_PATH : (string) getcwd();
+        $base = defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : (string) getcwd();
         $base = rtrim($base, DIRECTORY_SEPARATOR);
         if (!str_starts_with($real, $base)) {
             throw new RuntimeException('Access denied: file is outside project directory');
@@ -134,9 +135,9 @@ final class Response
     private static function sanitizeFilename(string $filename): string
     {
         // Strip all dangerous characters for HTTP headers
-        $clean = preg_replace('/[^\p{L}\p{N}\s._\-,()\[\]!@#$%^&+=~]/u', '', $filename);
-        $clean = preg_replace('/\R/', '', $clean); // Remove newlines
-        $clean = str_replace(['"', '\\', "\0", "\x00"], '', $clean); // Remove quotes, backslashes, null bytes
+        $clean = preg_replace('/[^\p{L}\p{N}\s._\-,()\[\]!@#$%^&+=~]/u', '', $filename) ?? $filename;
+        $clean = preg_replace('/\R/', '', $clean) ?? $clean;
+        $clean = str_replace(['"', '\\', "\0", "\x00"], '', $clean);
         return trim($clean);
     }
 
@@ -356,7 +357,7 @@ final class Response
         }
 
         if (!$isCli) {
-            $acceptEncoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
+            $acceptEncoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && is_scalar($_SERVER['HTTP_ACCEPT_ENCODING']) ? (string) $_SERVER['HTTP_ACCEPT_ENCODING'] : '';
             if (str_contains($acceptEncoding, 'gzip') && function_exists('gzencode')) {
                 header('Content-Encoding: gzip');
                 echo gzencode($encoded);

@@ -44,7 +44,7 @@ final class Schedule
 
             try {
                 if ($task->type === 'command') {
-                    $this->runCommand((string) $task->task, $basePath);
+                    $this->runCommand(is_scalar($task->task) ? (string) $task->task : '', $basePath);
                 } else {
                     $cb = $task->task;
                     if (is_callable($cb)) {

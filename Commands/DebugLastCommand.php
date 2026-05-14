@@ -46,9 +46,10 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $traceId = basename($latest, '.json');
-        $status = (int) ($data['status'] ?? 0);
-        $method = $data['method'] ?? 'GET';
-        $path = $data['path'] ?? '/';
+        $statusVal = $data['status'] ?? 0;
+        $status = is_numeric($statusVal) ? (int) $statusVal : 0;
+        $method = $this->safeStr($data['method'] ?? 'GET');
+        $path = $this->safeStr($data['path'] ?? '/');
         $timeMs = $data['time_ms'] ?? 0;
         $statusColor = $status >= 200 && $status < 300 ? 'green' : ($status >= 400 ? 'red' : 'yellow');
         $statusText = $status >= 200 && $status < 300 ? 'OK' : ($status === 422 ? 'Unprocessable Entity' : ($status === 401 ? 'Unauthorized' : ($status === 404 ? 'Not Found' : ($status === 500 ? 'Server Error' : 'Unknown'))));
@@ -58,35 +59,39 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  ⚡ LAST REQUEST');
         $this->write('  ' . str_repeat('=', 56));
         $this->write('  ' . $method . ' ' . $path);
-        $this->write('  Status:   ' . $status . ' ' . $statusText . ' (' . round((float) $timeMs, 1) . 'ms)');
+        $timeMsFloat = is_numeric($timeMs) ? (float) $timeMs : 0;
+        $this->write('  Status:   ' . $status . ' ' . $statusText . ' (' . round($timeMsFloat, 1) . 'ms)');
         $this->write('  Trace ID: ' . $traceId);
         $this->write('  ' . str_repeat('-', 56));
         $this->write('  💡 Replay: php siro log:replay ' . $traceId);
         $this->write('  ' . str_repeat('-', 56));
-        $this->write('  Time:     ' . ($data['timestamp'] ?? '?'));
-        $this->write('  IP:       ' . ($data['ip'] ?? '?'));
-        $this->write('  Memory:   ' . ($data['memory_mb'] ?? '?') . 'MB');
+        $this->write('  Time:     ' . $this->safeStr($data['timestamp'] ?? '?'));
+        $this->write('  IP:       ' . $this->safeStr($data['ip'] ?? '?'));
+        $this->write('  Memory:   ' . $this->safeStr($data['memory_mb'] ?? '?') . 'MB');
 
         // Parse response body for errors
-        $responseBody = $data['response_body'] ?? '';
+        $responseBody = $this->safeStr($data['response_body'] ?? '');
         if ($responseBody !== '' && $responseBody !== '{}') {
             $decoded = json_decode($responseBody, true);
             if (is_array($decoded)) {
-                $errors = $decoded['errors'] ?? ($decoded['data']['errors'] ?? []);
-                if ($errors !== [] && is_array($errors)) {
+                $errors = $decoded['errors'] ?? [];
+                if ($errors === [] && isset($decoded['data']) && is_array($decoded['data'])) {
+                    $errors = $decoded['data']['errors'] ?? [];
+                }
+                if (is_array($errors) && $errors !== []) {
                     $this->write('');
                     $this->write('  ❌ Validation failed:');
                     $hasBodyKeys = false;
                     foreach ($errors as $field => $msgs) {
-                        $fieldStr = is_array($msgs) ? implode(', ', $msgs) : (string) $msgs;
-                        $this->write('    - ' . $field . ': ' . $fieldStr);
+                        $fieldStr = is_array($msgs) ? implode(', ', array_map(fn($v): string => $this->safeStr($v), (array) $msgs)) : $this->safeStr($msgs);
+                        $this->write('    - ' . $this->safeStr($field) . ': ' . $fieldStr);
                         if ($method !== 'GET') $hasBodyKeys = true;
                     }
                     $this->write('');
                     if ($hasBodyKeys) {
                         $this->write('  💡 Fix now:');
                         foreach ($errors as $field => $msgs) {
-                            $this->write('    php siro replay ' . $traceId . ' --set body.' . $field . '=1');
+                            $this->write('    php siro replay ' . $traceId . ' --set body.' . $this->safeStr($field) . '=1');
                         }
                     }
                     $this->write('  💡 Or edit request body:');
@@ -98,10 +103,12 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         // Show auth status
         $headers = $data['request_headers'] ?? [];
         $hasAuth = false;
-        foreach ($headers as $key => $value) {
-            if (strtolower((string) $key) === 'authorization') {
-                $hasAuth = true;
-                break;
+        if (is_array($headers)) {
+            foreach ($headers as $key => $value) {
+                if (strtolower((string) $key) === 'authorization') {
+                    $hasAuth = true;
+                    break;
+                }
             }
         }
         if ($status === 401 && !$hasAuth) {
@@ -110,7 +117,7 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         // Show request body
-        $requestBody = $data['request_body'] ?? '';
+        $requestBody = $this->safeStr($data['request_body'] ?? '');
         if ($requestBody !== '' && $requestBody !== '[]' && $requestBody !== '{}') {
             $this->write('');
             $this->write('  --- Request Body ---');
@@ -136,13 +143,18 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  --- SQL Queries (' . count($data['queries']) . ') ---');
             $totalTime = 0;
             foreach ($data['queries'] as $i => $q) {
-                $totalTime += (float) ($q['time_ms'] ?? 0);
+                /** @var array<string, mixed> $q */
+                $qTime = $q['time_ms'] ?? 0;
+                $totalTime += is_numeric($qTime) ? (float) $qTime : 0;
+                $qSql = $this->safeStr($q['sql'] ?? '?');
+                $qRows = $q['rows'] ?? 0;
+                $qMs = $q['time_ms'] ?? 0;
                 $this->write(sprintf(
                     '  %d. %s [%d rows, %.2fms]',
                     $i + 1,
-                    $q['sql'] ?? '?',
-                    $q['rows'] ?? 0,
-                    $q['time_ms'] ?? 0
+                    $qSql,
+                    is_numeric($qRows) ? (int) $qRows : 0,
+                    is_numeric($qMs) ? (float) $qMs : 0
                 ));
             }
             $this->write(sprintf('  Total SQL time: %.2fms', $totalTime));

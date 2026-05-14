@@ -53,7 +53,9 @@ final class IdempotencyMiddleware implements MiddlewareInterface
         $userId = 0;
         $user = $request->user();
         if (is_array($user) && isset($user['id'])) {
-            $userId = (int) $user['id'];
+            /** @var string|int|float|bool|null $id */
+            $id = $user['id'];
+            $userId = (int) $id;
         }
 
         $idempotency = new Idempotency($ttl);
@@ -63,7 +65,8 @@ final class IdempotencyMiddleware implements MiddlewareInterface
             $storedResponse = $idempotency->getStoredResponse();
 
             if ($storedResponse !== null) {
-                $statusCode = $storedResponse['_status'] ?? 200;
+                /** @var array<string, mixed> $storedResponse */
+                $statusCode = isset($storedResponse['_status']) && is_numeric($storedResponse['_status']) ? (int) $storedResponse['_status'] : 200;
                 unset($storedResponse['_status']);
 
                 return Response::json($storedResponse, $statusCode)

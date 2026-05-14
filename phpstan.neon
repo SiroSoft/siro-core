@@ -1,9 +1,10 @@
 parameters:
-    level: 7
+    level: max
     paths:
         - .
     excludePaths:
         - vendor/
         - tests/
+        - scripts/
 includes:
     - phpstan-baseline.neon

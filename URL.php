@@ -20,7 +20,7 @@ final class URL
         $payload = base64_encode($encoded !== false ? $encoded : '{}');
         $signature = hash_hmac('sha256', $payload, $secret);
         $query = http_build_query(['payload' => $payload, 'signature' => $signature]);
-        $base = defined('APP_URL') ? APP_URL : 'http://localhost:8080';
+        $base = defined('APP_URL') && is_string(APP_URL) ? APP_URL : 'http://localhost:8080';
         return rtrim($base, '/') . '/' . ltrim($route, '/') . '?' . $query;
     }
 
@@ -33,12 +33,13 @@ final class URL
             if ($throw) throw new RuntimeException('Invalid signature.');
             return null;
         }
+        /** @var array<string, mixed>|null $data */
         $data = json_decode(base64_decode($payload), true);
         if (!is_array($data)) {
             if ($throw) throw new RuntimeException('Invalid payload.');
             return null;
         }
-        if (isset($data['expires']) && (int) $data['expires'] < time()) {
+        if (isset($data['expires']) && is_numeric($data['expires']) && (int) $data['expires'] < time()) {
             if ($throw) throw new RuntimeException('Signed URL has expired.');
             return null;
         }
@@ -59,9 +60,9 @@ final class URL
 
     private static function secret(): string
     {
-        $key = Env::get('APP_KEY', '');
+        $key = Env::get('APP_KEY', '') ?? '';
         if ($key === '') {
-            $key = Env::get('JWT_SECRET', '');
+            $key = Env::get('JWT_SECRET', '') ?? '';
         }
         if ($key === '') {
             throw new RuntimeException('APP_KEY or JWT_SECRET required for signed URLs.');

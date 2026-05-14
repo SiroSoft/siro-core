@@ -63,13 +63,14 @@ final class Encrypter
         return $decrypted;
     }
 
+    /** @return array{enc: string, auth: string} */
     private static function key(?string $key): array
     {
         $key ??= Env::get('APP_KEY', '');
         if ($key === '') {
             $key = Env::get('JWT_SECRET', '');
         }
-        if ($key === '') {
+        if ($key === '' || $key === null) {
             throw new RuntimeException('Encryption key not configured. Set APP_KEY or JWT_SECRET in .env.');
         }
         $raw = hash('sha256', $key, true);

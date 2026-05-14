@@ -6,21 +6,26 @@ namespace Siro\Core;
 
 final class RouteMatcher
 {
-    /** @var array<string, array<string, array>> */
+    /** @var array<string, array<string, array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>> */
     private array $staticRoutes;
-    /** @var array<string, array<int, array>> */
+    /** @var array<string, array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>> */
     private array $dynamicRoutes;
     /** @var array<string, array<string, string>> */
     private array $whereConstraints;
 
-    /** @var array<string, array{path:string,handler:mixed,middleware:array,cache_ttl:int,params:array}|null> */
+    /** @var array<string, array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null> */
     private array $matchCache = [];
 
-    /** @var array<string, array{static:array,dynamic:array}> */
+    /** @var array{}|array{static:array<string,array<string,array{path:string,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>,dynamic:array<string,array<int,array{path:string,segments:array<int,string>,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>} */
     private array $exportCache = [];
-    /** @var array<int, array>|null */
+    /** @var array<int, array{method:string,path:string,handler:string,middleware:string,cache_ttl:int}>|null */
     private ?array $routeListCache = null;
 
+    /**
+     * @param array<string, array<string, array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>> $staticRoutes
+     * @param array<string, array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>> $dynamicRoutes
+     * @param array<string, array<string, string>> $whereConstraints
+     */
     public function __construct(
         array $dynamicRoutes,
         array $staticRoutes,
@@ -38,6 +43,9 @@ final class RouteMatcher
         $this->exportCache = [];
     }
 
+    /**
+     * @return array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null
+     */
     public function match(string $method, string $path): ?array
     {
         $cacheKey = $method . ':' . $path;
@@ -56,10 +64,15 @@ final class RouteMatcher
         return $result;
     }
 
+    /**
+     * @param array<int, string> $pathSegments
+     * @return array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null
+     */
     private function linearMatch(string $method, array $pathSegments): ?array
     {
         $routes = $this->dynamicRoutes[$method] ?? [];
         foreach ($routes as $route) {
+            /** @var array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
             if (count($route['segments']) !== count($pathSegments)) {
                 continue;
             }
@@ -107,6 +120,7 @@ final class RouteMatcher
         $segments = $this->splitSegments($path);
         foreach ($this->dynamicRoutes as $method => $routeList) {
             foreach ($routeList as $route) {
+                /** @var array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
                 if (count($route['segments']) !== count($segments)) { continue; }
                 $match = true;
                 foreach ($route['segments'] as $i => $segment) {
@@ -121,6 +135,9 @@ final class RouteMatcher
         return false;
     }
 
+    /**
+     * @return array<int, array{method:string,path:string,handler:string,middleware:string,cache_ttl:int}>
+     */
     public function getRoutes(): array
     {
         if ($this->routeListCache !== null) {
@@ -131,6 +148,7 @@ final class RouteMatcher
 
         foreach ($this->staticRoutes as $method => $paths) {
             foreach ($paths as $path => $route) {
+                /** @var array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
                 $routes[] = [
                     'method' => $method,
                     'path' => $path,
@@ -143,6 +161,7 @@ final class RouteMatcher
 
         foreach ($this->dynamicRoutes as $method => $routeList) {
             foreach ($routeList as $route) {
+                /** @var array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
                 $routes[] = [
                     'method' => $method,
                     'path' => $route['path'],
@@ -165,6 +184,9 @@ final class RouteMatcher
         return $routes;
     }
 
+    /**
+     * @return array{static:array<string,array<string,array{path:string,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>,dynamic:array<string,array<int,array{path:string,segments:array<int,string>,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>}
+     */
     public function export(): array
     {
         if (isset($this->exportCache['static'], $this->exportCache['dynamic'])) {
@@ -174,6 +196,7 @@ final class RouteMatcher
         $static = [];
         foreach ($this->staticRoutes as $method => $paths) {
             foreach ($paths as $path => $route) {
+                /** @var array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
                 $static[$method][$path] = [
                     'path' => $route['path'],
                     'handler' => self::handlerToString($route['handler']),
@@ -187,6 +210,7 @@ final class RouteMatcher
         $dynamic = [];
         foreach ($this->dynamicRoutes as $method => $routeList) {
             foreach ($routeList as $route) {
+                /** @var array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
                 $dynamic[$method][] = [
                     'path' => $route['path'],
                     'segments' => $route['segments'],
@@ -202,12 +226,16 @@ final class RouteMatcher
         return $this->exportCache;
     }
 
+    /**
+     * @param callable|array{0:class-string,1:string}|string $handler
+     */
     public static function handlerToString(callable|array|string $handler): string
     {
         if (is_string($handler)) {
             return $handler;
         }
         if (is_array($handler)) {
+            /** @var array{0:class-string,1:string} $handler */
             return $handler[0] . '@' . $handler[1];
         }
         return 'Closure';
@@ -221,12 +249,18 @@ final class RouteMatcher
         return 'callable';
     }
 
+    /**
+     * @return array<string, string>
+     */
     private function getWhereConstraints(string $method, string $path): array
     {
         $key = strtoupper($method) . ':' . self::normalizePath($path);
         return $this->whereConstraints[$key] ?? [];
     }
 
+    /**
+     * @return array<int, string>
+     */
     private function splitSegments(string $path): array
     {
         $trimmed = trim($path, '/');

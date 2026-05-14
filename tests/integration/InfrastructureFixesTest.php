@@ -23,9 +23,9 @@ final class InfrastructureFixesTest extends TestCase
         $this->demoPath = $this->siroSoftPath . '/demo-v1.0';
     }
 
-    public function testConsoleVersionIs0231(): void
+    public function testConsoleVersionIs0250(): void
     {
-        $this->assertSame('0.24.0', Console::VERSION);
+        $this->assertSame('0.25.0', Console::VERSION);
     }
 
     public function testDockerfileExists(): void

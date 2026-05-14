@@ -90,7 +90,7 @@ final class MigrateRollbackCommand implements \Siro\Core\Commands\CommandInterfa
         return 0;
     }
 
-    /** @return array<int, string> */
+    /** @return list<string> */
     private function lastAppliedMigrations(PDO $pdo, int $step): array
     {
         try {
@@ -98,8 +98,9 @@ final class MigrateRollbackCommand implements \Siro\Core\Commands\CommandInterfa
             $stmt->bindValue(':step', max(1, $step), PDO::PARAM_INT);
             $stmt->execute();
 
+            /** @var list<string> $rows */
             $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            return $rows ? array_values($rows) : [];
+            return $rows ? $rows : [];
         } catch (Throwable) {
             return [];
         }

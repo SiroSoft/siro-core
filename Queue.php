@@ -72,10 +72,16 @@ final class Queue
 
         $rows = '';
         foreach ($latest as $j) {
-            $rows .= '<tr><td>' . htmlspecialchars((string)($j['id'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars((string)($j['job'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>'
-                . '<td>' . htmlspecialchars((string)($j['attempts'] ?? 0), ENT_QUOTES, 'UTF-8') . '/' . htmlspecialchars((string)($j['max_attempts'] ?? 3), ENT_QUOTES, 'UTF-8') . '</td>'
-                . '<td>' . htmlspecialchars((string)($j['priority'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td>'
-                . '<td>' . htmlspecialchars(date('Y-m-d H:i:s', $j['available_at'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td></tr>';
+            $jId = $j['id'] ?? '';
+            $jJob = $j['job'] ?? '';
+            $jAttempts = $j['attempts'] ?? 0;
+            $jMaxAttempts = $j['max_attempts'] ?? 3;
+            $jPriority = $j['priority'] ?? 0;
+            $jAvailable = $j['available_at'] ?? 0;
+            $rows .= '<tr><td>' . htmlspecialchars(is_scalar($jId) ? (string) $jId : '', ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars(is_scalar($jJob) ? (string) $jJob : '', ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars(is_scalar($jAttempts) ? (string) $jAttempts : '0', ENT_QUOTES, 'UTF-8') . '/' . htmlspecialchars(is_scalar($jMaxAttempts) ? (string) $jMaxAttempts : '3', ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars(is_scalar($jPriority) ? (string) $jPriority : '0', ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars(date('Y-m-d H:i:s', is_numeric($jAvailable) ? (int) $jAvailable : 0), ENT_QUOTES, 'UTF-8') . '</td></tr>';
         }
 
         return '<!DOCTYPE html><html><head><title>Queue Dashboard - Siro</title>'
@@ -189,14 +195,17 @@ final class Queue
         $error = null;
 
         try {
-            $jobData = json_decode((string) $row['data'], true);
+            $rowData = is_string($row['data'] ?? null) ? $row['data'] : '[]';
+            $jobData = json_decode($rowData, true);
             if (!is_array($jobData)) {
                 $jobData = [];
             }
-            $timeout = (int) ($row['timeout'] ?? self::DEFAULT_TIMEOUT);
+            $timeoutVal = $row['timeout'] ?? self::DEFAULT_TIMEOUT;
+            $timeout = is_numeric($timeoutVal) ? (int) $timeoutVal : self::DEFAULT_TIMEOUT;
             $maxExecTime = time() + $timeout;
 
-            if (class_exists($row['job'])) {
+            $rowJob = $row['job'] ?? '';
+            if (is_string($rowJob) && class_exists($rowJob)) {
                 $class = $row['job'];
                 $instance = new $class();
 
@@ -216,8 +225,10 @@ final class Queue
         if ($success) {
             Database::execute("DELETE FROM jobs WHERE id = :id", ['id' => $row['id']]);
         } else {
-            $attempts = ((int) ($row['attempts'] ?? 0)) + 1;
-            $maxAttempts = (int) ($row['max_attempts'] ?? self::DEFAULT_MAX_ATTEMPTS);
+            $attemptsVal = $row['attempts'] ?? 0;
+            $attempts = (is_numeric($attemptsVal) ? (int) $attemptsVal : 0) + 1;
+            $maxAttemptsVal = $row['max_attempts'] ?? self::DEFAULT_MAX_ATTEMPTS;
+            $maxAttempts = is_numeric($maxAttemptsVal) ? (int) $maxAttemptsVal : self::DEFAULT_MAX_ATTEMPTS;
 
             if ($attempts >= $maxAttempts) {
                 Database::execute(
@@ -293,7 +304,8 @@ final class Queue
     {
         try {
             $row = Database::first("SELECT COUNT(*) AS count FROM jobs WHERE available_at <= :now", ['now' => time()]);
-            return (int) ($row['count'] ?? 0);
+            $countVal = $row['count'] ?? 0;
+            return is_numeric($countVal) ? (int) $countVal : 0;
         } catch (\Throwable) {
             return 0;
         }
@@ -306,7 +318,8 @@ final class Queue
     {
         try {
             $row = Database::first("SELECT COUNT(*) AS count FROM failed_jobs");
-            return (int) ($row['count'] ?? 0);
+            $countVal = $row['count'] ?? 0;
+            return is_numeric($countVal) ? (int) $countVal : 0;
         } catch (\Throwable) {
             return 0;
         }
@@ -321,7 +334,8 @@ final class Queue
             return [];
         }
 
-        $decoded = json_decode((string) $data, true);
+        $strData = is_string($data) ? $data : (is_scalar($data) ? (string) $data : '');
+        $decoded = json_decode($strData, true);
         return is_array($decoded) ? $decoded : [];
     }
 
@@ -332,9 +346,10 @@ final class Queue
                 $rows = Database::select("SELECT * FROM failed_jobs");
                 $count = 0;
                 foreach ($rows as $row) {
+                    $jobName = is_string($row['job'] ?? null) ? $row['job'] : '';
                     self::push(
-                        $row['job'],
-                        self::decodeJobData($row['data']),
+                        $jobName,
+                        self::decodeJobData($row['data'] ?? null),
                         0,
                         self::DEFAULT_PRIORITY,
                         self::DEFAULT_MAX_ATTEMPTS
@@ -350,9 +365,10 @@ final class Queue
                 return false;
             }
 
+            $jobName = is_string($row['job'] ?? null) ? $row['job'] : '';
             self::push(
-                $row['job'],
-                self::decodeJobData($row['data']),
+                $jobName,
+                self::decodeJobData($row['data'] ?? null),
                 0,
                 self::DEFAULT_PRIORITY,
                 self::DEFAULT_MAX_ATTEMPTS
