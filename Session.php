@@ -56,7 +56,7 @@ final class Session
         $cookieSession = isset($_COOKIE['siro_session']) && is_string($_COOKIE['siro_session']) ? $_COOKIE['siro_session'] : null;
         $this->sessionId = $sessionId ?? ($cookieSession ?? $this->generateId());
 
-        if (!preg_match('/^[a-f0-9]{64}$/', $this->sessionId)) {
+        if (preg_match('/^[a-f0-9]{64}$/', $this->sessionId) !== 1) {
             $this->sessionId = $this->generateId();
         }
 
