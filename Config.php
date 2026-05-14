@@ -32,7 +32,7 @@ final class Config
                 $sep = strrpos($payload, '.hmac.');
                 if ($sep !== false) {
                     $data = json_decode(substr($payload, 0, $sep), true);
-                    $hmac = substr($payload, $sep + 6);
+                    $hmac = trim(substr($payload, $sep + 6));
                     $secret = (string) \Siro\Core\Env::get('JWT_SECRET', '');
                     $expected = $secret !== '' ? hash_hmac('sha256', substr($payload, 0, $sep), $secret) : '';
                     if (is_array($data) && $secret !== '' && hash_equals($expected, $hmac)) {

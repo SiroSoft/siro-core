@@ -296,6 +296,8 @@ final class SecurityFixesTest extends TestCase
 
         $json = json_encode($exported, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $secret = 'test_jwt_secret_key_for_unit_tests_only_32chars!!';
+        putenv('JWT_SECRET=' . $secret);
+        $_ENV['JWT_SECRET'] = $secret;
         $hmac = hash_hmac('sha256', $json, $secret);
         $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
         file_put_contents($cacheFile, $content);

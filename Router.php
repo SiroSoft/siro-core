@@ -249,7 +249,7 @@ final class Router
             return false;
         }
         $json = substr($payload, 0, $sep);
-        $hmac = substr($payload, $sep + 6);
+        $hmac = trim(substr($payload, $sep + 6));
         $secret = (string) Env::get('JWT_SECRET', '');
         if ($secret === '' || !hash_equals(hash_hmac('sha256', $json, $secret), $hmac)) {
             return false;
@@ -274,7 +274,11 @@ final class Router
             mkdir($dir, 0775, true);
         }
 
-        /** @var array{}|array{static:array<string,array<string,array{path:string,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>,dynamic:array<string,array<int,array{path:string,segments:array<int,string>,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>} $data */
+        if ($this->matcherDirty) {
+            $this->rebuildMatcher();
+        }
+
+        /** @var array<string, array<string, array<int, array<string, mixed>>>> $data */
         $data = $this->matcher->export();
 
         foreach (['static', 'dynamic'] as $type) {
