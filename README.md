@@ -41,9 +41,9 @@ $ php siro why
 
 ---
 
-## The Siro Flow — All From Terminal
+## The Siro Flow — Integrated Terminal-Native Workflow
 
-**No Postman. No APM dashboard. No SSH log grepping. One tool: `php siro`.**
+**For local development and small-team API workflows, you rarely need to leave the terminal.**
 
 ```bash
 # ── BUILD ──────────────────────────────────────────────
@@ -66,18 +66,19 @@ php siro replay siro_a1b2c3       # Replay exact failed request
 php siro replay siro_a1b2c3 --edit # Edit body → test fix
 
 # ── MONITOR ────────────────────────────────────────────
-php siro log:tail
-php siro log:stats
-php siro doctor
-curl localhost:8080/health
-curl localhost:8080/metrics       # Prometheus built-in
+php siro log:tail                 # Local log streaming
+php siro log:stats                # Request stats
+php siro doctor                   # System health check
+curl localhost:8080/health        # HTTP health check
+curl localhost:8080/metrics       # Prometheus endpoint
 
 # ── DOCUMENT ───────────────────────────────────────────
 php siro make:openapi --with-swagger
 php siro route:list
 ```
 
-**Everything above is built-in. Zero packages. Zero external services. Zero config.**
+**Everything above is built-in — zero packages to install for these workflows.**  
+(For production-scale monitoring, Siro integrates with standard tools: Prometheus, Grafana, Datadog.)
 
 ---
 
