@@ -43,9 +43,17 @@ final class SqlCompiler
         return self::$driverNames[$key];
     }
 
+    /** @var array<string, string> */
+    private static array $quotedIdentifierCache = [];
+
     public function quoteIdentifier(string $identifier): string
     {
+        if (isset(self::$quotedIdentifierCache[$identifier])) {
+            return self::$quotedIdentifierCache[$identifier];
+        }
+
         if ($identifier === '*') {
+            self::$quotedIdentifierCache[$identifier] = $identifier;
             return $identifier;
         }
 
@@ -78,7 +86,9 @@ final class SqlCompiler
             }
         }
 
-        return implode('.', $parts);
+        $result = implode('.', $parts);
+        self::$quotedIdentifierCache[$identifier] = $result;
+        return $result;
     }
 
     public function quoteColumnList(string $columns): string

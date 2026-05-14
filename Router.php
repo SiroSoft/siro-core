@@ -236,7 +236,19 @@ final class Router
             return false;
         }
 
-        $data = json_decode(substr((string) file_get_contents($cacheFile), strlen('<?php exit; ?>')), true);
+        $raw = (string) file_get_contents($cacheFile);
+        $payload = substr($raw, strlen('<?php exit; ?>'));
+        $sep = strrpos($payload, '.hmac.');
+        if ($sep === false) {
+            return false;
+        }
+        $json = substr($payload, 0, $sep);
+        $hmac = substr($payload, $sep + 6);
+        $secret = (string) Env::get('JWT_SECRET', '');
+        if ($secret !== '' && !hash_equals(hash_hmac('sha256', $json, $secret), $hmac)) {
+            return false;
+        }
+        $data = json_decode($json, true);
         if (!is_array($data) || !isset($data['static'], $data['dynamic'])) {
             return false;
         }
@@ -273,7 +285,11 @@ final class Router
             }
         }
 
-        $content = '<?php exit; ?>' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json === false) { return false; }
+        $secret = (string) Env::get('JWT_SECRET', '');
+        $hmac = $secret !== '' ? hash_hmac('sha256', $json, $secret) : '';
+        $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
 
         return file_put_contents($cacheFile, $content) !== false;
     }

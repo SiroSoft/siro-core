@@ -110,13 +110,17 @@ final class ThrottleMiddleware implements MiddlewareInterface
 
         $storeDir = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'rate_limit';
         if (!is_dir($storeDir)) {
-            @mkdir($storeDir, 0775, true);
+            if (!mkdir($storeDir, 0775, true) && !is_dir($storeDir)) {
+                return Response::error('Too Many Requests', 429, [
+                    'throttle' => ['Rate limiter storage unavailable'],
+                ]);
+            }
         }
 
         $file = $storeDir . DIRECTORY_SEPARATOR . sha1($key) . '.json';
         $now = time();
 
-        $fp = @fopen($file, 'c+');
+        $fp = fopen($file, 'c+');
         if ($fp === false) {
             return Response::error('Too Many Requests', 429, [
                 'throttle' => ['Rate limiter fallback storage unavailable'],
@@ -184,8 +188,10 @@ final class ThrottleMiddleware implements MiddlewareInterface
             }
             return $response;
         } catch (Throwable) {
-            @flock($fp, LOCK_UN);
-            @fclose($fp);
+            if (is_resource($fp)) {
+                @flock($fp, LOCK_UN);
+                @fclose($fp);
+            }
             return Response::error('Too Many Requests', 429, [
                 'throttle' => ['Rate limiter fallback processing failed'],
             ]);

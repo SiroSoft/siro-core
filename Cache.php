@@ -34,7 +34,6 @@ final class Cache
     public static function reset(): void { self::getInstance()->reset(); }
     public static function resetRequestState(): void { self::getInstance()->resetRequestState(); }
     /** @return array<string, mixed> */
-    /** @return array<string, mixed> */
     public static function requestStatus(): array { $result = self::getInstance()->requestStatus(); return $result; }
     public static function get(string $key): mixed { return self::getInstance()->get($key); }
     public static function set(string $key, mixed $value, int $ttl = 60): bool { return self::getInstance()->set($key, $value, $ttl); }

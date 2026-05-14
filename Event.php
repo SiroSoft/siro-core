@@ -67,7 +67,18 @@ final class Event
      */
     public static function emit(string $event, mixed $payload = null): bool
     {
-        return self::instance()->dispatch($event, $payload);
+        $instance = self::$instance;
+        if ($instance === null || $instance->listeners === []) {
+            return true;
+        }
+        if (!isset($instance->listeners[$event]) && !str_contains($event, '*')) {
+            $hasWildcard = false;
+            foreach ($instance->listeners as $key => $val) {
+                if (str_contains($key, '*')) { $hasWildcard = true; break; }
+            }
+            if (!$hasWildcard) return true;
+        }
+        return $instance->dispatch($event, $payload);
     }
 
     /**

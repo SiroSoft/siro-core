@@ -150,7 +150,11 @@ final class App
         $contents = file_get_contents($file);
         $data = is_string($contents) ? json_decode($contents, true) : null;
         /** @var array<string, mixed>|null $data */
-        return is_array($data) ? $data : null;
+        $result = is_array($data) ? $data : null;
+        if ($result !== null && isset($result['message']) && is_string($result['message'])) {
+            $result['message'] = htmlspecialchars($result['message'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+        return $result;
     }
 
     /**

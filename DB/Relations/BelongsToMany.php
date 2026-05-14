@@ -153,12 +153,25 @@ class BelongsToMany
      */
     public function sync(array $relatedIds): void
     {
-        Database::transaction(function () use ($relatedIds) {
-            $this->detachAll();
-            foreach ($relatedIds as $relatedId) {
-                $this->attach($relatedId);
+        $current = Database::select(
+            "SELECT {$this->relatedKey} FROM {$this->quoteIdentifier($this->pivotTable)} WHERE {$this->quoteIdentifier($this->foreignKey)} = ?",
+            [$this->localValue]
+        );
+        $existingIds = [];
+        foreach ($current as $row) {
+            $val = $row[$this->relatedKey] ?? null;
+            if (is_int($val) || is_string($val)) {
+                $existingIds[] = $val;
             }
-        });
+        }
+        $toDetach = array_diff($existingIds, $relatedIds);
+        $toAttach = array_diff($relatedIds, $existingIds);
+        foreach ($toDetach as $id) {
+            $this->detach($id);
+        }
+        foreach ($toAttach as $id) {
+            $this->attach($id);
+        }
     }
 
     public function has(int|string $relatedId): bool

@@ -52,11 +52,9 @@ final class DatabaseInstance implements DatabaseInterface
             $pdo = $this->pdoInstances[$name];
             try {
                 $pdo->query('SELECT 1');
+                return $pdo;
             } catch (\Throwable) {
                 unset($this->pdoInstances[$name]);
-            }
-            if (isset($this->pdoInstances[$name])) {
-                return $pdo;
             }
         }
 

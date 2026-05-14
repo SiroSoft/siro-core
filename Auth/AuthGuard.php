@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core\Auth;
 
 use Siro\Core\Container;
+use Siro\Core\Logger;
 use Siro\Core\Request;
 
 final class AuthGuard
@@ -65,7 +66,8 @@ final class AuthGuard
             $this->userData = $user;
             $this->userData['claims'] = $claims;
             return $this->userData;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Logger::error($e);
             return null;
         }
     }

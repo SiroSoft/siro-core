@@ -22,18 +22,25 @@ final class Config
         $cacheFile = dirname(self::$configPath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'config.php';
 
-        // Check cache first - avoid reading all config files if cache exists and is fresh
         if (is_file($cacheFile)) {
             $cacheModified = filemtime($cacheFile);
             $configModified = self::getConfigDirMtime(self::$configPath);
 
             if ($cacheModified !== false && $configModified !== false && $cacheModified >= $configModified) {
-                $cached = json_decode(substr((string) file_get_contents($cacheFile), strlen('<?php exit; ?>')), true);
-                if (is_array($cached)) {
-                    /** @var array<string, mixed> $cached */
-                    self::$items = $cached;
-                    self::$loaded = true;
-                    return;
+                $raw = (string) file_get_contents($cacheFile);
+                $payload = substr($raw, strlen('<?php exit; ?>'));
+                $sep = strrpos($payload, '.hmac.');
+                if ($sep !== false) {
+                    $data = json_decode(substr($payload, 0, $sep), true);
+                    $hmac = substr($payload, $sep + 6);
+                    $secret = (string) \Siro\Core\Env::get('JWT_SECRET', '');
+                    $expected = $secret !== '' ? hash_hmac('sha256', substr($payload, 0, $sep), $secret) : '';
+                    if (is_array($data) && ($secret === '' || hash_equals($expected, $hmac))) {
+                        /** @var array<string, mixed> $data */
+                        self::$items = $data;
+                        self::$loaded = true;
+                        return;
+                    }
                 }
             }
         }
@@ -151,7 +158,11 @@ final class Config
         }
 
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'config.php';
-        $content = '<?php exit; ?>' . json_encode(self::$items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        $json = json_encode(self::$items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json === false) { return null; }
+        $secret = (string) \Siro\Core\Env::get('JWT_SECRET', '');
+        $hmac = $secret !== '' ? hash_hmac('sha256', $json, $secret) : '';
+        $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
 
         if (file_put_contents($cacheFile, $content) !== false) {
             return $cacheFile;

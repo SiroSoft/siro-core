@@ -55,33 +55,28 @@ final class Session
         $cookieSession = isset($_COOKIE['siro_session']) && is_string($_COOKIE['siro_session']) ? $_COOKIE['siro_session'] : null;
         $this->sessionId = $sessionId ?? ($cookieSession ?? $this->generateId());
 
-        // Validate session ID format (prevent path traversal via cookie)
         if (!preg_match('/^[a-f0-9]{64}$/', $this->sessionId)) {
             $this->sessionId = $this->generateId();
         }
 
-        // Validate session ID exists in storage when provided from cookie (prevent fixation)
-        if ($sessionId === null && isset($_COOKIE['siro_session'])) {
-            if ($this->driver === self::DRIVER_REDIS) {
-                $this->loadFromRedis();
-                if ($this->data === []) {
-                    $this->sessionId = $this->generateId();
-                }
-            } else {
-                $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
-                if (!is_file($path)) {
-                    $this->sessionId = $this->generateId();
-                } else {
-                    $this->loadFromFile();
-                }
-            }
+        if ($this->driver === self::DRIVER_REDIS) {
+            $this->loadFromRedis();
         } else {
-            if ($this->driver === self::DRIVER_REDIS) {
-                $this->loadFromRedis();
-            } else {
-                $this->loadFromFile();
-            }
+            $this->loadFromFile();
         }
+        if ($this->data === []) {
+            $this->sessionId = $this->generateId();
+        }
+
+        $idleTimeout = (int) Env::get('SESSION_IDLE_TIMEOUT', '1800');
+        $lastActivity = isset($this->data['_last_activity']) && is_numeric($this->data['_last_activity']) ? (int) $this->data['_last_activity'] : 0;
+        if ($lastActivity > 0 && (time() - $lastActivity) > $idleTimeout) {
+            $this->destroy();
+            $this->sessionId = $this->generateId();
+            $this->data = [];
+            $lastActivity = 0;
+        }
+        $this->data['_last_activity'] = time();
 
         $this->started = true;
 
@@ -161,7 +156,13 @@ final class Session
         }
 
         if (!headers_sent()) {
-            setcookie('siro_session', '', time() - 3600, '/');
+            setcookie('siro_session', '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
         }
     }
 

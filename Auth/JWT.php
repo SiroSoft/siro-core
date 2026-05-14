@@ -293,12 +293,18 @@ final class JWT
         self::$keyVersion = $version;
     }
 
-    public static function rotateKey(string $newSecret): void
+    public static function rotateKey(string $newSecret, string $envPath = ''): void
     {
         $newVersion = (int) self::getKeyVersion() + 1;
         putenv("JWT_KEY_VERSION={$newVersion}");
         putenv("JWT_SECRET={$newSecret}");
         self::$keyVersion = (string) $newVersion;
+        if ($envPath !== '' && is_file($envPath) && is_writable($envPath)) {
+            $content = (string) file_get_contents($envPath);
+            $content = (string) preg_replace('/^JWT_SECRET=.*$/m', 'JWT_SECRET=' . $newSecret, $content);
+            $content = (string) preg_replace('/^JWT_KEY_VERSION=.*$/m', 'JWT_KEY_VERSION=' . $newVersion, $content);
+            file_put_contents($envPath, $content, LOCK_EX);
+        }
     }
 
     private static function previousSecret(): string

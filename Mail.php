@@ -330,6 +330,7 @@ final class Mail
             throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");
         }
 
+        try {
         $this->smtpReadResponse($socket);
         $this->smtpCommand($socket, "EHLO localhost");
 
@@ -394,7 +395,11 @@ final class Mail
         $this->smtpCommand($socket, "QUIT");
         $this->smtpReadResponse($socket);
 
-        fclose($socket);
+        } finally {
+            if (is_resource($socket)) {
+                fclose($socket);
+            }
+        }
         return true;
     }
 

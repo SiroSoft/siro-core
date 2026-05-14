@@ -232,7 +232,7 @@ final class Validator
                 $parts = explode(',', $requiredIf, 2);
                 $otherField = trim($parts[0]);
                 $otherValue = trim($parts[1] ?? '');
-                if ($otherField !== '' && ($input[$otherField] ?? null) == $otherValue) {
+                if ($otherField !== '' && ($input[$otherField] ?? null) === $otherValue) {
                     $isRequired = true;
                 }
             }

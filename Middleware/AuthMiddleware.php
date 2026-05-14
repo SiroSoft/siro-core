@@ -17,14 +17,13 @@ final class AuthMiddleware implements MiddlewareInterface
     public function handle(Request $request, callable $next, string ...$roles): mixed
     {
         $header = (string) $request->header('authorization', '');
-        $matches = [];
-        if (!preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {
+        if (!str_starts_with(strtolower($header), 'bearer ')) {
             return Response::error('Unauthorized', 401, [
                 'token' => ['Invalid or expired token'],
             ]);
         }
 
-        $token = trim((string) $matches[1]);
+        $token = trim(substr($header, 7));
         if ($token === '') {
             return Response::error('Unauthorized', 401, [
                 'token' => ['Invalid or expired token'],
@@ -39,13 +38,7 @@ final class AuthMiddleware implements MiddlewareInterface
             $userId = is_numeric($sub) ? (int) $sub : 0;
             $tokenVersion = is_numeric($ver) ? (int) $ver : 0;
 
-            if ($userId <= 0) {
-                return Response::error('Unauthorized', 401, [
-                    'token' => ['Invalid or expired token'],
-                ]);
-            }
-
-            if ($tokenVersion <= 0) {
+            if ($userId <= 0 || $tokenVersion <= 0) {
                 return Response::error('Unauthorized', 401, [
                     'token' => ['Invalid or expired token'],
                 ]);
