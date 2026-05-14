@@ -245,7 +245,7 @@ final class Router
         $json = substr($payload, 0, $sep);
         $hmac = substr($payload, $sep + 6);
         $secret = (string) Env::get('JWT_SECRET', '');
-        if ($secret !== '' && !hash_equals(hash_hmac('sha256', $json, $secret), $hmac)) {
+        if ($secret === '' || !hash_equals(hash_hmac('sha256', $json, $secret), $hmac)) {
             return false;
         }
         $data = json_decode($json, true);
@@ -265,7 +265,7 @@ final class Router
     {
         $dir = dirname($cacheFile);
         if (!is_dir($dir)) {
-            !is_dir($dir) && mkdir($dir, 0775, true);
+            mkdir($dir, 0775, true);
         }
 
         /** @var array{}|array{static:array<string,array<string,array{path:string,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>,dynamic:array<string,array<int,array{path:string,segments:array<int,string>,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>} $data */
@@ -404,17 +404,11 @@ final class Router
     /** @param callable|array{0:class-string,1:string}|string $handler */
     private function runHandler(callable|array|string $handler, Request $request): Response
     {
-        if (is_callable($handler)) {
-            try {
-                $response = $handler($request);
-            } catch (\ArgumentCountError) {
-                $response = $handler();
-            }
-            return $this->normalizeHandlerResult($response);
-        }
-
         if (is_array($handler)) {
             [$class, $method] = $handler;
+            if (!is_string($class) || !is_string($method)) {
+                throw new RuntimeException('Invalid route handler format. Expected [className, methodName].');
+            }
             $controller = $this->resolveController($class);
             if (!method_exists($controller, $method)) {
                 throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
@@ -429,6 +423,15 @@ final class Router
             } catch (\ArgumentCountError) {
                 return $this->normalizeHandlerResult($controller->{$method}());
             }
+        }
+
+        if (is_callable($handler)) {
+            try {
+                $response = $handler($request);
+            } catch (\ArgumentCountError) {
+                $response = $handler();
+            }
+            return $this->normalizeHandlerResult($response);
         }
 
         [$class, $method] = explode('@', $handler, 2) + [null, null];

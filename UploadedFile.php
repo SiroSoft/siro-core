@@ -243,9 +243,21 @@ final class UploadedFile
 
     public static function maxSize(): int
     {
-        $maxUpload = (int) ini_get('upload_max_filesize');
-        $maxPost = (int) ini_get('post_max_size');
-        return min($maxUpload, $maxPost) * 1024 * 1024;
+        return min(self::parseIniSize((string) ini_get('upload_max_filesize')), self::parseIniSize((string) ini_get('post_max_size')));
+    }
+
+    private static function parseIniSize(string $value): int
+    {
+        $value = trim((string) $value);
+        if ($value === '') return 0;
+        $unit = strtolower(substr($value, -1));
+        $size = (int) $value;
+        return match ($unit) {
+            'g' => $size * 1024 * 1024 * 1024,
+            'm' => $size * 1024 * 1024,
+            'k' => $size * 1024,
+            default => $size,
+        };
     }
 
     private function generateFilename(): string

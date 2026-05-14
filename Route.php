@@ -195,7 +195,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ private static function registerRoute(string $method, string $path, callable|array|string $handler): self
+    private static function registerRoute(string $method, string $path, callable|array|string $handler): self
     {
         $router = self::$routerInstance;
         

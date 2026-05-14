@@ -8,7 +8,11 @@ use RuntimeException;
 
 final class Session
 {
+    public const DRIVER_FILE = 'file';
+    public const DRIVER_REDIS = 'redis';
+
     private static ?Session $instance = null;
+    private static ?\Redis $redisInstance = null;
     private string $driver;
     private string $filePath;
     private string $sessionId;
@@ -18,12 +22,9 @@ final class Session
     private array $flash = [];
     private bool $started = false;
 
-    public const DRIVER_FILE = 'file';
-    public const DRIVER_REDIS = 'redis';
-
     public function __construct(?string $driver = null)
     {
-        $this->driver = $driver ?? (is_string(Env::get('SESSION_DRIVER', self::DRIVER_FILE)) ? Env::get('SESSION_DRIVER', self::DRIVER_FILE) : self::DRIVER_FILE);
+        $this->driver = $driver ?? (is_string($sessionDriver = Env::get('SESSION_DRIVER', self::DRIVER_FILE)) ? $sessionDriver : self::DRIVER_FILE);
         $basePath = '';
         if (defined('BASE_PATH') && is_string(BASE_PATH)) {
             $basePath = BASE_PATH;
@@ -170,6 +171,13 @@ final class Session
     {
         $oldId = $this->sessionId;
         $this->sessionId = $this->generateId();
+
+        // Save current data under new session ID
+        if ($this->driver !== self::DRIVER_REDIS) {
+            $this->saveToFile();
+        } else {
+            $this->saveToRedis();
+        }
 
         // Remove old session file
         if ($this->driver !== self::DRIVER_REDIS) {
@@ -320,7 +328,10 @@ final class Session
         }
 
         $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
-        file_put_contents($path, json_encode($this->data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+        $encoded = json_encode($this->data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($encoded !== false) {
+            file_put_contents($path, $encoded, LOCK_EX);
+        }
     }
 
     private function loadFromRedis(): void
@@ -347,13 +358,14 @@ final class Session
             $redis = $this->getRedis();
             if ($redis !== null) {
                 $ttl = 86400 * 30;
-                $redis->setex('session:' . $this->sessionId, $ttl, json_encode($this->data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                $encoded = json_encode($this->data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                if ($encoded !== false) {
+                    $redis->setex('session:' . $this->sessionId, $ttl, $encoded);
+                }
             }
         } catch (\Throwable) {
         }
     }
-
-    private static ?\Redis $redisInstance = null;
 
     private function getRedis(): ?\Redis
     {

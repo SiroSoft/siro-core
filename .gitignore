@@ -11,6 +11,7 @@ Thumbs.db
 .idea/
 
 /coverage/
+/storage/sbom/
 
 # Temporary verification files
 *.VERIFICATION.md

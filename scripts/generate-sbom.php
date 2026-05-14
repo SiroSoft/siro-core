@@ -6,12 +6,22 @@ $composerJson = json_decode(file_get_contents(__DIR__ . '/../composer.json'), tr
 $composerLock = json_decode(file_get_contents(__DIR__ . '/../composer.lock'), true);
 
 $components = [];
+$normalizeLicenses = function (mixed $license): array {
+    if (is_array($license)) {
+        return array_map(fn(string $l): array => ['license' => ['id' => $l]], $license);
+    }
+    if (is_string($license) && $license !== '') {
+        return [['license' => ['id' => $license]]];
+    }
+    return [['license' => ['id' => 'Unknown']]];
+};
+
 foreach ($composerLock['packages'] ?? [] as $pkg) {
     $components[] = [
         'type' => 'library',
         'name' => $pkg['name'],
         'version' => $pkg['version'] ?? 'unknown',
-        'licenses' => array_map(fn($l) => ['license' => ['id' => $l]], $pkg['license'] ?? ['Unknown']),
+        'licenses' => $normalizeLicenses($pkg['license'] ?? 'Unknown'),
         'purl' => 'pkg:composer/' . $pkg['name'] . '@' . ($pkg['version'] ?? 'unknown'),
         'externalReferences' => [
             ['type' => 'vcs', 'url' => $pkg['source']['url'] ?? ''],
@@ -23,7 +33,7 @@ foreach ($composerLock['packages-dev'] ?? [] as $pkg) {
         'type' => 'library',
         'name' => $pkg['name'],
         'version' => $pkg['version'] ?? 'unknown',
-        'licenses' => array_map(fn($l) => ['license' => ['id' => $l]], $pkg['license'] ?? ['Unknown']),
+        'licenses' => $normalizeLicenses($pkg['license'] ?? 'Unknown'),
         'purl' => 'pkg:composer/' . $pkg['name'] . '@' . ($pkg['version'] ?? 'unknown'),
         'externalReferences' => [
             ['type' => 'vcs', 'url' => $pkg['source']['url'] ?? ''],

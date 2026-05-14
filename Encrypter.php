@@ -41,11 +41,6 @@ final class Encrypter
         }
         $hmacLength = 32;
         $ivLength = max(1, openssl_cipher_iv_length(self::CIPHER));
-        $minLength = $hmacLength + $ivLength;
-
-        if (strlen($data) < $minLength) {
-            throw new RuntimeException('Invalid encrypted payload.');
-        }
 
         $hmac = substr($data, 0, $hmacLength);
         $iv = substr($data, $hmacLength, $ivLength);
@@ -66,11 +61,11 @@ final class Encrypter
     /** @return array{enc: string, auth: string} */
     private static function key(?string $key): array
     {
-        $key ??= Env::get('APP_KEY', '');
+        $key ??= (string) Env::get('APP_KEY', '');
         if ($key === '') {
-            $key = Env::get('JWT_SECRET', '');
+            $key = (string) Env::get('JWT_SECRET', '');
         }
-        if ($key === '' || $key === null) {
+        if ($key === '') {
             throw new RuntimeException('Encryption key not configured. Set APP_KEY or JWT_SECRET in .env.');
         }
         $raw = hash('sha256', $key, true);

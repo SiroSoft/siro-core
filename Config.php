@@ -35,7 +35,7 @@ final class Config
                     $hmac = substr($payload, $sep + 6);
                     $secret = (string) \Siro\Core\Env::get('JWT_SECRET', '');
                     $expected = $secret !== '' ? hash_hmac('sha256', substr($payload, 0, $sep), $secret) : '';
-                    if (is_array($data) && ($secret === '' || hash_equals($expected, $hmac))) {
+                    if (is_array($data) && $secret !== '' && hash_equals($expected, $hmac)) {
                         /** @var array<string, mixed> $data */
                         self::$items = $data;
                         self::$loaded = true;

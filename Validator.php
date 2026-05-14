@@ -106,7 +106,7 @@ final class Validator
 
         // File validation
         self::registerStrategy('file', function ($value): ?string {
-            return (!$value instanceof UploadedFile || !$value->isValid()) ? self::message('file', 'validation.file') : null;
+            return (!($value instanceof UploadedFile) || !$value->isValid()) ? self::message('file', 'validation.file') : null;
         });
 
         // Min validation (handles strings, numbers, files)
@@ -275,6 +275,7 @@ final class Validator
                         $errors[$field][] = str_replace(':field', self::label($field), $msg);
                         continue;
                     }
+                    continue;
                 }
 
                 // Check built-in strategy rules
@@ -389,6 +390,6 @@ final class Validator
 
     private static function label(string $field): string
     {
-        return ucfirst(str_replace('_', ' ', $field));
+        return htmlspecialchars(ucfirst(str_replace('_', ' ', $field)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 }

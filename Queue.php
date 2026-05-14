@@ -98,8 +98,8 @@ final class Queue
             . '.badge-green{background:#e6ffe6;color:#0a0}'
             . '.badge-red{background:#ffe6e6;color:#c00}</style></head><body>'
             . '<h1>Queue Dashboard</h1>'
-            . '<div class="stat"><h3>Pending Jobs</h3><div class="num">' . $pending . '</div></div>'
-            . '<div class="stat"><h3>Failed Jobs</h3><div class="num">' . $failed . '</div></div>'
+            . '<div class="stat"><h3>Pending Jobs</h3><div class="num">' . htmlspecialchars((string) $pending, ENT_QUOTES, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Failed Jobs</h3><div class="num">' . htmlspecialchars((string) $failed, ENT_QUOTES, 'UTF-8') . '</div></div>'
             . '<div class="stat"><h3>Jobs / Table</h3><div class="num">jobs</div></div>'
             . '<h2>Recent Jobs</h2>'
             . '<table><thead><tr><th>ID</th><th>Job</th><th>Attempts</th><th>Priority</th><th>Available</th></tr></thead><tbody>'
@@ -200,14 +200,13 @@ final class Queue
             if (!is_array($jobData)) {
                 $jobData = [];
             }
-            $timeoutVal = $row['timeout'] ?? self::DEFAULT_TIMEOUT;
-            $timeout = is_numeric($timeoutVal) ? (int) $timeoutVal : self::DEFAULT_TIMEOUT;
+            $timeoutVal = isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] : self::DEFAULT_TIMEOUT;
+            $timeout = $timeoutVal;
             $maxExecTime = time() + $timeout;
 
             $rowJob = $row['job'] ?? '';
             if (is_string($rowJob) && class_exists($rowJob)) {
-                $class = $row['job'];
-                $instance = new $class();
+                $instance = new $rowJob();
 
                 if (method_exists($instance, 'handle')) {
                     $handler = $instance->handle(...);
@@ -352,7 +351,8 @@ final class Queue
                         self::decodeJobData($row['data'] ?? null),
                         0,
                         self::DEFAULT_PRIORITY,
-                        self::DEFAULT_MAX_ATTEMPTS
+                        self::DEFAULT_MAX_ATTEMPTS,
+                        isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] : self::DEFAULT_TIMEOUT
                     );
                     Database::execute("DELETE FROM failed_jobs WHERE id = :id", ['id' => $row['id']]);
                     $count++;
@@ -371,7 +371,8 @@ final class Queue
                 self::decodeJobData($row['data'] ?? null),
                 0,
                 self::DEFAULT_PRIORITY,
-                self::DEFAULT_MAX_ATTEMPTS
+                self::DEFAULT_MAX_ATTEMPTS,
+                isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] : self::DEFAULT_TIMEOUT
             );
             Database::execute("DELETE FROM failed_jobs WHERE id = :id", ['id' => $row['id']]);
             return true;
