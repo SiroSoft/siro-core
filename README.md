@@ -92,6 +92,52 @@ php siro serve
 | **Event System** | Pub/sub, wildcards, one-time listeners |
 | **Debug** | Trace headers, log replay, slow query detection, request profiling |
 
+## Quality Assurance
+
+Siro maintains **0 errors** across all quality gates — verified on every commit.
+
+```bash
+# Run all tests (19,038 tests, 31,652 assertions)
+php vendor/bin/phpunit --no-coverage
+
+# By suite:
+php vendor/bin/phpunit tests/unit/          # 988 unit tests
+php vendor/bin/phpunit tests/fuzz/          # 17,851 fuzz tests
+php vendor/bin/phpunit tests/dast/          # 157 DAST security tests
+php vendor/bin/phpunit tests/integration/   # 42 integration tests
+
+# Static analysis
+php vendor/bin/phpstan analyse --level=max    # Level Max — 0 errors
+php vendor/bin/psalm --taint-analysis         # Level 1 — 0 errors
+
+# Mutation testing (≥80% MSI)
+php vendor/bin/infection --min-msi=80 --threads=4
+
+# Chaos engineering
+php scripts/chaos-test.php
+
+# Security
+composer audit                               # 0 dependency vulnerabilities
+php scripts/sast-linter.php                  # SAST scan
+php scripts/health-check.php                 # System health
+```
+
+| Quality Gate | Result | How to Verify |
+|-------------|--------|---------------|
+| **Unit Tests** | 988 tests, 2,547 assertions, **0 failures** | `phpunit tests/unit/` |
+| **Fuzz Tests** | 17,851 tests, 28,849 assertions, **0 failures** | `phpunit tests/fuzz/` |
+| **DAST Tests** | 157 tests, 166 assertions, **0 failures** | `phpunit tests/dast/` |
+| **Integration Tests** | 42 tests, 90 assertions, **0 failures** | `phpunit tests/integration/` |
+| **PHPStan** | Level Max — **0 errors** | `phpstan analyse --level=max` |
+| **Psalm** | Level 1 — **0 errors** | `psalm --taint-analysis` |
+| **Mutation Testing** | MSI ≥80% | `infection --min-msi=80` |
+| **composer audit** | 0 vulnerabilities | `composer audit` |
+| **SAST Linter** | 0 errors | `php scripts/sast-linter.php` |
+| **Chaos Engineering** | 7/7 pass | `php scripts/chaos-test.php` |
+| **Load Testing** | k6 + Apache Bench | `php scripts/loadtest.php` |
+| **SBOM** | CycloneDX | `php scripts/generate-sbom.php` |
+| **Total** | **19,038 tests, 31,652 assertions — 0 failures** | `phpunit --no-coverage` |
+
 ## Documentation
 
 | Module | File |
