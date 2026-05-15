@@ -44,9 +44,8 @@ class BelongsToMany
             throw new \RuntimeException('Invalid identifier: SQL injection attempt detected');
         }
 
-        // Don't quote function calls or expressions with parentheses
-        if (str_contains($identifier, '(')) {
-            return $identifier;
+        if (str_contains($identifier, '(') || str_contains($identifier, ')')) {
+            throw new \RuntimeException('Invalid identifier: function calls and parentheses not allowed');
         }
 
         $driver = Database::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
@@ -112,6 +111,7 @@ class BelongsToMany
         $foreignKey = $this->quoteIdentifier($this->foreignKey);
         $relatedKey = $this->quoteIdentifier($this->relatedKey);
 
+        /** @var array<int, array<string, mixed>> $exists */
         $exists = Database::select(
             "SELECT COUNT(*) FROM {$pivotTable} WHERE {$foreignKey} = ? AND {$relatedKey} = ?",
             [$this->localValue, $relatedId]
@@ -153,12 +153,25 @@ class BelongsToMany
      */
     public function sync(array $relatedIds): void
     {
-        Database::transaction(function () use ($relatedIds) {
-            $this->detachAll();
-            foreach ($relatedIds as $relatedId) {
-                $this->attach($relatedId);
+        $current = Database::select(
+            "SELECT {$this->relatedKey} FROM {$this->quoteIdentifier($this->pivotTable)} WHERE {$this->quoteIdentifier($this->foreignKey)} = ?",
+            [$this->localValue]
+        );
+        $existingIds = [];
+        foreach ($current as $row) {
+            $val = $row[$this->relatedKey] ?? null;
+            if (is_int($val) || is_string($val)) {
+                $existingIds[] = $val;
             }
-        });
+        }
+        $toDetach = array_diff($existingIds, $relatedIds);
+        $toAttach = array_diff($relatedIds, $existingIds);
+        foreach ($toDetach as $id) {
+            $this->detach($id);
+        }
+        foreach ($toAttach as $id) {
+            $this->attach($id);
+        }
     }
 
     public function has(int|string $relatedId): bool
@@ -167,6 +180,7 @@ class BelongsToMany
         $foreignKey = $this->quoteIdentifier($this->foreignKey);
         $relatedKey = $this->quoteIdentifier($this->relatedKey);
 
+        /** @var array<int, array<string, mixed>> $exists */
         $exists = Database::select(
             "SELECT COUNT(*) FROM {$pivotTable} WHERE {$foreignKey} = ? AND {$relatedKey} = ?",
             [$this->localValue, $relatedId]

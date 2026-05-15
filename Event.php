@@ -67,7 +67,18 @@ final class Event
      */
     public static function emit(string $event, mixed $payload = null): bool
     {
-        return self::instance()->dispatch($event, $payload);
+        $instance = self::$instance;
+        if ($instance === null || $instance->listeners === []) {
+            return true;
+        }
+        if (!isset($instance->listeners[$event]) && !str_contains($event, '*')) {
+            $hasWildcard = false;
+            foreach ($instance->listeners as $key => $val) {
+                if (str_contains($key, '*')) { $hasWildcard = true; break; }
+            }
+            if (!$hasWildcard) return true;
+        }
+        return $instance->dispatch($event, $payload);
     }
 
     /**
@@ -132,22 +143,28 @@ final class Event
         $this->currentEvent = $event;
         $matched = $this->getListeners($event);
 
-        foreach ($matched as $index => $listener) {
+        foreach ($matched as $listener) {
             $result = ($listener['callback'])($payload);
-
-            if ($listener['once']) {
-                unset($this->listeners[$event][$index]);
-            }
 
             if ($result === false) {
                 return false;
             }
         }
 
+        // Cleanup one-time listeners registered under concrete events
+        if (isset($this->listeners[$event])) {
+            $this->listeners[$event] = array_filter(
+                $this->listeners[$event],
+                fn(array $l): bool => !$l['once']
+            );
+            if ($this->listeners[$event] === []) {
+                unset($this->listeners[$event]);
+            }
+        }
+
         return true;
     }
 
-    /** @return array<int, array{callback: callable, once: bool}> */
     /** @var array<string, array<int, array{callback: callable, once: bool}>>|null */
     private ?array $wildcardIndex = null;
 
@@ -163,6 +180,7 @@ final class Event
         }
     }
 
+    /** @return array<int, array{callback: callable, once: bool}> */
     private function getListeners(string $event): array
     {
         $matched = $this->listeners[$event] ?? [];
@@ -171,10 +189,12 @@ final class Event
             $this->buildWildcardIndex();
         }
 
-        foreach ($this->wildcardIndex as $pattern => $listeners) {
-            if (preg_match($pattern, $event)) {
-                foreach ($listeners as $listener) {
-                    $matched[] = $listener;
+        if (is_array($this->wildcardIndex)) {
+            foreach ($this->wildcardIndex as $pattern => $listeners) {
+                if (preg_match($pattern, $event)) {
+                    foreach ($listeners as $listener) {
+                        $matched[] = $listener;
+                    }
                 }
             }
         }

@@ -1,70 +1,22 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^PHPDoc tag @var with type class\-string is not subtype of native type ''App\\\\Models\\\\User''\.$#'
-			identifier: varTag.nativeType
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
 			count: 1
-			path: App.php
+			path: Model.php
 
 		-
-			message: '#^Method Siro\\Core\\Metrics\:\:key\(\) has parameter \$labels with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
 			count: 1
-			path: Metrics.php
+			path: Model.php
 
 		-
-			message: '#^Method Siro\\Core\\Metrics\:\:labelsKey\(\) has parameter \$labels with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Metrics.php
-
-		-
-			message: '#^Method Siro\\Core\\Metrics\:\:parseLabelsKey\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Metrics.php
-
-		-
-			message: '#^Offset ''help'' on array\{buckets\: array\<int, float\>, values\: array\<string, array\<int, int\>\>, sum\: array\<string, float\>, count\: array\<string, int\>\} on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: Metrics.php
-
-		-
-			message: '#^Parameter \#2 \$contentType of static method Siro\\Core\\Response\:\:raw\(\) expects string, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Metrics.php
-
-		-
-			message: '#^Path in require\(\) "storage/framework/metrics\.php" is not a file or it does not exist\.$#'
-			identifier: require.fileNotFound
-			count: 1
-			path: Metrics.php
-
-		-
-			message: '#^Method Siro\\Core\\Middleware\\VersionMiddleware\:\:override\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Middleware/VersionMiddleware.php
-
-		-
-			message: '#^Method Siro\\Core\\Middleware\\VersionMiddleware\:\:resolveOverride\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Middleware/VersionMiddleware.php
-
-		-
-			message: '#^Static property Siro\\Core\\Middleware\\VersionMiddleware\:\:\$overrides \(array\<string, array\<string, \(callable\(\)\: mixed\)\|string\>\>\) does not accept non\-empty\-array\<string, array\|\(callable\(\)\: mixed\)\|string\>\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: Middleware/VersionMiddleware.php
-
-		-
-			message: '#^Static property Siro\\Core\\Middleware\\VersionMiddleware\:\:\$versions is never read, only written\.$#'
-			identifier: property.onlyWritten
-			count: 1
-			path: Middleware/VersionMiddleware.php
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 4
+			path: Model.php
 
 		-
 			message: '#^Method Siro\\Core\\Model\:\:find\(\) should return static\(Siro\\Core\\Model\)\|null but returns Siro\\Core\\Model\.$#'
@@ -75,6 +27,12 @@ parameters:
 		-
 			message: '#^Method Siro\\Core\\Model\:\:hydrateAll\(\) should return array\<int, static\(Siro\\Core\\Model\)\> but returns array\<int, Siro\\Core\\Model\>\.$#'
 			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
+			identifier: argument.type
 			count: 1
 			path: Model.php
 
@@ -91,19 +49,31 @@ parameters:
 			path: Model.php
 
 		-
+			message: '#^Parameter \#4 \$foreignValue of class Siro\\Core\\DB\\Relations\\BelongsTo constructor expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#4 \$localValue of class Siro\\Core\\DB\\Relations\\HasMany constructor expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#4 \$localValue of class Siro\\Core\\DB\\Relations\\HasOne constructor expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Parameter \#6 \$localValue of class Siro\\Core\\DB\\Relations\\BelongsToMany constructor expects int\|string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model.php
+
+		-
 			message: '#^Unsafe usage of new static\(\)\.$#'
 			identifier: new.static
 			count: 2
 			path: Model.php
-
-		-
-			message: '#^Method Siro\\Core\\Request\:\:setVersionedHandler\(\) has parameter \$handler with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Request.php
-
-		-
-			message: '#^Method Siro\\Core\\Request\:\:versionedHandler\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Request.php

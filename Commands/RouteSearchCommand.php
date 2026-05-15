@@ -33,7 +33,10 @@ final class RouteSearchCommand implements \Siro\Core\Commands\CommandInterface {
         $matched = [];
 
         foreach ($routes as $route) {
-            $haystack = $route['method'] . ' ' . $route['path'] . ' ' . $route['handler'];
+            $routeMethod = $route['method'];
+            $routePath = $route['path'];
+            $routeHandler = $route['handler'];
+            $haystack = $routeMethod . ' ' . $routePath . ' ' . $routeHandler;
             if (str_contains(strtolower($haystack), strtolower($keyword))) {
                 $matched[] = $route;
             }
@@ -51,12 +54,16 @@ final class RouteSearchCommand implements \Siro\Core\Commands\CommandInterface {
 
         $this->table(
             ['Method', 'Path', 'Handler', 'Middleware'],
-            array_map(fn (array $r) => [
-                $r['method'],
-                $r['path'],
-                $r['handler'],
-                $r['middleware'] . ($r['cache_ttl'] > 0 ? ' [cache:' . $r['cache_ttl'] . 's]' : ''),
-            ], $matched)
+            array_map(function (array $r): array {
+                $cacheTtl = $r['cache_ttl'];
+                $meta = $r['middleware'] . ($cacheTtl > 0 ? ' [cache:' . $cacheTtl . 's]' : '');
+                return [
+                    $r['method'],
+                    $r['path'],
+                    $r['handler'],
+                    $meta,
+                ];
+            }, $matched)
         );
 
         return 0;

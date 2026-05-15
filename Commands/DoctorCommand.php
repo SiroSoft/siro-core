@@ -101,12 +101,14 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
             $this->printCheck('APP_DEBUG', $appDebug . ' (should be false)', $appDebug === 'false');
             if ($appDebug !== 'false') $allPassed = false;
 
-            $httpsOk = Env::get('APP_URL', '') !== '' && str_starts_with((string) Env::get('APP_URL', ''), 'https://');
-            $this->printCheck('HTTPS', Env::get('APP_URL', 'not set'), $httpsOk);
+            $appUrl = sprintf('%s', Env::get('APP_URL', ''));
+            $httpsOk = $appUrl !== '' && str_starts_with($appUrl, 'https://');
+            $this->printCheck('HTTPS', $appUrl !== '' ? $appUrl : 'not set', $httpsOk);
             if (!$httpsOk) $allPassed = false;
 
-            $corsOk = Env::get('CORS_ALLOWED_ORIGINS', '') !== '';
-            $this->printCheck('CORS', $corsOk ? Env::get('CORS_ALLOWED_ORIGINS', '') : 'Not configured', $corsOk);
+            $corsOrigins = sprintf('%s', Env::get('CORS_ALLOWED_ORIGINS', ''));
+            $corsOk = $corsOrigins !== '';
+            $this->printCheck('CORS', $corsOk ? $corsOrigins : 'Not configured', $corsOk);
             if (!$corsOk) {
                 $this->write("    ⚠️  Set CORS_ALLOWED_ORIGINS to prevent unauthorized access\n");
             }

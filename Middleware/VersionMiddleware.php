@@ -23,7 +23,7 @@ final class VersionMiddleware implements MiddlewareInterface
     /** @var array<int, string> Registered versions with their path prefixes */
     private static array $versions = [];
 
-    /** @var array<string, array<string, callable|string>> Versioned route overrides */
+    /** @var array<string, callable|string|array<int, mixed>> Versioned route overrides */
     private static array $overrides = [];
 
     private static int $latestVersion = 1;
@@ -38,6 +38,7 @@ final class VersionMiddleware implements MiddlewareInterface
      * Register a route override for a specific version.
      * Example: VersionMiddleware::override(2, 'GET', '/users', V2UserController::class);
      */
+    /** @param callable|string|array<int, mixed> $handler */
     public static function override(int $version, string $method, string $path, callable|string|array $handler): void
     {
         self::$overrides["{$version}:{$method}:{$path}"] = $handler;
@@ -55,7 +56,7 @@ final class VersionMiddleware implements MiddlewareInterface
         return self::$latestVersion;
     }
 
-    /** @return callable|string|array|null */
+    /** @return callable|string|array<int, mixed>|null */
     public static function resolveOverride(int $version, string $method, string $path): mixed
     {
         $key = "{$version}:{$method}:{$path}";

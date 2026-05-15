@@ -9,6 +9,7 @@ interface CacheInterface
     public function boot(string $basePath): void;
     public function reset(): void;
     public function resetRequestState(): void;
+    /** @return array<string, mixed> */
     public function requestStatus(): array;
     public function get(string $key): mixed;
     public function set(string $key, mixed $value, int $ttl = 60): bool;

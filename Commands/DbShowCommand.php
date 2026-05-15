@@ -87,11 +87,12 @@ final class DbShowCommand implements \Siro\Core\Commands\CommandInterface {
         $headers = ['Column', 'Type', 'Nullable', 'Default'];
         $rows = [];
         foreach ($columns as $col) {
+            /** @var array<string, mixed> $col */
             $rows[] = [
-                $col['name'] ?? $col['COLUMN_NAME'] ?? '',
-                $col['type'] ?? $col['COLUMN_TYPE'] ?? '',
-                $col['nullable'] ?? ($col['IS_NULLABLE'] ?? ''),
-                $col['default'] ?? $col['COLUMN_DEFAULT'] ?? '',
+                $this->safeStr($col['name'] ?? $col['COLUMN_NAME'] ?? ''),
+                $this->safeStr($col['type'] ?? $col['COLUMN_TYPE'] ?? ''),
+                $this->safeStr($col['nullable'] ?? ($col['IS_NULLABLE'] ?? '')),
+                $this->safeStr($col['default'] ?? $col['COLUMN_DEFAULT'] ?? ''),
             ];
         }
 
@@ -102,7 +103,8 @@ final class DbShowCommand implements \Siro\Core\Commands\CommandInterface {
     private function showData(string $table, int $limit): int
     {
         $count = Database::first("SELECT COUNT(*) AS c FROM {$this->quote($table)}");
-        $total = (int) ($count['c'] ?? 0);
+        $countC = is_array($count) ? $count['c'] ?? 0 : 0;
+        $total = is_numeric($countC) ? (int) $countC : 0;
 
         $this->write("Table: {$table} ({$total} rows)");
         $this->write('');
@@ -125,7 +127,7 @@ final class DbShowCommand implements \Siro\Core\Commands\CommandInterface {
             $data[] = array_map(function (mixed $val): string {
                 if ($val === null) return 'NULL';
                 if (is_bool($val)) return $val ? 'true' : 'false';
-                $s = (string) $val;
+                $s = $this->safeStr($val);
                 return strlen($s) > 60 ? mb_substr($s, 0, 60) . '...' : $s;
             }, array_values($row));
         }

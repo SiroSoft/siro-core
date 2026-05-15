@@ -242,12 +242,18 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  +---------------------------+-------------+---------------+---------------+');
 
         foreach ($benchmarks as $result) {
+            /** @var array<string, mixed> $result */
+            $name = $this->safeStr($result['name'] ?? '');
+            $micro = $this->safeStr($result['microseconds'] ?? '0');
+            $ops = $result['ops_per_second'] ?? 0;
+            $opsNum = is_numeric($ops) ? (float) $ops : 0;
+            $rating = $this->safeStr($result['rating'] ?? '');
             $this->write(sprintf(
                 '  | %-25s | %-11s | %-13s | %-13s |',
-                $result['name'],
-                $result['microseconds'] . ' μs',
-                number_format($result['ops_per_second']),
-                $result['rating']
+                $name,
+                $micro . ' μs',
+                number_format($opsNum),
+                $rating
             ));
         }
 

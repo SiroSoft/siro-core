@@ -41,8 +41,10 @@ final class RateStatusCommand implements \Siro\Core\Commands\CommandInterface {
                 continue;
             }
 
-            $count = (int) ($data['count'] ?? 0);
-            $expiresAt = (int) ($data['expires_at'] ?? 0);
+            $countVal = $data['count'] ?? 0;
+            $expiresVal = $data['expires_at'] ?? 0;
+            $count = is_numeric($countVal) ? (int) $countVal : 0;
+            $expiresAt = is_numeric($expiresVal) ? (int) $expiresVal : 0;
             $remaining = max(0, $expiresAt - $now);
             $hash = basename($file, '.json');
 

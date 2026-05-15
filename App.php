@@ -71,10 +71,11 @@ final class App
         $container->singleton(\Siro\Core\Logger\LoggerInterface::class, fn () => new \Siro\Core\Logger\LoggerInstance());
 
         // Database config loaded but NO connection opened yet
-        $dbConfig = (array) Config::get('database', []);
-        if ($dbConfig === []) {
+        $dbConfig = Config::get('database', []);
+        if (!is_array($dbConfig) || $dbConfig === []) {
             $dbConfig = (array) require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
         }
+        /** @var array<string, mixed> $dbConfig */
         Database::configure($dbConfig);
 
         // Lazy-boot Cache (only initializes config, no connection)
@@ -102,8 +103,7 @@ final class App
             }
         }
 
-        /** @var class-string $userModelClass */
-        $userModelClass = \Siro\Core\Env::get('USER_MODEL_CLASS', 'App\\Models\\User');
+        $userModelClass = (string) \Siro\Core\Env::get('USER_MODEL_CLASS', 'App\\Models\\User');
         if (class_exists($userModelClass)) {
             $container->bind('auth.provider', function () use ($userModelClass) {
                 return new \Siro\Core\Auth\ModelUserProvider($userModelClass);
@@ -137,11 +137,24 @@ final class App
     /** @return array<string, mixed>|null */
     public static function isDown(): ?array
     {
-        $basePath = defined('SIRO_BASE_PATH') ? SIRO_BASE_PATH : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__));
-        $file = (string) $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down';
+        $basePath = '';
+        if (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH)) {
+            $basePath = SIRO_BASE_PATH;
+        } elseif (defined('BASE_PATH') && is_string(BASE_PATH)) {
+            $basePath = BASE_PATH;
+        } else {
+            $basePath = (string) dirname(__DIR__);
+        }
+        $file = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down';
         if (!file_exists($file)) { return null; }
-        $data = json_decode((string) file_get_contents($file), true);
-        return is_array($data) ? $data : null;
+        $contents = file_get_contents($file);
+        $data = is_string($contents) ? json_decode($contents, true) : null;
+        /** @var array<string, mixed>|null $data */
+        $result = is_array($data) ? $data : null;
+        if ($result !== null && isset($result['message']) && is_string($result['message'])) {
+            $result['message'] = htmlspecialchars($result['message'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+        return $result;
     }
 
     /**
@@ -153,7 +166,18 @@ final class App
         Cache::resetRequestState();
         $requestStartedAt = microtime(true);
         $method = 'GET'; $path = '/'; $status = 500;
-        $traceId = bin2hex(random_bytes(8));
+        // W3C Trace Context: accept incoming, propagate outgoing
+        $incomingTraceparent = isset($_SERVER['HTTP_TRACEPARENT']) && is_string($_SERVER['HTTP_TRACEPARENT']) ? $_SERVER['HTTP_TRACEPARENT'] : '';
+        $traceId = bin2hex(random_bytes(16));
+        $spanId = bin2hex(random_bytes(8));
+
+        if (preg_match('/^[0-9a-f]{2}-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/', $incomingTraceparent, $m) === 1) {
+            $traceId = $m[1];
+            $traceparent = sprintf('00-%s-%s-01', $traceId, $spanId);
+        } else {
+            $traceparent = sprintf('00-%s-%s-01', $traceId, $spanId);
+        }
+
         Response::setRequestMeta($traceId, $requestStartedAt);
 
         try {
@@ -163,10 +187,13 @@ final class App
 
             $maintenance = self::isDown();
             if ($maintenance !== null) {
-                $allowed = (array) ($maintenance['allow'] ?? []);
+                $allowedArr = $maintenance['allow'] ?? [];
+                $allowed = is_array($allowedArr) ? $allowedArr : [];
                 if (!in_array($request->ip(), $allowed, true)) {
-                    $retry = max(0, (int) ($maintenance['retry'] ?? 60));
-                    $resp = Response::error((string) ($maintenance['message'] ?? 'Under maintenance'), 503);
+                    $retryVal = $maintenance['retry'] ?? 60;
+                    $retry = max(0, is_numeric($retryVal) ? (int) $retryVal : 60);
+                    $msgVal = $maintenance['message'] ?? 'Under maintenance';
+                    $resp = Response::error(is_string($msgVal) ? $msgVal : 'Under maintenance', 503);
                     $resp->header('Retry-After', (string) $retry)->header('X-Siro-Trace-Id', $traceId);
                     $resp->send(); $status = 503; return;
                 }
@@ -178,9 +205,10 @@ final class App
             $status = $response->statusCode();
             $this->attachDebugMeta();
 
-            // Always add security headers (fastest path — single header set)
+            // Always add security and trace headers
             $response->header('X-Siro-Trace-Id', $traceId)
-                     ->header('X-Response-Time', (string) round((microtime(true) - $requestStartedAt) * 1000, 2));
+                     ->header('X-Response-Time', (string) round((microtime(true) - $requestStartedAt) * 1000, 2))
+                     ->header('traceparent', $traceparent);
             $response->send();
         } catch (ValidationException $e) {
             $this->attachDebugMeta();
@@ -188,25 +216,10 @@ final class App
             $status = $errorResponse->statusCode();
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (Throwable $e) {
+            Logger::error($e);
+            $errors = [];
             if ($this->showDebugTrace) {
-                $previous = '';
-                $prev = $e->getPrevious();
-                while ($prev !== null) {
-                    $previous .= $prev::class . ': ' . $prev->getMessage() . ' in ' . $prev->getFile() . ':' . $prev->getLine() . "\n";
-                    $prev = $prev->getPrevious();
-                }
-                $errors = [
-                    'type' => $e::class,
-                    'message' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => $e->getTraceAsString(),
-                    'previous' => $previous !== '' ? rtrim($previous) : null,
-                    'method' => $method,
-                    'path' => $path,
-                ];
-            } else {
-                $errors = [];
+                $errors = ['error_id' => $traceId];
             }
             $this->attachDebugMeta();
             $errorResponse = Response::error('Internal Server Error', 500, $errors);
@@ -214,7 +227,9 @@ final class App
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } finally {
             $timeMs = (microtime(true) - $requestStartedAt) * 1000;
-            Logger::request($method, $path, $status, $timeMs, $_SERVER['REMOTE_ADDR'] ?? '', $traceId, $_SERVER['HTTP_USER_AGENT'] ?? '');
+            $remoteAddr = isset($_SERVER['REMOTE_ADDR']) && is_string($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+            $userAgent = isset($_SERVER['HTTP_USER_AGENT']) && is_string($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+            Logger::request($method, $path, $status, $timeMs, $remoteAddr, $traceId, $userAgent);
             if ($timeMs > 100) { Logger::slowRequest($method, $path, $status, $timeMs); }
 
             $bootTimeMs = ($this->startedAt > 0) ? (microtime(true) - $this->startedAt) * 1000 : 0;
@@ -264,6 +279,38 @@ final class App
             throw new RuntimeException(
                 'JWT_SECRET is missing or too weak (min 32 chars). Run: php siro key:generate'
             );
+        }
+    }
+
+    /**
+     * Graceful shutdown handler.
+     * Flushes session, persists metrics, releases queue locks.
+     * Call on SIGTERM/SIGINT for clean container/process termination.
+     */
+    public static function shutdown(): void
+    {
+        if (class_exists(Session::class)) {
+            try {
+                $session = Session::instance();
+                if ($session->isStarted()) {
+                    $session->save();
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        if (class_exists(Cache::class)) {
+            try {
+                Cache::resetRequestState();
+            } catch (\Throwable) {
+            }
+        }
+
+        if (class_exists(\Siro\Core\Metrics::class)) {
+            try {
+                \Siro\Core\Metrics::persistNow();
+            } catch (\Throwable) {
+            }
         }
     }
 }

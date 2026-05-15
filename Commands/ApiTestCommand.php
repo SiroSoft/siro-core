@@ -205,6 +205,7 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
 
         for ($i = 0; $i < $loop; $i++) {
             $start = microtime(true);
+            /** @var array<string, mixed> $fields */
             $statusCode = $this->sendInternal($method, $path, $fields, $customHeaders, $contentType, $as);
             $elapsed = (microtime(true) - $start) * 1000;
             $totalMs += $elapsed;
@@ -222,11 +223,15 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         if ($collectionSave !== null) {
+            /** @var array<string, mixed> $fields */
+            /** @var array<int, string> $customHeaders */
             $this->saveToCollection($collectionSave, $method, $path, $fields, $customHeaders, $contentType, $as);
             $this->write("  \033[32m✓ Saved to collection '{$collectionSave}'.\033[0m");
         }
 
         if ($watch) {
+            /** @var array<string, mixed> $fields */
+            /** @var array<int, string> $customHeaders */
             $this->watchMode($method, $path, $fields, $customHeaders, $contentType, $as);
         }
 
@@ -324,11 +329,17 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         string $contentType,
         ?string $as
     ): void {
+        /** @var array<string, array<string, mixed>> $collections */
+        /** @var array<string, array<string, mixed>> $collections */
         $collections = $this->loadCollections();
         if (!isset($collections[$name])) {
             $collections[$name] = ['name' => $name, 'requests' => []];
         }
-        $collections[$name]['requests'][] = [
+        /** @var array<string, mixed> $collection */
+        $collection = $collections[$name];
+        /** @var list<array<string, mixed>> $requests */
+        $requests = $collection['requests'] ?? [];
+        $requests[] = [
             'method' => $method,
             'path' => $path,
             'fields' => $fields,
@@ -336,6 +347,7 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             'content_type' => $contentType,
             'as' => $as,
         ];
+        $collection['requests'] = $requests;
         $dir = dirname($this->collectionFile);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -347,10 +359,16 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $collections = $this->loadCollections();
         $col = $collections[$name] ?? null;
-        if ($col === null) {
+        if (!is_array($col)) {
             $this->write("Collection '{$name}' not found.");
             $this->write('Use --collection-list to see available collections.');
             return 1;
+        }
+
+        /** @var array<int, array<string, mixed>> $requests */
+        $requests = $col['requests'] ?? [];
+        if ($requests === []) {
+            $requests = [];
         }
 
         $this->write("Running collection: \033[1;33m{$name}\033[0m");
@@ -358,16 +376,22 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
 
         $passed = 0;
         $failed = 0;
-        foreach ($col['requests'] as $i => $req) {
-            $label = "{$req['method']} {$req['path']}";
-            $this->write("  \033[90m[" . ($i + 1) . '/' . count($col['requests']) . "]\033[0m {$label}");
+        foreach ($requests as $i => $req) {
+            $reqMethod = $this->safeStr($req['method'] ?? '');
+            $reqPath = $this->safeStr($req['path'] ?? '');
+            $label = $reqMethod . ' ' . $reqPath;
+            $this->write("  \033[90m[" . ($i + 1) . '/' . count($requests) . "]\033[0m " . $label);
+            /** @var array<string, mixed> $reqFields */
+            $reqFields = is_array($req['fields'] ?? null) ? $req['fields'] : [];
+            /** @var array<int, string> $reqHeaders */
+            $reqHeaders = is_array($req['headers'] ?? null) ? $req['headers'] : [];
             $code = $this->sendInternal(
-                $req['method'],
-                $req['path'],
-                $req['fields'] ?? [],
-                $req['headers'] ?? [],
-                $req['content_type'] ?? 'json',
-                $req['as'] ?? null,
+                $reqMethod,
+                $reqPath,
+                $reqFields,
+                $reqHeaders,
+                $this->safeStr($req['content_type'] ?? 'json'),
+                isset($req['as']) ? (is_string($req['as']) ? $req['as'] : null) : null,
             );
             if ($code === 0) {
                 $passed++;
@@ -392,11 +416,23 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
 
         $this->table(
             ['Name', 'Requests', 'Last updated'],
-            array_map(fn ($c) => [
-                $c['name'],
-                (string) count($c['requests']),
-                $c['requests'] !== [] ? ($c['requests'][count($c['requests']) - 1]['method'] . ' ' . $c['requests'][count($c['requests']) - 1]['path']) : '-',
-            ], array_values($collections))
+            array_map(function (mixed $c): array {
+                if (!is_array($c)) {
+                    return ['', '0', '-'];
+                }
+                $requests = $c['requests'] ?? [];
+                $name = $this->safeStr($c['name'] ?? '');
+                $count = is_array($requests) ? count($requests) : 0;
+                $lastUpdated = '-';
+                if (is_array($requests) && $requests !== []) {
+                    $lastReq = $requests[$count - 1];
+                    $lastUpdated = '';
+                    if (is_array($lastReq)) {
+                        $lastUpdated = $this->safeStr($lastReq['method'] ?? '') . ' ' . $this->safeStr($lastReq['path'] ?? '');
+                    }
+                }
+                return [$name, (string) $count, $lastUpdated];
+            }, array_values($collections))
         );
         $this->write('');
         $this->write('Run: php siro api:test --collection=<name>');
@@ -411,8 +447,12 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         if (!is_file($this->collectionFile)) {
             return [];
         }
-        $data = json_decode((string) file_get_contents($this->collectionFile), true);
-        return is_array($data) ? $data : [];
+        $raw = json_decode((string) file_get_contents($this->collectionFile), true);
+        if (!is_array($raw)) {
+            return [];
+        }
+        /** @var array<string, mixed> $raw */
+        return $raw;
     }
 
     // ─── Core logic (unchanged) ────────────────────
@@ -536,11 +576,8 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             if ($as !== null && $statusCode < 300) {
                 $decoded = json_decode($body, true);
                 if (is_array($decoded)) {
-                    $t = $decoded['data']['token']
-                       ?? $decoded['data']['access_token']
-                       ?? $decoded['token']
-                       ?? $decoded['access_token']
-                       ?? null;
+                    $dataArr = isset($decoded['data']) && is_array($decoded['data']) ? $decoded['data'] : [];
+                    $t = $dataArr['token'] ?? $dataArr['access_token'] ?? $decoded['token'] ?? $decoded['access_token'] ?? null;
 
                     if (is_string($t) && strlen($t) >= 10) {
                         $tokens = $this->loadTokens();
@@ -556,6 +593,7 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
                 }
             }
 
+            /** @var array<int, string> $customHeaders */
             $this->saveHistory($method, $pathOnly, $fields, $customHeaders, $statusCode, $duration, $memory, $as);
 
         } catch (\Throwable $e) {
@@ -581,7 +619,8 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
     private function getToken(string $role): ?string
     {
         $tokens = $this->loadTokens();
-        return $tokens[$role] ?? null;
+        $token = $tokens[$role] ?? null;
+        return is_string($token) ? $token : null;
     }
 
     /**
@@ -592,8 +631,12 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         if (!is_file($this->authFile)) {
             return [];
         }
-        $data = json_decode((string) file_get_contents($this->authFile), true);
-        return is_array($data) ? $data : [];
+        $raw = json_decode((string) file_get_contents($this->authFile), true);
+        if (!is_array($raw)) {
+            return [];
+        }
+        /** @var array<string, mixed> $raw */
+        return $raw;
     }
 
     /**
@@ -636,8 +679,12 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         if (!is_file($this->historyFile)) {
             return [];
         }
-        $data = json_decode((string) file_get_contents($this->historyFile), true);
-        return is_array($data) ? $data : [];
+        $raw = json_decode((string) file_get_contents($this->historyFile), true);
+        if (!is_array($raw)) {
+            return [];
+        }
+        /** @var array<int, array<string, mixed>> $raw */
+        return $raw;
     }
 
     private function showHistory(int $limit): int
@@ -653,16 +700,19 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
 
         $this->table(
             ['#', 'Time', 'Method', 'Path', 'Status', 'Time', 'Mem', 'As'],
-            array_map(fn ($i, $e) => [
-                (string) ($i + 1),
-                $e['time'] ?? '?',
-                $e['method'],
-                $e['path'],
-                (string) ($e['status'] ?? '?'),
-                ($e['duration_ms'] ?? '?') . 'ms',
-                ($e['memory_mb'] ?? '?') . 'MB',
-                $e['as'] ?? '-',
-            ], array_keys($history), $history)
+            array_map(function (int $i, array $e): array {
+                $as = array_key_exists('as', $e) ? $e['as'] : null;
+                return [
+                    $this->safeStr($i + 1),
+                    $this->safeStr($e['time'] ?? '?'),
+                    $this->safeStr($e['method'] ?? ''),
+                    $this->safeStr($e['path'] ?? ''),
+                    $this->safeStr($e['status'] ?? '?'),
+                    $this->safeStr($e['duration_ms'] ?? '?') . 'ms',
+                    $this->safeStr($e['memory_mb'] ?? '?') . 'MB',
+                    $as !== null && $as !== '' ? $this->safeStr($as) : '-',
+                ];
+            }, array_keys($history), $history)
         );
         $this->write('');
         $this->write('Total: ' . count($history) . ' requests');

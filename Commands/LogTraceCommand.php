@@ -77,17 +77,17 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write(str_repeat('=', 56));
         $this->write('  Trace: ' . $traceId);
         $this->write(str_repeat('-', 56));
-        $this->write('  Time:    ' . ($data['timestamp'] ?? '?'));
-        $this->write('  Method:  ' . ($data['method'] ?? '?') . ' ' . ($data['path'] ?? '?'));
-        $this->write('  Status:  ' . ($data['status'] ?? '?') . ' (' . ($data['time_ms'] ?? '?') . 'ms)');
-        $this->write('  IP:      ' . ($data['ip'] ?? '?'));
-        $this->write('  Host:    ' . ($data['host'] ?? '?'));
+        $this->write('  Time:    ' . $this->safeStr($data['timestamp'] ?? '?'));
+        $this->write('  Method:  ' . $this->safeStr($data['method'] ?? '?') . ' ' . $this->safeStr($data['path'] ?? '?'));
+        $this->write('  Status:  ' . $this->safeStr($data['status'] ?? '?') . ' (' . $this->safeStr($data['time_ms'] ?? '?') . 'ms)');
+        $this->write('  IP:      ' . $this->safeStr($data['ip'] ?? '?'));
+        $this->write('  Host:    ' . $this->safeStr($data['host'] ?? '?'));
 
         if (isset($data['memory_mb'])) {
-            $this->write('  Memory:  ' . $data['memory_mb'] . 'MB');
+            $this->write('  Memory:  ' . $this->safeStr($data['memory_mb']) . 'MB');
         }
 
-        $requestBody = $data['request_body'] ?? '';
+        $requestBody = $this->safeStr($data['request_body'] ?? '');
         if ($requestBody !== '' && $requestBody !== '[]' && $requestBody !== '{}') {
             $this->write('');
             $this->write('  Request Body:');
@@ -95,7 +95,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             if ($full) {
                 $formatted = json_decode($displayBody, true);
                 if (is_array($formatted)) {
-                    foreach (explode("\n", (string) json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) as $line) {
+                    foreach (explode("\n", $this->safeStr(json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))) as $line) {
                         $this->write('    ' . $line);
                     }
                 } else {
@@ -106,7 +106,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        $responseBody = $data['response_body'] ?? '';
+        $responseBody = $this->safeStr($data['response_body'] ?? '');
         if ($responseBody !== '' && $responseBody !== '[]' && $responseBody !== '{}') {
             $this->write('');
             $this->write('  Response Body:');
@@ -114,7 +114,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             if ($full) {
                 $formatted = json_decode($displayBody, true);
                 if (is_array($formatted)) {
-                    foreach (explode("\n", (string) json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) as $line) {
+                    foreach (explode("\n", $this->safeStr(json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))) as $line) {
                         $this->write('    ' . $line);
                     }
                 } else {
@@ -125,7 +125,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        $authHeader = $data['auth_header'] ?? '';
+        $authHeader = $this->safeStr($data['auth_header'] ?? '');
         if ($authHeader !== '') {
             $this->write('');
             $this->write('  Auth: ' . mb_substr($authHeader, 0, 50) . '...');
@@ -135,11 +135,11 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('');
             $this->write('  Request Headers:');
             foreach ($data['request_headers'] as $key => $value) {
-                $k = strtolower((string) $key);
+                $k = strtolower($this->safeStr($key));
                 if ($k === 'authorization' || $k === 'cookie') {
-                    $this->write('    ' . $key . ': [REDACTED]');
+                    $this->write('    ' . $this->safeStr($key) . ': [REDACTED]');
                 } else {
-                    $this->write('    ' . $key . ': ' . $value);
+                    $this->write('    ' . $this->safeStr($key) . ': ' . $this->safeStr($value));
                 }
             }
         }
@@ -149,14 +149,20 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  SQL Queries (' . count($data['queries']) . '):');
             $totalTime = 0;
             foreach ($data['queries'] as $i => $q) {
-                $totalTime += (float) ($q['time_ms'] ?? 0);
-                $sql = $q['sql'] ?? '?';
+                /** @var array<string, mixed> $q */
+                $queryTime = $q['time_ms'] ?? 0;
+                $totalTime += is_numeric($queryTime) ? (float) $queryTime : 0;
+                $sql = $this->safeStr($q['sql'] ?? '?');
                 if (!$full && mb_strlen($sql) > 120) {
                     $sql = mb_substr($sql, 0, 120) . '...';
                 }
+                $rowsCount = $q['rows'] ?? 0;
+                $queryMs = $q['time_ms'] ?? 0;
                 $this->write(sprintf(
                     '    %d. %s [%d rows, %.2fms]',
-                    $i + 1, $sql, $q['rows'] ?? 0, $q['time_ms'] ?? 0
+                    $i + 1, $sql,
+                    is_numeric($rowsCount) ? (int) $rowsCount : 0,
+                    is_numeric($queryMs) ? (float) $queryMs : 0
                 ));
             }
             $this->write(sprintf('    Total SQL time: %.2fms', $totalTime));
@@ -203,21 +209,24 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
                 continue;
             }
 
-            if ($status !== null && ((int) ($data['status'] ?? 0)) !== $status) {
+            $dataStatus = $data['status'] ?? 0;
+            $dataMethod = $this->safeStr($data['method'] ?? '');
+            $dataTimeMs = $data['time_ms'] ?? 0;
+            if ($status !== null && (is_numeric($dataStatus) ? (int) $dataStatus : 0) !== $status) {
                 continue;
             }
-            if ($method !== null && strtoupper($data['method'] ?? '') !== $method) {
+            if ($method !== null && strtoupper($dataMethod) !== $method) {
                 continue;
             }
-            if ($slow && (float) ($data['time_ms'] ?? 0) < 100) {
+            if ($slow && (is_numeric($dataTimeMs) ? (float) $dataTimeMs : 0) < 100) {
                 continue;
             }
 
             $id = basename($file, '.json');
-            $m = $data['method'] ?? '?';
-            $s = (string) ($data['status'] ?? '?');
-            $t = ($data['time_ms'] ?? '?') . 'ms';
-            $p = $data['path'] ?? '?';
+            $m = $this->safeStr($data['method'] ?? '?');
+            $s = $this->safeStr($data['status'] ?? '?');
+            $t = $this->safeStr($data['time_ms'] ?? '?') . 'ms';
+            $p = $this->safeStr($data['path'] ?? '?');
 
             $this->write(str_pad($id, 20) . ' ' . str_pad($m, 8) . ' ' . str_pad($s, 7) . ' ' . str_pad($t, 8) . ' ' . $p);
             $count++;

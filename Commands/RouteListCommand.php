@@ -37,9 +37,11 @@ final class RouteListCommand implements \Siro\Core\Commands\CommandInterface {
 
         $rows = [];
         foreach ($routes as $route) {
-            $meta = $route['middleware'] !== '' ? $route['middleware'] : '-';
-            if ($route['cache_ttl'] > 0) {
-                $meta .= ' [cache:' . $route['cache_ttl'] . 's]';
+            $middleware = $route['middleware'];
+            $cacheTtl = $route['cache_ttl'];
+            $meta = $middleware !== '' ? $middleware : '-';
+            if ($cacheTtl > 0) {
+                $meta .= ' [cache:' . $cacheTtl . 's]';
             }
 
             $rows[] = [$route['method'], $route['path'], $route['handler'], $meta];

@@ -1,0 +1,40 @@
+name: SLSA Provenance
+on:
+  release:
+    types: [published]
+
+permissions:
+  id-token: write
+  contents: read
+  attestations: write
+
+jobs:
+  attest:
+    name: Generate SLSA Attestation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Generate SBOM
+        run: php scripts/generate-sbom.php
+      - name: Attest SBOM
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: 'storage/sbom/*.json'
+      - name: Create Release Artifact
+        run: |
+          tar czf siro-core-${GITHUB_REF_NAME}.tar.gz \
+            --exclude=vendor \
+            --exclude=tests \
+            --exclude=.git \
+            --exclude=storage \
+            .
+      - name: Attest Release Archive
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: 'siro-core-*.tar.gz'

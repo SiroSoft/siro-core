@@ -49,7 +49,7 @@ final class MakeEventCommand implements \Siro\Core\Commands\CommandInterface {
             return 0;
         }
 
-        $eventName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $className));
+        $eventName = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $className));
 
         $content = <<<PHP
 <?php

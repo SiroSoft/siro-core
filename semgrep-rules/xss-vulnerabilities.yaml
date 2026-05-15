@@ -1,0 +1,9 @@
+rules:
+  - id: unescaped-output
+    patterns:
+      - pattern: echo "... $var ..."
+      - pattern-not: echo "... htmlspecialchars(...) ..."
+      - pattern-not: echo "... strip_tags(...) ..."
+    message: "Potential XSS - output without escaping"
+    languages: [php]
+    severity: WARNING

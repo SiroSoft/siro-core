@@ -36,17 +36,19 @@ class HasMany
     public function getForeignKey(): string { return $this->foreignKey; }
     public function getLocalKey(): string { return $this->localKey; }
 
-    /** @param array<int, mixed> $parameters */
+    /** @param array<string, mixed> $data */
     public function create(array $data): \Siro\Core\Model
     {
         $data[$this->foreignKey] = $this->localValue;
         $modelClass = $this->relatedClass;
+        /** @var \Siro\Core\Model $model */
         $model = new $modelClass();
         $model->fill($data);
         $model->save();
         return $model;
     }
 
+    /** @param list<mixed> $parameters */
     public function __call(string $method, array $parameters): mixed
     {
         return $this->query()->{$method}(...$parameters);

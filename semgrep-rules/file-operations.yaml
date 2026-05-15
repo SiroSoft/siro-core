@@ -1,0 +1,19 @@
+rules:
+  - id: file-include-with-var
+    patterns:
+      - pattern-either:
+          - pattern: include("... $var ...")
+          - pattern: require("... $var ...")
+          - pattern: include_once("... $var ...")
+          - pattern: require_once("... $var ...")
+          - pattern: file_get_contents("... $var ...")
+          - pattern: unserialize(...)
+      - pattern-not: |
+          unserialize(...)
+    message: "Dynamic file inclusion or unsafe deserialization"
+    languages: [php]
+    severity: ERROR
+    paths:
+      exclude:
+        - "tests/"
+        - "vendor/"

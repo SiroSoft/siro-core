@@ -122,6 +122,7 @@ final class Route
             $middleware = [$middleware];
         }
 
+        /** @var array<int, callable|string> $middleware */
         $this->router->setRouteMiddleware($this->method, $this->path, $middleware);
         return $this;
     }
@@ -160,6 +161,9 @@ final class Route
         return $this;
     }
 
+    /**
+     * @param array<string, string> $params
+     */
     public static function url(string $name, array $params = []): ?string
     {
         $route = self::$namedRoutes[$name] ?? null;
@@ -191,7 +195,7 @@ final class Route
      * @param callable|array{0:class-string,1:string}|string $handler
      * @return self
      */
-    /** @param callable|array{0:class-string,1:string}|string $handler */ private static function registerRoute(string $method, string $path, callable|array|string $handler): self
+    private static function registerRoute(string $method, string $path, callable|array|string $handler): self
     {
         $router = self::$routerInstance;
         
@@ -202,6 +206,7 @@ final class Route
         }
         
         $lowerMethod = strtolower($method);
+        /** @var Route $route */
         $route = $router->{$lowerMethod}($path, $handler);
         
         return $route;
@@ -232,12 +237,7 @@ final class Route
             $className = self::pathToClassName($file);
             if ($className === null) continue;
 
-            // Reflect on class to find attribute-routed methods
-            try {
-                $refClass = new \ReflectionClass($className);
-            } catch (\Throwable) {
-                continue;
-            }
+            $refClass = new \ReflectionClass($className);
 
             foreach ($refClass->getMethods() as $refMethod) {
                 $attributes = $refMethod->getAttributes(RouteAttribute::class);
@@ -250,6 +250,7 @@ final class Route
 
                     foreach ($route->methods as $method) {
                         $lowerMethod = strtolower($method);
+                        /** @var Route $routeObj */
                         $routeObj = $router->{$lowerMethod}($fullPath, $handler);
                         if ($route->middleware !== []) {
                             $routeObj->middleware([...$globalMiddleware, ...$route->middleware]);
@@ -263,6 +264,7 @@ final class Route
         }
     }
 
+    /** @return class-string|null */
     private static function pathToClassName(string $file): ?string
     {
         // Extract namespace from file content

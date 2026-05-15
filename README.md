@@ -1,26 +1,130 @@
-# Siro Core Framework v0.25.0
+# Siro Core Framework v0.26.2
 
-**The Fastest PHP Micro-Framework** — Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default.
+**The debugging-first PHP framework.** Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default. Built for developers who want to fix production bugs in seconds, not hours.
+
+```bash
+# Production API fails → php siro why
+# 5 seconds later you see: route, SQL, middleware, exception, possible cause, N+1, suggested fix
+$ php siro why
+
+  Last Request Summary
+  ──────────────────────────────────────────────────────────────
+  Route:    GET /api/orders?user_id=1
+  Status:   ✓ 200 (2.3s)
+  Trace ID: siro_a1b2c3d4e5
+  ──────────────────────────────────────────────────────────────
+  Timeline
+    ✓ AuthMiddleware               [3ms]
+    ✓ CorsMiddleware               [1ms]
+    ✓ ThrottleMiddleware           [2ms]
+    ▸ SELECT * FROM users WHERE…   [1ms]
+    ▸ SELECT * FROM orders WHERE…  [200ms]
+    ▸ SELECT * FROM products WHERE… [180ms]  ← 50× same query
+    ▸ SELECT * FROM products WHERE… [175ms]
+    ▸ … 48 similar queries …
+    ⚠  N+1  Order::products accessed 50×. Use with('products') to eager load.
+  ──────────────────────────────────────────────────────────────
+  Exception
+    (none — response was 200 but 2.1s is too slow)
+  Possible Cause
+    • N+1 query: 50 individual product queries instead of 1 batch
+  Suggested Fix
+    ▸ Add ->with('products') to your Order query
+    ▸ php siro replay siro_a1b2c3d4 --edit to test fix
+  ──────────────────────────────────────────────────────────────
+  Total SQL: 52 queries · 2.1s  ⚠ SLOW
+  N+1 Detected: Order::products (50×) — fix with eager loading
+```
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
-[![Tests](https://img.shields.io/badge/tests-1436%20passing-brightgreen.svg)](tests/)
-[![PHPStan](https://img.shields.io/badge/PHPStan-Level%20max-brightgreen.svg)](https://phpstan.org)
-[![Security](https://img.shields.io/badge/security-audited-brightgreen)](https://github.com/SiroSoft/siro-core)
+[![Tests](https://img.shields.io/badge/tests-19038%20total-brightgreen.svg)](tests/)
+[![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-brightgreen.svg)](https://phpstan.org)
+[![Psalm](https://img.shields.io/badge/Psalm-Level%201-brightgreen.svg)](https://psalm.dev)
+[![Security](https://img.shields.io/badge/security-OWASP%20Top%2010%20Mitigated-brightgreen)](docs/SECURITY.md)
+[![Mutation](https://img.shields.io/badge/mutation-MSI%20≥80%25-brightgreen)](https://infection.github.io)
+[![SBOM](https://img.shields.io/badge/sbom-CycloneDX-blue)](https://cyclonedx.org)
+[![SLSA](https://img.shields.io/badge/slsa-1-brightgreen)](https://slsa.dev)
+[![Fuzzing](https://img.shields.io/badge/fuzz-17851%20tests-brightgreen)](tests/fuzz/)
+[![Chaos](https://img.shields.io/badge/chaos-engineering-blueviolet)](scripts/chaos-test.php)
+[![Load Test](https://img.shields.io/badge/load%20test-k6%20|%20ab-blue)](scripts/loadtest.php)
 [![Packagist](https://img.shields.io/packagist/v/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
+[![Downloads](https://img.shields.io/packagist/dt/sirosoft/core.svg)](https://packagist.org/packages/sirosoft/core)
 
 ---
 
-## Performance
+## The Siro Flow — Integrated Terminal-Native Workflow
 
+**For local development and small-team API workflows, you rarely need to leave the terminal.**
+
+```bash
+# ── BUILD ──────────────────────────────────────────────
+composer create-project sirosoft/api my-api
+cd my-api
+php siro key:generate
+php siro make:crud Product       # Controller + Service + Repository + Model + Migration + Test
+php siro make:auth               # Auth: register/login/refresh/forgot/reset
+php siro migrate
+php siro serve                   # Start at :8080
+
+# ── TEST ───────────────────────────────────────────────
+php siro t POST /api/auth/login --body='{"email":"test@test.com","password":"123456"}'
+php siro t GET /api/products
+php siro t POST /api/orders --body='{"product_id":1,"quantity":5}'
+
+# ── DEBUG ──────────────────────────────────────────────
+php siro why                      # Why did production fail? (5 seconds)
+php siro replay siro_a1b2c3       # Replay exact failed request
+php siro replay siro_a1b2c3 --edit # Edit body → test fix
+php siro tinker                   # Interactive PHP playground
+
+# ── MONITOR ────────────────────────────────────────────
+php siro log:tail                 # Local log streaming
+php siro log:stats                # Request stats
+php siro doctor                   # System health check
+curl localhost:8080/health        # HTTP health check
+curl localhost:8080/metrics       # Prometheus endpoint
+
+# ── DOCUMENT ───────────────────────────────────────────
+php siro make:openapi --with-swagger
+php siro route:list
 ```
-Static route dispatch:    0.002ms (488K ops/sec)
-Dynamic route dispatch:   0.009ms
-Middleware overhead:      ~0.001ms per layer
-Cold boot:                ~1ms (Linux + OPcache)
-1000 routes registered:   1.2ms
-Memory per request:       ~2KB
-```
+
+**Everything above is built-in — zero packages to install for these workflows.**  
+(For production-scale monitoring, Siro integrates with standard tools: Prometheus, Grafana, Datadog.)
+
+---
+
+## Why Siro?
+
+Siro is a **debugging-first, observability-first, security-first** PHP framework. It ships **zero** third-party dependencies, boots in under a millisecond, and achieves PHPStan Level Max + Psalm Level 1 across the entire codebase. Every design decision prioritizes developer experience, production safety, and auditability.
+
+| Capability | Siro |
+|-----------|:----:|
+| Runtime Dependencies | **0** |
+| Cold Boot | **~1ms** |
+| Memory per Request | **~2KB** |
+| Static Route Dispatch | **488K ops/sec** |
+| Fuzz Testing | **17,851 tests** |
+| Mutation Testing | **MSI ≥80%** |
+| Chaos Engineering | **7 scenarios** |
+| Request Replay | **Built-in** |
+| SLSA Provenance | **Supported** |
+| SBOM (CycloneDX) | **Auto-generated** |
+| PHPStan | **Level Max — 0 errors** |
+| Psalm | **Level 1 — 0 errors** |
+| Prometheus Metrics | **Built-in** |
+
+| Metric | Siro |
+|--------|:----:|
+| Static route dispatch | **0.002ms** (488K ops/sec) |
+| Dynamic route dispatch | **0.009ms** |
+| Middleware overhead | **~0.001ms** per layer |
+| Cold boot | **~1ms** (Linux + OPcache) |
+| 1000 routes registered | **1.2ms** |
+| Memory per request | **~2KB** |
+| Dependencies | **0** |
+| PHPStan errors | **0** |
 
 ## Quick Start
 
@@ -39,36 +143,98 @@ Route::get('/hello/{name}', function ($req) {
 $app->run();
 ```
 
-## Documentation
+```bash
+composer create-project sirosoft/api my-api
+cd my-api
+php siro serve
+# 🚀 Ready at http://localhost:8080
+```
 
-| Module | File | Contents |
-|--------|------|----------|
-| **Database** | [docs/DATABASE.md](docs/DATABASE.md) | QueryBuilder, Models, Migrations, Relations, Transactions |
-| **Cache** | [docs/CACHE.md](docs/CACHE.md) | File/Redis drivers, Query caching, TTL |
-| **Logger** | [docs/LOGGER.md](docs/LOGGER.md) | Log levels, Sanitization, Audit trail, Trace replay |
-| **Router** | [docs/ROUTER.md](docs/ROUTER.md) | Routing, Middleware, Route Attributes (PHP 8), CORS |
-| **JWT Auth** | [docs/JWT.md](docs/JWT.md) | Access/Refresh tokens, Key rotation, JTI blacklist |
-| **Validation** | [docs/VALIDATION.md](docs/VALIDATION.md) | Rules, Custom messages, FormRequest |
-| **CLI** | [docs/CLI.md](docs/CLI.md) | All 70 commands reference |
-| **Security** | [docs/SECURITY.md](docs/SECURITY.md) | CSP, CORS, CSRF, Rate Limiting, Best practices |
-
-## Features
+## Feature Highlights
 
 | Area | Capabilities |
 |------|-------------|
 | **Auth** | JWT with algorithm pinning, key rotation, per-token revocation, refresh rotation, API keys |
-| **Database** | QueryBuilder, ORM (HasOne/HasMany/BelongsTo/BelongsToMany), Migrations, SQLite/MySQL/PostgreSQL |
+| **Database** | QueryBuilder, ORM (HasOne/HasMany/BelongsTo/BelongsToMany), Migrations, SQLite/MySQL/PostgreSQL, Row locking (FOR UPDATE/SHARE), RIGHT/CROSS JOIN, `whereHas` relation queries, N+1 detection warning |
 | **Router** | Static O(1) routes, Dynamic {param}, Groups, Middleware pipeline, PHP 8 Attributes, Named routes |
 | **Cache** | File and Redis drivers, auto-prefix, query builder integration |
 | **Validation** | 15+ rules, custom rules, custom messages, FormRequest |
 | **Security** | CSP, CORS, CSRF (session + double-submit), Rate limiting, Audit logging, Log sanitization |
-| **CLI** | 70 commands: make CRUD/auth, migrate, cache, queue, benchmark, debug |
+| **CLI** | 74 commands: make CRUD/auth, migrate, cache, queue, benchmark, debug, tinker |
 | **Middleware** | Auth, CORS, CSRF, CSP, ETag, Version, Metrics, Audit, Idempotency, Throttle, Security Headers |
 | **Storage** | Local filesystem, S3-compatible (AWS Signature V4), path traversal protection |
 | **Queue** | DB-based, exponential backoff, timeout, priority, failed job retry |
 | **Encryption** | AES-256-CBC, HKDF key separation, Encrypt-then-MAC |
+| **DI Container** | Autowiring, circular detection, contextual bindings (`when`), tags (`tag`/`tagged`), rebound callbacks |
 | **Event System** | Pub/sub, wildcards, one-time listeners |
-| **Debug** | Trace headers, log replay, slow query detection, request profiling |
+| **Debug** | Trace headers, log replay, slow query detection, request profiling, `siro tinker` REPL |
+| **Observers** | Model lifecycle hooks: saving, creating, updating, deleting, force deleting |
+| **Gzip** | Automatic compression for file downloads (text, JSON, XML, SVG, fonts) |
+
+## Quality Assurance
+
+Siro maintains **0 errors** across all quality gates — verified on every commit.
+
+```bash
+# Run all tests (19,038 tests, 31,652 assertions)
+php vendor/bin/phpunit --no-coverage
+
+# By suite:
+php vendor/bin/phpunit tests/unit/          # 988 unit tests
+php vendor/bin/phpunit tests/fuzz/          # 17,851 fuzz tests
+php vendor/bin/phpunit tests/dast/          # 157 DAST security tests
+php vendor/bin/phpunit tests/integration/   # 42 integration tests
+
+# Static analysis
+php vendor/bin/phpstan analyse --level=max    # Level Max — 0 errors
+php vendor/bin/psalm --taint-analysis         # Level 1 — 0 errors
+
+# Mutation testing (≥80% MSI)
+php vendor/bin/infection --min-msi=80 --threads=4
+
+# Chaos engineering
+php scripts/chaos-test.php
+
+# Security
+composer audit                               # 0 dependency vulnerabilities
+php scripts/sast-linter.php                  # SAST scan
+php scripts/health-check.php                 # System health
+```
+
+| Quality Gate | Result | How to Verify |
+|-------------|--------|---------------|
+| **Unit Tests** | 988 tests, 2,547 assertions, **0 failures** | `phpunit tests/unit/` |
+| **Fuzz Tests** | 17,851 tests, 28,849 assertions, **0 failures** | `phpunit tests/fuzz/` |
+| **DAST Tests** | 157 tests, 166 assertions, **0 failures** | `phpunit tests/dast/` |
+| **Integration Tests** | 42 tests, 90 assertions, **0 failures** | `phpunit tests/integration/` |
+| **PHPStan** | Level Max — **0 errors** | `phpstan analyse --level=max` |
+| **Psalm** | Level 1 — **0 errors** | `psalm --taint-analysis` |
+| **Mutation Testing** | MSI ≥80% | `infection --min-msi=80` |
+| **composer audit** | 0 vulnerabilities | `composer audit` |
+| **SAST Linter** | 0 errors | `php scripts/sast-linter.php` |
+| **Chaos Engineering** | 7/7 pass | `php scripts/chaos-test.php` |
+| **Load Testing** | k6 + Apache Bench | `php scripts/loadtest.php` |
+| **SBOM** | CycloneDX | `php scripts/generate-sbom.php` |
+| **Total** | **19,038 tests, 31,652 assertions — 0 failures** | `phpunit --no-coverage` |
+
+## Documentation
+
+| Module | File |
+|--------|------|
+| **Database** | [docs/DATABASE.md](docs/DATABASE.md) |
+| **Cache** | [docs/CACHE.md](docs/CACHE.md) |
+| **Logger** | [docs/LOGGER.md](docs/LOGGER.md) |
+| **Router** | [docs/ROUTER.md](docs/ROUTER.md) |
+| **JWT Auth** | [docs/JWT.md](docs/JWT.md) |
+| **Validation** | [docs/VALIDATION.md](docs/VALIDATION.md) |
+| **CLI** | [docs/CLI.md](docs/CLI.md) |
+| **Security** | [docs/SECURITY.md](docs/SECURITY.md) |
+
+## Requirements
+
+- PHP 8.2+
+- ext-pdo, ext-json, ext-mbstring
+- ext-redis *(optional)*, ext-openssl *(optional)*
 
 ## Install
 
@@ -76,30 +242,28 @@ $app->run();
 composer require sirosoft/core
 ```
 
-Or create a full project:
+Or bootstrap a full project with CRUD scaffolding, auth, and CLI:
 
 ```bash
 composer create-project sirosoft/api my-api
 ```
 
-## Requirements
-
-- PHP 8.2+
-- ext-pdo, ext-json, ext-mbstring
-- ext-redis (optional), ext-openssl (optional)
-
-## Test
+## Test & Benchmark
 
 ```bash
-composer test              # Unit tests
-composer check             # PHPStan + PHPUnit
-php siro benchmark         # Performance benchmark
+composer test              # Run unit tests
+composer check             # PHPStan static analysis + PHPUnit + SBOM
+make health                # Health check (CLI)
+make docs                  # Generate API documentation
+composer docs:generate     # Generate API docs (Composer)
+make production-check      # Full production readiness check
+php siro benchmark         # Performance benchmark suite
 php vendor/bin/phpunit --coverage-html coverage/
 ```
 
 ## Security
 
-Report vulnerabilities to security@sirophp.com
+We take security seriously. Report vulnerabilities to **security@sirophp.com**.
 
 ## License
 

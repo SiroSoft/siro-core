@@ -9,7 +9,7 @@ namespace Siro\Core\Commands;
  *
  * Delegates to LogReplayCommand. If no trace_id provided,
  * automatically finds and replays the most recent trace.
- * Supports --edit, --diff flags passed through to log:replay.
+ * Supports --edit, --diff, --dry-run flags passed through to log:replay.
  *
  * @package Siro\Core\Commands
  */

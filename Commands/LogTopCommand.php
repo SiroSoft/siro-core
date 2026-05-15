@@ -42,14 +42,15 @@ final class LogTopCommand implements \Siro\Core\Commands\CommandInterface {
             $data = json_decode((string) file_get_contents($file), true);
             if (!is_array($data)) continue;
 
-            $key = strtoupper($data['method'] ?? 'GET') . ' ' . ($data['path'] ?? '/');
-            $timeMs = (float) ($data['time_ms'] ?? 0);
+            $key = strtoupper($this->safeStr($data['method'] ?? 'GET')) . ' ' . $this->safeStr($data['path'] ?? '/');
+            $timeMsVal = $data['time_ms'] ?? 0;
+            $timeMs = is_numeric($timeMsVal) ? (float) $timeMsVal : 0;
 
             if ($timeMs < $minMs) continue;
 
             if (!isset($aggregated[$key])) {
                 $aggregated[$key] = [
-                    'method' => strtoupper($data['method'] ?? 'GET'),
+                    'method' => strtoupper($this->safeStr($data['method'] ?? 'GET')),
                     'path' => $data['path'] ?? '/',
                     'count' => 0,
                     'total_ms' => 0,

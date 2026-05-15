@@ -80,7 +80,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
             if ($filterMethod !== null && strcasecmp($method, $filterMethod) !== 0) {
                 continue;
             }
-            if ($filterPath !== null && !str_starts_with($path, $filterPath)) {
+            if ($filterPath !== null && !str_starts_with($path, (string) $filterPath)) {
                 continue;
             }
             if ($filterFlow === 'auth' && !str_contains($path, '/auth/')) {
@@ -128,7 +128,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
                     'description' => $param,
                 ];
                 // Replace {param} with :param in raw URL for Postman
-                $request['url']['raw'] = '{{base_url}}' . preg_replace('/\{(\w+)\}/', ':$$1', $path);
+                $request['url']['raw'] = '{{base_url}}' . ((string) preg_replace('/\{(\w+)\}/', ':$$1', $path));
             }
 
             if ($body !== null) {
@@ -185,7 +185,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
                             '    return; // Skip auth for auth endpoints',
                             '}',
                             '',
-                            'const loginUrl = pm.variables.get("base_url") + "' . $loginPath . '";',
+                            'const loginUrl = pm.variables.get("base_url") + "' . ((string) ($authEndpoint['path'] ?? '/api/auth/login')) . '";',
                             'const loginData = {',
                             '    email: "admin@example.com",',
                             '    password: "password",',
@@ -193,7 +193,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
                             '',
                             'pm.sendRequest({',
                             '    url: loginUrl,',
-                            '    method: "' . $loginMethod . '",',
+                            '    method: "' . ((string) ($authEndpoint['method'] ?? 'POST')) . '",',
                             '    header: { "Content-Type": "application/json" },',
                             '    body: { mode: "raw", raw: JSON.stringify(loginData) }',
                             '}, function (err, res) {',
@@ -221,7 +221,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write("  public/postman_collection.json");
         if ($hasAuth) {
             $this->write('  - Auth: Bearer token auto-fetched via pre-request script');
-            $this->write('  - Auth endpoint: ' . ($authEndpoint['method'] ?? 'POST') . ' ' . ($authEndpoint['path'] ?? '/api/auth/login'));
+            $this->write('  - Auth endpoint: ' . ((string) ($authEndpoint['method'] ?? 'POST')) . ' ' . ((string) ($authEndpoint['path'] ?? '/api/auth/login')));
         }
 
         return 0;

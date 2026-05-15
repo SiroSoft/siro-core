@@ -1,0 +1,13 @@
+rules:
+  - id: shell-exec-unsafe
+    patterns:
+      - pattern-either:
+          - pattern: shell_exec("... $var ...")
+          - pattern: exec("... $var ...")
+          - pattern: system("... $var ...")
+          - pattern: passthru("... $var ...")
+      - pattern-not: |
+          escapeshellarg(...)
+    message: "Potential command injection - user input used in shell command"
+    languages: [php]
+    severity: ERROR

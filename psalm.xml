@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<psalm
+    errorLevel="1"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="true"
+    findUnusedCode="true"
+    errorBaseline="psalm-baseline.xml"
+>
+    <projectFiles>
+        <directory name="." />
+        <ignoreFiles>
+            <directory name="vendor" />
+            <directory name="tests" />
+            <directory name="scripts" />
+            <directory name="storage" />
+        </ignoreFiles>
+    </projectFiles>
+    <issueHandlers>
+        <MissingReturnType errorLevel="info" />
+        <MissingPropertyType errorLevel="info" />
+        <MissingParamType errorLevel="info" />
+        <PropertyNotSetInConstructor errorLevel="info" />
+        <RedundantConditionGivenDocblockType errorLevel="info" />
+        <ImplicitToStringCast errorLevel="info" />
+        <PossiblyInvalidArrayOffset errorLevel="info" />
+    </issueHandlers>
+</psalm>

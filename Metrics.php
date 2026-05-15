@@ -24,7 +24,7 @@ final class Metrics
     /** @var array<string, array{type: string, help: string, labels: array<string, string>, value: float|int}> */
     private static array $counters = [];
 
-    /** @var array<string, array{buckets: array<int, float>, values: array<string, array<int, int>>, sum: array<string, float>, count: array<string, int>}> */
+    /** @var array<string, array{buckets: array<int, float>, values: array<string, array<int, int>>, sum: array<string, float>, count: array<string, int>, help?: string}> */
     private static array $histograms = [];
 
     /** @var array<string, array{help: string, value: float|int, labels: array<string, string>}> */
@@ -130,19 +130,20 @@ final class Metrics
         $lines[] = '';
 
         foreach (self::$counters as $data) {
-            $name = self::$namespace . '_' . $data['type'] . '_' . ($data['labels']['__name__'] ?? '');
+            $name = self::$namespace . '_' . $data['type'] . '_' . strval($data['labels']['__name__'] ?? '');
             $lines[] = '# HELP ' . $name . ' ' . $data['help'];
             $lines[] = '# TYPE ' . $name . ' counter';
             $labelStr = self::formatLabels($data['labels']);
-            $lines[] = $name . $labelStr . ' ' . (int) $data['value'];
+            $lines[] = $name . $labelStr . ' ' . intval($data['value']);
         }
 
         foreach (self::$histograms as $name => $hData) {
             $fullName = self::$namespace . '_' . $name;
-            $lines[] = '# HELP ' . $fullName . ' ' . ($hData['help'] ?? '');
+            $lines[] = '# HELP ' . $fullName . ' ' . strval($hData['help'] ?? '');
             $lines[] = '# TYPE ' . $fullName . ' histogram';
 
             foreach ($hData['values'] as $labelsKey => $buckets) {
+                /** @var array<string, string> $labels */
                 $labels = self::parseLabelsKey($labelsKey);
                 $labelStr = self::formatLabels($labels);
                 foreach ($buckets as $i => $count) {
@@ -156,7 +157,7 @@ final class Metrics
         }
 
         foreach (self::$gauges as $data) {
-            $name = self::$namespace . '_gauge_' . ($data['labels']['__name__'] ?? '');
+            $name = self::$namespace . '_gauge_' . strval($data['labels']['__name__'] ?? '');
             $lines[] = '# HELP ' . $name . ' ' . $data['help'];
             $lines[] = '# TYPE ' . $name . ' gauge';
             $labelStr = self::formatLabels($data['labels']);
@@ -170,21 +171,23 @@ final class Metrics
     public static function registerRoute(Router $router, string $path = '/metrics'): void
     {
         $router->get($path, function (Request $request) {
-            $response = Response::raw(Metrics::export(), 200);
+            $response = Response::raw(Metrics::export(), 'text/plain', 200);
             $response->header('Content-Type', 'text/plain; charset=utf-8');
             return $response;
         });
     }
 
+    /** @param array<string, string> $labels */
     private static function key(string $name, array $labels): string
     {
         return $name . '::' . self::labelsKey($labels);
     }
 
+    /** @param array<string, string> $labels */
     private static function labelsKey(array $labels): string
     {
         ksort($labels);
-        return implode(',', array_map(fn ($k, $v) => "{$k}={$v}", array_keys($labels), $labels));
+        return implode(',', array_map(fn ($k, $v) => strval($k) . '=' . strval($v), array_keys($labels), $labels));
     }
 
     /** @param array<string, string> $labels */
@@ -198,6 +201,7 @@ final class Metrics
         return '{' . implode(',', $parts) . '}';
     }
 
+    /** @return array<string, string> */
     private static function parseLabelsKey(string $key): array
     {
         $labels = [];
@@ -221,12 +225,23 @@ final class Metrics
 
     private static function load(): void
     {
-        if (!is_file(self::METRICS_CACHE_FILE)) { return; }
-        $data = require self::METRICS_CACHE_FILE;
+        $cacheFile = self::METRICS_CACHE_FILE;
+        if (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH)) {
+            $cacheFile = SIRO_BASE_PATH . '/' . $cacheFile;
+        }
+        if (!is_file($cacheFile)) { return; }
+        /** @var mixed $data */
+        $data = require $cacheFile;
         if (is_array($data)) {
-            self::$counters = $data['counters'] ?? [];
-            self::$histograms = $data['histograms'] ?? [];
-            self::$gauges = $data['gauges'] ?? [];
+            /** @var array<string, array{type: string, help: string, labels: array<string, string>, value: float|int}> $counters */
+            $counters = $data['counters'] ?? [];
+            self::$counters = $counters;
+            /** @var array<string, array{buckets: array<int, float>, values: array<string, array<int, int>>, sum: array<string, float>, count: array<string, int>}> $histograms */
+            $histograms = $data['histograms'] ?? [];
+            self::$histograms = $histograms;
+            /** @var array<string, array{help: string, value: float|int, labels: array<string, string>}> $gauges */
+            $gauges = $data['gauges'] ?? [];
+            self::$gauges = $gauges;
         }
     }
 }

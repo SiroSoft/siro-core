@@ -16,30 +16,19 @@ final class JWT
     public const ALG_RS256 = 'RS256';
 
     private static ?string $keyVersion = null;
-    /** @var array<string, int> */
-    private static array $blacklistedJti = [];
     private static int $lastBlacklistCleanup = 0;
     private const BLACKLIST_CLEANUP_INTERVAL = 300;
 
     private static function cleanupBlacklist(): void
     {
-        $now = time();
-        if (self::$lastBlacklistCleanup > 0 && ($now - self::$lastBlacklistCleanup) < self::BLACKLIST_CLEANUP_INTERVAL) {
-            return;
-        }
-        self::$lastBlacklistCleanup = $now;
-
-        foreach (self::$blacklistedJti as $jti => $expiresAt) {
-            if ($expiresAt <= $now) {
-                unset(self::$blacklistedJti[$jti]);
-            }
+        if (time() - self::$lastBlacklistCleanup > self::BLACKLIST_CLEANUP_INTERVAL) {
+            self::$lastBlacklistCleanup = time();
         }
     }
 
     public static function reset(): void
     {
         self::$keyVersion = null;
-        self::$blacklistedJti = [];
         self::$lastBlacklistCleanup = 0;
     }
 
@@ -141,13 +130,23 @@ final class JWT
             throw new RuntimeException('Invalid token payload.');
         }
 
-        $alg = self::algorithm();
-        if (!in_array($alg, [self::ALG_HS256, self::ALG_RS256], true)) {
-            throw new RuntimeException('Unsupported token algorithm: ' . $alg);
+        $headerAlg = is_string($header['alg'] ?? null) ? $header['alg'] : '';
+        $configuredAlg = self::algorithm();
+        if ($headerAlg !== $configuredAlg) {
+            throw new RuntimeException('Algorithm mismatch: header declares ' . $headerAlg . ' but server expects ' . $configuredAlg);
+        }
+        if (!in_array($configuredAlg, [self::ALG_HS256, self::ALG_RS256], true)) {
+            throw new RuntimeException('Unsupported token algorithm: ' . $configuredAlg);
+        }
+
+        // Validate token type to prevent refresh token reuse as access token
+        $tokenType = is_string($payload['type'] ?? null) ? $payload['type'] : '';
+        if (!in_array($tokenType, [self::TYPE_ACCESS, self::TYPE_REFRESH], true)) {
+            throw new RuntimeException('Invalid token type.');
         }
 
         $data = $headerB64 . '.' . $payloadB64;
-        $valid = match ($alg) {
+        $valid = match ($configuredAlg) {
             self::ALG_RS256 => self::verifyRs256($data, $signature),
             self::ALG_HS256 => self::verifyHs256($data, $signature),
         };
@@ -157,27 +156,27 @@ final class JWT
         }
 
         $now = time();
-        $exp = isset($payload['exp']) ? (int) $payload['exp'] : 0;
+        $exp = is_numeric($payload['exp'] ?? null) ? (int) $payload['exp'] : 0;
         if ($exp <= 0 || $exp < $now) {
             throw new RuntimeException('Token expired.');
         }
 
-        $iat = isset($payload['iat']) ? (int) $payload['iat'] : 0;
+        $iat = is_numeric($payload['iat'] ?? null) ? (int) $payload['iat'] : 0;
         if ($iat > $now + 60) {
             throw new RuntimeException('Token issued in the future.');
         }
 
-        $nbf = isset($payload['nbf']) ? (int) $payload['nbf'] : 0;
+        $nbf = is_numeric($payload['nbf'] ?? null) ? (int) $payload['nbf'] : 0;
         if ($nbf > 0 && $nbf > $now) {
             throw new RuntimeException('Token is not yet valid (nbf).');
         }
 
-        $sub = isset($payload['sub']) ? (int) $payload['sub'] : 0;
+        $sub = is_numeric($payload['sub'] ?? null) ? (int) $payload['sub'] : 0;
         if ($sub <= 0) {
             throw new RuntimeException('JWT token missing required "sub" claim (user ID). Token may be malformed or tampered.');
         }
 
-        $ver = isset($payload['ver']) ? (int) $payload['ver'] : 0;
+        $ver = is_numeric($payload['ver'] ?? null) ? (int) $payload['ver'] : 0;
         if ($ver <= 0) {
             throw new RuntimeException('JWT token missing required "ver" claim (token version). Token may be from an incompatible system.');
         }
@@ -223,7 +222,7 @@ final class JWT
         $result = openssl_sign($data, $signature, $key, OPENSSL_ALGO_SHA256);
         openssl_free_key($key);
 
-        if (!$result) {
+        if (!$result || !is_string($signature)) {
             throw new RuntimeException('Failed to sign token with RS256.');
         }
 
@@ -289,12 +288,18 @@ final class JWT
         self::$keyVersion = $version;
     }
 
-    public static function rotateKey(string $newSecret): void
+    public static function rotateKey(string $newSecret, string $envPath = ''): void
     {
         $newVersion = (int) self::getKeyVersion() + 1;
         putenv("JWT_KEY_VERSION={$newVersion}");
         putenv("JWT_SECRET={$newSecret}");
         self::$keyVersion = (string) $newVersion;
+        if ($envPath !== '' && is_file($envPath) && is_writable($envPath)) {
+            $content = (string) file_get_contents($envPath);
+            $content = (string) preg_replace('/^JWT_SECRET=.*$/m', 'JWT_SECRET=' . $newSecret, $content);
+            $content = (string) preg_replace('/^JWT_KEY_VERSION=.*$/m', 'JWT_KEY_VERSION=' . $newVersion, $content);
+            file_put_contents($envPath, $content, LOCK_EX);
+        }
     }
 
     private static function previousSecret(): string
@@ -314,7 +319,6 @@ final class JWT
             return true;
         }
 
-        // Allow previous secret during key rotation — verifies version-gated
         $prevSecret = self::previousSecret();
         if ($prevSecret !== '' && hash_equals(self::signHs256WithSecret($data, $prevSecret), $signature)) {
             $prevVersion = (int) self::getKeyVersion() - 1;
@@ -353,16 +357,16 @@ final class JWT
 
     public static function blacklistJti(string $jti, int $expiresAt): void
     {
-        self::$blacklistedJti[$jti] = $expiresAt;
-        Cache::set('jti_blacklist:' . $jti, $expiresAt, $expiresAt - time());
+        Cache::set('jti_blacklist:' . $jti, $expiresAt, max(1, $expiresAt - time()));
     }
 
     private static function isJtiBlacklisted(string $jti): bool
     {
-        if (isset(self::$blacklistedJti[$jti])) {
-            return self::$blacklistedJti[$jti] > time();
+        try {
+            $cached = Cache::get('jti_blacklist:' . $jti);
+            return is_numeric($cached) && (int) $cached > time();
+        } catch (\Throwable) {
+            return false;
         }
-        $cached = Cache::get('jti_blacklist:' . $jti);
-        return $cached !== null && (int) $cached > time();
     }
 }

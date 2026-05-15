@@ -44,7 +44,7 @@ final class ModelUserProvider implements UserProvider
         return $user !== null ? $user->toArray() : null;
     }
 
-    /** @param array<string, mixed> $user */
+    /** @param array<string, string|int|float|bool|null> $user */
     public function validateCredentials(array $user, string $password): bool
     {
         $hash = (string) ($user['password'] ?? '');

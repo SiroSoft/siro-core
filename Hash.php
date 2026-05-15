@@ -19,6 +19,7 @@ final class Hash
 {
     /** @param array<string, mixed> $options */ public static function make(string $value, array $options = []): string
     {
+        $options['cost'] = $options['cost'] ?? 12;
         $hash = @password_hash($value, PASSWORD_BCRYPT, $options);
         // @phpstan-ignore identical.alwaysFalse
         if ($hash === false) {
@@ -41,9 +42,10 @@ final class Hash
     public static function info(string $hash): array
     {
         $info = password_get_info($hash);
+        /** @var array{algoName: string, options: array{cost: int}} $info */
         return [
-            'algo' => $info['algoName'] ?? 'unknown',
-            'cost' => $info['options']['cost'] ?? 0,
+            'algo' => $info['algoName'],
+            'cost' => $info['options']['cost'],
         ];
     }
 }

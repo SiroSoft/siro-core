@@ -42,14 +42,17 @@
     "prefer-stable": true,
     "config": {
         "allow-plugins": {
-            "infection/extension-installer": true
+            "infection/extension-installer": true,
+            "cyclonedx/cyclonedx-php-composer": true
         }
     },
     "require-dev": {
         "phpunit/phpunit": "11.5.55",
         "phpstan/phpstan": "*",
+        "vimeo/psalm": "^5.0 || ^6.0",
         "squizlabs/php_codesniffer": "^3.0",
-        "infection/infection": "^0.29"
+        "infection/infection": "^0.29",
+        "cyclonedx/cyclonedx-php-composer": "*"
     },
     "scripts": {
         "analyse": "phpstan analyse --level=max",
@@ -57,11 +60,27 @@
         "test:coverage": "php -d zend_extension=xdebug phpunit --coverage-html coverage/html",
         "test:mutation": "infection --min-msi=80 --threads=4",
         "test:benchmark": "@php benchmark.php",
+        "benchmark:ci": "@php scripts/benchmark-ci.php",
+        "test:fuzz": "@php scripts/fuzz.php",
+        "test:chaos": "@php scripts/chaos-test.php",
+        "test:property": "@php vendor/bin/phpunit tests/unit/PropertyBasedTest.php --no-coverage",
+        "test:all": [
+            "@phpunit --no-coverage",
+            "@php scripts/fuzz.php",
+            "@php scripts/chaos-test.php"
+        ],
+        "psalm": "psalm --taint-analysis --show-info=true",
         "audit": "composer audit --format=table",
+        "sbom": "@php scripts/generate-sbom.php",
+        "audit:supply-chain": "@php scripts/audit-supply-chain.php",
+        "health": "@php scripts/health-check.php",
+        "docs:generate": "@php scripts/generate-docs.php",
+        "sdk:generate": "@php scripts/generate-sdk.php",
         "check": [
+            "@phpstan analyse --level=max --no-progress --memory-limit=512M",
+            "@phpunit --no-coverage",
             "@composer audit --format=table || true",
-            "@phpstan analyse --no-progress --memory-limit=512M",
-            "@phpunit --no-coverage"
+            "@php scripts/generate-sbom.php"
         ],
         "optimize": [
             "@php -r \"echo 'OPcache: ' . (extension_loaded('Zend OPcache') ? 'enabled' : 'disabled') . PHP_EOL;\"",

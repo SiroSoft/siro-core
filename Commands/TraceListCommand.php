@@ -58,12 +58,14 @@ final class TraceListCommand implements \Siro\Core\Commands\CommandInterface {
             $data = json_decode((string) file_get_contents($file), true);
             if (!is_array($data)) continue;
 
-            $method = str_pad($data['method'] ?? '?', 7);
-            $status = (int) ($data['status'] ?? 0);
-            $timeMs = round((float) ($data['time_ms'] ?? 0), 1);
-            $statusStr = str_pad((string) $status, 6);
-            $timeStr = str_pad($timeMs . 'ms', 8);
-            $path = $data['path'] ?? '/';
+            $method = str_pad($this->safeStr($data['method'] ?? '?'), 7);
+            $statusVal = $data['status'] ?? 0;
+            $status = is_numeric($statusVal) ? (int) $statusVal : 0;
+            $timeMsVal = $data['time_ms'] ?? 0;
+            $timeMs = round(is_numeric($timeMsVal) ? (float) $timeMsVal : 0, 1);
+            $statusStr = str_pad($this->safeStr($status), 6);
+            $timeStr = str_pad($this->safeStr($timeMs) . 'ms', 8);
+            $path = $this->safeStr($data['path'] ?? '/');
 
             $this->write(sprintf('  %-2d %-18s %s %s %s %s', $idx, $traceId, $method, $statusStr, $timeStr, $path));
             $idx++;

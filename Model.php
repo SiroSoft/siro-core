@@ -23,6 +23,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     protected array $fillable = [];
     /** @var array<string, array<int, string>> */
     protected static array $eagerLoads = [];
+    /** @var class-string<\Siro\Core\Observers\ModelObserver>[] */
+    protected static array $observers = [];
 
     /** @var array<string, mixed> */
     private array $relations = [];
@@ -31,6 +33,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /** @var array<string, mixed> */
     private array $original = [];
     private bool $exists = false;
+    protected string $primaryKey = 'id';
+
+    /** @var array<string, int> */
+    private static array $relationAccessCount = [];
+    private static bool $nPlusOneWarned = false;
+
+    private const N_PLUS_ONE_THRESHOLD = 2;
 
     /** @param array<string, mixed> $attributes */
     public function __construct(array $attributes = [])
@@ -45,7 +54,30 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         }
 
         $className = basename(str_replace('\\', '/', static::class));
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $className)) . 's';
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $className) ?? $className) . 's';
+    }
+
+    public function getKeyName(): string
+    {
+        return $this->primaryKey;
+    }
+
+    /** @param class-string<\Siro\Core\Observers\ModelObserver> $observerClass */
+    public static function observe(string $observerClass): void
+    {
+        if (!in_array($observerClass, static::$observers, true)) {
+            static::$observers[] = $observerClass;
+        }
+    }
+
+    private function notifyObservers(string $hook): void
+    {
+        foreach (static::$observers as $class) {
+            if (class_exists($class) && method_exists($class, $hook)) {
+                $observer = new $class();
+                $observer->{$hook}($this);
+            }
+        }
     }
 
     /** @param array<string, mixed> $attributes */
@@ -118,7 +150,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function offsetSet(mixed $offset, mixed $value): void
     {
-        $this->setAttribute($offset, $value);
+        $this->setAttribute(strval($offset), $value);
     }
 
     public function offsetUnset(mixed $offset): void
@@ -145,7 +177,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     public static function find(int|string $id): ?static
     {
         $instance = new static();
-        $result = $instance->query()->where('id', '=', $id)->first();
+        $key = $instance->getKeyName();
+        $result = $instance->query()->where($key, '=', $id)->first();
 
         if ($result === null) {
             return null;
@@ -336,12 +369,15 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
         $table = $this->getTable();
         $isNew = !$this->exists;
+        $key = $this->getKeyName();
 
+        $this->notifyObservers('saving');
         if (!Event::emit("{$table}.saving", $this)) {
             return false;
         }
 
         if ($isNew) {
+            $this->notifyObservers('creating');
             if (!Event::emit("{$table}.creating", $this)) {
                 return false;
             }
@@ -349,25 +385,29 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             $id = Database::table($table)->insert($data);
 
             if ($id !== 0) {
-                $this->setAttribute('id', $id);
+                $this->setAttribute($key, $id);
                 $this->exists = true;
             }
 
+            $this->notifyObservers('created');
             Event::emit("{$table}.created", $this);
         } else {
+            $this->notifyObservers('updating');
             if (!Event::emit("{$table}.updating", $this)) {
                 return false;
             }
 
             $affected = Database::table($table)
-                ->where('id', '=', $this->getAttribute('id'))
+                ->where($key, '=', $this->getAttribute($key))
                 ->update($data);
 
             if ($affected > 0) {
+                $this->notifyObservers('updated');
                 Event::emit("{$table}.updated", $this);
             }
         }
 
+        $this->notifyObservers('saved');
         Event::emit("{$table}.saved", $this);
         $this->syncOriginal();
 
@@ -388,22 +428,34 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         }
 
         $table = $this->getTable();
+        $key = $this->getKeyName();
 
+        $this->notifyObservers('deleting');
         if (!Event::emit("{$table}.deleting", $this)) {
             return false;
         }
 
         $affected = Database::table($table)
-            ->where('id', '=', $this->getAttribute('id'))
+            ->where($key, '=', $this->getAttribute($key))
             ->delete();
 
         if ($affected > 0) {
             $this->exists = false;
+            $this->notifyObservers('deleted');
             Event::emit("{$table}.deleted", $this);
             return true;
         }
 
         return false;
+    }
+
+    public function forceDelete(): bool
+    {
+        $result = $this->delete();
+        if ($result) {
+            $this->notifyObservers('forceDeleted');
+        }
+        return $result;
     }
 
     /**
@@ -459,7 +511,28 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function getRelation(string $name): mixed
     {
+        if (!array_key_exists($name, $this->relations) && !self::$nPlusOneWarned) {
+            $class = static::class;
+            self::$relationAccessCount[$class . '::' . $name] = (self::$relationAccessCount[$class . '::' . $name] ?? 0) + 1;
+            if (self::$relationAccessCount[$class . '::' . $name] >= self::N_PLUS_ONE_THRESHOLD) {
+                self::$nPlusOneWarned = true;
+                $msg = "N+1 detected: {$class}::{$name} accessed " . self::$relationAccessCount[$class . '::' . $name] . " times without eager loading. Use Model::with('{$name}') to prevent N+1.";
+                \Siro\Core\Logger::debug($msg);
+            }
+        }
         return $this->relations[$name] ?? null;
+    }
+
+    public static function resetRelationAccessCount(): void
+    {
+        self::$relationAccessCount = [];
+        self::$nPlusOneWarned = false;
+    }
+
+    /** @return array<string, int> */
+    public static function getRelationAccessCount(): array
+    {
+        return self::$relationAccessCount;
     }
 
     public function setRelation(string $name, mixed $value): void

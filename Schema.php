@@ -94,7 +94,7 @@ final class Schema
         };
         $stmt = self::pdo()->prepare($sql);
         $stmt->execute([':table' => $table]);
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        return array_values(array_map(fn ($v) => is_scalar($v) ? (string) $v : '', $stmt->fetchAll(PDO::FETCH_COLUMN)));
     }
 
     public static function hasColumn(string $table, string $column): bool
@@ -133,7 +133,8 @@ final class Schema
 
     private static function driver(): string
     {
-        return self::pdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driver = self::pdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
+        return is_string($driver) ? $driver : 'mysql';
     }
 
     private static function quoteIdentifier(string $identifier): string

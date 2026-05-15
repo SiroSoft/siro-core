@@ -170,9 +170,11 @@ final class HttpResponse
     /** @return array<string, mixed> */ public function json(): array
     {
         if ($this->parsedJson === null) {
-            $this->parsedJson = json_decode($this->body, true) ?? [];
+            /** @var array<string, mixed> $decoded */
+            $decoded = json_decode($this->body, true) ?? [];
+            $this->parsedJson = $decoded;
         }
-        return $this->parsedJson;
+        return $this->parsedJson ?? [];
     }
 
     public function ok(): bool

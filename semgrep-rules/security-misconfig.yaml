@@ -1,0 +1,20 @@
+rules:
+  - id: debug-mode-production
+    patterns:
+      - pattern: |
+          APP_DEBUG=true
+      - pattern-inside: |
+          .env
+    message: "APP_DEBUG should not be true in production"
+    languages: [generic]
+    severity: WARNING
+
+  - id: weak-jwt-secret
+    patterns:
+      - pattern: |
+          JWT_SECRET=...
+      - pattern-not: |
+          JWT_SECRET=~{$}...
+    message: "JWT_SECRET appears to be weak or a placeholder"
+    languages: [generic]
+    severity: ERROR

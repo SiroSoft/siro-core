@@ -1,0 +1,29 @@
+rules:
+  - id: sql-injection-direct-concat
+    patterns:
+      - pattern: |
+          "... $var ..."
+      - pattern-not: |
+          "... :$var ..."
+    message: "Potential SQL injection via string interpolation"
+    languages: [php]
+    severity: ERROR
+    paths:
+      exclude:
+        - "tests/"
+        - "vendor/"
+
+  - id: sql-injection-query
+    patterns:
+      - pattern-either:
+          - pattern: |
+              query("... $var ...")
+          - pattern: |
+              execute("... $var ...")
+    message: "SQL query with string interpolation - use prepared statements"
+    languages: [php]
+    severity: ERROR
+    paths:
+      exclude:
+        - "tests/"
+        - "vendor/"

@@ -28,12 +28,12 @@ class DebugHealthCommand implements CommandInterface
         $this->write(str_repeat('-', 40));
 
         $checks++;
-        if (PHP_VERSION_ID >= 80200) {
-            $this->success('[PASS] PHP version: ' . PHP_VERSION);
-            $passed++;
-        } else {
+        if (PHP_VERSION_ID < 80400) {
             $this->error('[FAIL] PHP version: ' . PHP_VERSION);
             $issues[] = 'PHP version < 8.2';
+        } else {
+            $this->success('[PASS] PHP version: ' . PHP_VERSION);
+            $passed++;
         }
 
         $checks++;

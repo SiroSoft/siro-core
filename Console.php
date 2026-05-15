@@ -74,10 +74,11 @@ use Siro\Core\Commands\MakeListenerCommand;
 use Siro\Core\Commands\TestCommand;
 use Siro\Core\Commands\BenchmarkCommand;
 use Siro\Core\Commands\FrankenphpServeCommand;
+use Siro\Core\Commands\TinkerCommand;
 
 final class Console
 {
-    public const VERSION = '0.25.0';
+    public const VERSION = '0.26.2';
 
     public static function getVersion(): string
     {
@@ -171,6 +172,7 @@ final class Console
             'trace:list'    => ['handler' => TraceListCommand::class, 'desc' => 'List recent traces (--limit=N)', 'usage' => 'php siro trace:list [--limit=20]'],
             'rate:status'   => ['handler' => RateStatusCommand::class, 'desc' => 'Rate limit dashboard', 'usage' => 'php siro rate:status'],
             'replay'        => ['handler' => ReplayCommand::class, 'desc' => 'Replay last trace (or by id)', 'usage' => 'php siro replay [trace_id] [--edit] [--diff]'],
+            'tinker'        => ['handler' => TinkerCommand::class, 'desc' => 'Interactive PHP playground in app context', 'usage' => 'php siro tinker'],
             'test'          => ['handler' => TestCommand::class, 'desc' => 'Run tests (--filter=, --suite=, --coverage)', 'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
         ];
@@ -192,6 +194,21 @@ final class Console
         $command = isset($argv[1]) ? trim($argv[1]) : '';
         $args = array_slice($argv, 2);
 
+        if (extension_loaded('pcntl')) {
+            $shutdown = function (int $signal): void {
+                $name = match ($signal) {
+                    SIGTERM => 'SIGTERM',
+                    SIGINT => 'SIGINT',
+                    default => "signal($signal)",
+                };
+                fwrite(STDERR, "\nReceived $name. Shutting down gracefully...\n");
+                App::shutdown();
+                exit(0);
+            };
+            pcntl_signal(SIGTERM, $shutdown);
+            pcntl_signal(SIGINT, $shutdown);
+        }
+
         if ($command === '--version' || $command === '-V') {
             $this->write('SiroPHP v' . self::VERSION);
             return 0;
@@ -204,7 +221,7 @@ final class Console
         }
 
         // Alias: 't' → 'api:test', etc.
-        $shortcuts = ['t' => 'api:test'];
+        $shortcuts = ['t' => 'api:test', 'tink' => 'tinker'];
         if (isset($shortcuts[$command])) {
             $command = $shortcuts[$command];
         }
@@ -271,6 +288,7 @@ final class Console
         $this->write('    api:test      Test any API endpoint from CLI');
         $this->write('    why           Why did the last request fail?');
         $this->write('    fix           Watch code changes & auto-replay');
+        $this->write('    tinker        Interactive PHP playground');
         $this->write('    replay        Replay any past request');
         $this->write('    traces        Browse recent request traces');
         $this->write('');

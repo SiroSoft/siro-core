@@ -101,9 +101,9 @@ final class LogTailCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         // Color error/slow keywords
-        $line = preg_replace('/\b(error|exception|fatal|critical)\b/i', "\033[31m\$0\033[0m", $line);
-        $line = preg_replace('/\b(warning|warn)\b/i', "\033[33m\$0\033[0m", $line);
-        $line = preg_replace('/\b(slow)\b/i', "\033[35m\$0\033[0m", $line);
+        $line = (string) preg_replace('/\b(error|exception|fatal|critical)\b/i', "\033[31m\$0\033[0m", $line);
+        $line = (string) preg_replace('/\b(warning|warn)\b/i', "\033[33m\$0\033[0m", $line);
+        $line = (string) preg_replace('/\b(slow)\b/i', "\033[35m\$0\033[0m", $line);
 
         $this->write('  ' . $line);
     }

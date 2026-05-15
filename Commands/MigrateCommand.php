@@ -115,7 +115,8 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
 
     private function ensureMigrationTable(PDO $pdo): void
     {
-        $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driverAttr = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
 
         $sql = match ($driver) {
             'pgsql' => 'CREATE TABLE IF NOT EXISTS migrations (id BIGSERIAL PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
@@ -125,7 +126,8 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
         $pdo->exec($sql);
 
         // Check if batch column already exists before trying to add it
-        $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driverAttr = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
         $hasBatch = false;
         try {
             $columns = $pdo->query('SELECT batch FROM migrations LIMIT 0');
@@ -172,7 +174,8 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
             return 1;
         }
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $max = (int) ($row['max_batch'] ?? 0);
+        $maxRow = is_array($row) ? $row['max_batch'] ?? 0 : 0;
+        $max = is_numeric($maxRow) ? (int) $maxRow : 0;
 
         return $max + 1;
     }

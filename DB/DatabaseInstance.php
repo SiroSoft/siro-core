@@ -22,6 +22,7 @@ final class DatabaseInstance implements DatabaseInterface
     private int $queryCacheTtl = 0;
     private int $transactionDepth = 0;
     private int $slowQueryThreshold = 100;
+    private bool $queryCaptureEnabled = false;
     /** @var array<int, array{sql:string,bindings:array<int|string,mixed>,time_ms:float,rows:int,connection:string}> */
     private array $capturedQueries = [];
 
@@ -29,7 +30,9 @@ final class DatabaseInstance implements DatabaseInterface
     public function configure(array $config, string $name = 'default'): void
     {
         $this->configs[$name] = $config;
-        $this->slowQueryThreshold = max(0, (int) ($config['slow_query_threshold'] ?? 100));
+        $threshold = $config['slow_query_threshold'] ?? 100;
+        $this->slowQueryThreshold = max(0, is_numeric($threshold) ? (int) $threshold : 100);
+        $this->queryCaptureEnabled = (bool) ($config['capture_queries'] ?? false);
 
         if ($name === $this->defaultConnection) {
             $this->capturedQueries = [];
@@ -49,27 +52,26 @@ final class DatabaseInstance implements DatabaseInterface
             $pdo = $this->pdoInstances[$name];
             try {
                 $pdo->query('SELECT 1');
+                return $pdo;
             } catch (\Throwable) {
                 unset($this->pdoInstances[$name]);
-            }
-            if (isset($this->pdoInstances[$name])) {
-                return $pdo;
             }
         }
 
         $config = $this->configs[$name] ?? throw new RuntimeException("Database connection '{$name}' is not configured.");
 
-        $driver = (string) ($config['driver'] ?? 'mysql');
-        $host = (string) ($config['host'] ?? '127.0.0.1');
-        $port = (int) ($config['port'] ?? match ($driver) {
+        $driver = is_string($config['driver'] ?? null) ? $config['driver'] : 'mysql';
+        $host = is_string($config['host'] ?? null) ? $config['host'] : '127.0.0.1';
+        $portVal = $config['port'] ?? match ($driver) {
             'pgsql', 'postgres', 'postgresql' => 5432,
             'sqlite' => 0,
             default => 3306,
-        });
-        $database = (string) ($config['database'] ?? '');
-        $username = (string) ($config['username'] ?? '');
-        $password = (string) ($config['password'] ?? '');
-        $charset = (string) ($config['charset'] ?? 'utf8mb4');
+        };
+        $port = is_numeric($portVal) ? (int) $portVal : 3306;
+        $database = is_string($config['database'] ?? null) ? $config['database'] : '';
+        $username = is_string($config['username'] ?? null) ? $config['username'] : '';
+        $password = is_string($config['password'] ?? null) ? $config['password'] : '';
+        $charset = is_string($config['charset'] ?? null) ? $config['charset'] : 'utf8mb4';
 
         $dsn = match ($driver) {
             'mysql' => sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
@@ -78,19 +80,22 @@ final class DatabaseInstance implements DatabaseInterface
             default => throw new RuntimeException(sprintf('Unsupported DB driver: %s', $driver)),
         };
 
+        $persistent = isset($config['persistent']) && $config['persistent'] === true;
+        $emulatePrepares = $persistent || $driver === 'sqlite';
+
         if ($driver === 'sqlite') {
             $this->pdoInstances[$name] = new PDO($dsn, null, null, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_PERSISTENT => false,
-                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_PERSISTENT => $persistent,
+                PDO::ATTR_EMULATE_PREPARES => true,
             ]);
         } else {
             $this->pdoInstances[$name] = new PDO($dsn, $username, $password, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_PERSISTENT => false,
-                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_PERSISTENT => $persistent,
+                PDO::ATTR_EMULATE_PREPARES => $emulatePrepares,
             ]);
         }
 
@@ -134,7 +139,16 @@ final class DatabaseInstance implements DatabaseInterface
         if (DIRECTORY_SEPARATOR === '\\' && preg_match('/^[A-Z]:\\\\/i', $path)) {
             return $path;
         }
-        $basePath = defined('SIRO_BASE_PATH') ? SIRO_BASE_PATH : (defined('BASE_PATH') ? BASE_PATH : getcwd());
+        $basePath = '';
+        if (defined('SIRO_BASE_PATH')) {
+            $v = SIRO_BASE_PATH;
+            $basePath = is_string($v) ? $v : '';
+        } elseif (defined('BASE_PATH')) {
+            $v = BASE_PATH;
+            $basePath = is_string($v) ? $v : '';
+        } else {
+            $basePath = (string) getcwd();
+        }
         return rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($path, './');
     }
 
@@ -158,6 +172,7 @@ final class DatabaseInstance implements DatabaseInterface
         $ttl = $this->pullQueryCacheTtl();
         if ($ttl > 0) {
             $cacheKey = $this->queryCacheKey('select', $sql, $params);
+            /** @var array<int, array<string, mixed>> $cached */
             $cached = Cache::remember($cacheKey, $ttl, function () use ($sql, $params, $connection): array {
                 $stmt = $this->prepareAndExecute($sql, $params, $connection);
                 return $stmt->fetchAll();
@@ -165,7 +180,9 @@ final class DatabaseInstance implements DatabaseInterface
             return $cached;
         }
         $stmt = $this->prepareAndExecute($sql, $params, $connection);
-        return $stmt->fetchAll();
+        /** @var array<int, array<string, mixed>> $result */
+        $result = $stmt->fetchAll();
+        return $result;
     }
 
     /**
@@ -177,14 +194,17 @@ final class DatabaseInstance implements DatabaseInterface
         $ttl = $this->pullQueryCacheTtl();
         if ($ttl > 0) {
             $cacheKey = $this->queryCacheKey('first', $sql, $params);
-            $cached = Cache::remember($cacheKey, $ttl, function () use ($sql, $params, $connection): ?array {
+            $fetcher = function () use ($sql, $params, $connection): ?array {
                 $stmt = $this->prepareAndExecute($sql, $params, $connection);
                 $row = $stmt->fetch();
-                return $row !== false ? $row : null;
-            });
+                return is_array($row) ? $row : null;
+            };
+            /** @var array<string, mixed>|null $cached */
+            $cached = Cache::remember($cacheKey, $ttl, $fetcher);
             return $cached;
         }
         $stmt = $this->prepareAndExecute($sql, $params, $connection);
+        /** @var array<string, mixed>|false $row */
         $row = $stmt->fetch();
         return $row !== false ? $row : null;
     }
@@ -255,6 +275,7 @@ final class DatabaseInstance implements DatabaseInterface
         }
         $normalizedPrefix = rtrim(trim($cachePrefix), ':') . ':';
         $cacheKey = $normalizedPrefix . sha1('qb_select|' . $sql . '|' . json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        /** @var array<int, array<string, mixed>> $cached */
         $cached = Cache::remember($cacheKey, $ttl, function () use ($sql, $params, $connection): array {
             $stmt = $this->prepareAndExecute($sql, $params, $connection);
             return $stmt->fetchAll();
@@ -262,11 +283,20 @@ final class DatabaseInstance implements DatabaseInterface
         return $cached;
     }
 
+    /** @var array<string, PDOStatement> */
+    private array $preparedStatements = [];
+
     /** @param array<int|string, mixed> $params */
     private function prepareAndExecute(string $sql, array $params, ?string $connection = null): PDOStatement
     {
         $start = microtime(true);
-        $stmt = $this->connection($connection)->prepare($sql);
+        $stmtHash = sha1($sql) . ($connection ?? $this->defaultConnection);
+        if (isset($this->preparedStatements[$stmtHash])) {
+            $stmt = $this->preparedStatements[$stmtHash];
+        } else {
+            $stmt = $this->connection($connection)->prepare($sql);
+            $this->preparedStatements[$stmtHash] = $stmt;
+        }
         $stmt->execute($params);
         $elapsed = (microtime(true) - $start) * 1000;
 
@@ -281,13 +311,15 @@ final class DatabaseInstance implements DatabaseInterface
         }
 
         $connName = $connection ?? $this->defaultConnection;
-        $this->capturedQueries[] = [
-            'sql' => $sql,
-            'bindings' => $params,
-            'time_ms' => round($elapsed, 2),
-            'rows' => $rows,
-            'connection' => $connName,
-        ];
+        if ($this->queryCaptureEnabled) {
+            $this->capturedQueries[] = [
+                'sql' => $sql,
+                'bindings' => $params,
+                'time_ms' => round($elapsed, 2),
+                'rows' => $rows,
+                'connection' => $connName,
+            ];
+        }
 
         if ($elapsed > $this->slowQueryThreshold) {
             Logger::error(new \RuntimeException(sprintf(

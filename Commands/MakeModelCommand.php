@@ -52,7 +52,7 @@ final class MakeModelCommand implements \Siro\Core\Commands\CommandInterface {
 
     private function modelTemplate(string $name): string
     {
-        $table = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $name)) . 's';
+        $table = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $name)) . 's';
 
         return <<<PHP
 <?php

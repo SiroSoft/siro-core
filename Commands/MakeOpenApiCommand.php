@@ -99,7 +99,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         // Only require auth on routes that need it (heuristic: CRUD methods on non-auth paths)
         $hasProtectedRoutes = false;
         foreach ($routes as $r) {
-            if (!str_contains($r['path'] ?? '', '/auth/') && in_array($r['method'] ?? '', ['POST', 'PUT', 'DELETE'], true)) {
+            $routePath = $this->safeStr($r['path'] ?? '');
+            $routeMethod = $this->safeStr($r['method'] ?? '');
+            if (!str_contains($routePath, '/auth/') && in_array($routeMethod, ['POST', 'PUT', 'DELETE'], true)) {
                 $hasProtectedRoutes = true;
                 break;
             }
@@ -141,17 +143,19 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             $router = $app->router();
             $ref = new \ReflectionClass($router);
             if ($ref->hasMethod('getRoutes')) {
+                /** @var list<array<string, mixed>> $registered */
                 $registered = $router->getRoutes();
             } elseif ($ref->hasProperty('staticRoutes')) {
                 $prop = $ref->getProperty('staticRoutes');
                 $prop->setAccessible(true);
+                /** @var list<array<string, mixed>> $registered */
                 $registered = $prop->getValue($router);
             } else {
                 return $this->buildFallbackRoutes();
             }
 
-            foreach ((array) $registered as $r) {
-                if (is_array($r) && isset($r['method'], $r['path'])) {
+            foreach ($registered as $r) {
+                if (isset($r['method'], $r['path'])) {
                     $r['handler'] = $this->resolveHandler($r['handler'] ?? '');
                     $r['middleware'] = $r['middleware'] ?? [];
                     $routes[] = $r;
@@ -170,10 +174,11 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         if (is_string($handler)) return $handler;
         if (is_array($handler) && count($handler) >= 2) {
             $first = $handler[0];
+            $second = $handler[1];
             if (is_object($first)) {
-                return get_class($first) . '@' . $handler[1];
+                return get_class($first) . '@' . $this->safeStr($second);
             }
-            return (is_string($first) ? $first : $first::class) . '@' . $handler[1];
+            return $this->safeStr($first) . '@' . $this->safeStr($second);
         }
         if ($handler instanceof \Closure) return 'Closure';
         return 'unknown';
@@ -185,15 +190,16 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
      */
     private function addRouteToPaths(array &$paths, array $route): void
     {
-        $method = strtolower($route['method'] ?? 'get');
-        $path = $route['path'] ?? '/';
-        $handler = $route['handler'] ?? '';
+        $method = strtolower($this->safeStr($route['method'] ?? 'get'));
+        $path = $this->safeStr($route['path'] ?? '/');
+        $handler = $this->safeStr($route['handler'] ?? '');
         $middleware = $route['middleware'] ?? [];
 
         // Derive tag from controller class or path
         $tag = $this->deriveTag($handler, $path);
 
         // Normalize middleware to array
+        /** @var array<int, string> $middlewareArr */
         $middlewareArr = is_array($middleware) ? $middleware : (is_string($middleware) ? [$middleware] : []);
         $hasAuth = $this->hasAuthMiddleware($middlewareArr);
 
@@ -230,6 +236,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $responseSchema = $this->buildResponseSchema($handler, $method, $path);
         $operation['responses'] = $this->buildResponses($responseSchema, $method, $path);
 
+        if (!isset($paths[$path]) || !is_array($paths[$path])) {
+            $paths[$path] = [];
+        }
         $paths[$path][$method] = $operation;
     }
 
@@ -307,12 +316,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * @param array<int, mixed> $middleware
+     * @param array<int, string> $middleware
      */
     private function hasAuthMiddleware(array $middleware): bool
     {
         foreach ($middleware as $m) {
-            $mStr = is_string($m) ? $m : (is_array($m) ? implode(',', $m) : '');
+            $mStr = $m;
             // Fix 4: Normalize auth detection - handle auth:api, auth:sanctum, custom auth middleware
             if (preg_match('/\bauth\b/i', $mStr)) return true;
             if (str_contains($mStr, 'AuthMiddleware') || str_contains($mStr, 'Auth:')) return true;
@@ -331,6 +340,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $properties = [];
         $required = [];
         foreach ($rules as $field => $fieldRules) {
+            /** @var array<int, string> $fieldRules */
             $properties[$field] = $this->ruleToProperty($field, $fieldRules);
             if ($this->isRequired($fieldRules)) {
                 $required[] = $field;
@@ -404,9 +414,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $modelFile = $this->basePath . '/app/Models/' . $m[1] . '.php';
         if (file_exists($modelFile)) {
             $schema = $this->parseModelFile($modelFile);
-            if (isset($schema['properties'])) {
+            if (isset($schema['properties']) && is_array($schema['properties'])) {
                 foreach ($schema['properties'] as $field => $prop) {
-                    if (in_array(strtolower($field), $this->internalModelFields, true)) {
+                    if (in_array(strtolower($this->safeStr($field)), $this->internalModelFields, true)) {
                         unset($schema['properties'][$field]);
                     }
                 }
@@ -476,7 +486,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private array $internalRules = ['unique:', 'exists:', 'confirmed', 'required_if:', 'prohibited_if:'];
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, array<int, string>>
      */
     private function extractValidationRules(string $handler): array
     {
@@ -602,7 +612,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * @param array<string, mixed> $rules
+     * @param array<int, string> $rules
      */
     private function isRequired(array $rules): bool
     {
@@ -624,19 +634,14 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         return ucfirst($method) . 'Request';
     }
 
-    /**
-     * @return array<int, array<string, mixed>>
-     */
+    /** @return array<int|string, array<string, mixed>> */
     private function buildResponses(?string $responseSchema, string $method, string $path): array
     {
         $successCode = $method === 'post' ? '201' : '200';
         $responses = [];
 
         if ($responseSchema && isset($this->schemas[$responseSchema])) {
-            $responses[$successCode] = [
-                'description' => 'Successful operation',
-                'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' . $responseSchema]]],
-            ];
+            $responses[$successCode] = ['description' => 'Successful operation', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' . $responseSchema]]]];
         } else {
             $responses[$successCode] = ['description' => 'Successful operation'];
         }
@@ -645,10 +650,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             $responses['404'] = ['description' => 'Resource not found'];
         }
         if (in_array($method, ['post', 'put', 'patch'])) {
-            $responses['422'] = [
-                'description' => 'Validation error',
-                'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ValidationErrorResponse']]],
-            ];
+            $responses['422'] = ['description' => 'Validation error', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ValidationErrorResponse']]]];
         }
         return $responses;
     }
@@ -722,7 +724,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * @return list<array<string, string>>
+     * @return list<array<string, mixed>>
      */
     private function buildTagsList(): array
     {
@@ -746,9 +748,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
      */
     private function passesFilter(array $route): bool
     {
-        $path = $route['path'] ?? '/';
-        $method = $route['method'] ?? 'GET';
-        $tag = $this->deriveTag($route['handler'] ?? '', $path);
+        $path = $this->safeStr($route['path'] ?? '/');
+        $method = $this->safeStr($route['method'] ?? 'GET');
+        $tag = $this->deriveTag($this->safeStr($route['handler'] ?? ''), $path);
 
         if ($method === 'OPTIONS') return false;
         if ($this->tagFilter !== null && !str_contains(strtolower($tag), strtolower($this->tagFilter))) return false;
@@ -784,7 +786,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         ];
         foreach (glob($controllerDir . '/*Controller.php') ?: [] as $file) {
             $base = basename($file, 'Controller.php');
-            $resource = strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $base));
+            $resource = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $base));
 
             $routes[] = ['method' => 'GET', 'path' => '/api/' . $resource, 'handler' => "App\\Controllers\\{$base}Controller@index"];
             $routes[] = ['method' => 'GET', 'path' => "/api/{$resource}/{id}", 'handler' => "App\\Controllers\\{$base}Controller@show"];

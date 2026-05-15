@@ -29,7 +29,8 @@ final class Blueprint
     private function detectDriver(): string
     {
         try {
-            return \Siro\Core\Database::connection()->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $driver = \Siro\Core\Database::connection()->getAttribute(PDO::ATTR_DRIVER_NAME);
+            return is_string($driver) ? $driver : 'mysql';
         } catch (\Throwable) {
             return 'mysql';
         }
@@ -115,8 +116,8 @@ final class Blueprint
 
     public function timestamps(?string $createdAt = 'created_at', ?string $updatedAt = 'updated_at'): void
     {
-        $this->timestamp($createdAt)->useCurrent();
-        $this->timestamp($updatedAt)->useCurrent();
+        $this->timestamp((string) $createdAt)->useCurrent();
+        $this->timestamp((string) $updatedAt)->useCurrent();
     }
 
     public function softDeletes(string $name = 'deleted_at'): Column
@@ -218,7 +219,8 @@ final class Blueprint
 
         foreach ($this->commands as $cmd) {
             if ($cmd['type'] === 'dropColumn') {
-                $col = $this->quote((string) ($cmd['column'] ?? ''));
+                $colName = $cmd['column'] ?? '';
+                $col = $this->quote(is_string($colName) ? $colName : '');
                 $parts[] = "ALTER TABLE {$tableSql} DROP COLUMN {$col}";
             }
         }
@@ -249,7 +251,9 @@ final class Blueprint
 
         $defaultNotNull = !($col->type === 'id');
         foreach ($this->commands as $cmd) {
-            if ($cmd['type'] === 'primary' && in_array($col->name, $cmd['columns'], true)) {
+            /** @var array<int, string> $primaryColumns */
+            $primaryColumns = (array) ($cmd['columns'] ?? []);
+            if ($cmd['type'] === 'primary' && in_array($col->name, $primaryColumns, true)) {
                 $defaultNotNull = true;
             }
         }
@@ -269,7 +273,7 @@ final class Blueprint
                 $parts[] = 'DEFAULT CURRENT_TIMESTAMP';
             }
         } elseif ($col->defaultValue !== null) {
-            $default = is_string($col->defaultValue) ? "'{$col->defaultValue}'" : (string) $col->defaultValue;
+            $default = is_string($col->defaultValue) ? "'{$col->defaultValue}'" : (is_scalar($col->defaultValue) ? (string) $col->defaultValue : '');
             $parts[] = "DEFAULT {$default}";
         }
 
@@ -279,10 +283,22 @@ final class Blueprint
     private function compileColumnType(Column $col): string
     {
         $q = $this->quote($col->name);
+        $lengthParam = $col->params['length'] ?? 255;
+        $precisionParam = $col->params['precision'] ?? 10;
+        $scaleParam = $col->params['scale'] ?? 2;
+        $unsignedParam = $col->params['unsigned'] ?? true;
+        /** @var int $length */
+        $length = is_numeric($lengthParam) ? (int) $lengthParam : 255;
+        /** @var int $precision */
+        $precision = is_numeric($precisionParam) ? (int) $precisionParam : 10;
+        /** @var int $scale */
+        $scale = is_numeric($scaleParam) ? (int) $scaleParam : 2;
+        /** @var bool $unsigned */
+        $unsigned = is_bool($unsignedParam) ? $unsignedParam : true;
         return match ($col->type) {
             'string' => $q . ' ' . match ($this->driver) {
                 'sqlite' => 'TEXT',
-                default => 'VARCHAR(' . ((int) ($col->params['length'] ?? 255)) . ')',
+                default => 'VARCHAR(' . $length . ')',
             },
             'text' => $q . ' TEXT',
             'integer' => $q . ' INT',
@@ -293,12 +309,12 @@ final class Blueprint
             'bigint' => $q . ' ' . match ($this->driver) {
                 'pgsql' => 'BIGINT',
                 'sqlite' => 'INTEGER',
-                default => 'BIGINT' . (($col->params['unsigned'] ?? true) ? ' UNSIGNED' : ''),
+                default => 'BIGINT' . ($unsigned ? ' UNSIGNED' : ''),
             },
-            'decimal' => sprintf('%s DECIMAL(%d,%d)', $q, (int) ($col->params['precision'] ?? 10), (int) ($col->params['scale'] ?? 2)),
+            'decimal' => sprintf('%s DECIMAL(%d,%d)', $q, $precision, $scale),
             'float' => $q . ' ' . match ($this->driver) {
                 'sqlite' => 'REAL',
-                default => 'FLOAT(' . ((int) ($col->params['precision'] ?? 10)) . ')',
+                default => 'FLOAT(' . $precision . ')',
             },
             'boolean' => $q . ' ' . match ($this->driver) {
                 'pgsql' => 'BOOLEAN',
@@ -346,23 +362,25 @@ final class Blueprint
         }
 
         if ($cmd['type'] === 'unique') {
+            /** @var array<int, string> $columns */
             $columns = (array) ($cmd['columns'] ?? []);
+            $cmdName = $cmd['name'] ?? null;
+            $name = is_string($cmdName) ? $cmdName : ('uq_' . $this->table . '_' . implode('_', $columns));
             if ($inline) {
-                $name = (string) ($cmd['name'] ?? ('uq_' . $this->table . '_' . implode('_', $columns)));
                 return "CONSTRAINT {$name} UNIQUE (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
             }
-            $name = (string) ($cmd['name'] ?? ('uq_' . $this->table . '_' . implode('_', $columns)));
             $tableSql = $this->quote($this->table);
             return "CREATE UNIQUE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
         }
 
         if ($cmd['type'] === 'index') {
+            /** @var array<int, string> $columns */
             $columns = (array) ($cmd['columns'] ?? []);
+            $cmdName = $cmd['name'] ?? null;
+            $name = is_string($cmdName) ? $cmdName : ('idx_' . $this->table . '_' . implode('_', $columns));
             if ($inline) {
-                $name = (string) ($cmd['name'] ?? ('idx_' . $this->table . '_' . implode('_', $columns)));
                 return "INDEX {$name} (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
             }
-            $name = (string) ($cmd['name'] ?? ('idx_' . $this->table . '_' . implode('_', $columns)));
             $tableSql = $this->quote($this->table);
             return "CREATE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
         }

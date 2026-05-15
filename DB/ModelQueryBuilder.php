@@ -8,15 +8,18 @@ use RuntimeException;
 use Siro\Core\Model;
 
 if (!function_exists(__NAMESPACE__ . '\class_uses_recursive')) {
+    /** @return array<string, string> */
     function class_uses_recursive(object|string $class): array
     {
         $traits = [];
         do {
-            $traits += \class_uses($class);
+            $t = \class_uses($class);
+            $traits += is_array($t) ? $t : [];
         } while ($class = \get_parent_class($class));
 
         foreach ($traits as $trait => $same) {
-            $traits += \class_uses($trait);
+            $t = \class_uses($trait);
+            $traits += is_array($t) ? $t : [];
         }
 
         return $traits;
@@ -89,6 +92,84 @@ final class ModelQueryBuilder extends QueryBuilder
     public function where(string $column, mixed $operatorOrValue, mixed $value = null): static
     {
         parent::where($column, $operatorOrValue, $value);
+        return $this;
+    }
+
+    public function whereHas(string $relation, ?callable $callback = null, string $boolean = 'AND'): static
+    {
+        $model = $this->newModelInstance();
+        $relatedModel = $this->resolveRelatedModel($relation);
+        $modelTable = $model->getTable();
+        $relTable = $relatedModel->getTable();
+        $modelSingular = strtolower(basename(str_replace('\\', '/', $this->modelClass)));
+
+        $rel = method_exists($model, $relation) ? $model->{$relation}() : null;
+        $cond = $rel instanceof \Siro\Core\DB\Relations\BelongsTo
+            ? $relTable . '.id = ' . $modelTable . '.' . $relation . '_id'
+            : $relTable . '.' . $modelSingular . '_id = ' . $modelTable . '.id';
+
+        return $this->buildExistsSubquery($relatedModel, $cond, $callback, $boolean);
+    }
+
+    private function newModelInstance(): \Siro\Core\Model
+    {
+        /** @var \Siro\Core\Model $instance */
+        $instance = new ($this->modelClass)();
+        return $instance;
+    }
+
+    private function resolveRelatedModel(string $relation): \Siro\Core\Model
+    {
+        $studly = ucfirst($relation);
+        $nsParts = explode('\\', $this->modelClass);
+        array_pop($nsParts);
+        $appNs = implode('\\', $nsParts);
+        $candidates = $appNs !== '' ? [$appNs . '\\' . $studly] : ['App\\Models\\' . $studly];
+        foreach ($candidates as $class) {
+            if (class_exists($class)) {
+                /** @var \Siro\Core\Model $instance */
+                $instance = new $class();
+                return $instance;
+            }
+        }
+        throw new \RuntimeException("Cannot resolve related model for relation: {$relation} on {$this->modelClass}");
+    }
+
+    public function orWhereHas(string $relation, ?callable $callback = null): static
+    {
+        return $this->whereHas($relation, $callback, 'OR');
+    }
+
+    public function whereDoesntHave(string $relation, ?callable $callback = null): static
+    {
+        $this->whereHas($relation, $callback, 'AND');
+        $lastKey = array_key_last($this->wheres);
+        if ($lastKey !== null) {
+            $last = $this->wheres[$lastKey];
+            if (isset($last['sql'])) {
+                $this->wheres[$lastKey] = [
+                    'type' => 'raw',
+                    'boolean' => $last['boolean'] === 'OR' ? 'OR' : 'AND',
+                    'sql' => 'NOT ' . $last['sql'],
+                ];
+            }
+        }
+        return $this;
+    }
+
+    private function buildExistsSubquery(Model $relModel, string $condition, ?callable $callback, string $boolean): static
+    {
+        $qb = $relModel->query();
+        $qb->selectRaw('1')->whereRaw($condition);
+        if ($callback !== null) {
+            $callback($qb);
+        }
+        $subSql = $qb->toSql();
+        $this->wheres[] = [
+            'type' => 'raw',
+            'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
+            'sql' => 'EXISTS (' . $subSql . ')',
+        ];
         return $this;
     }
 
@@ -252,7 +333,9 @@ final class ModelQueryBuilder extends QueryBuilder
     private function hydrateModel(array $row): Model
     {
         $modelClass = $this->modelClass;
-        return $modelClass::hydrate($row);
+        /** @var Model $result */
+        $result = $modelClass::hydrate($row);
+        return $result;
     }
 
     /**

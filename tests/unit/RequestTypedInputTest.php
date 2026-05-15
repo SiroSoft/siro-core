@@ -203,12 +203,12 @@ final class RequestTypedInputTest extends TestCase
         $this->assertFalse($result);
     }
 
-    public function testIntCastsNullToZero(): void
+    public function testIntWithNullReturnsDefault(): void
     {
         $_POST['value'] = null;
         $request = new Request('POST', '/test', [], [], ['value' => null]);
         $result = $request->int('value', 42);
-        $this->assertSame(0, $result);
+        $this->assertSame(42, $result);
     }
 
     public function testBoolCastsNullToFalse(): void
@@ -219,12 +219,12 @@ final class RequestTypedInputTest extends TestCase
         $this->assertFalse($result);
     }
 
-    public function testFloatCastsNullToZero(): void
+    public function testFloatWithNullReturnsDefault(): void
     {
         $_POST['value'] = null;
         $request = new Request('POST', '/test', [], [], ['value' => null]);
         $result = $request->float('value', 3.14);
-        $this->assertSame(0.0, $result);
+        $this->assertSame(3.14, $result);
     }
 
     public function testIntWithNonExistentKeyUsesDefault(): void

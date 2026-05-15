@@ -17,9 +17,9 @@ final class Str
 {
     public static function slug(string $value, string $separator = '-'): string
     {
-        $value = preg_replace('/[^\p{L}\p{N}\s\-_]/u', '', $value);
-        $value = preg_replace('/[\s\-_]+/', $separator, $value);
-        $value = preg_replace('/' . preg_quote($separator, '/') . '+/', $separator, $value);
+        $value = preg_replace('/[^\p{L}\p{N}\s\-_]/u', '', $value) ?? $value;
+        $value = preg_replace('/[\s\-_]+/', $separator, $value) ?? $value;
+        $value = preg_replace('/' . preg_quote($separator, '/') . '+/', $separator, $value) ?? $value;
         return trim(mb_strtolower($value), $separator);
     }
 
@@ -52,8 +52,8 @@ final class Str
 
     public static function snake(string $value, string $delimiter = '_'): string
     {
-        $value = preg_replace('/[\s\-]+/', $delimiter, $value);
-        $value = preg_replace('/([A-Z])/', $delimiter . '$1', $value);
+        $value = preg_replace('/[\s\-]+/', $delimiter, $value) ?? $value;
+        $value = preg_replace('/([A-Z])/', $delimiter . '$1', $value) ?? $value;
         return trim(mb_strtolower($value), $delimiter);
     }
 
@@ -164,7 +164,8 @@ final class Str
         ];
         foreach ($rules as $pattern => $replacement) {
             if (preg_match($pattern, $value)) {
-                return preg_replace($pattern, $replacement, $value);
+                $result = preg_replace($pattern, $replacement, $value);
+                return $result ?? $value;
             }
         }
         return $value;
@@ -200,7 +201,8 @@ final class Str
         ];
         foreach ($rules as $pattern => $replacement) {
             if (preg_match($pattern, $value)) {
-                return preg_replace($pattern, $replacement, $value);
+                $result = preg_replace($pattern, $replacement, $value);
+                return $result ?? $value;
             }
         }
         return $value;

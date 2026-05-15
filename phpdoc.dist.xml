@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpdocumentor
+    configVersion="3"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://www.phpdoc.org"
+>
+    <title>Siro Core API Reference</title>
+    <paths>
+        <output>docs/api</output>
+        <cache>.phpdoc/cache</cache>
+    </paths>
+    <version number="0.26.2">
+        <api>
+            <source dsn=".">
+                <directories>
+                    <path>.</path>
+                </directories>
+                <exclude>
+                    <path>vendor/**</path>
+                    <path>tests/**</path>
+                    <path>scripts/**</path>
+                    <path>storage/**</path>
+                    <path>docs/**</path>
+                    <path>.phpdoc/**</path>
+                </exclude>
+            </source>
+        </api>
+    </version>
+</phpdocumentor>

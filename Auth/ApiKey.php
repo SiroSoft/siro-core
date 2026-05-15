@@ -77,15 +77,21 @@ final class ApiKey
             return null;
         }
 
-        /** @var array<string, mixed> $key */
+        /** @var array<string, string|int|float|null> $key */
         $key = $rows[0];
 
-        // Verify with bcrypt if available, fallback to sha256 for legacy keys
-        $storedBcrypt = $key['token_bcrypt'] ?? '';
+        // Verify with bcrypt if available, auto-migrate legacy keys
+        $storedBcrypt = (string) ($key['token_bcrypt'] ?? '');
         if ($storedBcrypt !== '') {
             if (!password_verify($token, $storedBcrypt)) {
                 return null;
             }
+        } else {
+            // Legacy key (SHA256 only): upgrade to bcrypt on successful auth
+            Database::execute(
+                "UPDATE " . self::$table . " SET token_bcrypt = ? WHERE id = ?",
+                [password_hash($token, PASSWORD_BCRYPT), $key['id']]
+            );
         }
 
         $expiresAt = (int) ($key['expires_at'] ?? 0);
@@ -100,7 +106,7 @@ final class ApiKey
         );
 
         return [
-            'id' => (int) $key['id'],
+            'id' => (int) ($key['id'] ?? 0),
             'name' => (string) ($key['name'] ?? ''),
             'scopes' => (string) ($key['scopes'] ?? ''),
             'user_id' => (int) ($key['user_id'] ?? 0),
@@ -161,7 +167,7 @@ final class ApiKey
         $result = [];
 
         foreach ($rows as $row) {
-            /** @var array<string, mixed> $row */
+            /** @var array<string, string|int|float|null> $row */
             $result[] = [
                 'id' => (int) ($row['id'] ?? 0),
                 'name' => (string) ($row['name'] ?? ''),
@@ -191,6 +197,7 @@ final class ApiKey
             return false;
         }
 
+        /** @var array<string, string|int|float|bool|null> $keyData */
         $scopes = array_map('trim', explode(',', (string) ($keyData['scopes'] ?? '')));
         $scope = strtolower(trim($scope));
 

@@ -27,7 +27,8 @@ trait MigrationBaseCommand
      */
     private function ensureMigrationTable(PDO $pdo): void
     {
-        $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driverAttr = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
 
         $sql = match ($driver) {
             'pgsql' => 'CREATE TABLE IF NOT EXISTS migrations (id BIGSERIAL PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
@@ -37,7 +38,8 @@ trait MigrationBaseCommand
         $pdo->exec($sql);
 
         // Check if batch column already exists before trying to add it
-        $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driverAttr = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
         $hasBatch = false;
         try {
             $columns = $pdo->query('SELECT batch FROM migrations LIMIT 0');

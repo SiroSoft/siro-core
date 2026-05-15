@@ -37,8 +37,9 @@ trait SoftDeletes
             return false;
         }
 
+        $key = $this->getKeyName();
         $affected = \Siro\Core\Database::table($this->getTable())
-            ->where('id', '=', $this->getAttribute('id'))
+            ->where($key, '=', $this->getAttribute($key))
             ->delete();
 
         if ($affected > 0) {

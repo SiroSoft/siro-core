@@ -39,13 +39,14 @@ final class DeployCommand implements \Siro\Core\Commands\CommandInterface {
             return $this->listEnvironments();
         }
 
-        $environment = trim((string) ($args[0] ?? ''));
+        $environment = trim($this->safeStr($args[0] ?? ''));
         $config = $this->loadConfig();
+        /** @var array<string, mixed> $environments */
         $environments = $config['environments'] ?? [];
 
         if ($environment === '') {
             // Deploy default environment
-            $environment = $config['default'] ?? 'production';
+            $environment = $this->safeStr($config['default'] ?? 'production');
         }
 
         if (!isset($environments[$environment])) {
@@ -54,6 +55,7 @@ final class DeployCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
+        /** @var array<string, mixed> $env */
         $env = $environments[$environment];
         $this->deploy($environment, $env);
 
@@ -63,9 +65,9 @@ final class DeployCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<string, mixed> $env */
     private function deploy(string $name, array $env): void
     {
-        $method = $env['method'] ?? 'git';
-        $branch = $env['branch'] ?? 'main';
-        $remote = $env['remote'] ?? 'origin';
+        $method = $this->safeStr($env['method'] ?? 'git');
+        $branch = $this->safeStr($env['branch'] ?? 'main');
+        $remote = $this->safeStr($env['remote'] ?? 'origin');
 
         $this->write("  \033[1;33mDeploying to '{$name}'...\033[0m");
         $this->write("  Method: {$method}");
@@ -88,8 +90,9 @@ final class DeployCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<string, mixed> $env */
     private function deployGit(string $remote, string $branch, array $env): void
     {
+        /** @var array<int, string> $postDeploy */
         $postDeploy = $env['post_deploy'] ?? [];
-        $repoDir = $env['repo_dir'] ?? $this->basePath;
+        $repoDir = $this->safeStr($env['repo_dir'] ?? $this->basePath);
         $safeRemote = escapeshellarg($remote);
         $safeBranch = escapeshellarg($branch);
         $safeRepoDir = escapeshellarg($repoDir);
@@ -109,9 +112,10 @@ final class DeployCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<string, mixed> $env */
     private function deployRsync(array $env): void
     {
-        $host = $env['host'] ?? '';
-        $user = $env['user'] ?? '';
-        $target = $env['target'] ?? '';
+        $host = $this->safeStr($env['host'] ?? '');
+        $user = $this->safeStr($env['user'] ?? '');
+        $target = $this->safeStr($env['target'] ?? '');
+        /** @var array<int, string> $exclude */
         $exclude = $env['exclude'] ?? ['.env', 'vendor/', 'storage/logs/*', '.git/'];
 
         if ($host === '' || $target === '') {
@@ -136,7 +140,7 @@ final class DeployCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<string, mixed> $env */
     private function deployCustom(array $env): void
     {
-        $script = $env['script'] ?? '';
+        $script = $this->safeStr($env['script'] ?? '');
         if ($script === '') {
             $this->write('  Error: no custom script specified.');
             return;
@@ -155,9 +159,13 @@ final class DeployCommand implements \Siro\Core\Commands\CommandInterface {
         $configFile = $this->basePath . DIRECTORY_SEPARATOR . 'deploy.json';
 
         if (is_file($configFile)) {
-            $content = (string) file_get_contents($configFile);
-            $decoded = json_decode($content, true);
-            return is_array($decoded) ? $decoded : [];
+            $content = file_get_contents($configFile);
+            $decoded = json_decode(is_string($content) ? $content : '', true);
+            if (!is_array($decoded)) {
+                return [];
+            }
+            /** @var array<string, mixed> $decoded */
+            return $decoded;
         }
 
         return [];
@@ -212,6 +220,7 @@ JSON;
     private function listEnvironments(): int
     {
         $config = $this->loadConfig();
+        /** @var array<string, array<string, mixed>> $environments */
         $environments = $config['environments'] ?? [];
 
         if ($environments === []) {
@@ -227,8 +236,8 @@ JSON;
         foreach ($environments as $name => $env) {
             $rows[] = [
                 $name,
-                $env['method'] ?? 'git',
-                ($env['branch'] ?? 'main') . ' / ' . ($env['remote'] ?? 'origin'),
+                $this->safeStr($env['method'] ?? 'git'),
+                $this->safeStr($env['branch'] ?? 'main') . ' / ' . $this->safeStr($env['remote'] ?? 'origin'),
             ];
         }
 

@@ -22,9 +22,12 @@ final class UploadedFile
     private readonly int $size;
     private readonly int $error;
 
-    private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'pht', 'phar', 'phps', 'exe', 'sh', 'bat', 'cmd', 'pl', 'py', 'rb', 'cgi', 'asp', 'aspx', 'jsp', 'htaccess', 'user.ini', 'env', 'shtml', 'stm', 'shtm', 'inc', 'war', 'jar'];
+    private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'pht', 'phar', 'phps', 'exe', 'sh', 'bat', 'cmd', 'pl', 'py', 'rb', 'cgi', 'asp', 'aspx', 'jsp', 'htaccess', 'user.ini', 'env', 'shtml', 'stm', 'shtm', 'inc', 'war', 'jar', 'svg', 'svgz'];
 
-    /** @param array<string, mixed> $file */
+    /** Whitelist of allowed extensions for upload. Use this instead of BLOCKED_EXTENSIONS for stricter security. */
+    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'csv', 'json', 'xml', 'doc', 'docx', 'zip'];
+
+    /** @param array<string, string|int> $file */
     public function __construct(array $file)
     {
         $this->path = (string) ($file['tmp_name'] ?? '');
@@ -117,6 +120,9 @@ final class UploadedFile
         if (in_array($ext, self::BLOCKED_EXTENSIONS, true)) {
             throw new \RuntimeException('File type not allowed: .' . $ext);
         }
+        if (!in_array($ext, self::ALLOWED_EXTENSIONS, true) && $ext !== '') {
+            throw new \RuntimeException('File type not allowed: .' . $ext . ' (allowed: ' . implode(', ', self::ALLOWED_EXTENSIONS) . ')');
+        }
         $path = $directory . '/' . $filename;
 
         if ($useStorage) {
@@ -207,7 +213,7 @@ final class UploadedFile
     {
         $ext = $this->getClientOriginalExtension();
         if ($ext === '' || !isset(self::MIME_MAP[$ext])) {
-            return true;
+            return false;
         }
 
         $expectedMimes = self::MIME_MAP[$ext];
@@ -243,14 +249,39 @@ final class UploadedFile
 
     public static function maxSize(): int
     {
-        $maxUpload = (int) ini_get('upload_max_filesize');
-        $maxPost = (int) ini_get('post_max_size');
-        return min($maxUpload, $maxPost) * 1024 * 1024;
+        return min(self::parseIniSize((string) ini_get('upload_max_filesize')), self::parseIniSize((string) ini_get('post_max_size')));
+    }
+
+    private static function parseIniSize(string $value): int
+    {
+        $value = trim((string) $value);
+        if ($value === '') return 0;
+        $unit = strtolower(substr($value, -1));
+        $size = (int) $value;
+        return match ($unit) {
+            'g' => $size * 1024 * 1024 * 1024,
+            'm' => $size * 1024 * 1024,
+            'k' => $size * 1024,
+            default => $size,
+        };
     }
 
     private function generateFilename(): string
     {
         $ext = $this->getClientOriginalExtension();
+        if ($ext !== '') {
+            $allowedExts = array_keys(self::MIME_MAP);
+            if (!in_array($ext, $allowedExts, true)) {
+                $mime = $this->getMimeType();
+                $ext = 'bin';
+                foreach (self::MIME_MAP as $mapExt => $mapMimes) {
+                    if (in_array($mime, $mapMimes, true)) {
+                        $ext = $mapExt;
+                        break;
+                    }
+                }
+            }
+        }
         $base = bin2hex(random_bytes(16));
 
         return $ext !== '' ? $base . '.' . $ext : $base;

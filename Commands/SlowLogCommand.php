@@ -40,16 +40,17 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
                 if (!is_array($data)) {
                     continue;
                 }
-                $timeMs = (float) ($data['time_ms'] ?? 0);
+                $timeMsVal = $data['time_ms'] ?? 0;
+                $timeMs = is_numeric($timeMsVal) ? (float) $timeMsVal : 0;
                 if ($timeMs >= $minMs) {
                     $entries[] = [
                         'trace' => basename($file, '.json'),
-                        'time' => $data['timestamp'] ?? '?',
-                        'method' => $data['method'] ?? '?',
-                        'path' => $data['path'] ?? '?',
-                        'status' => (string) ($data['status'] ?? '?'),
+                        'time' => $this->safeStr($data['timestamp'] ?? '?'),
+                        'method' => $this->safeStr($data['method'] ?? '?'),
+                        'path' => $this->safeStr($data['path'] ?? '?'),
+                        'status' => $this->safeStr($data['status'] ?? '?'),
                         'ms' => $timeMs,
-                        'queries' => isset($data['queries']) ? count($data['queries']) : 0,
+                        'queries' => isset($data['queries']) && is_array($data['queries']) ? count($data['queries']) : 0,
                     ];
                 }
             }
@@ -82,18 +83,20 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
             return 0;
         }
 
-        if ($entries !== []) {
+            if ($entries !== []) {
             $this->table(
                 ['#', 'Time', 'Method', 'Path', 'Status', 'Duration', 'SQL'],
-                array_map(fn ($i, $e) => [
-                    (string) ($i + 1),
-                    $e['time'],
-                    $e['method'],
-                    $e['path'],
-                    $e['status'],
-                    round($e['ms'], 1) . 'ms',
-                    (string) $e['queries'],
-                ], array_keys($entries), $entries)
+                array_map(function (int $i, array $e): array {
+                    return [
+                        $this->safeStr($i + 1),
+                        $this->safeStr($e['time']),
+                        $this->safeStr($e['method']),
+                        $this->safeStr($e['path']),
+                        $this->safeStr($e['status']),
+                        round($e['ms'], 1) . 'ms',
+                        $this->safeStr($e['queries']),
+                    ];
+                }, array_keys($entries), $entries)
             );
         }
 

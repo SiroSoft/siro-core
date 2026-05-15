@@ -61,27 +61,47 @@ final class Queue
     public static function dashboardHtml(): string
     {
         $pending = 0;
+        $processing = 0;
         $failed = 0;
         $latest = [];
+        $avgAttempts = 0;
+        $totalProcessed = 0;
         try {
+            $now = time();
             $pending = Database::table('jobs')->where('locked_until', null)->count();
+            $processing = Database::table('jobs')->where('locked_until', '>', $now)->count();
             $failed = Database::table('failed_jobs')->count();
+            $totalRow = Database::first("SELECT COUNT(*) AS cnt FROM jobs");
+            $totalProcessed = is_numeric($totalRow['cnt'] ?? null) ? (int) $totalRow['cnt'] : 0;
+            $avgRow = Database::first("SELECT COALESCE(AVG(attempts), 0) AS avg FROM jobs");
+            $avgAttempts = round(is_numeric($avgRow['avg'] ?? null) ? (float) $avgRow['avg'] : 0.0, 1);
             $latest = Database::table('jobs')->orderBy('id', 'desc')->limit(10)->get();
         } catch (\Throwable) {
         }
+        $successRate = $totalProcessed > 0 ? round((($totalProcessed - $failed) / $totalProcessed) * 100, 1) : 100;
 
         $rows = '';
         foreach ($latest as $j) {
-            $rows .= '<tr><td>' . htmlspecialchars((string)($j['id'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars((string)($j['job'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>'
-                . '<td>' . htmlspecialchars((string)($j['attempts'] ?? 0), ENT_QUOTES, 'UTF-8') . '/' . htmlspecialchars((string)($j['max_attempts'] ?? 3), ENT_QUOTES, 'UTF-8') . '</td>'
-                . '<td>' . htmlspecialchars((string)($j['priority'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td>'
-                . '<td>' . htmlspecialchars(date('Y-m-d H:i:s', $j['available_at'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td></tr>';
+            $jId = $j['id'] ?? '';
+            $jJob = $j['job'] ?? '';
+            $jAttempts = $j['attempts'] ?? 0;
+            $jMaxAttempts = $j['max_attempts'] ?? 3;
+            $jPriority = $j['priority'] ?? 0;
+            $jAvailable = $j['available_at'] ?? 0;
+            $lockedUntil = $j['locked_until'] ?? null;
+            $status = (is_numeric($lockedUntil) && (int) $lockedUntil > time()) ? 'processing' : 'pending';
+            $badge = $status === 'processing' ? '<span class="badge badge-blue">PROCESSING</span>' : '<span class="badge badge-green">PENDING</span>';
+            $rows .= '<tr><td>' . htmlspecialchars(is_scalar($jId) ? (string) $jId : '', ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars(is_scalar($jJob) ? (string) $jJob : '', ENT_QUOTES, 'UTF-8') . ' ' . $badge . '</td>'
+                . '<td>' . htmlspecialchars(is_scalar($jAttempts) ? (string) $jAttempts : '0', ENT_QUOTES, 'UTF-8') . '/' . htmlspecialchars(is_scalar($jMaxAttempts) ? (string) $jMaxAttempts : '3', ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars(is_scalar($jPriority) ? (string) $jPriority : '0', ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars(date('Y-m-d H:i:s', is_numeric($jAvailable) ? (int) $jAvailable : 0), ENT_QUOTES, 'UTF-8') . '</td></tr>';
         }
 
         return '<!DOCTYPE html><html><head><title>Queue Dashboard - Siro</title>'
             . '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            . '<meta http-equiv="refresh" content="10">'
             . '<style>body{font-family:-apple-system,sans-serif;max-width:960px;margin:0 auto;padding:20px;background:#f5f5f5}'
-            . '.stat{display:inline-block;background:#fff;border-radius:8px;padding:20px 30px;margin:10px;box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center}'
+            . '.stat{display:inline-block;background:#fff;border-radius:8px;padding:20px 30px;margin:10px;box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center;min-width:160px}'
             . '.stat h3{margin:0;font-size:14px;color:#666}'
             . '.stat .num{font-size:32px;font-weight:700;color:#333}'
             . 'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}'
@@ -90,15 +110,18 @@ final class Queue
             . 'h1{color:#333}'
             . '.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600}'
             . '.badge-green{background:#e6ffe6;color:#0a0}'
+            . '.badge-blue{background:#e6f0ff;color:#06c}'
             . '.badge-red{background:#ffe6e6;color:#c00}</style></head><body>'
-            . '<h1>Queue Dashboard</h1>'
-            . '<div class="stat"><h3>Pending Jobs</h3><div class="num">' . $pending . '</div></div>'
-            . '<div class="stat"><h3>Failed Jobs</h3><div class="num">' . $failed . '</div></div>'
-            . '<div class="stat"><h3>Jobs / Table</h3><div class="num">jobs</div></div>'
+            . '<h1>Queue Dashboard <span style="font-size:14px;color:#999">auto-refresh 10s</span></h1>'
+            . '<div class="stat"><h3>Pending</h3><div class="num">' . htmlspecialchars((string) $pending, ENT_QUOTES, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Processing</h3><div class="num">' . htmlspecialchars((string) $processing, ENT_QUOTES, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Failed</h3><div class="num">' . htmlspecialchars((string) $failed, ENT_QUOTES, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Success Rate</h3><div class="num">' . htmlspecialchars((string) $successRate, ENT_QUOTES, 'UTF-8') . '%</div></div>'
+            . '<div class="stat"><h3>Avg Attempts</h3><div class="num">' . htmlspecialchars((string) $avgAttempts, ENT_QUOTES, 'UTF-8') . '</div></div>'
             . '<h2>Recent Jobs</h2>'
             . '<table><thead><tr><th>ID</th><th>Job</th><th>Attempts</th><th>Priority</th><th>Available</th></tr></thead><tbody>'
             . $rows . '</tbody></table>'
-            . '<p style="color:#999;font-size:12px;margin-top:20px">Siro Queue Dashboard</p></body></html>';
+            . '<p style="color:#999;font-size:12px;margin-top:20px">Siro Queue Dashboard · <a href="/metrics">Metrics</a></p></body></html>';
     }
 
     private const DEFAULT_MAX_ATTEMPTS = 3;
@@ -152,14 +175,10 @@ final class Queue
         $pdo->beginTransaction();
 
         try {
-            $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
-            $lockCheck = $driver === 'sqlite'
-                ? "(locked_until IS NULL OR locked_until < :now)"
-                : "(locked_until IS NULL OR locked_until < UNIX_TIMESTAMP())";
-
+            $now = time();
             $row = Database::first(
-                "SELECT * FROM jobs WHERE available_at <= :now AND {$lockCheck} ORDER BY priority DESC, id ASC LIMIT 1",
-                ['now' => time()]
+                "SELECT * FROM jobs WHERE available_at <= :now AND (locked_until IS NULL OR locked_until < :now2) ORDER BY priority DESC, id ASC LIMIT 1",
+                ['now' => $now, 'now2' => $now]
             );
 
             if ($row === null) {
@@ -167,9 +186,10 @@ final class Queue
                 return false;
             }
 
+            $lockDuration = min(is_numeric($row['timeout'] ?? null) ? (int) $row['timeout'] : 60, 3600);
             $affected = Database::execute(
-                "UPDATE jobs SET locked_until = :lock WHERE id = :id AND locked_until IS NULL",
-                ['lock' => time() + 60, 'id' => $row['id']]
+                "UPDATE jobs SET locked_until = :lock WHERE id = :id AND (locked_until IS NULL OR locked_until < :now3)",
+                ['lock' => $now + $lockDuration, 'id' => $row['id'], 'now3' => $now]
             );
 
             if ($affected === 0) {
@@ -189,16 +209,18 @@ final class Queue
         $error = null;
 
         try {
-            $jobData = json_decode((string) $row['data'], true);
+            $rowData = is_string($row['data'] ?? null) ? $row['data'] : '[]';
+            $jobData = json_decode($rowData, true);
             if (!is_array($jobData)) {
                 $jobData = [];
             }
-            $timeout = (int) ($row['timeout'] ?? self::DEFAULT_TIMEOUT);
+            $timeoutVal = isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] : self::DEFAULT_TIMEOUT;
+            $timeout = $timeoutVal;
             $maxExecTime = time() + $timeout;
 
-            if (class_exists($row['job'])) {
-                $class = $row['job'];
-                $instance = new $class();
+            $rowJob = $row['job'] ?? '';
+            if (is_string($rowJob) && class_exists($rowJob)) {
+                $instance = new $rowJob();
 
                 if (method_exists($instance, 'handle')) {
                     $handler = $instance->handle(...);
@@ -216,8 +238,10 @@ final class Queue
         if ($success) {
             Database::execute("DELETE FROM jobs WHERE id = :id", ['id' => $row['id']]);
         } else {
-            $attempts = ((int) ($row['attempts'] ?? 0)) + 1;
-            $maxAttempts = (int) ($row['max_attempts'] ?? self::DEFAULT_MAX_ATTEMPTS);
+            $attemptsVal = $row['attempts'] ?? 0;
+            $attempts = (is_numeric($attemptsVal) ? (int) $attemptsVal : 0) + 1;
+            $maxAttemptsVal = $row['max_attempts'] ?? self::DEFAULT_MAX_ATTEMPTS;
+            $maxAttempts = is_numeric($maxAttemptsVal) ? (int) $maxAttemptsVal : self::DEFAULT_MAX_ATTEMPTS;
 
             if ($attempts >= $maxAttempts) {
                 Database::execute(
@@ -293,7 +317,8 @@ final class Queue
     {
         try {
             $row = Database::first("SELECT COUNT(*) AS count FROM jobs WHERE available_at <= :now", ['now' => time()]);
-            return (int) ($row['count'] ?? 0);
+            $countVal = $row['count'] ?? 0;
+            return is_numeric($countVal) ? (int) $countVal : 0;
         } catch (\Throwable) {
             return 0;
         }
@@ -306,7 +331,8 @@ final class Queue
     {
         try {
             $row = Database::first("SELECT COUNT(*) AS count FROM failed_jobs");
-            return (int) ($row['count'] ?? 0);
+            $countVal = $row['count'] ?? 0;
+            return is_numeric($countVal) ? (int) $countVal : 0;
         } catch (\Throwable) {
             return 0;
         }
@@ -321,7 +347,8 @@ final class Queue
             return [];
         }
 
-        $decoded = json_decode((string) $data, true);
+        $strData = is_string($data) ? $data : (is_scalar($data) ? (string) $data : '');
+        $decoded = json_decode($strData, true);
         return is_array($decoded) ? $decoded : [];
     }
 
@@ -332,12 +359,14 @@ final class Queue
                 $rows = Database::select("SELECT * FROM failed_jobs");
                 $count = 0;
                 foreach ($rows as $row) {
+                    $jobName = is_string($row['job'] ?? null) ? $row['job'] : '';
                     self::push(
-                        $row['job'],
-                        self::decodeJobData($row['data']),
+                        $jobName,
+                        self::decodeJobData($row['data'] ?? null),
                         0,
                         self::DEFAULT_PRIORITY,
-                        self::DEFAULT_MAX_ATTEMPTS
+                        self::DEFAULT_MAX_ATTEMPTS,
+                        isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] : self::DEFAULT_TIMEOUT
                     );
                     Database::execute("DELETE FROM failed_jobs WHERE id = :id", ['id' => $row['id']]);
                     $count++;
@@ -350,12 +379,14 @@ final class Queue
                 return false;
             }
 
+            $jobName = is_string($row['job'] ?? null) ? $row['job'] : '';
             self::push(
-                $row['job'],
-                self::decodeJobData($row['data']),
+                $jobName,
+                self::decodeJobData($row['data'] ?? null),
                 0,
                 self::DEFAULT_PRIORITY,
-                self::DEFAULT_MAX_ATTEMPTS
+                self::DEFAULT_MAX_ATTEMPTS,
+                isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] : self::DEFAULT_TIMEOUT
             );
             Database::execute("DELETE FROM failed_jobs WHERE id = :id", ['id' => $row['id']]);
             return true;

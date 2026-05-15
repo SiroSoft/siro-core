@@ -23,6 +23,12 @@ final class Container
     private array $resolved = [];
     /** @var array<string, int> */
     private array $resolvingStack = [];
+    /** @var array<string, array<int, string>> */
+    private array $tags = [];
+    /** @var array<string, array<int, \Closure>> */
+    private array $reboundCallbacks = [];
+    /** @var array<string, array<string, \Closure>> */
+    private array $contextual = [];
 
     public static function getInstance(): self
     {
@@ -54,8 +60,16 @@ final class Container
         $this->singletons[$abstract] = true;
     }
 
-    public function make(string $abstract): object
+    public function make(string $abstract, string $for = ''): object
     {
+        if ($for !== '' && isset($this->contextual[$for][$abstract])) {
+            $closure = $this->contextual[$for][$abstract];
+            $resolved = $closure($this);
+            if (is_object($resolved)) {
+                return $resolved;
+            }
+        }
+
         if (isset($this->instances[$abstract])) {
             return $this->instances[$abstract];
         }
@@ -67,6 +81,7 @@ final class Container
         $concrete = $this->bindings[$abstract] ?? $abstract;
 
         if ($concrete instanceof Closure) {
+            /** @var object $object */
             $object = $concrete($this);
         } elseif (is_string($concrete)) {
             /** @var class-string $concrete */
@@ -77,9 +92,24 @@ final class Container
 
         if (isset($this->singletons[$abstract])) {
             $this->resolved[$abstract] = $object;
+            $this->fireRebound($abstract, $object);
         }
 
         return $object;
+    }
+
+    private function fireRebound(string $abstract, object $instance): void
+    {
+        $callbacks = $this->reboundCallbacks[$abstract] ?? [];
+        foreach ($callbacks as $callback) {
+            $callback($this, $instance);
+        }
+    }
+
+    /** @param array<int, mixed> $parameters */
+    private function callBoundCallback(callable $callback, array $parameters): mixed
+    {
+        return $callback(...$parameters);
     }
 
     public function has(string $abstract): bool
@@ -107,11 +137,45 @@ final class Container
 
         if (count($callable) === 2) {
             [$class, $method] = $callable;
-            $instance = is_object($class) ? $class : $this->make($class);
+            $instance = is_object($class) ? $class : $this->make(is_string($class) ? $class : '');
             return $instance->{$method}(...$parameters);
         }
 
         throw new RuntimeException('Invalid callable.');
+    }
+
+    public function tag(string $abstract, string ...$tags): void
+    {
+        $normalized = $tags !== [] ? $tags : [$abstract];
+        foreach ($normalized as $tag) {
+            $this->tags[$tag][] = $abstract;
+        }
+    }
+
+    /** @return array<int, object> */
+    public function tagged(string $tag): array
+    {
+        $abstracts = $this->tags[$tag] ?? [];
+        $result = [];
+        foreach ($abstracts as $abstract) {
+            if ($this->has($abstract) || class_exists($abstract)) {
+                $result[] = $this->make($abstract);
+            }
+        }
+        return $result;
+    }
+
+    public function rebound(string $abstract, \Closure $callback): void
+    {
+        $this->reboundCallbacks[$abstract][] = $callback;
+    }
+
+    /** @param array<string, \Closure> $concrete */
+    public function when(string $class, array $concrete): void
+    {
+        foreach ($concrete as $abstract => $closure) {
+            $this->contextual[$class][$abstract] = $closure;
+        }
     }
 
     public function clear(): void
@@ -120,6 +184,9 @@ final class Container
         $this->singletons = [];
         $this->instances = [];
         $this->resolved = [];
+        $this->tags = [];
+        $this->reboundCallbacks = [];
+        $this->contextual = [];
     }
 
     /** @param class-string $class */

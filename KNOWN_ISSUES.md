@@ -1,5 +1,23 @@
 # Known Issues & Limitations
 
+## v0.26 Known Issues
+
+### Observability / Production
+
+| Issue | Severity | Workaround |
+|-------|----------|------------|
+| Cache stampede — `Cache::remember()` no mutex locking | Medium | Acceptable for most workloads; multiple concurrent cold-key requests all regenerate |
+| No health check monitoring integration (Prometheus push gateway) | Low | Use `/metrics` endpoint with Prometheus pull (Metrics::registerRoute) |
+| `expose_php` / `X-Powered-By` not disabled by default | Low | Add `expose_php = Off` in php.ini or `header_remove('X-Powered-By')` in bootstrap |
+| No CSRF token built-in route | Low | `CsrfMiddleware` exists, but no default GET endpoint to fetch tokens |
+
+### API Documentation
+
+| Issue | Severity | Workaround |
+|-------|----------|------------|
+| phpDocumentor not installed by default | Low | `composer require --dev phpdocumentor/phpdoc` then `make docs` |
+| Fallback docs mode counts vendor/ if not excluded (fixed) | Low | Already patched in v0.26.0 |
+
 ## v0.23 Known Issues
 
 ### Database

@@ -46,7 +46,7 @@ final class ScheduleTask
     public function withoutOverlapping(int $expires = 1440): self
     {
         $this->withoutOverlapping = true;
-        $this->mutexKey = 'schedule:' . sha1($this->expression . '_' . ($this->task instanceof \Closure ? spl_object_id($this->task) : (is_string($this->task) ? $this->task : get_class($this->task))));
+        $this->mutexKey = 'schedule:' . sha1($this->expression . '_' . ($this->task instanceof \Closure ? spl_object_id($this->task) : (is_string($this->task) ? $this->task : (is_object($this->task) ? get_class($this->task) : ''))));
         if ($expires > 0) {
             Cache::remember($this->mutexKey, $expires, fn() => true);
         }
