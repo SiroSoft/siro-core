@@ -6,6 +6,8 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\Auth\ApiKey;
 use Siro\Core\Commands\CommandSupport;
+use Siro\Core\Database;
+use Throwable;
 
 /**
  * Create API key for external developers.
@@ -26,6 +28,13 @@ final class MakeApiKeyCommand implements \Siro\Core\Commands\CommandInterface {
         if ($name === '') {
             $this->error('Usage: php siro make:apikey <name> [scopes] [expires_days]');
             $this->info('Example: php siro make:apikey "Partner A" "read,write" 365');
+            return 1;
+        }
+
+        try {
+            Database::connection()->query('SELECT 1');
+        } catch (Throwable) {
+            $this->error('Database not configured. Run php siro migrate first.');
             return 1;
         }
 
