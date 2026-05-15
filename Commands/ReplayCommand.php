@@ -23,19 +23,17 @@ final class ReplayCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        // If trace_id provided as first arg
         $traceId = '';
-        $extraArgs = ['siro', 'log:replay'];
+        $flags = [];
 
         foreach ($args as $arg) {
             if ($traceId === '' && !str_starts_with($arg, '--')) {
                 $traceId = $arg;
             } else {
-                $extraArgs[] = $arg;
+                $flags[] = $arg;
             }
         }
 
-        // If no trace_id, find the last one
         if ($traceId === '') {
             $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
             if (!is_dir($traceDir)) {
@@ -52,12 +50,12 @@ final class ReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('Replaying last trace: ' . $traceId);
         }
 
-        // Delegate to log:replay
-        $extraArgs[] = $traceId;
-        $_SERVER['argv'] = $extraArgs;
-        $_SERVER['argc'] = count($extraArgs);
+        // Delegate: traceId FIRST, then flags
+        $consoleArgs = array_merge(['siro', 'log:replay', $traceId], $flags);
+        $_SERVER['argv'] = $consoleArgs;
+        $_SERVER['argc'] = count($consoleArgs);
 
         $console = new \Siro\Core\Console($this->basePath);
-        return $console->run($extraArgs);
+        return $console->run($consoleArgs);
     }
 }
