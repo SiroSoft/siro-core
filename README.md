@@ -1,4 +1,4 @@
-# Siro Core Framework v0.26.0
+# Siro Core Framework v0.26.1
 
 **The debugging-first PHP framework.** Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default. Built for developers who want to fix production bugs in seconds, not hours.
 
@@ -64,6 +64,7 @@ php siro t POST /api/orders --body='{"product_id":1,"quantity":5}'
 php siro why                      # Why did production fail? (5 seconds)
 php siro replay siro_a1b2c3       # Replay exact failed request
 php siro replay siro_a1b2c3 --edit # Edit body → test fix
+php siro tinker                   # Interactive PHP playground
 
 # ── MONITOR ────────────────────────────────────────────
 php siro log:tail                 # Local log streaming
@@ -153,7 +154,9 @@ php siro serve
 | **Queue** | DB-based, exponential backoff, timeout, priority, failed job retry |
 | **Encryption** | AES-256-CBC, HKDF key separation, Encrypt-then-MAC |
 | **Event System** | Pub/sub, wildcards, one-time listeners |
-| **Debug** | Trace headers, log replay, slow query detection, request profiling |
+| **Debug** | Trace headers, log replay, slow query detection, request profiling, `siro tinker` REPL |
+| **Observers** | Model lifecycle hooks: saving, creating, updating, deleting, force deleting |
+| **Gzip** | Automatic compression for file downloads (text, JSON, XML, SVG, fonts) |
 
 ## Quality Assurance
 

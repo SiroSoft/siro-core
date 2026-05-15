@@ -1,5 +1,52 @@
 # Changelog
 
+## v0.26.1 (2026-05-15) — The "P1 Audit" Release — 6 Expert-Recommended Fixes
+
+### 🆕 New Features
+
+#### `siro tinker` — Interactive PHP Playground
+- **Zero-dependency REPL** using PHP built-in `readline()` (no psy/psysh required)
+- **Siro-branded prompt**: `siro>` with colored output
+- **Per-command timing**: shows execution time (ms) after every expression
+- **Model rendering**: `User { id: 1, name: "Admin", ... }` — compact, readable
+- **Built-in shortcuts**: `db` (DB status), `routes` (route count), `vars` (context), `help`, `clear`
+- **Readline history**: persisted to `storage/.tinker_history`
+- Registered in CLI: `php siro tinker` or `php siro tink`
+
+#### Model Observer Class Pattern
+- `Observers\ModelObserver` — abstract class with 10 lifecycle hooks:
+  `saving`, `saved`, `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`, `forceDeleting`, `forceDeleted`
+- `Model::observe(MyObserver::class)` — register observer per model
+- Hooks auto-called in `save()`, `delete()`, `forceDelete()` alongside existing Event system
+
+#### Composite Primary Keys
+- `Model::$primaryKey` — configurable key name (defaults to `'id'`)
+- `Model::getKeyName()` — returns the configured primary key
+- `find()`, `save()`, `delete()` all use the dynamic key
+
+### 🛡️ Security
+
+#### Env Cache Encrypted with AES-256
+- `Env::cache()` now encrypts payload using `Encrypter::encrypt()` when `APP_KEY` is configured (min 16 chars)
+- `Env::load()` auto-decrypts on read — backward compatible with plaintext cache
+- Previously secrets were removed via hardcoded exclusion list — now encrypted at rest
+
+### 🧹 Code Quality
+
+#### AuthMiddleware Cleanup
+- Extracted `resolveUser()` — eliminates 30 lines of duplicated user resolution code
+- Extracted `resolveModelClass()` — centralized model class resolution (Container → ENV → default)
+- Removed `Str` import (no longer needed)
+
+### 📦 Gzip for File Responses
+- `Response::sendFile()` now supports gzip compression for compressible MIME types
+- Smart detection: only compresses `text/*`, `application/json`, `application/javascript`, `application/xml`, `image/svg+xml`, font types
+- Skips already-compressed types (images, video, zip) automatically
+- Respects `zlib.output_compression` ini setting (no double compress)
+
+### 📚 Documentation
+- README updated with `siro tinker` in CLI commands and debug workflow
+
 ## v0.26.0 (2026-05-15) — The "Deep Audit" Release — 33 Critical/High Security Fixes
 
 ### 🛡️ Security Hardening (12 Critical, 8 High fixed)
