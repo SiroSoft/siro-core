@@ -23,7 +23,7 @@ jobs:
       - name: Generate SBOM
         run: php scripts/generate-sbom.php
       - name: Attest SBOM
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: 'storage/sbom/*.json'
       - name: Create Release Artifact
@@ -35,6 +35,6 @@ jobs:
             --exclude=storage \
             .
       - name: Attest Release Archive
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: 'siro-core-*.tar.gz'
