@@ -4,24 +4,36 @@
 
 ```bash
 # Production API fails → php siro why
-# 5 seconds later you see: route, SQL, middleware, exception, possible cause, suggested fix
+# 5 seconds later you see: route, SQL, middleware, exception, possible cause, N+1, suggested fix
 $ php siro why
 
   Last Request Summary
-  ────────────────────────────────────────────────────────
-  Route:    POST /api/orders
-  Status:   ✗ 500 (842ms)
-  ────────────────────────────────────────────────────────
+  ──────────────────────────────────────────────────────────────
+  Route:    GET /api/orders?user_id=1
+  Status:   ✓ 200 (2.3s)
+  Trace ID: siro_a1b2c3d4e5
+  ──────────────────────────────────────────────────────────────
   Timeline
-    ✓ AuthMiddleware           [2ms]
-    ✗ PaymentMiddleware        [800ms]  ← failure here
-    ▸ INSERT INTO orders (…)   [812ms]  ⚠ SLOW
+    ✓ AuthMiddleware               [3ms]
+    ✓ CorsMiddleware               [1ms]
+    ✓ ThrottleMiddleware           [2ms]
+    ▸ SELECT * FROM users WHERE…   [1ms]
+    ▸ SELECT * FROM orders WHERE…  [200ms]
+    ▸ SELECT * FROM products WHERE… [180ms]  ← 50× same query
+    ▸ SELECT * FROM products WHERE… [175ms]
+    ▸ … 48 similar queries …
+    ⚠  N+1  Order::products accessed 50×. Use with('products') to eager load.
+  ──────────────────────────────────────────────────────────────
   Exception
-    PDOException: Deadlock found when trying to get lock
+    (none — response was 200 but 2.1s is too slow)
+  Possible Cause
+    • N+1 query: 50 individual product queries instead of 1 batch
   Suggested Fix
-    ▸ Wrap transaction in retry loop
-    ▸ php siro replay siro_a1b2c3d4 --edit
-  ────────────────────────────────────────────────────────
+    ▸ Add ->with('products') to your Order query
+    ▸ php siro replay siro_a1b2c3d4 --edit to test fix
+  ──────────────────────────────────────────────────────────────
+  Total SQL: 52 queries · 2.1s  ⚠ SLOW
+  N+1 Detected: Order::products (50×) — fix with eager loading
 ```
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
