@@ -9,7 +9,7 @@
         <output>docs/api</output>
         <cache>.phpdoc/cache</cache>
     </paths>
-    <version number="0.26.0">
+    <version number="0.26.2">
         <api>
             <source dsn=".">
                 <directories>
