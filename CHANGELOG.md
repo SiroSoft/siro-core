@@ -1,5 +1,47 @@
 # Changelog
 
+## v0.26.2 (2026-05-15) — The "All P2" Release — 7 Expert-Recommended Items
+
+### 🆕 New Features
+
+#### Row Locking
+- `QueryBuilder::lockForUpdate()` — `SELECT ... FOR UPDATE` for pessimistic locking
+- `QueryBuilder::sharedLock()` — `SELECT ... LOCK IN SHARE MODE`
+- Useful for transaction-safe operations: prevent race conditions on concurrent writes
+
+#### RIGHT JOIN & CROSS JOIN
+- `QueryBuilder::rightJoin()` — `RIGHT JOIN` support
+- `QueryBuilder::crossJoin()` — `CROSS JOIN` support
+- Complements existing `join()` (INNER) and `leftJoin()`
+
+#### `whereHas` / `orWhereHas` / `whereDoesntHave`
+- Convention-based relation existence queries: `Model::whereHas('relation', fn($q) => $q->where(...))`
+- Auto-resolves related model class by namespace convention
+- Supports HasOne, HasMany, BelongsTo with automatic FK/LK detection
+- Generates `EXISTS (SELECT 1 FROM ...)` subqueries
+
+#### Container Extension Points
+- `Container::tag()` / `Container::tagged()` — group bindings by tags
+- `Container::rebound()` — register callback fired when singleton is first resolved
+- `Container::when()` — contextual bindings per consuming class
+
+### 🛡️ Security
+
+#### Gzip for Raw Responses
+- `Response::raw()` now supports gzip compression for compressible MIME types
+- Same smart detection as file downloads: `text/*`, `application/json`, etc.
+
+### 🐛 Bug Fixes
+
+#### SoftDeletes `forceDelete()` uses Primary Key
+- Changed hardcoded `id` to `$this->getKeyName()` — supports composite/compatible models
+
+#### N+1 Query Detection
+- Model tracks relation access frequency per class
+- Logs warning via `Logger::debug()` when same relation accessed ≥2 times without eager loading
+- `Model::resetRelationAccessCount()` resets counters between requests
+- Helps developers catch N+1 during development
+
 ## v0.26.1 (2026-05-15) — The "P1 Audit" Release — 6 Expert-Recommended Fixes
 
 ### 🆕 New Features

@@ -1,4 +1,4 @@
-# Siro Core Framework v0.26.1
+# Siro Core Framework v0.26.2
 
 **The debugging-first PHP framework.** Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default. Built for developers who want to fix production bugs in seconds, not hours.
 
@@ -143,16 +143,17 @@ php siro serve
 | Area | Capabilities |
 |------|-------------|
 | **Auth** | JWT with algorithm pinning, key rotation, per-token revocation, refresh rotation, API keys |
-| **Database** | QueryBuilder, ORM (HasOne/HasMany/BelongsTo/BelongsToMany), Migrations, SQLite/MySQL/PostgreSQL |
+| **Database** | QueryBuilder, ORM (HasOne/HasMany/BelongsTo/BelongsToMany), Migrations, SQLite/MySQL/PostgreSQL, Row locking (FOR UPDATE/SHARE), RIGHT/CROSS JOIN, `whereHas` relation queries |
 | **Router** | Static O(1) routes, Dynamic {param}, Groups, Middleware pipeline, PHP 8 Attributes, Named routes |
 | **Cache** | File and Redis drivers, auto-prefix, query builder integration |
 | **Validation** | 15+ rules, custom rules, custom messages, FormRequest |
 | **Security** | CSP, CORS, CSRF (session + double-submit), Rate limiting, Audit logging, Log sanitization |
-| **CLI** | 70+ commands: make CRUD/auth, migrate, cache, queue, benchmark, debug |
+| **CLI** | 74 commands: make CRUD/auth, migrate, cache, queue, benchmark, debug, tinker |
 | **Middleware** | Auth, CORS, CSRF, CSP, ETag, Version, Metrics, Audit, Idempotency, Throttle, Security Headers |
 | **Storage** | Local filesystem, S3-compatible (AWS Signature V4), path traversal protection |
 | **Queue** | DB-based, exponential backoff, timeout, priority, failed job retry |
 | **Encryption** | AES-256-CBC, HKDF key separation, Encrypt-then-MAC |
+| **DI Container** | Autowiring, circular detection, contextual bindings (`when`), tags (`tag`/`tagged`), rebound callbacks |
 | **Event System** | Pub/sub, wildcards, one-time listeners |
 | **Debug** | Trace headers, log replay, slow query detection, request profiling, `siro tinker` REPL |
 | **Observers** | Model lifecycle hooks: saving, creating, updating, deleting, force deleting |
