@@ -35,6 +35,12 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     private bool $exists = false;
     protected string $primaryKey = 'id';
 
+    /** @var array<string, int> */
+    private static array $relationAccessCount = [];
+    private static bool $nPlusOneWarned = false;
+
+    private const N_PLUS_ONE_THRESHOLD = 2;
+
     /** @param array<string, mixed> $attributes */
     public function __construct(array $attributes = [])
     {
@@ -505,7 +511,22 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function getRelation(string $name): mixed
     {
+        if (!array_key_exists($name, $this->relations) && !self::$nPlusOneWarned) {
+            $class = static::class;
+            self::$relationAccessCount[$class . '::' . $name] = (self::$relationAccessCount[$class . '::' . $name] ?? 0) + 1;
+            if (self::$relationAccessCount[$class . '::' . $name] >= self::N_PLUS_ONE_THRESHOLD) {
+                self::$nPlusOneWarned = true;
+                $msg = "N+1 detected: {$class}::{$name} accessed " . self::$relationAccessCount[$class . '::' . $name] . " times without eager loading. Use Model::with('{$name}') to prevent N+1.";
+                \Siro\Core\Logger::debug($msg);
+            }
+        }
         return $this->relations[$name] ?? null;
+    }
+
+    public static function resetRelationAccessCount(): void
+    {
+        self::$relationAccessCount = [];
+        self::$nPlusOneWarned = false;
     }
 
     public function setRelation(string $name, mixed $value): void

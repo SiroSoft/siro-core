@@ -121,6 +121,7 @@ final class SqlCompiler
         ?int $limitValue,
         ?int $offsetValue,
         array $bindings,
+        string $lockMode = '',
     ): array {
         [$whereSql, $whereBindings] = $this->compileWhere($wheres, $bindings);
         [$havingSql, $havingBindings] = $this->compileHaving($havings, $bindings);
@@ -138,6 +139,10 @@ final class SqlCompiler
         }
         if ($offsetValue !== null) {
             $sql .= ' OFFSET ' . $offsetValue;
+        }
+
+        if ($lockMode !== '') {
+            $sql .= ' ' . $lockMode;
         }
 
         return [$sql, [...$whereBindings, ...$havingBindings]];

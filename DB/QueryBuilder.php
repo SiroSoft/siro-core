@@ -36,6 +36,8 @@ class QueryBuilder
     protected array $bindings = [];
     protected ?int $limitValue = null;
     protected ?int $offsetValue = null;
+    protected bool $lockForUpdate = false;
+    protected bool $sharedLock = false;
     protected int $whereCounter = 0;
     protected int $havingCounter = 0;
     protected int $inCounter = 0;
@@ -171,6 +173,30 @@ class QueryBuilder
         return $this;
     }
 
+    public function rightJoin(string $table, string $first, string $operator, string $second): self
+    {
+        $this->joins[] = [
+            'type' => 'RIGHT',
+            'table' => trim($table),
+            'first' => trim($first),
+            'operator' => $this->compiler->normalizeOperator($operator),
+            'second' => trim($second),
+        ];
+        return $this;
+    }
+
+    public function crossJoin(string $table): self
+    {
+        $this->joins[] = [
+            'type' => 'CROSS',
+            'table' => trim($table),
+            'first' => '',
+            'operator' => '',
+            'second' => '',
+        ];
+        return $this;
+    }
+
     /** @param array<int, string>|string $columns */
     public function groupBy(array|string $columns): self
     {
@@ -228,13 +254,29 @@ class QueryBuilder
         return $this;
     }
 
+    public function lockForUpdate(): self
+    {
+        $this->lockForUpdate = true;
+        $this->sharedLock = false;
+        return $this;
+    }
+
+    public function sharedLock(): self
+    {
+        $this->sharedLock = true;
+        $this->lockForUpdate = false;
+        return $this;
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function get(): array
     {
+        $lockMode = $this->lockForUpdate ? 'FOR UPDATE' : ($this->sharedLock ? 'LOCK IN SHARE MODE' : '');
         [$sql, $bindings] = $this->compiler->buildSelectQuery(
             $this->columns, $this->table, $this->wheres, $this->havings,
             $this->joins, $this->groups, $this->orders,
-            $this->limitValue, $this->offsetValue, $this->bindings
+            $this->limitValue, $this->offsetValue, $this->bindings,
+            $lockMode
         );
         return $this->runSelect($sql, $bindings);
     }

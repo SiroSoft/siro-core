@@ -454,11 +454,44 @@ final class Response
     {
         if (!$isCli) {
             http_response_code($this->statusCode);
+
+            $acceptEncoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && is_scalar($_SERVER['HTTP_ACCEPT_ENCODING']) ? (string) $_SERVER['HTTP_ACCEPT_ENCODING'] : '';
+            $canGzip = !ini_get('zlib.output_compression')
+                && str_contains($acceptEncoding, 'gzip')
+                && function_exists('gzencode')
+                && $this->isRawContentCompressible();
+
+            if ($canGzip) {
+                $this->extraHeaders['Content-Encoding'] = 'gzip';
+                unset($this->extraHeaders['Content-Length']);
+            }
+
             foreach ($this->extraHeaders as $name => $value) {
                 header($name . ': ' . $value);
             }
+
+            if ($canGzip) {
+                echo gzencode($this->rawContent);
+                return;
+            }
         }
         echo $this->rawContent;
+    }
+
+    private function isRawContentCompressible(): bool
+    {
+        $contentType = $this->extraHeaders['Content-Type'] ?? 'text/plain';
+        $compressible = [
+            'text/', 'application/json', 'application/javascript',
+            'application/xml', 'application/xhtml+xml', 'image/svg+xml',
+            'application/x-yaml',
+        ];
+        foreach ($compressible as $prefix) {
+            if (str_starts_with($contentType, $prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @return array<string, string> */
