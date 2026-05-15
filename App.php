@@ -232,6 +232,21 @@ final class App
             Logger::request($method, $path, $status, $timeMs, $remoteAddr, $traceId, $userAgent);
             if ($timeMs > 100) { Logger::slowRequest($method, $path, $status, $timeMs); }
 
+            // Write trace file for why/replay commands
+            if ($this->debug) {
+                $traceData = [
+                    'method' => $method,
+                    'path' => $path,
+                    'status' => $status,
+                    'time_ms' => round($timeMs, 2),
+                    'trace_id' => $traceId,
+                    'ip' => $remoteAddr,
+                    'user_agent' => $userAgent,
+                    'timestamp' => date('c'),
+                ];
+                Logger::trace($traceId, $traceData);
+            }
+
             $bootTimeMs = ($this->startedAt > 0) ? (microtime(true) - $this->startedAt) * 1000 : 0;
             if ($this->debug && $bootTimeMs > self::BOOT_THRESHOLD_MS) {
                 Logger::debug("Boot time exceeded threshold: " . round($bootTimeMs, 2) . "ms");

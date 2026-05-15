@@ -493,8 +493,8 @@ declare(strict_types=1);
 
 use App\Controllers\UserController;
 use App\Controllers\AuthController;
-use App\Middleware\CorsMiddleware;
-use App\Middleware\JsonMiddleware;
+use Siro\Core\Middleware\CorsMiddleware;
+use Siro\Core\Middleware\JsonMiddleware;
 
 $app->router->get('/', function (): array {
     return [
@@ -502,7 +502,7 @@ $app->router->get('/', function (): array {
         'message' => 'Siro API Framework is running',
         'data' => [
             'name' => 'Siro API Framework',
-            'version' => '0.22.0',
+            'version' => Console::getVersion(),
             'php' => PHP_VERSION,
         ],
         'meta' => [],
