@@ -529,6 +529,12 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         self::$nPlusOneWarned = false;
     }
 
+    /** @return array<string, int> */
+    public static function getRelationAccessCount(): array
+    {
+        return self::$relationAccessCount;
+    }
+
     public function setRelation(string $name, mixed $value): void
     {
         $this->relations[$name] = $value;

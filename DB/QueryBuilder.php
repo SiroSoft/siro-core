@@ -268,10 +268,36 @@ class QueryBuilder
         return $this;
     }
 
+    private function resolveLockMode(): string
+    {
+        if (!$this->lockForUpdate && !$this->sharedLock) {
+            return '';
+        }
+        $driver = 'mysql';
+        try {
+            $conn = Database::connection($this->connectionName);
+            $driverAttr = $conn->getAttribute(\PDO::ATTR_DRIVER_NAME);
+            $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
+        } catch (\Throwable) {
+        }
+        if ($this->lockForUpdate) {
+            return match ($driver) {
+                'pgsql', 'postgres', 'postgresql' => 'FOR UPDATE',
+                'sqlite' => '',
+                default => 'FOR UPDATE',
+            };
+        }
+        return match ($driver) {
+            'pgsql', 'postgres', 'postgresql' => 'FOR SHARE',
+            'sqlite' => '',
+            default => 'LOCK IN SHARE MODE',
+        };
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function get(): array
     {
-        $lockMode = $this->lockForUpdate ? 'FOR UPDATE' : ($this->sharedLock ? 'LOCK IN SHARE MODE' : '');
+        $lockMode = $this->resolveLockMode();
         [$sql, $bindings] = $this->compiler->buildSelectQuery(
             $this->columns, $this->table, $this->wheres, $this->havings,
             $this->joins, $this->groups, $this->orders,

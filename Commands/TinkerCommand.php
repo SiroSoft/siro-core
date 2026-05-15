@@ -7,6 +7,7 @@ namespace Siro\Core\Commands;
 use Siro\Core\Console;
 use Siro\Core\Container;
 use Siro\Core\Database;
+use Siro\Core\DB\DatabaseInstance;
 use Siro\Core\Router;
 use Throwable;
 
@@ -62,9 +63,34 @@ final class TinkerCommand implements CommandInterface
         return 0;
     }
 
+    private bool $tinkerCaptureEnabled = false;
+
+    private function enableQueryCapture(): void
+    {
+        if ($this->tinkerCaptureEnabled) { return; }
+        $this->tinkerCaptureEnabled = true;
+        try {
+            Database::connection()->exec('SELECT 1');
+        } catch (\Throwable) {
+        }
+    }
+
+    private function queryCount(): int
+    {
+        try {
+            $queries = Database::getCapturedQueries();
+            $count = count($queries);
+            Database::resetCapturedQueries();
+            return $count;
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
     private function execCode(string $code): void
     {
         $start = microtime(true);
+        $this->enableQueryCapture();
 
         $result = null;
         $caught = null;
@@ -85,13 +111,17 @@ final class TinkerCommand implements CommandInterface
                 eval("$code;");
                 $output = ob_get_clean();
                 $elapsed = (microtime(true) - $start) * 1000;
+                $queries = $this->queryCount();
+                $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
                 if ($output !== '' && $output !== false) {
-                    $this->write('  \e[32m✓\e[0m  ' . trim($output) . '  \e[90m(' . number_format($elapsed, 2) . 'ms)\e[0m');
+                    $this->write('  \e[32m✓\e[0m  ' . trim($output) . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
                 }
                 $caught = null;
             } catch (Throwable $e2) {
                 $elapsed = (microtime(true) - $start) * 1000;
-                $this->write('  \e[31m✗\e[0m  ' . $e2->getMessage() . '  \e[90m(' . number_format($elapsed, 2) . 'ms)\e[0m');
+                $queries = $this->queryCount();
+                $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
+                $this->write('  \e[31m✗\e[0m  ' . $e2->getMessage() . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
             }
         }
 
@@ -99,13 +129,20 @@ final class TinkerCommand implements CommandInterface
 
         if ($caught !== null) {
             $elapsed = (microtime(true) - $start) * 1000;
-            $this->write('  \e[31m✗\e[0m  ' . $caught->getMessage() . '  \e[90m(' . number_format($elapsed, 2) . 'ms)\e[0m');
+            $queries = $this->queryCount();
+            $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
+            $this->write('  \e[31m✗\e[0m  ' . $caught->getMessage() . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
             return;
         }
 
+        $elapsed = (microtime(true) - $start) * 1000;
+        $queries = $this->queryCount();
+        $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
+
         if ($result !== null) {
-            $elapsed = (microtime(true) - $start) * 1000;
-            $this->write('  \e[32m✓\e[0m  ' . $this->render($result) . '  \e[90m(' . number_format($elapsed, 2) . 'ms)\e[0m');
+            $this->write('  \e[32m✓\e[0m  ' . $this->render($result) . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
+        } elseif ($queries > 0) {
+            $this->write('  \e[32m✓\e[0m  ' . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
         }
     }
 

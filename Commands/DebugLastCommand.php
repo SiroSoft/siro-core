@@ -119,6 +119,22 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         if (!$hasTimeline) {
             $this->write('    ' . self::GRAY . '(no middleware or query data captured)' . self::RESET);
         }
+
+        // ── N+1 Detection ──
+        if (class_exists(\Siro\Core\Model::class)) {
+            $accessCount = \Siro\Core\Model::getRelationAccessCount();
+            if ($accessCount !== []) {
+                foreach ($accessCount as $key => $count) {
+                    if ($count >= 2) {
+                        $n1Color = self::YELLOW;
+                        $parts = explode('::', $key);
+                        $relName = isset($parts[1]) && $parts[1] !== '' ? $parts[1] : $key;
+                        $this->write("    " . $n1Color . "⚠ N+1" . self::RESET . " $key accessed {$count}x. Use " . self::CYAN . "with('" . $relName . "')" . self::RESET . " to eager load.");
+                    }
+                }
+            }
+        }
+
         $this->write('');
 
         // ── Exception + Cause + Fix ──
