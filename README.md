@@ -143,7 +143,7 @@ php siro serve
 | Area | Capabilities |
 |------|-------------|
 | **Auth** | JWT with algorithm pinning, key rotation, per-token revocation, refresh rotation, API keys |
-| **Database** | QueryBuilder, ORM (HasOne/HasMany/BelongsTo/BelongsToMany), Migrations, SQLite/MySQL/PostgreSQL, Row locking (FOR UPDATE/SHARE), RIGHT/CROSS JOIN, `whereHas` relation queries |
+| **Database** | QueryBuilder, ORM (HasOne/HasMany/BelongsTo/BelongsToMany), Migrations, SQLite/MySQL/PostgreSQL, Row locking (FOR UPDATE/SHARE), RIGHT/CROSS JOIN, `whereHas` relation queries, N+1 detection warning |
 | **Router** | Static O(1) routes, Dynamic {param}, Groups, Middleware pipeline, PHP 8 Attributes, Named routes |
 | **Cache** | File and Redis drivers, auto-prefix, query builder integration |
 | **Validation** | 15+ rules, custom rules, custom messages, FormRequest |

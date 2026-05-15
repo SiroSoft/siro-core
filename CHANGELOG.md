@@ -2,6 +2,30 @@
 
 ## v0.26.2 (2026-05-15) — The "All P2" Release — 7 Expert-Recommended Items
 
+### 🆕 Extra Features (Post-Audit)
+
+#### `siro why` tích hợp N+1 Detection
+- `php siro why` hiển thị cảnh báo N+1 khi phát hiện relation được access ≥2 lần
+- Dòng màu vàng: `⚠ N+1 User::orders accessed 3x. Use with('orders') to eager load.`
+- Kết hợp với `Model::getRelationAccessCount()` đã có từ P2
+
+#### PostgreSQL Row Locking
+- `lockForUpdate()` → `FOR UPDATE` (MySQL/PostgreSQL), không hỗ trợ SQLite
+- `sharedLock()` → `LOCK IN SHARE MODE` (MySQL), `FOR SHARE` (PostgreSQL)
+- Tự động detect driver qua PDO, không cần cấu hình
+
+#### Tinker Query Log
+- `php siro tinker` hiển thị số lượng DB queries sau mỗi lệnh
+- Output: `✓ 42  (0.35ms · 2q)` — thời gian + số queries
+- Tự động enable query capture khi kết nối DB có sẵn
+
+### 📦 Infrastructure
+- **Helm chart** (`helm/siro-api/`) — 11 templates: Deployment, Service, Ingress, ConfigMap, Secret, PVC, HPA
+- **CD workflow** (`.github/workflows/deploy.yml`) — Docker build → ghcr.io push → Helm upgrade
+- Cần setup: `KUBECONFIG` + `JWT_SECRET` secrets trên GitHub
+
+## v0.26.1 (2026-05-15) — The "P1 Audit" Release — 6 Expert-Recommended Fixes
+
 ### 🆕 New Features
 
 #### Row Locking
