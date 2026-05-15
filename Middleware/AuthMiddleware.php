@@ -7,9 +7,9 @@ namespace Siro\Core\Middleware;
 use Siro\Core\Auth\JWT;
 use Siro\Core\Env;
 use Siro\Core\Logger;
+use Siro\Core\Model;
 use Siro\Core\Request;
 use Siro\Core\Response;
-use Siro\Core\Str;
 use Throwable;
 
 final class AuthMiddleware implements MiddlewareInterface
@@ -48,41 +48,9 @@ final class AuthMiddleware implements MiddlewareInterface
                 ]);
             }
 
-            $user = $request->getAttribute('_auth_user');
-            if ($user === null) {
-                $container = \Siro\Core\Container::getInstance();
-                $userModel = $container->has('user.model') ? $container->make('user.model') : null;
-                if (!($userModel instanceof \Siro\Core\Model)) {
-                    /** @var class-string<\Siro\Core\Model> $modelClass */
-                    $modelClass = Str::contains((string) Env::get('AUTH_USER_MODEL', ''), '\\') ? (string) Env::get('AUTH_USER_MODEL', '') : 'App\\Models\\User';
-                    if (class_exists($modelClass)) {
-                        $userModel = new $modelClass();
-                    }
-                }
-                if ($userModel instanceof \Siro\Core\Model) {
-                    $user = $userModel->find($userId);
-                }
-                $request->setAttribute('_auth_user', $user);
-            } else {
-                $cachedId = $user instanceof \Siro\Core\Model ? (is_numeric($user->getAttribute('id')) ? (int) $user->getAttribute('id') : 0) : 0;
-                if ($cachedId !== $userId) {
-                    $container = \Siro\Core\Container::getInstance();
-                    $userModel = $container->has('user.model') ? $container->make('user.model') : null;
-                    if (!($userModel instanceof \Siro\Core\Model)) {
-                        /** @var class-string<\Siro\Core\Model> $modelClass */
-                $modelClass = Str::contains((string) Env::get('AUTH_USER_MODEL', ''), '\\') ? (string) Env::get('AUTH_USER_MODEL', '') : 'App\\Models\\User';
-                if (class_exists($modelClass)) {
-                    $userModel = new $modelClass();
-                }
-                    }
-                    if ($userModel instanceof \Siro\Core\Model) {
-                        $user = $userModel->find($userId);
-                    }
-                    $request->setAttribute('_auth_user', $user);
-                }
-            }
+            $user = $this->resolveUser($request, $userId);
 
-            if (!($user instanceof \Siro\Core\Model) || (is_numeric($user->getAttribute('status')) ? (int) $user->getAttribute('status') : 0) !== 1) {
+            if (!$user instanceof Model || (is_numeric($user->getAttribute('status')) ? (int) $user->getAttribute('status') : 0) !== 1) {
                 return Response::error('Unauthorized', 401, [
                     'token' => ['Invalid or expired token'],
                 ]);
@@ -140,5 +108,49 @@ final class AuthMiddleware implements MiddlewareInterface
         }
 
         return $next($request);
+    }
+
+    private function resolveUser(Request $request, int $userId): ?Model
+    {
+        $cached = $request->getAttribute('_auth_user');
+        if ($cached instanceof Model) {
+            $cachedId = is_numeric($cached->getAttribute('id')) ? (int) $cached->getAttribute('id') : 0;
+            if ($cachedId === $userId) {
+                return $cached;
+            }
+        }
+
+        $modelClass = $this->resolveModelClass();
+        if ($modelClass === null || !class_exists($modelClass)) {
+            return null;
+        }
+
+        /** @var Model $userModel */
+        $userModel = new $modelClass();
+        $user = $userModel->find($userId);
+        $request->setAttribute('_auth_user', $user);
+        return $user;
+    }
+
+    private function resolveModelClass(): ?string
+    {
+        $container = \Siro\Core\Container::getInstance();
+        if ($container->has('user.model')) {
+            $resolved = $container->make('user.model');
+            if ($resolved instanceof Model) {
+                return $resolved::class;
+            }
+        }
+
+        $modelClass = Env::get('AUTH_USER_MODEL', '');
+        if ($modelClass !== null && $modelClass !== '' && class_exists($modelClass)) {
+            return $modelClass;
+        }
+
+        $default = 'App\\Models\\User';
+        if (class_exists($default)) {
+            return $default;
+        }
+        return null;
     }
 }

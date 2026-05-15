@@ -402,13 +402,52 @@ final class Response
     {
         if (!$isCli) {
             http_response_code($this->statusCode);
+
+            $canGzip = $this->shouldGzipFile();
+            if ($canGzip) {
+                unset($this->extraHeaders['Content-Length']);
+                $this->extraHeaders['Content-Encoding'] = 'gzip';
+            }
+
             foreach ($this->extraHeaders as $name => $value) {
                 header($name . ': ' . $value);
             }
+
+            if ($canGzip) {
+                ob_start('ob_gzhandler');
+                readfile($this->filePath);
+                ob_end_flush();
+                return;
+            }
+
             readfile($this->filePath);
         } else {
             echo '[File: ' . $this->filePath . ']';
         }
+    }
+
+    private function shouldGzipFile(): bool
+    {
+        if (ini_get('zlib.output_compression')) {
+            return false;
+        }
+        $acceptEncoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && is_scalar($_SERVER['HTTP_ACCEPT_ENCODING']) ? (string) $_SERVER['HTTP_ACCEPT_ENCODING'] : '';
+        if ($acceptEncoding === '' || !str_contains($acceptEncoding, 'gzip') || !function_exists('gzencode')) {
+            return false;
+        }
+        $contentType = $this->extraHeaders['Content-Type'] ?? '';
+        $compressible = [
+            'text/', 'application/json', 'application/javascript',
+            'application/xml', 'application/xhtml+xml', 'image/svg+xml',
+            'application/font-woff', 'application/vnd.ms-fontobject',
+            'application/x-yaml',
+        ];
+        foreach ($compressible as $prefix) {
+            if (str_starts_with($contentType, $prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function sendRaw(bool $isCli): void

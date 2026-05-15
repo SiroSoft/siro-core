@@ -95,6 +95,21 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this;
     }
 
+    public function whereHas(string $relation, ?callable $callback = null, string $boolean = 'AND'): static
+    {
+        throw new \RuntimeException('whereHas is not yet implemented in this version. Use whereRaw with EXISTS subquery instead.');
+    }
+
+    public function orWhereHas(string $relation, ?callable $callback = null): static
+    {
+        throw new \RuntimeException('orWhereHas is not yet implemented in this version. Use whereRaw with EXISTS subquery instead.');
+    }
+
+    public function whereDoesntHave(string $relation, ?callable $callback = null): static
+    {
+        throw new \RuntimeException('whereDoesntHave is not yet implemented in this version. Use whereRaw with NOT EXISTS subquery instead.');
+    }
+
     public function select(array|string ...$columns): static
     {
         parent::select(...$columns);
