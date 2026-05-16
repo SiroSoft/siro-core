@@ -66,6 +66,7 @@ use Siro\Core\Commands\RouteRulesCommand;
 use Siro\Core\Commands\LiveCommand;
 use Siro\Core\Commands\DeployCommand;
 use Siro\Core\Commands\NewCommand;
+use Siro\Core\Commands\NewProjectCommand;
 use Siro\Core\Commands\MakeIdempotencyTableCommand;
 use Siro\Core\Commands\MakeApiKeysTableCommand;
 use Siro\Core\Commands\MakeApiKeyCommand;
@@ -142,7 +143,7 @@ final class Console
             'test:run'      => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite (legacy)', 'usage' => 'php siro test:run'],
             'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API (--loop, --as=admin/guest)', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]'],
 
-            'queue:work'    => ['handler' => QueueWorkCommand::class, 'desc' => 'Process queue jobs', 'usage' => 'php siro queue:work [--daemon]'],
+            'queue:work'    => ['handler' => QueueWorkCommand::class, 'desc' => 'Process queue jobs', 'usage' => 'php siro queue:work [--daemon] [--workers=N]'],
             'queue:retry'   => ['handler' => QueueRetryCommand::class, 'desc' => 'Retry failed jobs', 'usage' => 'php siro queue:retry <id|all>'],
             'queue:flush'   => ['handler' => QueueFlushCommand::class, 'desc' => 'Clear failed jobs', 'usage' => 'php siro queue:flush'],
             'queue:status'  => ['handler' => QueueStatusCommand::class, 'desc' => 'Queue statistics', 'usage' => 'php siro queue:status'],
@@ -175,6 +176,7 @@ final class Console
             'tinker'        => ['handler' => TinkerCommand::class, 'desc' => 'Interactive PHP playground in app context', 'usage' => 'php siro tinker'],
             'test'          => ['handler' => TestCommand::class, 'desc' => 'Run tests (--filter=, --suite=, --coverage)', 'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
+            'new:project'   => ['handler' => NewProjectCommand::class, 'desc' => 'Create project via composer', 'usage' => 'php siro new:project <name>'],
         ];
     }
 
@@ -377,7 +379,7 @@ final class Console
     private function printList(): void
     {
         $this->write('');
-        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 70 Commands');
+        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 71 Commands');
         $this->write('  ' . str_repeat('=', 60));
         $this->write('');
 

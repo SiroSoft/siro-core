@@ -1,6 +1,24 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Comparison operation "\>" between int\<1, max\> and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 2
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:extractPathParams\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
+			message: '#^Parameter \#2 \$where of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:extractPathParams\(\) expects array\<string, string\>, array\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeOpenApiCommand.php
+
+		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
 			count: 1

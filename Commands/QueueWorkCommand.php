@@ -15,10 +15,10 @@ use Siro\Core\Logger;
  * Recommended to run via supervisor or nohup in production.
  *
  * Usage:
- *   php siro queue:work              # Process all available and exit
- *   php siro queue:work --daemon     # Run continuously
- *   php siro queue:work --tries=5    # Override max attempts
- *   php siro queue:work --sleep=3    # Sleep seconds between polls (daemon)
+ *   php siro queue:work                # Process all available and exit
+ *   php siro queue:work --daemon       # Run continuously
+ *   php siro queue:work --daemon --workers=4   # Fork 4 workers
+ *   php siro queue:work --tries=5      # Override max attempts
  *
  * @package Siro\Core\Commands
  */
@@ -29,33 +29,27 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface {
     {
     }
 
-    private static bool $shouldStop = false;
-
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
         $daemon = false;
-        $sleep = 1;
         $maxAttempts = null;
+        $workers = 1;
 
         foreach ($args as $arg) {
             if ($arg === '--daemon') {
                 $daemon = true;
             } elseif (str_starts_with($arg, '--sleep=')) {
-                $sleep = max(1, (int) substr($arg, 8));
+                // Ignored — sleep handled internally by workAll
             } elseif (str_starts_with($arg, '--tries=')) {
                 $maxAttempts = max(1, (int) substr($arg, 8));
+            } elseif (str_starts_with($arg, '--workers=')) {
+                $workers = max(1, (int) substr($arg, 10));
             }
         }
 
         $app = new App($this->basePath);
         $app->boot();
-
-        if (extension_loaded('pcntl')) {
-            pcntl_async_signals(true);
-            pcntl_signal(SIGTERM, function (): void { self::$shouldStop = true; });
-            pcntl_signal(SIGINT, function (): void { self::$shouldStop = true; });
-        }
 
         $this->write('Queue worker started.');
         $startTime = date('Y-m-d H:i:s');
@@ -65,37 +59,13 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         if ($daemon) {
-            $this->write('Daemon mode: watching for new jobs...');
-            $processed = 0;
-            $errors = 0;
-
-            while (!self::$shouldStop) {
-                try {
-                    $count = Queue::workAll(10);
-                    if ($count > 0) {
-                        $processed += $count;
-                        $this->write("Processed: {$count} (total: {$processed})");
-                    }
-                    $errors = 0;
-                } catch (\Throwable $e) {
-                    $errors++;
-                    Logger::error($e);
-                    $this->write('Error: ' . $e->getMessage());
-
-                    if ($errors > 5) {
-                        $this->write('Too many consecutive errors. Stopping worker.');
-                        return 1;
-                    }
-                }
-
-                if (!self::$shouldStop) {
-                    sleep($sleep);
-                }
-            }
-
-            $this->write("Worker stopped after processing {$processed} job(s).");
+            $this->write("Daemon mode: {$workers} worker(s) watching for new jobs...");
+            Queue::workAll($workers);
         } else {
-            $count = Queue::workAll();
+            $count = 0;
+            while (Queue::work()) {
+                $count++;
+            }
             $this->write("Processed {$count} job(s).");
         }
 

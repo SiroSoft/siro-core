@@ -15,6 +15,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private string $apiVersion = '0.15.0';
     private string $outputFile = '';
     private bool $withSwagger = false;
+    private bool $force = false;
     private ?string $tagFilter = null;
     private ?string $methodFilter = null;
     private ?string $pathFilter = null;
@@ -53,7 +54,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
         $openApiEnabled = $openApiEnabled ?: ($env !== 'production' && $env !== 'prod');
-        if (!$openApiEnabled) {
+        if (!$openApiEnabled && !$this->force) {
             $this->write('  ⚠ OpenAPI spec generation is disabled in production.');
             $this->write('  Set SIRO_OPENAPI_ENABLED=true in .env to enable.');
             $this->write('  Or use with explicit --force flag if you know what you are doing.');
@@ -90,6 +91,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                         'scheme' => 'bearer',
                         'bearerFormat' => 'JWT',
                         'description' => 'JWT token from /api/auth/login or /api/auth/register',
+                    ],
+                    'apiKey' => [
+                        'type' => 'apiKey',
+                        'in' => 'header',
+                        'name' => 'X-API-Key',
+                        'description' => 'API key for machine-to-machine communication',
                     ],
                 ],
                 'schemas' => $this->schemas,
@@ -158,6 +165,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                 if (isset($r['method'], $r['path'])) {
                     $r['handler'] = $this->resolveHandler($r['handler'] ?? '');
                     $r['middleware'] = $r['middleware'] ?? [];
+                    $r['where'] = $r['where'] ?? [];
                     $routes[] = $r;
                 }
             }
@@ -194,6 +202,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $path = $this->safeStr($route['path'] ?? '/');
         $handler = $this->safeStr($route['handler'] ?? '');
         $middleware = $route['middleware'] ?? [];
+        $where = isset($route['where']) && is_array($route['where']) ? $route['where'] : [];
 
         // Derive tag from controller class or path
         $tag = $this->deriveTag($handler, $path);
@@ -210,8 +219,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             'security' => $hasAuth ? [['bearerAuth' => []]] : [],
         ];
 
-        // Extract path params like {id}
-        $parameters = $this->extractPathParams($path);
+        // Extract path params like {id} with where constraints
+        $parameters = $this->extractPathParams($path, $where);
         // Add query params for GET list endpoints
         if ($method === 'get' && !str_contains($path, '{')) {
             $parameters[] = ['name' => 'page', 'in' => 'query', 'schema' => ['type' => 'integer', 'default' => 1]];
@@ -247,6 +256,20 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         if (str_contains($path, '/auth/')) return 'Auth';
         if (str_contains($path, '/health') || $path === '/') return 'System';
 
+        // Closure / anonymous handlers
+        if ($handler === 'Closure' || $handler === 'unknown') {
+            // Derive from path
+            $parts = array_values(array_filter(explode('/', $path)));
+            foreach ($parts as $p) {
+                if ($p !== 'api' && !str_starts_with($p, '{')) {
+                    $tag = ucfirst(rtrim($p, 's') . 's');
+                    $this->tags[$tag] = $tag;
+                    return $tag;
+                }
+            }
+            return 'API';
+        }
+
         // Extract from controller class name
         if (preg_match('/\\\\(\w+)Controller/', $handler, $m)) {
             $tag = $m[1];
@@ -276,7 +299,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private function deriveSummary(string $method, string $path): string
     {
         $action = match ($method) {
-            'get' => str_contains($path, '{') ? 'Get' : 'List',
+            'get' => str_contains($path, '{') ? 'Get' : 'List all',
             'post' => 'Create',
             'put' => 'Update',
             'patch' => 'Partial update',
@@ -292,27 +315,76 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             if ($prev !== false && $prev !== 'api' && str_contains($path, '{')) {
                 $resource = $prev;
             }
+            // Handle auth paths
+            if (str_contains($path, '/auth/')) {
+                $action = match ($resource) {
+                    'login' => 'Log in',
+                    'register' => 'Register',
+                    'logout' => 'Log out',
+                    'refresh' => 'Refresh token',
+                    'me' => 'Get current user',
+                    'forgot-password' => 'Forgot password',
+                    'reset-password' => 'Reset password',
+                    'verify-email' => 'Verify email',
+                    default => $action,
+                };
+            }
+            // Handle health
+            if ($path === '/health' || $path === '/health/ready') {
+                $action = 'Health check';
+                $resource = 'system';
+            }
+            if ($path === '/') {
+                $action = 'Welcome';
+                $resource = 'API info';
+            }
         }
         return $action . ' ' . ($resource !== false ? $resource : 'resource');
     }
 
     /**
+     * @param array<string, string> $where
      * @return list<array<string, mixed>>
      */
-    private function extractPathParams(string $path): array
+    /** @param array<string, string> $where */
+    private function extractPathParams(string $path, array $where = []): array
     {
         $params = [];
         if (preg_match_all('/\{(\w+)\}/', $path, $matches)) {
             foreach ($matches[1] as $name) {
+                $schema = $this->inferTypeFromWhere($name, $where);
                 $params[] = [
                     'name' => $name,
                     'in' => 'path',
                     'required' => true,
-                    'schema' => ['type' => 'integer'],
+                    'schema' => $schema,
                 ];
             }
         }
         return $params;
+    }
+
+    /**
+     * @param array<string, string> $where
+     * @return array<string, mixed>
+     */
+    private function inferTypeFromWhere(string $name, array $where): array
+    {
+        $pattern = $where[$name] ?? '';
+        if ($pattern === '') {
+            return ['type' => 'integer'];
+        }
+        $clean = trim($pattern, '/^$');
+        if (preg_match('/^\\\d\+$/', $clean) || preg_match('/^[0-9]+$/', $clean)) {
+            return ['type' => 'integer'];
+        }
+        if (preg_match('/^[a-zA-Z0-9_-]+$/', $clean)) {
+            return ['type' => 'string', 'pattern' => $pattern];
+        }
+        if (preg_match('/^[a-fA-F0-9-]+$/', $clean)) {
+            return ['type' => 'string', 'format' => 'uuid'];
+        }
+        return ['type' => 'string', 'pattern' => $pattern];
     }
 
     /**
@@ -365,6 +437,19 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $schemaName = $this->schemaName($handler, $method, $suffix);
 
         if (isset($this->schemas[$schemaName])) return $schemaName;
+
+        // Auth 'me' endpoint uses User schema
+        if (str_contains($path, '/auth/me')) {
+            $this->schemas[$schemaName] = [
+                'type' => 'object',
+                'properties' => [
+                    'success' => ['type' => 'boolean'],
+                    'message' => ['type' => 'string'],
+                    'data' => ['$ref' => '#/components/schemas/User'],
+                ],
+            ];
+            return $schemaName;
+        }
 
         // Try to extract data schema from resource/model
         $dataSchema = $this->extractDataSchema($handler);
@@ -483,7 +568,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private array $sensitiveFields = ['is_admin', 'role', 'permissions', 'balance', 'credit', 'token_version', 'verification_token', 'password_reset_token', 'password_reset_expires_at', 'email_verified_at', 'deleted_at'];
 
     /** @var array<int, string> Internal validation rules that should not be exposed */
-    private array $internalRules = ['unique:', 'exists:', 'confirmed', 'required_if:', 'prohibited_if:'];
+    private array $internalRules = ['unique:', 'exists:', 'confirmed', 'required_if:', 'prohibited_if:', 'prohibited:'];
 
     /**
      * @return array<string, array<int, string>>
@@ -521,8 +606,32 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
+        // Pattern 2b: $this->validate() with simple flat array
+        if ($rules === [] && preg_match('/\$this\s*->validate\s*\((\s*\[[^]]+\])\s*\)/s', $body, $vMatch)) {
+            preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[1], $pairs);
+            foreach ($pairs[1] as $i => $field) {
+                $rules[$field] = explode('|', $pairs[2][$i]);
+            }
+        }
+
         // Pattern 3: Validator::make() with flat array
         if ($rules === [] && preg_match('/Validator::make\s*\([^,]+,\s*\[([^\]]+)\]/s', $body, $vMatch)) {
+            preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[1], $pairs);
+            foreach ($pairs[1] as $i => $field) {
+                $rules[$field] = explode('|', $pairs[2][$i]);
+            }
+        }
+
+        // Pattern 4: inline $this->validate([...]) or $this->service->foo($this->validate([...]))
+        if ($rules === [] && preg_match('/\$this\s*->\w+\s*\(\s*\$this\s*->validate\s*\((\[[^]]+\])\s*\)\s*\)/s', $body, $vMatch)) {
+            preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[1], $pairs);
+            foreach ($pairs[1] as $i => $field) {
+                $rules[$field] = explode('|', $pairs[2][$i]);
+            }
+        }
+
+        // Pattern 5: validate() assigned to variable: $validated = $this->validate([...])
+        if ($rules === [] && preg_match('/\w+\s*=\s*\$this\s*->validate\s*\((\[[^]]+\])\s*\)/s', $body, $vMatch)) {
             preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[1], $pairs);
             foreach ($pairs[1] as $i => $field) {
                 $rules[$field] = explode('|', $pairs[2][$i]);
@@ -570,6 +679,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private function ruleToProperty(string $field, array $rules): array
     {
         $type = 'string';
+        $nullable = false;
+        $enumValues = [];
+
         foreach ($rules as $rule) {
             $ruleName = explode(':', $rule)[0];
             $type = match ($ruleName) {
@@ -581,9 +693,22 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                 'json' => 'object',
                 default => $type,
             };
+            if ($ruleName === 'nullable' || $ruleName === 'sometimes') {
+                $nullable = true;
+            }
         }
 
         $prop = ['type' => $type];
+
+        // Extract enum values from 'in:' rule
+        foreach ($rules as $rule) {
+            if (str_starts_with($rule, 'in:')) {
+                $enumValues = explode(',', substr($rule, 3));
+                if (count($enumValues) > 0) {
+                    $prop['enum'] = $enumValues;
+                }
+            }
+        }
 
         // Extract min/max for strings
         if ($type === 'string') {
@@ -598,15 +723,26 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                 if (str_starts_with($rule, 'max:')) $prop['maximum'] = (float) substr($rule, 4);
             }
         }
+
+        // Formats
         if (in_array('email', $rules, true)) $prop['format'] = 'email';
+        if (in_array('url', $rules, true)) $prop['format'] = 'uri';
+
+        if ($nullable) {
+            $prop['nullable'] = true;
+        }
 
         // Example value
-        $prop['example'] = match ($type) {
-            'integer' => 1,
-            'number' => 0.0,
-            'boolean' => true,
-            default => 'string',
-        };
+        if (isset($prop['enum']) && count($prop['enum']) > 0) {
+            $prop['example'] = $prop['enum'][0];
+        } else {
+            $prop['example'] = match ($type) {
+                'integer' => 1,
+                'number' => 0.0,
+                'boolean' => true,
+                default => 'string',
+            };
+        }
 
         return $prop;
     }
@@ -637,10 +773,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     /** @return array<int|string, array<string, mixed>> */
     private function buildResponses(?string $responseSchema, string $method, string $path): array
     {
-        $successCode = $method === 'post' ? '201' : '200';
+        $successCode = $method === 'post' ? '201' : ($method === 'delete' ? '204' : '200');
         $responses = [];
 
-        if ($responseSchema && isset($this->schemas[$responseSchema])) {
+        if ($method === 'delete') {
+            $responses[$successCode] = ['description' => 'No content'];
+        } elseif ($responseSchema && isset($this->schemas[$responseSchema])) {
             $responses[$successCode] = ['description' => 'Successful operation', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' . $responseSchema]]]];
         } else {
             $responses[$successCode] = ['description' => 'Successful operation'];
@@ -652,6 +790,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         if (in_array($method, ['post', 'put', 'patch'])) {
             $responses['422'] = ['description' => 'Validation error', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ValidationErrorResponse']]]];
         }
+        $responses['401'] = ['description' => 'Unauthorized'];
+        $responses['403'] = ['description' => 'Forbidden'];
+        $responses['500'] = ['description' => 'Internal server error'];
         return $responses;
     }
 
@@ -718,6 +859,59 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                     'per_page' => ['type' => 'integer', 'example' => 20],
                     'total' => ['type' => 'integer', 'example' => 100],
                     'last_page' => ['type' => 'integer', 'example' => 5],
+                    'has_more' => ['type' => 'boolean', 'example' => true],
+                ],
+            ],
+            'AuthTokenResponse' => [
+                'type' => 'object',
+                'properties' => [
+                    'success' => ['type' => 'boolean', 'example' => true],
+                    'message' => ['type' => 'string', 'example' => 'Login successful'],
+                    'data' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'token' => ['type' => 'string', 'example' => 'eyJ...'],
+                            'refresh_token' => ['type' => 'string', 'example' => 'eyJ...'],
+                            'token_type' => ['type' => 'string', 'example' => 'Bearer'],
+                            'expires_in' => ['type' => 'integer', 'example' => 3600],
+                            'user' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'id' => ['type' => 'integer', 'example' => 1],
+                                    'name' => ['type' => 'string', 'example' => 'John Doe'],
+                                    'email' => ['type' => 'string', 'format' => 'email', 'example' => 'user@example.com'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'User' => [
+                'type' => 'object',
+                'properties' => [
+                    'id' => ['type' => 'integer', 'example' => 1],
+                    'name' => ['type' => 'string', 'example' => 'John Doe'],
+                    'email' => ['type' => 'string', 'format' => 'email', 'example' => 'user@example.com'],
+                    'status' => ['type' => 'integer', 'example' => 1],
+                    'created_at' => ['type' => 'string', 'format' => 'date-time'],
+                    'updated_at' => ['type' => 'string', 'format' => 'date-time'],
+                ],
+            ],
+            'HealthResponse' => [
+                'type' => 'object',
+                'properties' => [
+                    'success' => ['type' => 'boolean', 'example' => true],
+                    'message' => ['type' => 'string', 'example' => 'OK'],
+                    'data' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'status' => ['type' => 'string', 'example' => 'healthy'],
+                            'version' => ['type' => 'string', 'example' => '0.15.0'],
+                            'php' => ['type' => 'string', 'example' => '8.2.0'],
+                            'database' => ['type' => 'string', 'example' => 'connected'],
+                            'time' => ['type' => 'string', 'format' => 'date-time'],
+                        ],
+                    ],
                 ],
             ],
         ];
@@ -804,6 +998,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     {
         foreach ($args as $arg) {
             if ($arg === '--with-swagger') $this->withSwagger = true;
+            elseif ($arg === '--force') $this->force = true;
             elseif (str_starts_with($arg, '--output=')) $this->outputFile = substr($arg, 9);
             elseif (str_starts_with($arg, '--title=')) $this->title = substr($arg, 8);
             elseif (str_starts_with($arg, '--version=')) $this->apiVersion = substr($arg, 10);

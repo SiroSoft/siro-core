@@ -62,6 +62,10 @@ final class ServeCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('    php siro api:test POST /api/auth/login email=admin@test.com password=secret');
         $this->write('    php siro api:test POST /api/products name=Laptop price=999 --as=admin');
         $this->write('');
+        $this->write('  Probes:');
+        $this->write('    curl http://' . $host . ':' . $port . '/health/live');
+        $this->write('    curl http://' . $host . ':' . $port . '/health/ready');
+        $this->write('');
         $this->write('  Debug:');
         $this->write('    php siro debug:last');
         $this->write('    php siro log:tail');
