@@ -217,6 +217,24 @@ final class ModelQueryBuilder extends QueryBuilder
         return $models;
     }
 
+    /**
+     * Memory-efficient model streaming.
+     *
+     * Yields hydrated Model instances one at a time without
+     * loading all results into memory. Use for large datasets
+     * where loading everything at once would exceed memory limits.
+     *
+     * @return \Generator<int, Model>
+     */
+    // @phpstan-ignore-next-line return.childReturnType
+    public function cursor(): \Generator
+    {
+        $this->applySoftDeleteFilter();
+        foreach (parent::cursor() as $row) {
+            yield $this->hydrateModel($row);
+        }
+    }
+
     public function first(): ?Model
     {
         $this->applySoftDeleteFilter();

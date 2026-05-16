@@ -15,7 +15,7 @@ final class Session
     private static ?\Redis $redisInstance = null;
     private string $driver;
     private string $filePath;
-    private string $sessionId;
+    private string $sessionId = '';
     /** @var array<string, mixed> */
     private array $data = [];
     /** @var array<mixed> */

@@ -414,11 +414,20 @@ final class Router
     /** @param callable|array{0:class-string,1:string}|string $handler */
     private function runHandler(callable|array|string $handler, Request $request): Response
     {
+        if (is_string($handler) && str_contains($handler, '@')) {
+            [$class, $method] = explode('@', $handler, 2) + [null, null];
+            if ($class === null || $method === null) {
+                throw new RuntimeException('Invalid route handler format. Use Class@method.');
+            }
+            $handler = [$class, $method];
+        }
+
         if (is_array($handler)) {
             [$class, $method] = $handler;
             if (!is_string($class) || !is_string($method)) {
                 throw new RuntimeException('Invalid route handler format. Expected [className, methodName].');
             }
+
             $controller = $this->resolveController($class);
             if (!method_exists($controller, $method)) {
                 throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
@@ -428,46 +437,122 @@ final class Router
                 $controller->setRequest($request);
             }
 
-            try {
-                return $this->normalizeHandlerResult($controller->{$method}($request));
-            } catch (\ArgumentCountError) {
-                return $this->normalizeHandlerResult($controller->{$method}());
-            }
+            $resolved = $this->resolveMethodArgs($controller, $method, $request);
+            return $this->normalizeHandlerResult($controller->{$method}(...$resolved));
         }
 
         if (is_callable($handler)) {
-            try {
-                $response = $handler($request);
-            } catch (\ArgumentCountError) {
-                $response = $handler();
-            }
-            return $this->normalizeHandlerResult($response);
+            $resolved = $this->resolveCallableArgs($handler, $request);
+            return $this->normalizeHandlerResult($handler(...$resolved));
         }
 
-        [$class, $method] = explode('@', $handler, 2) + [null, null];
-        if ($class === null || $method === null) {
-            throw new RuntimeException('Invalid route handler format. Use Class@method.');
-        }
+        throw new RuntimeException('Invalid route handler format.');
+    }
 
-        if (!class_exists($class)) {
-            throw new RuntimeException(sprintf('Controller class %s not found.', $class));
-        }
-
-        $controller = $this->resolveController($class);
-        if (!method_exists($controller, $method)) {
-            throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
-        }
-
-        if ($controller instanceof Controller) {
-            $controller->setRequest($request);
-        }
-
+    /**
+     * Resolve method arguments using reflection.
+     * Auto-resolves Request and FormRequest type-hints.
+     *
+     * @return array<int, mixed>
+     */
+    private function resolveMethodArgs(object $controller, string $method, Request $request): array
+    {
         try {
-            $response = $controller->{$method}($request);
-        } catch (\ArgumentCountError) {
-            $response = $controller->{$method}();
+            $ref = new \ReflectionMethod($controller, $method);
+        } catch (\ReflectionException) {
+            return [$request];
         }
-        return $this->normalizeHandlerResult($response);
+
+        $params = $ref->getParameters();
+        if ($params === []) {
+            return [];
+        }
+
+        $args = [];
+        foreach ($params as $param) {
+            $type = $param->getType();
+
+            if ($type instanceof \ReflectionNamedType) {
+                $typeName = $type->getName();
+
+                if ($typeName === Request::class) {
+                    $args[] = $request;
+                    continue;
+                }
+
+                if ($typeName === FormRequest::class || is_subclass_of($typeName, FormRequest::class)) {
+                    $instance = new $typeName($request);
+                    if ($instance->fails()) {
+                        throw new ValidationException($instance->errors());
+                    }
+                    $args[] = $instance;
+                    continue;
+                }
+
+                if ($type->allowsNull() && $param->isDefaultValueAvailable()) {
+                    $args[] = $param->getDefaultValue();
+                    continue;
+                }
+            }
+
+            if ($param->isDefaultValueAvailable()) {
+                $args[] = $param->getDefaultValue();
+            } elseif ($param->allowsNull()) {
+                $args[] = null;
+            }
+        }
+
+        return $args;
+    }
+
+    /**
+     * Resolve arguments for callable handlers.
+     *
+     * @return array<int, mixed>
+     */
+    private function resolveCallableArgs(callable $handler, Request $request): array
+    {
+        try {
+            $ref = new \ReflectionFunction(\Closure::fromCallable($handler));
+        } catch (\ReflectionException) {
+            return [$request];
+        }
+
+        $params = $ref->getParameters();
+        if ($params === []) {
+            return [];
+        }
+
+        $args = [];
+        foreach ($params as $param) {
+            $type = $param->getType();
+
+            if ($type instanceof \ReflectionNamedType) {
+                $typeName = $type->getName();
+
+                if ($typeName === Request::class) {
+                    $args[] = $request;
+                    continue;
+                }
+
+                if ($typeName === FormRequest::class || is_subclass_of($typeName, FormRequest::class)) {
+                    $instance = new $typeName($request);
+                    if ($instance->fails()) {
+                        throw new ValidationException($instance->errors());
+                    }
+                    $args[] = $instance;
+                    continue;
+                }
+            }
+
+            if ($param->isDefaultValueAvailable()) {
+                $args[] = $param->getDefaultValue();
+            } elseif ($param->allowsNull()) {
+                $args[] = null;
+            }
+        }
+
+        return $args;
     }
 
     /** @var array<string, object> */

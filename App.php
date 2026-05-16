@@ -215,6 +215,11 @@ final class App
             $errorResponse = $e->toResponse();
             $status = $errorResponse->statusCode();
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
+        } catch (ModelNotFoundException $e) {
+            $this->attachDebugMeta();
+            $status = 404;
+            $errorResponse = Response::error($e->getMessage(), 404);
+            $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (Throwable $e) {
             Logger::error($e);
             $errors = [];

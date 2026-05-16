@@ -254,6 +254,19 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     }
 
     /**
+     * Memory-efficient iteration over all matching records.
+     *
+     * Yields one Model at a time without loading all into memory.
+     * Usage: foreach (User::where('active', 1)->cursor() as $user) { ... }
+     *
+     * @return \Generator<int, self>
+     */
+    public static function cursor(): \Generator
+    {
+        return self::query()->cursor();
+    }
+
+    /**
      * @return array{data: array<int, self>, meta: array{page: int, per_page: int, total: int, last_page: int}}
      */
     public static function paginate(int $perPage = 15, int $page = 1): array

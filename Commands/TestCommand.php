@@ -34,7 +34,7 @@ final class TestCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
-        $cmd = 'php ' . escapeshellarg($phpunit) . ' --no-progress --colors=always';
+        $cmd = 'php ' . escapeshellarg($phpunit) . ' --no-coverage --no-progress --colors=always';
 
         if ($filter !== '' && $filter !== '--coverage') {
             $cmd .= ' --filter=' . escapeshellarg($filter);

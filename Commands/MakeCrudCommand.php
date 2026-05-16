@@ -683,30 +683,22 @@ final class {$className} extends TestCase
 {
     public function testIndexReturns200(): void
     {
-        \$app = \$this->createApp();
-        \$response = \$this->dispatch(\$app, 'GET', '{$endpoint}');
-        \$this->assertEquals(200, \$response->statusCode());
+        \$this->get('{$endpoint}')->assertOk();
     }
 
     public function testShowReturns404ForInvalidId(): void
     {
-        \$app = \$this->createApp();
-        \$response = \$this->dispatch(\$app, 'GET', '{$endpoint}/999');
-        \$this->assertEquals(404, \$response->statusCode());
+        \$this->get('{$endpoint}/999')->assertNotFound();
     }
 
     public function testStoreReturns201WithValidData(): void
     {
-        \$app = \$this->createApp();
-        \$response = \$this->dispatch(\$app, 'POST', '{$endpoint}', ['name' => 'Test {$model}']);
-        \$this->assertEquals(201, \$response->statusCode());
+        \$this->post('{$endpoint}', ['name' => 'Test {$model}'])->assertCreated();
     }
 
     public function testStoreReturns422WithoutRequiredFields(): void
     {
-        \$app = \$this->createApp();
-        \$response = \$this->dispatch(\$app, 'POST', '{$endpoint}', []);
-        \$this->assertEquals(422, \$response->statusCode());
+        \$this->post('{$endpoint}', [])->assertValidationError();
     }
 }
 

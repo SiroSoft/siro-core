@@ -16,7 +16,7 @@ abstract class FormRequest
 {
     protected Request $request;
     /** @var array<string, mixed> */ protected array $validated = [];
-    /** @var array<string, mixed> */ protected array $errors = [];
+    /** @var array<string, array<int, string>> */ protected array $errors = [];
 
     public function __construct(Request $request)
     {
@@ -43,7 +43,7 @@ abstract class FormRequest
         return $this->validated;
     }
 
-    /** @return array<string, mixed> */ public function errors(): array
+    /** @return array<string, array<int, string>> */ public function errors(): array
     {
         return $this->errors;
     }

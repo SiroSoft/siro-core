@@ -1,5 +1,47 @@
 # Changelog
 
+## v0.27.0 (2026-05-16) — DX & Test Infrastructure Overhaul
+
+### 🆕 New Features
+
+#### FormRequest Auto-Resolution
+- `Router::resolveMethodArgs()` — tự động detect type-hint `FormRequest` trong controller method
+- Auto-validate trước khi gọi handler, throw `ValidationException` nếu fail
+- Hỗ trợ cả `Controller@method` string và `[Class::class, 'method']` array syntax
+
+#### `Model::cursor()` — Memory-Efficient Iteration
+- `QueryBuilder::cursor()` — yield từng row dùng Generator, không load all memory
+- `ModelQueryBuilder::cursor()` — yield hydrated Model instances
+- `Model::cursor()` — static convenience: `User::where('active', 1)->cursor()`
+- Lý tưởng cho export millions records, batch jobs
+
+#### MetricsMiddleware Path Normalization
+- Tự động thay thế segment số → `{id}`, UUID → `{uuid}`, hash → `{hash}`
+- Chống cardinality explosion trên Prometheus
+- Thêm `http_response_memory_bytes` histogram
+
+#### ModelNotFoundException Handling
+- `App::run()` bắt `ModelNotFoundException` riêng → trả về 404 thay vì 500
+- `app/Exceptions/Handler.php` — centralized error handler pattern
+
+### 🔧 Improvements
+- `Session::$sessionId` — initialized mặc định `''` để tránh "uninitialized property"
+- `FormRequest::$errors` — type chính xác `array<string, array<int, string>>`
+- `TestCommand` — thêm `--no-coverage` để tránh PHPUnit warning khi thiếu xdebug
+- `MakeTestCommand` + `MakeCrudCommand` — template test dùng fluent helpers (`get()`, `assertOk()`)
+- `MetricsMiddleware` — gọn nhẹ hơn, không còn active requests gauge
+
+### 🧪 Test Infrastructure
+- `authenticate(?App $app = null)` — có thể gọi không cần tham số
+- `assertDatabaseHas` / `assertDatabaseMissing` — driver-aware quoting
+- `TestResponse` — 12 fluent assertions (assertOk, assertCreated, ...)
+- Transaction-based test isolation
+
+### 📦 Dependencies
+- PHP ≥ 8.2 (không đổi)
+
+---
+
 ## v0.26.2 (2026-05-15) — The "All P2" Release — 7 Expert-Recommended Items
 
 ### 🆕 Extra Features (Post-Audit)

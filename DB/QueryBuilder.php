@@ -307,6 +307,34 @@ class QueryBuilder
         return $this->runSelect($sql, $bindings);
     }
 
+    /**
+     * Memory-efficient row streaming using a Generator.
+     *
+     * Yields one row at a time instead of loading all results into memory.
+     * Ideal for processing large datasets (exports, migrations, batch jobs).
+     * Skips query cache — cursor is intended for uncached iteration.
+     *
+     * @return \Generator<int, array<string, mixed>>
+     */
+    public function cursor(): \Generator
+    {
+        $lockMode = $this->resolveLockMode();
+        [$sql, $bindings] = $this->compiler->buildSelectQuery(
+            $this->columns, $this->table, $this->wheres, $this->havings,
+            $this->joins, $this->groups, $this->orders,
+            $this->limitValue, $this->offsetValue, $this->bindings,
+            $lockMode
+        );
+
+        $stmt = Database::connection($this->connectionName)->prepare($sql);
+        $stmt->execute($bindings);
+
+        while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
+            /** @var array<string, mixed> $row */
+            yield $row;
+        }
+    }
+
     /** @return array<string, mixed>|null */
     public function first(): mixed
     {

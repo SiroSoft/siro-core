@@ -64,36 +64,27 @@ declare(strict_types=1);
 namespace App\Tests\Feature;
 
 use App\Tests\TestCase;
-use Siro\Core\Request;
 
 final class {$name}Test extends TestCase
 {
     public function testIndexReturns200(): void
     {
-        \$app = \$this->createApp();
-        \$response = \$this->dispatch(\$app, 'GET', '{$endpoint}');
-        \$this->assertEquals(200, \$response->statusCode());
+        \$this->get('{$endpoint}')->assertOk();
     }
 
     public function testShowReturns404ForInvalidId(): void
     {
-        \$app = \$this->createApp();
-        \$response = \$this->dispatch(\$app, 'GET', '{$endpoint}/999');
-        \$this->assertEquals(404, \$response->statusCode());
+        \$this->get('{$endpoint}/999')->assertNotFound();
     }
 
     public function testStoreReturns201WithValidData(): void
     {
-        \$app = \$this->createApp();
-        \$response = \$this->dispatch(\$app, 'POST', '{$endpoint}', ['name' => 'Test']);
-        \$this->assertEquals(201, \$response->statusCode());
+        \$this->post('{$endpoint}', ['name' => 'Test'])->assertCreated();
     }
 
     public function testStoreReturns422WithoutRequiredFields(): void
     {
-        \$app = \$this->createApp();
-        \$response = \$this->dispatch(\$app, 'POST', '{$endpoint}', []);
-        \$this->assertEquals(422, \$response->statusCode());
+        \$this->post('{$endpoint}', [])->assertValidationError();
     }
 }
 
