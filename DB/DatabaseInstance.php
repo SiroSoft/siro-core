@@ -289,6 +289,9 @@ final class DatabaseInstance implements DatabaseInterface
             $stmt = $this->preparedStatements[$stmtHash];
         } else {
             $stmt = $this->connection($connection)->prepare($sql);
+            if (count($this->preparedStatements) > 500) {
+                array_shift($this->preparedStatements);
+            }
             $this->preparedStatements[$stmtHash] = $stmt;
         }
         $stmt->execute($params);

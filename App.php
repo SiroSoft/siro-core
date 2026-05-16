@@ -258,6 +258,7 @@ final class App
                 Logger::trace($traceId, $traceData);
             }
 
+            Model::clearIdentityMap();
             $bootTimeMs = ($this->startedAt > 0) ? (microtime(true) - $this->startedAt) * 1000 : 0;
             if ($this->debug && $bootTimeMs > self::BOOT_THRESHOLD_MS) {
                 Logger::debug("Boot time exceeded threshold: " . round($bootTimeMs, 2) . "ms");

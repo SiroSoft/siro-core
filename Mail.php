@@ -285,10 +285,10 @@ final class Mail
             $headers[] = 'CC: ' . $ccAddr;
         }
 
-        // BCC recipients are added to the envelope (to parameter) but NOT to headers
+        // BCC recipients set as proper Bcc header
         $allRecipients = $this->to;
-        foreach ($this->bcc as $bccAddr) {
-            $allRecipients .= ', ' . $bccAddr;
+        if ($this->bcc !== []) {
+            $headers[] = 'Bcc: ' . implode(', ', $this->bcc);
         }
 
         $body = chunk_split(base64_encode($this->body), 76, "\r\n");

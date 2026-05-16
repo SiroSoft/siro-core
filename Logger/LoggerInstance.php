@@ -223,6 +223,10 @@ final class LoggerInstance implements LoggerInterface
     {
         $message = $this->escapeLog($message);
 
+        if (!preg_match('/\b(password|secret|token|key|auth)\b/i', $message)) {
+            return $message;
+        }
+
         $patterns = $this->getSanitizePatterns();
 
         /** @var array<int, string> $patternList */

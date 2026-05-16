@@ -195,6 +195,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             return null;
         }
 
+        if (count($map) > 1000) {
+            $map = array_slice($map, -500, null, true);
+        }
         $map[$id] = $result;
         return $result;
     }

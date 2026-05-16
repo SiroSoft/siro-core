@@ -19,15 +19,7 @@ final class JsonMiddleware implements MiddlewareInterface
                 return Response::error('Content-Type must be application/json', 415);
             }
 
-            // Read body from the already-parsed Request object
-            // php://input cannot be read twice, Request caches it internally
-            $body = $request->body();
-            if ($body !== []) {
-                $rawBody = json_encode($body);
-                if ($rawBody === false || json_decode($rawBody, true) === null) {
-                    return Response::error('Invalid JSON format', 400);
-                }
-            }
+            // Body already parsed by Request::fromGlobals(); no need to re-encode/re-decode.
         }
 
         return $next($request);

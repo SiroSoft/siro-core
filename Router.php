@@ -6,6 +6,7 @@ namespace Siro\Core;
 
 use Closure;
 use RuntimeException;
+use Siro\Core\Middleware\JsonMiddleware;
 use Siro\Core\Middleware\MiddlewareInterface;
 
 final class Router
@@ -179,19 +180,7 @@ final class Router
             }
         }
 
-        $finalHandler = function (Request $req) use ($route): Response {
-            return $this->runHandler($route['handler'], $req);
-        };
-
-        $pipeline = array_reverse($route['middleware']);
-        foreach ($pipeline as $middleware) {
-            $next = $finalHandler;
-            $finalHandler = function (Request $req) use ($middleware, $next): Response {
-                return $this->runMiddleware($middleware, $req, $next);
-            };
-        }
-
-        $response = $finalHandler($request);
+        $response = $this->dispatchWithMiddleware($route['middleware'], $route['handler'], $request);
 
         if ($canUseCache) {
             Cache::set($cacheKey, [
@@ -605,6 +594,25 @@ final class Router
         return str_contains($path, '{') && str_contains($path, '}');
     }
 
+    /**
+     * @param array<int, callable|string> $middleware
+     * @param callable|array{0: class-string, 1: string}|string $handler
+     */
+    private function dispatchWithMiddleware(array $middleware, mixed $handler, Request $request): Response
+    {
+        $pos = 0;
+        $next = function (Request $req) use ($middleware, $handler, &$pos, &$next): Response {
+            if ($pos >= count($middleware)) {
+                /** @var callable|array{0: class-string, 1: string}|string $handler */
+                return $this->runHandler($handler, $req);
+            }
+            /** @var callable|string $mw */
+            $mw = $middleware[$pos++];
+            return $this->runMiddleware($mw, $req, $next);
+        };
+        return $next($request);
+    }
+
     private function runMiddleware(callable|string $middleware, Request $request, Closure $next): Response
     {
         if (is_callable($middleware)) {
@@ -679,6 +687,20 @@ final class Router
     {
         $normalized = strtolower(trim($name));
         return self::$middlewareAliases[$normalized] ?? $name;
+    }
+
+    /**
+     * @param array<int, callable|string> $middleware
+     */
+    public function resource(string $name, string $controller, array $middleware = [], int $cacheTtl = 0): void
+    {
+        $route = $this->get("/{$name}", $controller . '@index', $middleware);
+        if ($cacheTtl > 0) { $route->cache($cacheTtl); }
+        $route = $this->get("/{$name}/{id}", $controller . '@show', $middleware);
+        if ($cacheTtl > 0) { $route->cache($cacheTtl); }
+        $this->post("/{$name}", $controller . '@store', [...$middleware, JsonMiddleware::class]);
+        $this->put("/{$name}/{id}", $controller . '@update', [...$middleware, JsonMiddleware::class]);
+        $this->delete("/{$name}/{id}", $controller . '@delete', $middleware);
     }
 
     private function handleOptionsRequest(string $path): Response

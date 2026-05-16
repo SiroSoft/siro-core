@@ -63,7 +63,7 @@ final class AuthGuard
                 return null;
             }
 
-            $jtiTokenVersion = is_numeric($claims['token_version'] ?? null) ? (int) $claims['token_version'] : 0;
+            $jtiTokenVersion = is_numeric($claims['ver'] ?? null) ? (int) $claims['ver'] : 0;
             $userTokenVersion = is_numeric($user['token_version'] ?? null) ? (int) $user['token_version'] : 0;
             if ($jtiTokenVersion !== $userTokenVersion) {
                 return null;
