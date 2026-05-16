@@ -1,44 +1,108 @@
 # Changelog
 
-## v0.27.0 (2026-05-16) — DX & Test Infrastructure Overhaul
+## v0.27.0 (2026-05-16) — Full Enterprise Release
 
-### 🆕 New Features
+### 🚀 CLI & Developer Experience
+
+#### New Commands
+- **`php siro new <project>`** — Create new SiroPHP project via `composer create-project sirosoft/api`
+- **`php siro make:auth`** — Generate AuthController + User model + auth routes + JWT flow
+- **`php siro serve`** — Now prints health probe URLs (`/health/live`, `/health/ready`)
 
 #### FormRequest Auto-Resolution
 - `Router::resolveMethodArgs()` — tự động detect type-hint `FormRequest` trong controller method
 - Auto-validate trước khi gọi handler, throw `ValidationException` nếu fail
 - Hỗ trợ cả `Controller@method` string và `[Class::class, 'method']` array syntax
 
-#### `Model::cursor()` — Memory-Efficient Iteration
-- `QueryBuilder::cursor()` — yield từng row dùng Generator, không load all memory
-- `ModelQueryBuilder::cursor()` — yield hydrated Model instances
-- `Model::cursor()` — static convenience: `User::where('active', 1)->cursor()`
-- Lý tưởng cho export millions records, batch jobs
+#### `$router->resource()` — CRUD Routes in 1 Line
+- `$router->resource('products', ProductController::class, ['auth'])` — 5 routes / 1 dòng
+- Thay thế 58 dòng route boilerplate = 6 dòng resource() calls
+- Tự động thêm JsonMiddleware cho POST/PUT
 
-#### MetricsMiddleware Path Normalization
-- Tự động thay thế segment số → `{id}`, UUID → `{uuid}`, hash → `{hash}`
-- Chống cardinality explosion trên Prometheus
-- Thêm `http_response_memory_bytes` histogram
+### 🔐 Security
 
-#### ModelNotFoundException Handling
-- `App::run()` bắt `ModelNotFoundException` riêng → trả về 404 thay vì 500
-- `app/Exceptions/Handler.php` — centralized error handler pattern
+#### Critical Fixes
+- **AuthGuard** — JWT claim key sửa từ `token_version` → `ver` (đúng với JWT::encodeAccess)
+- **User $fillable** — Xoá `role`, `status`, `token_version`, `login_attempts`, `locked_until` khỏi mass-assignable
+- **OrderController** — Thêm ownership check cho show/update/delete (fix IDOR)
+- **ModelNotFoundException** — Không còn leak class name ra HTTP response
+- **AuthGuard token_version** — Verify token_version sau JWT decode (logout revocation)
+- **JWT_SECRET → APP_KEY** — Tách biệt secret cho cache HMAC
+
+#### Response::error() — Clean Format
+- Xoá dual error representation (`meta.errors` + top-level `errors`)
+- Chỉ giữ `meta.errors` — response nhất quán
+
+### ⚡ Performance
+
+#### Major Optimizations
+- **Identity Map** — `Model::find()` cache per-request, tránh query trùng, LRU eviction >1000
+- **Prepared Statement Cache** — LRU eviction khi >500 statements
+- **Middleware Pipeline** — Closure chain thay bằng `dispatchWithMiddleware()` loop (tránh N+1 allocation)
+- **Config::load()** — Cache glob(), tránh scan 2 lần mỗi boot
+- **preload.php** — Xoá `opcache_get_status(true)` trong loop (tiết kiệm 100-300ms startup)
+- Thêm 9 critical classes vào preload: DatabaseInstance, LoggerInstance, CacheInstance, EagerLoader, SqlCompiler, RouteMatcher, Validator, Metrics, Mail
+- **Container::resolve()** — Cache ReflectionClass + constructor params
+- **Router::resolveMethodArgs()** — Cache reflection params per controller@method
+
+#### Query Optimizations
+- `Model::first()` — Direct LIMIT 1, skip eager loader cho single-row
+- `ModelQueryBuilder::softDelete` — Cache `class_uses_recursive()` per model class
+- `QueryBuilder::resolveLockMode()` — Early return khi không có lock (tránh PDO attribute read)
+- `JsonMiddleware` — Xoá redundant JSON re-encode/re-decode (Request đã parse body)
+- `Logger::sanitize()` — Pre-check sensitive keywords trước khi chạy 15 regex
+
+### 📧 Mail System — SMTP Driver
+- `MAIL_DRIVER=smtp` — Hỗ trợ SMTP với AUTH LOGIN
+- SSL/TLS/STARTTLS encryption
+- DSN format: `smtp://user:pass@host:port`
+- Giữ backward-compatible với PHP mail()
+
+### 🔄 Queue System — Multiprocess Worker
+- `Queue::workAll(int $workers = 4)` — fork N child processes via `pcntl_fork()`
+- Graceful SIGTERM/SIGINT shutdown
+- Single-process fallback trên Windows
+- `queue:work --workers=N` option
+
+### 🏗 Architecture
+
+#### UserService → Repository Integration
+- 8 methods chuyển từ gọi `User::where()` sang `$this->repo->methodName()`
+- UserRepository thêm: `findByEmail()`, `findBy()`, `create()`, `findById()`, `updateWhere()`, `incrementWhere()`
+
+#### Exception Handling
+- `App\Exceptions\Handler` — wired vào `App::run()` catch block
+- `App::run()` thêm `catch (ModelNotFoundException $e)` → 404 response
+
+### 🧪 Testing
+- 463 tests, 803 assertions, 0 failures
+- ValidatorUnitTest — 8 unit tests (không cần database)
+- PaginationEdgeTest, InputEdgeTest — edge cases
+- MetricsEndpointTest — /metrics + /health
+- 19 skipped trên SQLite (Queue/Mail/Eager/MassAssignment)
+
+### 📚 Documentation
+- **13 doc guides** đầy đủ: TESTING, DATABASE, AUTHENTICATION, VALIDATION, FILE_UPLOAD, QUEUE_MAIL, EVENTS, CACHING, API_VERSIONING, I18N, QUICKSTART, DEPLOYMENT, MIGRATION
+- **Example projects**: blog.md + ecommerce.md với curl workflows
+- **OpenAPI 3.0.3 spec** — 26 endpoints, 30+ schemas, Bearer JWT + API Key security
+- OpenAPI generator cải thiện: path params từ where(), enum từ in:, format từ rules
+
+### 🩺 Health Probes
+- `/health` — Database check + version info
+- `/health/live` — Process alive (shallow)
+- `/health/ready` — Deep check (DB + cache + overall status)
 
 ### 🔧 Improvements
-- `Session::$sessionId` — initialized mặc định `''` để tránh "uninitialized property"
-- `FormRequest::$errors` — type chính xác `array<string, array<int, string>>`
-- `TestCommand` — thêm `--no-coverage` để tránh PHPUnit warning khi thiếu xdebug
-- `MakeTestCommand` + `MakeCrudCommand` — template test dùng fluent helpers (`get()`, `assertOk()`)
-- `MetricsMiddleware` — gọn nhẹ hơn, không còn active requests gauge
-
-### 🧪 Test Infrastructure
-- `authenticate(?App $app = null)` — có thể gọi không cần tham số
-- `assertDatabaseHas` / `assertDatabaseMissing` — driver-aware quoting
-- `TestResponse` — 12 fluent assertions (assertOk, assertCreated, ...)
-- Transaction-based test isolation
-
-### 📦 Dependencies
-- PHP ≥ 8.2 (không đổi)
+- `Session::$sessionId` — initialized mặc định `''`
+- `FormRequest::$errors` — type chính xác
+- `TestCommand` — thêm `--no-coverage`
+- `MakeTestCommand` + `MakeCrudCommand` — template dùng fluent helpers
+- `MetricsMiddleware` — path normalization + memory tracking
+- `ScheduleTask::withoutOverlapping()` — Fix mutex pre-lock tại definition time
+- `DatabaseInstance` — Bỏ `SELECT 1` ping trên connection reuse
+- `Mail` — BCC không còn leak vào To header
+- `Response` — Thêm `problem()` RFC 7807 support
+- `Config` — Cache glob, APP_KEY cho HMAC
 
 ---
 
