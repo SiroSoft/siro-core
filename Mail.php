@@ -380,6 +380,11 @@ final class Mail
         if ($socket === false) {
             throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");
         }
+        stream_set_timeout($socket, 30);
+        $meta = stream_get_meta_data($socket);
+        if ($meta['timed_out']) {
+            throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");
+        }
 
         try {
             $this->smtpReadResponse($socket);
