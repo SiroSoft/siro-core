@@ -374,7 +374,8 @@ final class Mail
         $prefix = $encryption === 'ssl' ? 'ssl://' : '';
         $errno = 0;
         $errstr = '';
-        $socket = @fsockopen($prefix . $host, $port, $errno, $errstr, 30);
+        $context = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true]]);
+        $socket = @stream_socket_client($prefix . $host . ':' . $port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
 
         if ($socket === false) {
             throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");

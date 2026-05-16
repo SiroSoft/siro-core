@@ -346,12 +346,12 @@ final class Console
     private function printHelp(): void
     {
         $this->write('');
-        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — PHP Micro-Framework');
-        $this->write('  ' . str_repeat('-', 50));
-        $this->write('');
-        $this->write('  Usage:');
-        $this->write('    php siro <command> [options]');
-        $this->write('    php siro list                  All 70 commands');
+  $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — PHP Micro-Framework');
+    $this->write('  --------------------------------------------------');
+    $this->write('');
+    $this->write('  Usage:');
+    $this->write('    php siro <command> [options]');
+    $this->write('    php siro list                  All 72 commands');
         $this->write('    php siro <command> --help      Command details');
         $this->write('    php siro --version             Version info');
         $this->write('');
@@ -379,7 +379,7 @@ final class Console
     private function printList(): void
     {
         $this->write('');
-        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 71 Commands');
+        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 72 Commands');
         $this->write('  ' . str_repeat('=', 60));
         $this->write('');
 

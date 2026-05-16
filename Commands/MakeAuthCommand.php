@@ -670,7 +670,7 @@ $app->router->get('/', function (): array {
         'message' => 'Siro API Framework is running',
         'data' => [
             'name' => 'Siro API Framework',
-            'version' => Console::getVersion(),
+            'version' => \Siro\Core\Console::getVersion(),
             'php' => PHP_VERSION,
         ],
         'meta' => [],

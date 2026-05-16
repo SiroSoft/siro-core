@@ -306,7 +306,12 @@ final class Queue
     public static function workAll(int $workers = 4): void
     {
         if (!extension_loaded('pcntl') || !function_exists('pcntl_fork') || $workers <= 1) {
-            while (self::work()) {
+            $deadline = time() + 86400 * 365;
+            while (time() < $deadline) {
+                try {
+                    self::work();
+                } catch (\Throwable) {
+                }
                 usleep(100000);
             }
             return;
@@ -316,8 +321,25 @@ final class Queue
             pcntl_async_signals(true);
         }
 
+        // Purge DB connection before forking — each child needs its own PDO
+        \Siro\Core\Database::purgeAll();
+
         /** @var array<int, int> $children */
         $children = [];
+
+        if (function_exists('pcntl_signal')) {
+            $killChildren = function () use (&$children): void {
+                foreach ($children as $pid) {
+                    if (function_exists('posix_kill')) {
+                        @posix_kill($pid, SIGTERM);
+                    }
+                }
+                exit(0);
+            };
+            pcntl_signal(SIGTERM, $killChildren);
+            pcntl_signal(SIGINT, $killChildren);
+        }
+
         for ($i = 0; $i < $workers; $i++) {
             $pid = pcntl_fork();
             if ($pid === -1) {
@@ -329,6 +351,11 @@ final class Queue
                 }
                 pcntl_signal(SIGTERM, function (): void { exit(0); });
                 pcntl_signal(SIGINT, function (): void { exit(0); });
+                // Reconnect DB — child has its own connection after fork
+                try {
+                    \Siro\Core\Database::connection()->query('SELECT 1');
+                } catch (\Throwable) {
+                }
                 $deadline = time() + 86400 * 365;
                 while (time() < $deadline) {
                     try {
