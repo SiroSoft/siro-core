@@ -57,23 +57,17 @@ final class Response
         ], $statusCode);
     }
 
-    /**
-     * @param array<string, mixed> $errors
-     */
+    /** @param array<string, mixed> $errors */
     public static function error(string $message, int $statusCode = 400, array $errors = []): self
     {
-        $payload = [
+        return new self([
             'success' => false,
             'message' => $message,
             'data' => null,
             'meta' => [
                 'errors' => $errors,
             ],
-        ];
-        if ($errors !== []) {
-            $payload['errors'] = $errors;
-        }
-        return new self($payload, $statusCode);
+        ], $statusCode);
     }
 
     /**

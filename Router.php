@@ -250,7 +250,7 @@ final class Router
         }
         $json = substr($payload, 0, $sep);
         $hmac = trim(substr($payload, $sep + 6));
-        $secret = (string) Env::get('JWT_SECRET', '');
+        $secret = (string) Env::get('APP_KEY', '');
         if ($secret === '' || !hash_equals(hash_hmac('sha256', $json, $secret), $hmac)) {
             return false;
         }
@@ -297,7 +297,7 @@ final class Router
 
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false) { return false; }
-        $secret = (string) Env::get('JWT_SECRET', '');
+        $secret = (string) Env::get('APP_KEY', '');
         $hmac = $secret !== '' ? hash_hmac('sha256', $json, $secret) : '';
         $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
 
@@ -457,13 +457,18 @@ final class Router
      */
     private function resolveMethodArgs(object $controller, string $method, Request $request): array
     {
-        try {
-            $ref = new \ReflectionMethod($controller, $method);
-        } catch (\ReflectionException) {
-            return [$request];
+        $cacheKey = $controller::class . '@' . $method;
+        if (isset(self::$methodParamCache[$cacheKey])) {
+            $params = self::$methodParamCache[$cacheKey];
+        } else {
+            try {
+                $ref = new \ReflectionMethod($controller, $method);
+            } catch (\ReflectionException) {
+                return [$request];
+            }
+            $params = $ref->getParameters();
+            self::$methodParamCache[$cacheKey] = $params;
         }
-
-        $params = $ref->getParameters();
         if ($params === []) {
             return [];
         }
@@ -645,6 +650,9 @@ final class Router
 
     /** @var array<string, string> */
     private static array $middlewareAliases = [];
+
+    /** @var array<string, array<int, \ReflectionParameter>> */
+    private static array $methodParamCache = [];
 
     /**
      * @param array<string, string> $aliases

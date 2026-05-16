@@ -166,6 +166,7 @@ final class App
         Cache::resetRequestState();
         $requestStartedAt = microtime(true);
         $method = 'GET'; $path = '/'; $status = 500;
+        $request = null;
         // W3C Trace Context: accept incoming, propagate outgoing
         $incomingTraceparent = isset($_SERVER['HTTP_TRACEPARENT']) && is_string($_SERVER['HTTP_TRACEPARENT']) ? $_SERVER['HTTP_TRACEPARENT'] : '';
         $traceId = bin2hex(random_bytes(16));
@@ -226,8 +227,13 @@ final class App
             if ($this->showDebugTrace) {
                 $errors = ['error_id' => $traceId];
             }
-            $this->attachDebugMeta();
-            $errorResponse = Response::error('Internal Server Error', 500, $errors);
+            if ($request !== null && class_exists(\App\Exceptions\Handler::class)) {
+                /** @var Response $errorResponse */
+                $errorResponse = \App\Exceptions\Handler::handle($e, $request);
+            } else {
+                $this->attachDebugMeta();
+                $errorResponse = Response::error('Internal Server Error', 500, $errors);
+            }
             $status = $errorResponse->statusCode();
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } finally {

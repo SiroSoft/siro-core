@@ -49,13 +49,7 @@ final class DatabaseInstance implements DatabaseInterface
         $name ??= $this->defaultConnection;
 
         if (isset($this->pdoInstances[$name])) {
-            $pdo = $this->pdoInstances[$name];
-            try {
-                $pdo->query('SELECT 1');
-                return $pdo;
-            } catch (\Throwable) {
-                unset($this->pdoInstances[$name]);
-            }
+            return $this->pdoInstances[$name];
         }
 
         $config = $this->configs[$name] ?? throw new RuntimeException("Database connection '{$name}' is not configured.");

@@ -90,7 +90,6 @@ $files = [
 // Preload each file
 foreach ($files as $file) {
     if (is_file($file)) {
-        opcache_get_status(true); // Ensure opcache is enabled
         require_once $file;
     }
 }

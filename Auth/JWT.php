@@ -16,6 +16,7 @@ final class JWT
     public const ALG_RS256 = 'RS256';
 
     private static ?string $keyVersion = null;
+    private static ?string $algorithm = null;
     private static int $lastBlacklistCleanup = 0;
     private const BLACKLIST_CLEANUP_INTERVAL = 300;
 
@@ -29,15 +30,20 @@ final class JWT
     public static function reset(): void
     {
         self::$keyVersion = null;
+        self::$algorithm = null;
         self::$lastBlacklistCleanup = 0;
     }
 
     private static function algorithm(): string
     {
+        if (self::$algorithm !== null) {
+            return self::$algorithm;
+        }
         $alg = strtoupper((string) Env::get('JWT_ALGORITHM', self::ALG_HS256));
         if (!in_array($alg, [self::ALG_HS256, self::ALG_RS256], true)) {
             throw new RuntimeException('Unsupported JWT algorithm: ' . $alg . '. Supported: HS256, RS256.');
         }
+        self::$algorithm = $alg;
         return $alg;
     }
 

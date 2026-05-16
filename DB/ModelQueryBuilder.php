@@ -36,6 +36,9 @@ final class ModelQueryBuilder extends QueryBuilder
     /** @var array<string, array<int, string>> */
     private array $eagerLoads = [];
 
+    /** @var array<string, array<string, string>> */
+    private static array $classUsesCache = [];
+
     public function __construct(string $table, string $modelClass)
     {
         parent::__construct($table);
@@ -336,7 +339,8 @@ final class ModelQueryBuilder extends QueryBuilder
             return;
         }
 
-        $uses = class_uses_recursive($this->modelClass) ?: [];
+        $uses = self::$classUsesCache[$this->modelClass]
+            ?? (self::$classUsesCache[$this->modelClass] = class_uses_recursive($this->modelClass) ?: []);
         if (in_array(\Siro\Core\DB\SoftDeletes::class, $uses, true)) {
             $this->whereRaw('deleted_at IS NULL');
         }
