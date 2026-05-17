@@ -40,6 +40,10 @@ final class Schedule
                 continue;
             }
 
+            if ($task->isLocked()) {
+                continue;
+            }
+
             $task->markRun($now);
 
             try {

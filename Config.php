@@ -12,19 +12,22 @@ final class Config
     private static string $configPath = '';
     /** @var array<string, mixed> */
     private static array $cache = [];
+    /** @var list<string>|null */
+    private static ?array $cachedGlob = null;
 
     public static function load(string $configPath): void
     {
         self::$configPath = rtrim($configPath, DIRECTORY_SEPARATOR);
         self::$items = [];
         self::$cache = [];
+        self::$cachedGlob = null;
 
         $cacheFile = dirname(self::$configPath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'config.php';
 
         if (is_file($cacheFile)) {
             $cacheModified = filemtime($cacheFile);
-            $configModified = self::getConfigDirMtime(self::$configPath);
+            $configModified = self::getConfigDirMtime();
 
             if ($cacheModified !== false && $configModified !== false && $cacheModified >= $configModified) {
                 $raw = (string) file_get_contents($cacheFile);
@@ -33,7 +36,7 @@ final class Config
                 if ($sep !== false) {
                     $data = json_decode(substr($payload, 0, $sep), true);
                     $hmac = trim(substr($payload, $sep + 6));
-                    $secret = (string) \Siro\Core\Env::get('JWT_SECRET', '');
+                    $secret = (string) \Siro\Core\Env::get('APP_KEY', '');
                     $expected = $secret !== '' ? hash_hmac('sha256', substr($payload, 0, $sep), $secret) : '';
                     if (is_array($data) && $secret !== '' && hash_equals($expected, $hmac)) {
                         /** @var array<string, mixed> $data */
@@ -50,8 +53,8 @@ final class Config
             return;
         }
 
-        $files = glob(self::$configPath . DIRECTORY_SEPARATOR . '*.php');
-        if ($files === false) {
+        $files = self::getConfigFiles();
+        if ($files === null) {
             self::$loaded = true;
             return;
         }
@@ -68,11 +71,23 @@ final class Config
         self::$loaded = true;
     }
 
-    private static function getConfigDirMtime(string $configPath): int|false
+    /** @return list<string>|null */
+    private static function getConfigFiles(): array|null
+    {
+        if (self::$cachedGlob !== null) {
+            return self::$cachedGlob;
+        }
+        /** @var list<string>|false $files */
+        $files = glob(self::$configPath . DIRECTORY_SEPARATOR . '*.php');
+        self::$cachedGlob = $files !== false ? $files : null;
+        return self::$cachedGlob;
+    }
+
+    private static function getConfigDirMtime(): int|false
     {
         $mtime = false;
-        $files = glob($configPath . DIRECTORY_SEPARATOR . '*.php');
-        if ($files !== false) {
+        $files = self::getConfigFiles();
+        if ($files !== null) {
             foreach ($files as $file) {
                 $fileMtime = filemtime($file);
                 if ($fileMtime !== false && ($mtime === false || $fileMtime > $mtime)) {
@@ -160,7 +175,7 @@ final class Config
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'config.php';
         $json = json_encode(self::$items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false) { return null; }
-        $secret = (string) \Siro\Core\Env::get('JWT_SECRET', '');
+        $secret = (string) \Siro\Core\Env::get('APP_KEY', '');
         $hmac = $secret !== '' ? hash_hmac('sha256', $json, $secret) : '';
         $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
 

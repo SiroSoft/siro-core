@@ -299,15 +299,87 @@ final class Queue
     }
 
     /**
-     * Process all available jobs. Returns count of processed jobs.
+     * Process queue jobs using multiple worker processes.
+     * Forks N children using pcntl_fork(), each calling work() in a loop.
+     * Falls back to single-process if pcntl is unavailable (Windows).
      */
-    public static function workAll(int $max = 100): int
+    public static function workAll(int $workers = 4): void
     {
-        $count = 0;
-        while ($count < $max && self::work()) {
-            $count++;
+        if (!extension_loaded('pcntl') || !function_exists('pcntl_fork') || $workers <= 1) {
+            $deadline = time() + 86400 * 365;
+            while (time() < $deadline) {
+                try {
+                    self::work();
+                } catch (\Throwable) {
+                }
+                usleep(100000);
+            }
+            return;
         }
-        return $count;
+
+        if (function_exists('pcntl_async_signals')) {
+            pcntl_async_signals(true);
+        }
+
+        // Purge DB connection before forking — each child needs its own PDO
+        \Siro\Core\Database::purgeAll();
+
+        /** @var array<int, int> $children */
+        $children = [];
+
+        if (function_exists('pcntl_signal')) {
+            $killChildren = function () use (&$children): void {
+                foreach ($children as $pid) {
+                    if (function_exists('posix_kill')) {
+                        @posix_kill($pid, SIGTERM);
+                    }
+                }
+                exit(0);
+            };
+            pcntl_signal(SIGTERM, $killChildren);
+            pcntl_signal(SIGINT, $killChildren);
+        }
+
+        for ($i = 0; $i < $workers; $i++) {
+            $pid = pcntl_fork();
+            if ($pid === -1) {
+                continue;
+            }
+            if ($pid === 0) {
+                if (function_exists('pcntl_async_signals')) {
+                    pcntl_async_signals(true);
+                }
+                pcntl_signal(SIGTERM, function (): void { exit(0); });
+                pcntl_signal(SIGINT, function (): void { exit(0); });
+                // Reconnect DB — child has its own connection after fork
+                try {
+                    \Siro\Core\Database::connection()->query('SELECT 1');
+                } catch (\Throwable) {
+                }
+                $deadline = time() + 86400 * 365;
+                while (time() < $deadline) {
+                    try {
+                        self::work();
+                    } catch (\Throwable) {
+                    }
+                    usleep(100000);
+                }
+                exit(0);
+            }
+            $children[] = $pid;
+        }
+
+        $status = -1;
+        foreach ($children as $pid) {
+            pcntl_waitpid($pid, $status);
+        }
+
+        foreach ($children as $pid) {
+            if (function_exists('posix_kill')) {
+                @posix_kill($pid, SIGTERM);
+            }
+            pcntl_waitpid($pid, $status);
+        }
     }
 
     /**

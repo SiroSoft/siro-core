@@ -36,6 +36,9 @@ final class ModelQueryBuilder extends QueryBuilder
     /** @var array<string, array<int, string>> */
     private array $eagerLoads = [];
 
+    /** @var array<string, array<string, string>> */
+    private static array $classUsesCache = [];
+
     public function __construct(string $table, string $modelClass)
     {
         parent::__construct($table);
@@ -217,6 +220,24 @@ final class ModelQueryBuilder extends QueryBuilder
         return $models;
     }
 
+    /**
+     * Memory-efficient model streaming.
+     *
+     * Yields hydrated Model instances one at a time without
+     * loading all results into memory. Use for large datasets
+     * where loading everything at once would exceed memory limits.
+     *
+     * @return \Generator<int, Model>
+     */
+    // @phpstan-ignore-next-line return.childReturnType
+    public function cursor(): \Generator
+    {
+        $this->applySoftDeleteFilter();
+        foreach (parent::cursor() as $row) {
+            yield $this->hydrateModel($row);
+        }
+    }
+
     public function first(): ?Model
     {
         $this->applySoftDeleteFilter();
@@ -318,7 +339,8 @@ final class ModelQueryBuilder extends QueryBuilder
             return;
         }
 
-        $uses = class_uses_recursive($this->modelClass) ?: [];
+        $uses = self::$classUsesCache[$this->modelClass]
+            ?? (self::$classUsesCache[$this->modelClass] = class_uses_recursive($this->modelClass) ?: []);
         if (in_array(\Siro\Core\DB\SoftDeletes::class, $uses, true)) {
             $this->whereRaw('deleted_at IS NULL');
         }

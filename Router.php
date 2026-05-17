@@ -6,6 +6,7 @@ namespace Siro\Core;
 
 use Closure;
 use RuntimeException;
+use Siro\Core\Middleware\JsonMiddleware;
 use Siro\Core\Middleware\MiddlewareInterface;
 
 final class Router
@@ -179,19 +180,7 @@ final class Router
             }
         }
 
-        $finalHandler = function (Request $req) use ($route): Response {
-            return $this->runHandler($route['handler'], $req);
-        };
-
-        $pipeline = array_reverse($route['middleware']);
-        foreach ($pipeline as $middleware) {
-            $next = $finalHandler;
-            $finalHandler = function (Request $req) use ($middleware, $next): Response {
-                return $this->runMiddleware($middleware, $req, $next);
-            };
-        }
-
-        $response = $finalHandler($request);
+        $response = $this->dispatchWithMiddleware($route['middleware'], $route['handler'], $request);
 
         if ($canUseCache) {
             Cache::set($cacheKey, [
@@ -250,7 +239,7 @@ final class Router
         }
         $json = substr($payload, 0, $sep);
         $hmac = trim(substr($payload, $sep + 6));
-        $secret = (string) Env::get('JWT_SECRET', '');
+        $secret = (string) Env::get('APP_KEY', '');
         if ($secret === '' || !hash_equals(hash_hmac('sha256', $json, $secret), $hmac)) {
             return false;
         }
@@ -297,7 +286,7 @@ final class Router
 
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false) { return false; }
-        $secret = (string) Env::get('JWT_SECRET', '');
+        $secret = (string) Env::get('APP_KEY', '');
         $hmac = $secret !== '' ? hash_hmac('sha256', $json, $secret) : '';
         $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
 
@@ -414,11 +403,20 @@ final class Router
     /** @param callable|array{0:class-string,1:string}|string $handler */
     private function runHandler(callable|array|string $handler, Request $request): Response
     {
+        if (is_string($handler) && str_contains($handler, '@')) {
+            [$class, $method] = explode('@', $handler, 2) + [null, null];
+            if ($class === null || $method === null) {
+                throw new RuntimeException('Invalid route handler format. Use Class@method.');
+            }
+            $handler = [$class, $method];
+        }
+
         if (is_array($handler)) {
             [$class, $method] = $handler;
             if (!is_string($class) || !is_string($method)) {
                 throw new RuntimeException('Invalid route handler format. Expected [className, methodName].');
             }
+
             $controller = $this->resolveController($class);
             if (!method_exists($controller, $method)) {
                 throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
@@ -428,46 +426,127 @@ final class Router
                 $controller->setRequest($request);
             }
 
-            try {
-                return $this->normalizeHandlerResult($controller->{$method}($request));
-            } catch (\ArgumentCountError) {
-                return $this->normalizeHandlerResult($controller->{$method}());
-            }
+            $resolved = $this->resolveMethodArgs($controller, $method, $request);
+            return $this->normalizeHandlerResult($controller->{$method}(...$resolved));
         }
 
         if (is_callable($handler)) {
+            $resolved = $this->resolveCallableArgs($handler, $request);
+            return $this->normalizeHandlerResult($handler(...$resolved));
+        }
+
+        throw new RuntimeException('Invalid route handler format.');
+    }
+
+    /**
+     * Resolve method arguments using reflection.
+     * Auto-resolves Request and FormRequest type-hints.
+     *
+     * @return array<int, mixed>
+     */
+    private function resolveMethodArgs(object $controller, string $method, Request $request): array
+    {
+        $cacheKey = $controller::class . '@' . $method;
+        if (isset(self::$methodParamCache[$cacheKey])) {
+            $params = self::$methodParamCache[$cacheKey];
+        } else {
             try {
-                $response = $handler($request);
-            } catch (\ArgumentCountError) {
-                $response = $handler();
+                $ref = new \ReflectionMethod($controller, $method);
+            } catch (\ReflectionException) {
+                return [$request];
             }
-            return $this->normalizeHandlerResult($response);
+            $params = $ref->getParameters();
+            self::$methodParamCache[$cacheKey] = $params;
+        }
+        if ($params === []) {
+            return [];
         }
 
-        [$class, $method] = explode('@', $handler, 2) + [null, null];
-        if ($class === null || $method === null) {
-            throw new RuntimeException('Invalid route handler format. Use Class@method.');
+        $args = [];
+        foreach ($params as $param) {
+            $type = $param->getType();
+
+            if ($type instanceof \ReflectionNamedType) {
+                $typeName = $type->getName();
+
+                if ($typeName === Request::class) {
+                    $args[] = $request;
+                    continue;
+                }
+
+                if ($typeName === FormRequest::class || is_subclass_of($typeName, FormRequest::class)) {
+                    $instance = new $typeName($request);
+                    if ($instance->fails()) {
+                        throw new ValidationException($instance->errors());
+                    }
+                    $args[] = $instance;
+                    continue;
+                }
+
+                if ($type->allowsNull() && $param->isDefaultValueAvailable()) {
+                    $args[] = $param->getDefaultValue();
+                    continue;
+                }
+            }
+
+            if ($param->isDefaultValueAvailable()) {
+                $args[] = $param->getDefaultValue();
+            } elseif ($param->allowsNull()) {
+                $args[] = null;
+            }
         }
 
-        if (!class_exists($class)) {
-            throw new RuntimeException(sprintf('Controller class %s not found.', $class));
-        }
+        return $args;
+    }
 
-        $controller = $this->resolveController($class);
-        if (!method_exists($controller, $method)) {
-            throw new RuntimeException(sprintf('Method %s::%s not found.', $class, $method));
-        }
-
-        if ($controller instanceof Controller) {
-            $controller->setRequest($request);
-        }
-
+    /**
+     * Resolve arguments for callable handlers.
+     *
+     * @return array<int, mixed>
+     */
+    private function resolveCallableArgs(callable $handler, Request $request): array
+    {
         try {
-            $response = $controller->{$method}($request);
-        } catch (\ArgumentCountError) {
-            $response = $controller->{$method}();
+            $ref = new \ReflectionFunction(\Closure::fromCallable($handler));
+        } catch (\ReflectionException) {
+            return [$request];
         }
-        return $this->normalizeHandlerResult($response);
+
+        $params = $ref->getParameters();
+        if ($params === []) {
+            return [];
+        }
+
+        $args = [];
+        foreach ($params as $param) {
+            $type = $param->getType();
+
+            if ($type instanceof \ReflectionNamedType) {
+                $typeName = $type->getName();
+
+                if ($typeName === Request::class) {
+                    $args[] = $request;
+                    continue;
+                }
+
+                if ($typeName === FormRequest::class || is_subclass_of($typeName, FormRequest::class)) {
+                    $instance = new $typeName($request);
+                    if ($instance->fails()) {
+                        throw new ValidationException($instance->errors());
+                    }
+                    $args[] = $instance;
+                    continue;
+                }
+            }
+
+            if ($param->isDefaultValueAvailable()) {
+                $args[] = $param->getDefaultValue();
+            } elseif ($param->allowsNull()) {
+                $args[] = null;
+            }
+        }
+
+        return $args;
     }
 
     /** @var array<string, object> */
@@ -513,6 +592,25 @@ final class Router
     private function isDynamicPath(string $path): bool
     {
         return str_contains($path, '{') && str_contains($path, '}');
+    }
+
+    /**
+     * @param array<int, callable|string> $middleware
+     * @param callable|array{0: class-string, 1: string}|string $handler
+     */
+    private function dispatchWithMiddleware(array $middleware, mixed $handler, Request $request): Response
+    {
+        $pos = 0;
+        $next = function (Request $req) use ($middleware, $handler, &$pos, &$next): Response {
+            if ($pos >= count($middleware)) {
+                /** @var callable|array{0: class-string, 1: string}|string $handler */
+                return $this->runHandler($handler, $req);
+            }
+            /** @var callable|string $mw */
+            $mw = $middleware[$pos++];
+            return $this->runMiddleware($mw, $req, $next);
+        };
+        return $next($request);
     }
 
     private function runMiddleware(callable|string $middleware, Request $request, Closure $next): Response
@@ -561,6 +659,9 @@ final class Router
     /** @var array<string, string> */
     private static array $middlewareAliases = [];
 
+    /** @var array<string, array<int, \ReflectionParameter>> */
+    private static array $methodParamCache = [];
+
     /**
      * @param array<string, string> $aliases
      */
@@ -586,6 +687,20 @@ final class Router
     {
         $normalized = strtolower(trim($name));
         return self::$middlewareAliases[$normalized] ?? $name;
+    }
+
+    /**
+     * @param array<int, callable|string> $middleware
+     */
+    public function resource(string $name, string $controller, array $middleware = [], int $cacheTtl = 0): void
+    {
+        $route = $this->get("/{$name}", $controller . '@index', $middleware);
+        if ($cacheTtl > 0) { $route->cache($cacheTtl); }
+        $route = $this->get("/{$name}/{id}", $controller . '@show', $middleware);
+        if ($cacheTtl > 0) { $route->cache($cacheTtl); }
+        $this->post("/{$name}", $controller . '@store', [...$middleware, JsonMiddleware::class]);
+        $this->put("/{$name}/{id}", $controller . '@update', [...$middleware, JsonMiddleware::class]);
+        $this->delete("/{$name}/{id}", $controller . '@delete', $middleware);
     }
 
     private function handleOptionsRequest(string $path): Response

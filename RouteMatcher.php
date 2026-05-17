@@ -136,7 +136,7 @@ final class RouteMatcher
     }
 
     /**
-     * @return array<int, array{method:string,path:string,handler:string,middleware:string,cache_ttl:int}>
+     * @return array<int, array{method:string,path:string,handler:string,middleware:string,cache_ttl:int,where?:array<string,string>}>
      */
     public function getRoutes(): array
     {
@@ -149,26 +149,36 @@ final class RouteMatcher
         foreach ($this->staticRoutes as $method => $paths) {
             foreach ($paths as $path => $route) {
                 /** @var array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
-                $routes[] = [
+                $where = $this->getWhereConstraints($method, $path);
+                $entry = [
                     'method' => $method,
                     'path' => $path,
                     'handler' => self::handlerToString($route['handler']),
                     'middleware' => implode(', ', array_map(fn (mixed $m): string => self::middlewareToString($m), $route['middleware'])),
                     'cache_ttl' => $route['cache_ttl'],
                 ];
+                if ($where !== []) {
+                    $entry['where'] = $where;
+                }
+                $routes[] = $entry;
             }
         }
 
         foreach ($this->dynamicRoutes as $method => $routeList) {
             foreach ($routeList as $route) {
                 /** @var array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
-                $routes[] = [
+                $where = $this->getWhereConstraints($method, $route['path']);
+                $entry = [
                     'method' => $method,
                     'path' => $route['path'],
                     'handler' => self::handlerToString($route['handler']),
                     'middleware' => implode(', ', array_map(fn (mixed $m): string => self::middlewareToString($m), $route['middleware'])),
                     'cache_ttl' => $route['cache_ttl'],
                 ];
+                if ($where !== []) {
+                    $entry['where'] = $where;
+                }
+                $routes[] = $entry;
             }
         }
 

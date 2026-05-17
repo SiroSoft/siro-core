@@ -46,6 +46,7 @@ final class Mail
     private static bool $faked = false;
     /** @var array<int, array{to:string,subject:string,body:string}> */
     private static array $fakeMails = [];
+    private const DRIVER_SMTP = 'smtp';
 
     public static function reset(): void
     {
@@ -95,6 +96,7 @@ final class Mail
     private array $attachments = [];
     private string $replyTo = '';
     private string $charset = 'UTF-8';
+    private string $mailerDriver = 'mail';
 
     /**
      * Set recipient.
@@ -213,11 +215,11 @@ final class Mail
             return true;
         }
 
-        $driver = strtolower((string) Env::get('MAIL_DRIVER', 'sendmail'));
+        $this->mailerDriver = strtolower((string) Env::get('MAIL_DRIVER', 'sendmail'));
 
         try {
-            $result = match ($driver) {
-                'smtp' => $this->sendSmtp(),
+            $result = match ($this->mailerDriver) {
+                self::DRIVER_SMTP => $this->sendSmtpWithHeaders(),
                 default => $this->sendSendmail(),
             };
 
@@ -285,10 +287,10 @@ final class Mail
             $headers[] = 'CC: ' . $ccAddr;
         }
 
-        // BCC recipients are added to the envelope (to parameter) but NOT to headers
+        // BCC recipients set as proper Bcc header
         $allRecipients = $this->to;
-        foreach ($this->bcc as $bccAddr) {
-            $allRecipients .= ', ' . $bccAddr;
+        if ($this->bcc !== []) {
+            $headers[] = 'Bcc: ' . implode(', ', $this->bcc);
         }
 
         $body = chunk_split(base64_encode($this->body), 76, "\r\n");
@@ -310,96 +312,142 @@ final class Mail
     }
 
     /**
-     * Send via SMTP directly using fsockopen.
-     * No external dependencies required.
+     * Build headers and body then send via SMTP.
      */
-    private function sendSmtp(): bool
+    private function sendSmtpWithHeaders(): bool
+    {
+        $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost');
+        $fromName = (string) Env::get('MAIL_FROM_NAME', 'Siro API');
+
+        $body = chunk_split(base64_encode($this->body), 76, "\r\n");
+        $headers = [
+            'From: ' . $fromName . ' <' . $fromAddress . '>',
+            'Reply-To: ' . ($this->replyTo ?: $fromAddress),
+            'MIME-Version: 1.0',
+            'X-Mailer: SiroPHP/' . (Env::get('APP_VERSION', '0.8.4')),
+        ];
+
+        if ($this->attachments !== []) {
+            $boundary = 'siro_boundary_' . bin2hex(random_bytes(8));
+            $headers[] = 'Content-Type: multipart/mixed; boundary="' . $boundary . '"';
+            $body = $this->buildMultipartBody($boundary);
+        } else {
+            $headers[] = 'Content-Type: ' . $this->contentType . '; charset=' . $this->charset;
+            $headers[] = 'Content-Transfer-Encoding: base64';
+        }
+
+        return $this->sendSmtp($this->to, $this->subject, $body, $headers);
+    }
+
+    /**
+     * Send via SMTP using fsockopen with raw SMTP commands.
+     * Supports DSN format: smtp://user:pass@host:port
+     * Supports SSL/TLS via MAIL_ENCRYPTION env var.
+     *
+     * @param array<int, string> $headers
+     */
+    private function sendSmtp(string $to, string $subject, string $body, array $headers): bool
     {
         $host = (string) Env::get('MAIL_HOST', '127.0.0.1');
         $port = (int) Env::get('MAIL_PORT', '587');
         $username = (string) Env::get('MAIL_USERNAME', '');
         $password = (string) Env::get('MAIL_PASSWORD', '');
-        $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost');
-        $fromName = (string) Env::get('MAIL_FROM_NAME', 'Siro API');
+        $encryption = strtolower((string) Env::get('MAIL_ENCRYPTION', ''));
 
+        $dsn = (string) Env::get('MAIL_DSN', '');
+        if ($dsn !== '') {
+            $parsed = parse_url($dsn);
+            if (is_array($parsed) && isset($parsed['host'])) {
+                $host = $parsed['host'];
+                if (isset($parsed['port'])) {
+                    $port = (int) $parsed['port'];
+                }
+                if (isset($parsed['user'])) {
+                    $username = urldecode($parsed['user']);
+                }
+                if (isset($parsed['pass'])) {
+                    $password = urldecode($parsed['pass']);
+                }
+            }
+        }
+
+        $prefix = $encryption === 'ssl' ? 'ssl://' : '';
         $errno = 0;
         $errstr = '';
-        $socket = fsockopen($host, $port, $errno, $errstr, 30);
+        $context = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true]]);
+        $socket = @stream_socket_client($prefix . $host . ':' . $port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
 
         if ($socket === false) {
             throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");
         }
+        stream_set_timeout($socket, 30);
+        $meta = stream_get_meta_data($socket);
+        if ($meta['timed_out']) {
+            throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");
+        }
 
         try {
-        $this->smtpReadResponse($socket);
-        $this->smtpCommand($socket, "EHLO localhost");
-
-        $serverInfo = $this->smtpReadResponse($socket);
-
-        if ($username !== '' && $password !== '') {
-            $this->smtpCommand($socket, "STARTTLS");
             $this->smtpReadResponse($socket);
-            $sslContext = stream_context_create(['ssl' => [
-                'verify_peer' => filter_var(Env::get('MAIL_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
-                'verify_peer_name' => filter_var(Env::get('MAIL_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
-            ]]);
-            stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT, $sslContext);
             $this->smtpCommand($socket, "EHLO localhost");
             $this->smtpReadResponse($socket);
 
-            $this->smtpCommand($socket, "AUTH LOGIN");
+            if ($encryption === 'tls' || $encryption === 'starttls') {
+                $this->smtpCommand($socket, "STARTTLS");
+                $this->smtpReadResponse($socket);
+                $sslContext = stream_context_create(['ssl' => [
+                    'verify_peer' => filter_var(Env::get('MAIL_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
+                    'verify_peer_name' => filter_var(Env::get('MAIL_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
+                ]]);
+                if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT, $sslContext)) {
+                    throw new RuntimeException('SMTP STARTTLS negotiation failed');
+                }
+                $this->smtpCommand($socket, "EHLO localhost");
+                $this->smtpReadResponse($socket);
+            }
+
+            if ($username !== '' && $password !== '') {
+                $this->smtpCommand($socket, "AUTH LOGIN");
+                $this->smtpReadResponse($socket);
+                $this->smtpCommand($socket, base64_encode($username));
+                $this->smtpReadResponse($socket);
+                $this->smtpCommand($socket, base64_encode($password));
+                $this->smtpReadResponse($socket);
+            }
+
+            $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost');
+            $this->smtpCommand($socket, "MAIL FROM:<{$fromAddress}>");
             $this->smtpReadResponse($socket);
-            $this->smtpCommand($socket, base64_encode($username));
+            $this->smtpCommand($socket, "RCPT TO:<{$to}>");
             $this->smtpReadResponse($socket);
-            $this->smtpCommand($socket, base64_encode($password));
+
+            foreach ($this->cc as $ccAddr) {
+                $this->smtpCommand($socket, "RCPT TO:<{$ccAddr}>");
+                $this->smtpReadResponse($socket);
+            }
+            foreach ($this->bcc as $bccAddr) {
+                $this->smtpCommand($socket, "RCPT TO:<{$bccAddr}>");
+                $this->smtpReadResponse($socket);
+            }
+
+            $this->smtpCommand($socket, "DATA");
             $this->smtpReadResponse($socket);
-        }
 
-        $this->smtpCommand($socket, "MAIL FROM:<{$fromAddress}>");
-        $this->smtpReadResponse($socket);
-        $this->smtpCommand($socket, "RCPT TO:<{$this->to}>");
-        $this->smtpReadResponse($socket);
+            fwrite($socket, "Subject: {$subject}\r\n");
+            foreach ($headers as $header) {
+                fwrite($socket, $header . "\r\n");
+            }
+            fwrite($socket, "\r\n");
+            fwrite($socket, $body . "\r\n.\r\n");
 
-        foreach ($this->cc as $ccAddr) {
-            $this->smtpCommand($socket, "RCPT TO:<{$ccAddr}>");
             $this->smtpReadResponse($socket);
-        }
-        foreach ($this->bcc as $bccAddr) {
-            $this->smtpCommand($socket, "RCPT TO:<{$bccAddr}>");
+            $this->smtpCommand($socket, "QUIT");
             $this->smtpReadResponse($socket);
-        }
-
-        $this->smtpCommand($socket, "DATA");
-        $this->smtpReadResponse($socket);
-
-        $headers = "From: {$fromName} <{$fromAddress}>\r\n";
-        $headers .= "Reply-To: " . ($this->replyTo ?: $fromAddress) . "\r\n";
-        $headers .= "MIME-Version: 1.0\r\n";
-
-        if ($this->attachments !== []) {
-            $boundary = 'siro_boundary_' . bin2hex(random_bytes(8));
-            $headers .= "Content-Type: multipart/mixed; boundary=\"{$boundary}\"\r\n";
-            $headers .= "Subject: {$this->subject}\r\n";
-            $headers .= "\r\n";
-            fwrite($socket, $headers . $this->buildMultipartBody($boundary) . "\r\n.\r\n");
-        } else {
-            $headers .= "Content-Type: {$this->contentType}; charset={$this->charset}\r\n";
-            $headers .= "Content-Transfer-Encoding: base64\r\n";
-            $headers .= "Subject: {$this->subject}\r\n";
-            $headers .= "\r\n";
-            $encodedBody = chunk_split(base64_encode($this->body), 76, "\r\n");
-            fwrite($socket, $headers . $encodedBody . "\r\n.\r\n");
-        }
-
-        $this->smtpReadResponse($socket);
-        $this->smtpCommand($socket, "QUIT");
-        $this->smtpReadResponse($socket);
-
         } finally {
             if (is_resource($socket)) {
                 fclose($socket);
             }
         }
+
         return true;
     }
 
@@ -432,10 +480,8 @@ final class Mail
      */
     private function smtpCommand(mixed $socket, string $command): void
     {
-        if ($command !== 'QUIT') {
-            if (is_resource($socket)) {
-                fwrite($socket, $command . "\r\n");
-            }
+        if (is_resource($socket)) {
+            fwrite($socket, $command . "\r\n");
         }
     }
 

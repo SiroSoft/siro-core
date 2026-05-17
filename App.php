@@ -166,6 +166,7 @@ final class App
         Cache::resetRequestState();
         $requestStartedAt = microtime(true);
         $method = 'GET'; $path = '/'; $status = 500;
+        $request = null;
         // W3C Trace Context: accept incoming, propagate outgoing
         $incomingTraceparent = isset($_SERVER['HTTP_TRACEPARENT']) && is_string($_SERVER['HTTP_TRACEPARENT']) ? $_SERVER['HTTP_TRACEPARENT'] : '';
         $traceId = bin2hex(random_bytes(16));
@@ -215,14 +216,24 @@ final class App
             $errorResponse = $e->toResponse();
             $status = $errorResponse->statusCode();
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
+        } catch (ModelNotFoundException $e) {
+            $this->attachDebugMeta();
+            $status = 404;
+            $errorResponse = Response::error($e->getMessage(), 404);
+            $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (Throwable $e) {
             Logger::error($e);
             $errors = [];
             if ($this->showDebugTrace) {
                 $errors = ['error_id' => $traceId];
             }
-            $this->attachDebugMeta();
-            $errorResponse = Response::error('Internal Server Error', 500, $errors);
+            if ($request !== null && class_exists(\App\Exceptions\Handler::class)) {
+                /** @var Response $errorResponse */
+                $errorResponse = \App\Exceptions\Handler::handle($e, $request);
+            } else {
+                $this->attachDebugMeta();
+                $errorResponse = Response::error('Internal Server Error', 500, $errors);
+            }
             $status = $errorResponse->statusCode();
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } finally {
@@ -247,6 +258,7 @@ final class App
                 Logger::trace($traceId, $traceData);
             }
 
+            Model::clearIdentityMap();
             $bootTimeMs = ($this->startedAt > 0) ? (microtime(true) - $this->startedAt) * 1000 : 0;
             if ($this->debug && $bootTimeMs > self::BOOT_THRESHOLD_MS) {
                 Logger::debug("Boot time exceeded threshold: " . round($bootTimeMs, 2) . "ms");

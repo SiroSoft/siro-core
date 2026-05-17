@@ -35,6 +35,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     private bool $exists = false;
     protected string $primaryKey = 'id';
 
+    /** @var array<string, array<int|string, static>> */
+    protected static array $identityMap = [];
+
     /** @var array<string, int> */
     private static array $relationAccessCount = [];
     private static bool $nPlusOneWarned = false;
@@ -72,6 +75,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     private function notifyObservers(string $hook): void
     {
+        if (static::$observers === []) {
+            return;
+        }
         foreach (static::$observers as $class) {
             if (class_exists($class) && method_exists($class, $hook)) {
                 $observer = new $class();
@@ -176,6 +182,11 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /** @return static|null */
     public static function find(int|string $id): ?static
     {
+        $map = &static::$identityMap[static::class];
+        if (isset($map[$id])) {
+            return $map[$id];
+        }
+
         $instance = new static();
         $key = $instance->getKeyName();
         $result = $instance->query()->where($key, '=', $id)->first();
@@ -184,6 +195,10 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             return null;
         }
 
+        if (count($map) > 1000) {
+            $map = array_slice($map, -800, null, true);
+        }
+        $map[$id] = $result;
         return $result;
     }
 
@@ -251,6 +266,19 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     public static function get(): array
     {
         return self::query()->get();
+    }
+
+    /**
+     * Memory-efficient iteration over all matching records.
+     *
+     * Yields one Model at a time without loading all into memory.
+     * Usage: foreach (User::where('active', 1)->cursor() as $user) { ... }
+     *
+     * @return \Generator<int, self>
+     */
+    public static function cursor(): \Generator
+    {
+        return self::query()->cursor();
     }
 
     /**
@@ -371,13 +399,19 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         $isNew = !$this->exists;
         $key = $this->getKeyName();
 
-        $this->notifyObservers('saving');
+        $hasObservers = static::$observers !== [];
+
+        if ($hasObservers) {
+            $this->notifyObservers('saving');
+        }
         if (!Event::emit("{$table}.saving", $this)) {
             return false;
         }
 
         if ($isNew) {
-            $this->notifyObservers('creating');
+            if ($hasObservers) {
+                $this->notifyObservers('creating');
+            }
             if (!Event::emit("{$table}.creating", $this)) {
                 return false;
             }
@@ -389,10 +423,14 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                 $this->exists = true;
             }
 
-            $this->notifyObservers('created');
+            if ($hasObservers) {
+                $this->notifyObservers('created');
+            }
             Event::emit("{$table}.created", $this);
         } else {
-            $this->notifyObservers('updating');
+            if ($hasObservers) {
+                $this->notifyObservers('updating');
+            }
             if (!Event::emit("{$table}.updating", $this)) {
                 return false;
             }
@@ -402,12 +440,16 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                 ->update($data);
 
             if ($affected > 0) {
-                $this->notifyObservers('updated');
+                if ($hasObservers) {
+                    $this->notifyObservers('updated');
+                }
                 Event::emit("{$table}.updated", $this);
             }
         }
 
-        $this->notifyObservers('saved');
+        if ($hasObservers) {
+            $this->notifyObservers('saved');
+        }
         Event::emit("{$table}.saved", $this);
         $this->syncOriginal();
 
@@ -556,6 +598,11 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     {
         $this->original = $this->attributes;
         return $this;
+    }
+
+    public static function clearIdentityMap(): void
+    {
+        static::$identityMap = [];
     }
 
     /**

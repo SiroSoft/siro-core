@@ -28,10 +28,16 @@ final class Env
             return;
         }
 
-        // Check for cached env file
+        // Check for cached env file — invalidate if .env is newer
         self::$cachedFile = dirname($filePath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php';
+        $useCache = false;
         if (is_file(self::$cachedFile)) {
+            $cacheMtime = filemtime(self::$cachedFile);
+            $envMtime = filemtime($filePath);
+            $useCache = $cacheMtime !== false && $envMtime !== false && $cacheMtime >= $envMtime;
+        }
+        if ($useCache && is_file(self::$cachedFile)) {
             $raw = substr((string) file_get_contents(self::$cachedFile), strlen('<?php exit; ?>'));
             $cached = json_decode($raw, true);
             if (!is_array($cached) && class_exists(\Siro\Core\Encrypter::class)) {

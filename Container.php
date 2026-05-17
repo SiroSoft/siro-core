@@ -13,6 +13,9 @@ final class Container
 {
     private const MAX_CIRCULAR_DEPTH = 64;
     private static ?Container $instance = null;
+
+    /** @var array<string, array{reflectionClass: ReflectionClass<object>, constructorParams: array<int, \ReflectionParameter>|null}> */
+    private static array $reflectionCache = [];
     /** @var array<string, (callable(): mixed)|class-string|string> */
     private array $bindings = [];
     /** @var array<string, true> */
@@ -201,20 +204,31 @@ final class Container
         $this->resolvingStack[$class] = $depth + 1;
 
         try {
-            $ref = new ReflectionClass($class);
+            if (isset(self::$reflectionCache[$class])) {
+                $cacheEntry = self::$reflectionCache[$class];
+                $ref = $cacheEntry['reflectionClass'];
+                $constructorParams = $cacheEntry['constructorParams'];
+            } else {
+                $ref = new ReflectionClass($class);
 
-            if (!$ref->isInstantiable()) {
-                throw new RuntimeException("Class [{$class}] is not instantiable.");
+                if (!$ref->isInstantiable()) {
+                    throw new RuntimeException("Class [{$class}] is not instantiable.");
+                }
+
+                $constructor = $ref->getConstructor();
+                $constructorParams = $constructor !== null ? $constructor->getParameters() : null;
+                self::$reflectionCache[$class] = [
+                    'reflectionClass' => $ref,
+                    'constructorParams' => $constructorParams,
+                ];
             }
 
-            $constructor = $ref->getConstructor();
-
-            if ($constructor === null) {
+            if ($constructorParams === null) {
                 return $ref->newInstance();
             }
 
             $deps = [];
-            foreach ($constructor->getParameters() as $param) {
+            foreach ($constructorParams as $param) {
                 $type = $param->getType();
 
                 if ($type === null) {

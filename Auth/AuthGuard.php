@@ -50,6 +50,7 @@ final class AuthGuard
         }
 
         try {
+            /** @var array<string, mixed> $claims */
             $claims = JWT::decode(trim($matches[1]));
             $provider = $this->getUserProvider();
             $sub = $claims['sub'] ?? 0;
@@ -59,6 +60,12 @@ final class AuthGuard
                 : null;
 
             if ($user === null) {
+                return null;
+            }
+
+            $jtiTokenVersion = is_numeric($claims['ver'] ?? null) ? (int) $claims['ver'] : 0;
+            $userTokenVersion = is_numeric($user['token_version'] ?? null) ? (int) $user['token_version'] : 0;
+            if ($jtiTokenVersion !== $userTokenVersion) {
                 return null;
             }
 
