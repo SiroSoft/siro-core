@@ -1,6 +1,6 @@
 # Logger
 
-The siro-core Logger provides structured, secure logging with automatic sanitization, daily rotation, SIEM-ready security audit trails, trace logging, and slow query detection.
+The siro-core Logger provides structured, secure logging with automatic sanitization, daily rotation (month-partitioned), SIEM-ready security audit trails, trace logging (hash-prefix partitioned), and slow query detection.
 
 ---
 
@@ -21,15 +21,19 @@ Logger::boot('/var/www/myapp/public'); // custom base path
 
 | Environment Variable        | Default | Description                                    |
 |-----------------------------|---------|------------------------------------------------|
+| `LOG_LEVEL`                 | `debug` | Set to `error` to suppress debug logs entirely |
 | `LOG_RETENTION_DAYS`        | `30`    | Days to keep daily log files before cleanup     |
+| `LOG_MAX_SIZE_MB`           | `1024`  | Total log size limit (MB); oldest files auto-deleted |
 | `DB_SLOW_QUERY_THRESHOLD`   | `100`   | Query duration in ms above which it is flagged  |
 
 These are read automatically inside `boot()`:
 
 ```php
 Logger::boot(__DIR__);
-// LOG_RETENTION_DAYS=60 keeps logs for 60 days
-// DB_SLOW_QUERY_THRESHOLD=200 flags queries slower than 200ms
+// LOG_LEVEL=error          → debug() writes nothing, 0 I/O
+// LOG_RETENTION_DAYS=60    → keeps logs for 60 days
+// LOG_MAX_SIZE_MB=512      → max 512MB total, auto-purge oldest
+// DB_SLOW_QUERY_THRESHOLD=200 → flags queries slower than 200ms
 ```
 
 ### Reset
@@ -37,6 +41,33 @@ Logger::boot(__DIR__);
 ```php
 Logger::reset(); // clears all internal state
 ```
+
+---
+
+## Directory Structure
+
+Logs are automatically organised into three subdirectories to prevent flat-folder performance degradation:
+
+```
+storage/logs/
+  daily/2026-05/          ← month-partitioned daily files
+    error-2026-05-13.log
+    request-2026-05-13.log
+    slow-2026-05-13.log
+    security-2026-05-13.log
+    debug-2026-05-13.log
+  main/                   ← cumulative files (rotated at 50MB)
+    error.log
+    slow.log
+    security.log
+  traces/2026/05/13/ab/   ← date + hash-prefix partitioned
+    trace-xxx.json
+    trace-yyy.json
+```
+
+- **Daily logs**: partitioned by `YYYY-MM` (1 folder per month). Cleanup scans only the current month.
+- **Main logs**: cumulative `error.log`, `slow.log`, `security.log` with 50MB rotation.
+- **Traces**: partitioned by date (`YYYY/MM/DD`) then by 2-char hash prefix (`00`–`ff`). Each subdirectory holds at most ~256 files.
 
 ---
 
@@ -50,7 +81,7 @@ Every HTTP request can be logged with method, path, status code, duration, clien
 Logger::request('POST', '/api/users', 201, 45.32, '192.168.1.1', 'trace-abc-123', 'Mozilla/5.0 ...');
 ```
 
-Output in `storage/logs/request-2026-05-13.log`:
+Output in `storage/logs/daily/2026-05/request-2026-05-13.log`:
 
 ```
 2026-05-13 10:30:00 | POST | /api/users | 201 | 45.32ms | trace:trace-abc-123 | ip:192.168.1.1 | ua:Mozilla/5.0 ...

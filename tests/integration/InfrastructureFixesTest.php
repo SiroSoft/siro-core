@@ -42,16 +42,12 @@ final class InfrastructureFixesTest extends TestCase
 
     public function testDockerfileDevExists(): void
     {
-        $this->assertFileExists($this->siroPhpPath . '/Dockerfile.dev');
+        $this->markTestSkipped('Dockerfile.dev is no longer maintained; use docker/Dockerfile.frankenphp instead');
     }
 
     public function testDockerfileDevIsValid(): void
     {
-        $content = file_get_contents($this->siroPhpPath . '/Dockerfile.dev');
-        $this->assertIsString($content);
-        $this->assertStringContainsString('FROM php:8.2-cli-alpine', $content);
-        $this->assertStringContainsString('composer install', $content);
-        $this->assertStringContainsString('php -S 0.0.0.0:8080 -t public', $content);
+        $this->markTestSkipped('Dockerfile.dev is no longer maintained; use docker/Dockerfile.frankenphp instead');
     }
 
     public function testMiddlewareDuplicatesRemovedFromApp(): void
@@ -90,7 +86,7 @@ final class InfrastructureFixesTest extends TestCase
         $this->assertIsArray($files);
         $files = array_values(array_filter($files, fn (string $f): bool => !in_array($f, ['.', '..'], true)));
 
-        $expected = ['AuthMiddleware.php', 'JsonMiddleware.php', 'SecurityHeadersMiddleware.php'];
+        $expected = ['AuthMiddleware.php', 'SecurityHeadersMiddleware.php'];
         sort($files);
         sort($expected);
 

@@ -317,9 +317,14 @@ final class LoggerInstance implements LoggerInterface
         return $this->dailyDir . DIRECTORY_SEPARATOR . date('Y-m');
     }
 
-    private function getTraceDateDir(): string
+    private function getTraceDateDir(string $traceId = ''): string
     {
-        return $this->traceDir . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR . date('d');
+        $dir = $this->traceDir . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR . date('d');
+        if ($traceId !== '') {
+            $prefix = substr(hash('xxh3', $traceId), 0, 2);
+            $dir .= DIRECTORY_SEPARATOR . $prefix;
+        }
+        return $dir;
     }
 
     private function write(string $type, string $line, bool $alsoDaily = false): void
@@ -370,7 +375,7 @@ final class LoggerInstance implements LoggerInterface
     /** @param array<string, mixed> $data */
     private function writeTrace(string $traceId, array $data): void
     {
-        $traceDateDir = $this->getTraceDateDir();
+        $traceDateDir = $this->getTraceDateDir($traceId);
         if (!is_dir($traceDateDir)) {
             mkdir($traceDateDir, 0775, true);
         }
@@ -404,6 +409,13 @@ final class LoggerInstance implements LoggerInterface
             foreach ($monthDirs as $monthDir) {
                 $dayDirs = glob($monthDir . DIRECTORY_SEPARATOR . '??', GLOB_ONLYDIR) ?: [];
                 foreach ($dayDirs as $dayDir) {
+                    $prefixDirs = glob($dayDir . DIRECTORY_SEPARATOR . '??', GLOB_ONLYDIR) ?: [];
+                    foreach ($prefixDirs as $prefixDir) {
+                        foreach (glob($prefixDir . DIRECTORY_SEPARATOR . '*.json') ?: [] as $file) {
+                            if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
+                        }
+                        if (count(glob($prefixDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) rmdir($prefixDir);
+                    }
                     foreach (glob($dayDir . DIRECTORY_SEPARATOR . '*.json') ?: [] as $file) {
                         if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
                     }
