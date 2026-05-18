@@ -14,6 +14,7 @@ namespace Siro\Core;
 
 use RuntimeException;
 use Throwable;
+use Siro\Core\Debug\TraceData;
 
 final class App
 {
@@ -56,6 +57,9 @@ final class App
         if ($this->showDebugTrace) {
             ini_set('display_errors', '1');
             error_reporting(E_ALL);
+            if (class_exists(Database::class)) {
+                Database::enableQueryCapture(true);
+            }
         }
 
         Config::load($this->basePath . DIRECTORY_SEPARATOR . 'config');
@@ -181,6 +185,16 @@ final class App
 
         Response::setRequestMeta($traceId, $requestStartedAt);
 
+        // Reset & enrich trace data
+        TraceData::reset();
+        if ($this->debug) {
+            $allHeaders = function_exists('getallheaders') ? getallheaders() : [];
+            /** @var array<string, string> $allHeaders */
+            TraceData::setRequestHeaders($allHeaders);
+            $rawBody = file_get_contents('php://input');
+            TraceData::setRequestBody(is_string($rawBody) ? $rawBody : '');
+        }
+
         try {
             $request = Request::fromGlobals();
             $method = $request->method();
@@ -205,6 +219,9 @@ final class App
             $response = $this->router->dispatch($request);
             $status = $response->statusCode();
             $this->attachDebugMeta();
+            if ($this->debug) {
+                TraceData::setResponseBody((string) json_encode($response->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            }
 
             // Always add security and trace headers
             $response->header('X-Siro-Trace-Id', $traceId)
@@ -215,11 +232,19 @@ final class App
             $this->attachDebugMeta();
             $errorResponse = $e->toResponse();
             $status = $errorResponse->statusCode();
+            if ($this->debug) {
+                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setException($e::class, $e->getMessage());
+            }
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (ModelNotFoundException $e) {
             $this->attachDebugMeta();
             $status = 404;
             $errorResponse = Response::error($e->getMessage(), 404);
+            if ($this->debug) {
+                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setException($e::class, $e->getMessage());
+            }
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (Throwable $e) {
             Logger::error($e);
@@ -235,6 +260,10 @@ final class App
                 $errorResponse = Response::error('Internal Server Error', 500, $errors);
             }
             $status = $errorResponse->statusCode();
+            if ($this->debug) {
+                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setException($e::class, $e->getMessage());
+            }
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } finally {
             $timeMs = (microtime(true) - $requestStartedAt) * 1000;
@@ -257,6 +286,26 @@ final class App
                     'host' => $host,
                     'timestamp' => date('c'),
                 ];
+
+                // Merge enriched trace data (middleware, queries, body, exception)
+                foreach (TraceData::getAll() as $key => $value) {
+                    $traceData[$key] = $value;
+                }
+
+                // Merge captured SQL queries from Database
+                if (class_exists(Database::class)) {
+                    $captured = Database::getCapturedQueries();
+                    if ($captured !== []) {
+                        $traceData['queries'] = array_map(function (array $q): array {
+                            return [
+                                'sql' => $q['sql'],
+                                'time_ms' => $q['time_ms'],
+                                'rows' => $q['rows'],
+                            ];
+                        }, $captured);
+                    }
+                }
+
                 Logger::trace($traceId, $traceData);
             }
 

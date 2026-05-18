@@ -157,6 +157,14 @@ final class DatabaseInstance implements DatabaseInterface
         $this->capturedQueries = [];
     }
 
+    public function enableQueryCapture(bool $enabled = true): void
+    {
+        $this->queryCaptureEnabled = $enabled;
+        if ($enabled) {
+            $this->capturedQueries = [];
+        }
+    }
+
     /**
      * @param array<int|string, mixed> $params
      * @return array<int, array<string, mixed>>
@@ -321,7 +329,14 @@ final class DatabaseInstance implements DatabaseInterface
             }
             $this->preparedStatements[$stmtHash] = $stmt;
         }
-        $stmt->execute($params);
+
+        $exception = null;
+        try {
+            $stmt->execute($params);
+        } catch (\Throwable $e) {
+            $exception = $e;
+        }
+
         $elapsed = (microtime(true) - $start) * 1000;
 
         $rows = 0;
@@ -353,6 +368,10 @@ final class DatabaseInstance implements DatabaseInterface
                 $sql,
                 json_encode($params, JSON_UNESCAPED_UNICODE)
             )));
+        }
+
+        if ($exception !== null) {
+            throw $exception;
         }
 
         return $stmt;

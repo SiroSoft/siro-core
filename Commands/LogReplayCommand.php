@@ -112,6 +112,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('Invalid trace file.');
             return 1;
         }
+        /** @var array<string, mixed> $data */
 
         $method = strtoupper($this->safeStr($data['method'] ?? 'GET'));
         $host = $this->safeStr($data['host'] ?? '');
@@ -130,7 +131,10 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         }
         $scheme = $useHttps ? 'https' : 'http';
         $url = $scheme . '://' . $host . $path;
-        $headers = is_array($data['request_headers'] ?? null) ? $data['request_headers'] : [];
+
+        /** @var array<string, string>|null $rawHeaders */
+        $rawHeaders = $data['request_headers'] ?? null;
+        $headers = is_array($rawHeaders) ? $rawHeaders : [];
         $body = $this->safeStr($data['request_body'] ?? '');
         $auth = $this->safeStr($data['auth_header'] ?? '');
         $ct = $this->safeStr($data['content_type'] ?? '');
@@ -286,7 +290,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $afterBody = $this->safeStr($result['body'] ?? '{}');
             $decodedAfter = json_decode($afterBody, true);
             if (is_array($decodedAfter)) {
-                $pretty = json_encode($decodedAfter, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $pretty = (string) json_encode($decodedAfter, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 $this->write('  Body:');
                 foreach (explode("\n", $pretty) as $line) {
                     $this->write('    ' . $line);
@@ -321,7 +325,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 $this->write('  Request Body:');
                 $decodedBody = json_decode($body, true);
                 if (is_array($decodedBody)) {
-                    foreach (explode("\n", json_encode($decodedBody, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) as $line) {
+                    $prettyBody = (string) json_encode($decodedBody, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    foreach (explode("\n", $prettyBody) as $line) {
                         $this->write('    ' . $line);
                     }
                 } else {
@@ -342,7 +347,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $responseBody = $this->safeStr($result['body'] ?? '{}');
             $decoded = json_decode($responseBody, true);
             if (is_array($decoded)) {
-                $pretty = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $pretty = (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 $this->write('  Response:');
                 foreach (explode("\n", $pretty) as $line) {
                     $this->write('    ' . $line);

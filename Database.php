@@ -76,6 +76,11 @@ final class Database
         self::getInstance()->resetCapturedQueries();
     }
 
+    public static function enableQueryCapture(bool $enabled = true): void
+    {
+        self::getInstance()->enableQueryCapture($enabled);
+    }
+
     /**
      * @param array<int|string, mixed> $params
      * @return array<int, array<string, mixed>>

@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.27.4 (2026-05-18) — Trace Data Enrichment + PHPStan Level Max
+
+### 🚀 Trace Data Enrichment
+- **TraceData class** (`Debug/TraceData.php`): Static collector cho middleware, queries, body, exception
+- **Router middleware timing**: Mỗi middleware/handler được đo thời gian, ghi vào TraceData
+- **App.php**: Capture request headers + body (php://input), response body, exception → merge vào trace file
+- **Query capture**: `Database::enableQueryCapture()` tự động bật khi `APP_DEBUG=true`
+- **Failed SQL queries**: `prepareAndExecute()` capture query cả khi throw exception (PDOException)
+- **Skeleton config**: `config/database.php` thêm `capture_queries => APP_DEBUG`
+
+### ✅ PHPStan Level Max — 0 errors
+- Fix 17 PHPStan errors across 6 files
+- `DebugHealthCommand`: `PHP_VERSION_ID < 80200` → `version_compare()`
+- `LogReplayCommand`: type annotations cho `$headers`, `$data`, `json_encode` fallback
+- `App.php`: loại bỏ `is_array()` dư, type cast `getallheaders()`
+- `Router.php`: `implode('@', $handler)` → safe string cast
+
+### 🧪 Debug Trace Integration Tests
+- `tests/debug/DebugTraceDataTest.php`: 11 tests — basic info, SQL queries, INSERT, failed SQL, body, auth, response, validation exception, middleware, reset between requests
+- SQLite in-memory, full trace pipeline
+
+### 🎯 Enterprise Readiness (v1.0.0 TBD)
+- **PHPStan level max**: 0 errors (core + skeleton)
+- **PHPUnit**: 19K+ tests, 0 failures
+- **74 CLI commands** audited — all working, production-safe
+
 ## v0.27.3 (2026-05-18) — Debug CLI Overhaul
 
 ### 🔥 Killer Feature: CLI Debug System Overhaul

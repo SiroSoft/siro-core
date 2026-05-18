@@ -604,11 +604,25 @@ final class Router
         $next = function (Request $req) use ($middleware, $handler, &$pos, &$next): Response {
             if ($pos >= count($middleware)) {
                 /** @var callable|array{0: class-string, 1: string}|string $handler */
-                return $this->runHandler($handler, $req);
+                $start = microtime(true);
+                $response = $this->runHandler($handler, $req);
+                $elapsed = (microtime(true) - $start) * 1000;
+                if (class_exists(\Siro\Core\Debug\TraceData::class)) {
+                    $handlerName = is_string($handler) ? $handler : 'handler';
+                    \Siro\Core\Debug\TraceData::addMiddleware($handlerName, $response->statusCode() < 500, $elapsed);
+                }
+                return $response;
             }
             /** @var callable|string $mw */
             $mw = $middleware[$pos++];
-            return $this->runMiddleware($mw, $req, $next);
+            $start = microtime(true);
+            $response = $this->runMiddleware($mw, $req, $next);
+            $elapsed = (microtime(true) - $start) * 1000;
+            if (class_exists(\Siro\Core\Debug\TraceData::class)) {
+                $mwName = is_string($mw) ? $mw : 'Closure';
+                \Siro\Core\Debug\TraceData::addMiddleware($mwName, $response->statusCode() < 500, $elapsed);
+            }
+            return $response;
         };
         return $next($request);
     }

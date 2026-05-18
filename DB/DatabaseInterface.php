@@ -20,6 +20,7 @@ interface DatabaseInterface
     /** @return array<int, array{sql:string,bindings:array<int|string,mixed>,time_ms:float,rows:int,connection:string}> */
     public function getCapturedQueries(): array;
     public function resetCapturedQueries(): void;
+    public function enableQueryCapture(bool $enabled = true): void;
 
     /**
      * @param array<int|string, mixed> $params
