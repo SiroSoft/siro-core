@@ -122,12 +122,13 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
 
         // Check Log Files
         $logDir = $storageDir . DIRECTORY_SEPARATOR . 'logs';
+        $mainDir = $logDir . DIRECTORY_SEPARATOR . 'main';
         if (is_dir($logDir)) {
             $logFiles = ['error.log', 'slow.log'];
             foreach ($logFiles as $logFile) {
-                $logPath = $logDir . DIRECTORY_SEPARATOR . $logFile;
+                $logPath = $mainDir . DIRECTORY_SEPARATOR . $logFile;
                 $exists = file_exists($logPath);
-                $this->printCheck("Log File: {$logFile}", $exists ? 'Exists' : 'Missing', $exists);
+                $this->printCheck("Log File: main/{$logFile}", $exists ? 'Exists' : 'Missing', $exists);
                 if (!$exists) $allPassed = false;
             }
 

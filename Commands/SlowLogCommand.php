@@ -17,7 +17,7 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
         $limit = 10;
         $minMs = 100;
         $tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
-        $slowFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'slow.log';
+        $slowFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'main' . DIRECTORY_SEPARATOR . 'slow.log';
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--limit=')) {

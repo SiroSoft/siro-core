@@ -11,9 +11,14 @@ use Throwable;
 final class LoggerInstance implements LoggerInterface
 {
     private string $logDir = '';
+    private string $dailyDir = '';
+    private string $mainDir = '';
+    private string $traceDir = '';
     private int $retentionDays = 30;
     private int $slowThreshold = 100;
     private int $maxFileSize = 50 * 1024 * 1024;
+    private int $maxTotalSize = 1024 * 1024 * 1024;
+    private bool $debugEnabled = true;
 
     /** @var array{headers: array<int, string>, body: array<int, string>, query: array<int, string>} */
     private array $sanitizeConfig = [
@@ -27,18 +32,21 @@ final class LoggerInstance implements LoggerInterface
         $this->logDir = rtrim($basePath, DIRECTORY_SEPARATOR)
             . DIRECTORY_SEPARATOR . 'storage'
             . DIRECTORY_SEPARATOR . 'logs';
+        $this->dailyDir = $this->logDir . DIRECTORY_SEPARATOR . 'daily';
+        $this->mainDir = $this->logDir . DIRECTORY_SEPARATOR . 'main';
+        $this->traceDir = $this->logDir . DIRECTORY_SEPARATOR . 'traces';
 
-        if (!is_dir($this->logDir)) {
-            mkdir($this->logDir, 0775, true);
+        foreach ([$this->logDir, $this->dailyDir, $this->mainDir, $this->traceDir] as $dir) {
+            if (!is_dir($dir)) {
+                mkdir($dir, 0775, true);
+            }
         }
 
         $this->retentionDays = max(1, (int) Env::get('LOG_RETENTION_DAYS', '30'));
         $this->slowThreshold = max(0, (int) Env::get('DB_SLOW_QUERY_THRESHOLD', '100'));
-
-        $appLog = $this->logDir . DIRECTORY_SEPARATOR . 'app.log';
-        if (!file_exists($appLog)) {
-            touch($appLog);
-        }
+        $this->debugEnabled = strtolower((string) Env::get('LOG_LEVEL', 'debug')) !== 'error';
+        $maxMb = max(100, (int) Env::get('LOG_MAX_SIZE_MB', '1024'));
+        $this->maxTotalSize = $maxMb * 1024 * 1024;
 
         $this->protectLogDir();
     }
@@ -46,9 +54,14 @@ final class LoggerInstance implements LoggerInterface
     public function reset(): void
     {
         $this->logDir = '';
+        $this->dailyDir = '';
+        $this->mainDir = '';
+        $this->traceDir = '';
         $this->retentionDays = 30;
         $this->slowThreshold = 100;
         $this->maxFileSize = 50 * 1024 * 1024;
+        $this->maxTotalSize = 1024 * 1024 * 1024;
+        $this->debugEnabled = true;
         $this->compiledSanitizePatterns = null;
     }
 
@@ -124,6 +137,9 @@ final class LoggerInstance implements LoggerInterface
     /** @param array<string, mixed> $context */
     public function debug(string $message, array $context = []): void
     {
+        if (!$this->debugEnabled) {
+            return;
+        }
         $line = sprintf('[%s] [DEBUG] %s', date('Y-m-d H:i:s'), $this->sanitize($message));
         if ($context !== []) {
             $line .= ' ' . (string) json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -296,23 +312,38 @@ final class LoggerInstance implements LoggerInterface
         return $this->logDir;
     }
 
+    private function getDailyMonthDir(): string
+    {
+        return $this->dailyDir . DIRECTORY_SEPARATOR . date('Y-m');
+    }
+
+    private function getTraceDateDir(): string
+    {
+        return $this->traceDir . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR . date('d');
+    }
+
     private function write(string $type, string $line, bool $alsoDaily = false): void
     {
         if ($this->logDir === '') {
             $this->logDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs';
+            $this->dailyDir = $this->logDir . DIRECTORY_SEPARATOR . 'daily';
+            $this->mainDir = $this->logDir . DIRECTORY_SEPARATOR . 'main';
         }
 
-        if (!is_dir($this->logDir)) {
-            mkdir($this->logDir, 0775, true);
-        }
-
-        $dailyFile = $this->logDir . DIRECTORY_SEPARATOR . $type . '-' . date('Y-m-d') . '.log';
         $line = $this->escapeLog($line) . PHP_EOL;
 
+        $monthDir = $this->getDailyMonthDir();
+        if (!is_dir($monthDir)) {
+            mkdir($monthDir, 0775, true);
+        }
+        $dailyFile = $monthDir . DIRECTORY_SEPARATOR . $type . '-' . date('Y-m-d') . '.log';
         error_log($line, 3, $dailyFile);
 
         if ($alsoDaily) {
-            $mainFile = $this->logDir . DIRECTORY_SEPARATOR . $type . '.log';
+            if (!is_dir($this->mainDir)) {
+                mkdir($this->mainDir, 0775, true);
+            }
+            $mainFile = $this->mainDir . DIRECTORY_SEPARATOR . $type . '.log';
             error_log($line, 3, $mainFile);
             if (is_file($mainFile) && filesize($mainFile) > $this->maxFileSize) {
                 $rotated = $mainFile . '.' . date('Y-m-d-Hi');
@@ -339,12 +370,11 @@ final class LoggerInstance implements LoggerInterface
     /** @param array<string, mixed> $data */
     private function writeTrace(string $traceId, array $data): void
     {
-        $traceDir = $this->logDir . DIRECTORY_SEPARATOR . 'traces';
-        if (!is_dir($traceDir)) {
-            mkdir($traceDir, 0775, true);
+        $traceDateDir = $this->getTraceDateDir();
+        if (!is_dir($traceDateDir)) {
+            mkdir($traceDateDir, 0775, true);
         }
-
-        $traceFile = $traceDir . DIRECTORY_SEPARATOR . $traceId . '.json';
+        $traceFile = $traceDateDir . DIRECTORY_SEPARATOR . $traceId . '.json';
         file_put_contents($traceFile, (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 
         if ($this->shouldCleanTraces()) {
@@ -365,49 +395,95 @@ final class LoggerInstance implements LoggerInterface
 
     private function cleanOldTraces(): void
     {
-        $traceDir = $this->logDir . DIRECTORY_SEPARATOR . 'traces';
-        if (!is_dir($traceDir)) return;
+        if (!is_dir($this->traceDir)) return;
 
         $cutoff = time() - ($this->retentionDays * 86400);
-        foreach (glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [] as $file) {
-            if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
+        $yearDirs = glob($this->traceDir . DIRECTORY_SEPARATOR . '????', GLOB_ONLYDIR) ?: [];
+        foreach ($yearDirs as $yearDir) {
+            $monthDirs = glob($yearDir . DIRECTORY_SEPARATOR . '??', GLOB_ONLYDIR) ?: [];
+            foreach ($monthDirs as $monthDir) {
+                $dayDirs = glob($monthDir . DIRECTORY_SEPARATOR . '??', GLOB_ONLYDIR) ?: [];
+                foreach ($dayDirs as $dayDir) {
+                    foreach (glob($dayDir . DIRECTORY_SEPARATOR . '*.json') ?: [] as $file) {
+                        if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
+                    }
+                    if (count(glob($dayDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) rmdir($dayDir);
+                }
+                if (count(glob($monthDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) rmdir($monthDir);
+            }
+            if (count(glob($yearDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) rmdir($yearDir);
         }
     }
 
     private function cleanOldLogs(): void
     {
-        if ($this->logDir === '' || !is_dir($this->logDir)) return;
+        if ($this->logDir === '') return;
 
         $cutoff = time() - ($this->retentionDays * 86400);
+        $totalSize = 0;
+        $allFiles = [];
 
-        foreach (glob($this->logDir . DIRECTORY_SEPARATOR . '*-????-??-??.log') ?: [] as $file) {
-            if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
+        // Scan daily month dirs
+        $monthDirs = glob($this->dailyDir . DIRECTORY_SEPARATOR . '????-??', GLOB_ONLYDIR) ?: [];
+        foreach ($monthDirs as $monthDir) {
+            if (!is_dir($monthDir)) continue;
+            foreach (glob($monthDir . DIRECTORY_SEPARATOR . '*-????-??-??.log') ?: [] as $file) {
+                if (filemtime($file) < $cutoff) {
+                    if (is_file($file)) unlink($file);
+                } else {
+                    $totalSize += is_file($file) ? filesize($file) : 0;
+                    $allFiles[] = $file;
+                }
+            }
         }
-        foreach (glob($this->logDir . DIRECTORY_SEPARATOR . '*.log.*') ?: [] as $file) {
-            if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
+
+        // Scan main dir
+        foreach (glob($this->mainDir . DIRECTORY_SEPARATOR . '*.log*') ?: [] as $file) {
+            if (is_file($file) && filemtime($file) < $cutoff) {
+                unlink($file);
+            } elseif (is_file($file)) {
+                $totalSize += filesize($file);
+                $allFiles[] = $file;
+            }
+        }
+
+        // Enforce max total size — remove oldest files first
+        if ($totalSize > $this->maxTotalSize) {
+            usort($allFiles, fn (string $a, string $b) => filemtime($a) <=> filemtime($b));
+            while ($totalSize > $this->maxTotalSize && $allFiles !== []) {
+                $oldest = array_shift($allFiles);
+                if (is_file($oldest)) {
+                    $totalSize -= filesize($oldest);
+                    unlink($oldest);
+                }
+            }
+        }
+
+        // Remove empty month dirs
+        foreach ($monthDirs as $monthDir) {
+            if (is_dir($monthDir) && count(glob($monthDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) {
+                rmdir($monthDir);
+            }
         }
     }
 
     private function protectLogDir(): void
     {
-        $logDir = $this->logDir;
-        $traceDir = $logDir . DIRECTORY_SEPARATOR . 'traces';
+        $dirs = array_filter([$this->logDir, $this->dailyDir, $this->mainDir, $this->traceDir], fn (string $d) => is_dir($d));
 
-        foreach ([$logDir, $traceDir] as $dir) {
-            if (!is_dir($dir)) continue;
+        foreach ($dirs as $dir) {
             $htaccess = $dir . DIRECTORY_SEPARATOR . '.htaccess';
             if (!file_exists($htaccess)) {
                 file_put_contents($htaccess, "Deny from all\n");
             }
         }
 
-        $nginxConf = $logDir . DIRECTORY_SEPARATOR . 'nginx-deny.conf';
+        $nginxConf = $this->logDir . DIRECTORY_SEPARATOR . 'nginx-deny.conf';
         if (!file_exists($nginxConf)) {
             file_put_contents($nginxConf, "deny all;\n");
         }
 
-        foreach ([$logDir, $traceDir] as $dir) {
-            if (!is_dir($dir)) continue;
+        foreach ($dirs as $dir) {
             $webConfig = $dir . DIRECTORY_SEPARATOR . 'web.config';
             if (!file_exists($webConfig)) {
                 file_put_contents($webConfig, '<?xml version="1.0" encoding="UTF-8"?>

@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.27.2 (2026-05-18) — Identity Map + Skeleton Release
+
+### 🐛 Fixed
+- **Model::find()** — identity map `$map = &$array[$key]` tạo `null` thay vì `[]` → `count(null)` crash
+- Fix: khởi tạo `static::$identityMap[static::class] = []` trước khi gán reference
+
+### ✅ Skeleton (SiroPHP)
+- **462 tests, 0 failures** — tất cả feature/integration/edge-case tests pass
+- **Log storage restructured**: `daily/`, `main/`, `traces/` với month-partitioning
+- **Env vars**: `LOG_LEVEL`, `LOG_MAX_SIZE_MB`, `LOG_RETENTION_DAYS` configurable
+- **schedule.php**: cleanup dùng `log:cleanup` thay manual trace glob
+
 ## v0.27.1 (2026-05-18) — Core Framework Bugfixes
 
 ### 🐛 Fixed

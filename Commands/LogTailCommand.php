@@ -14,7 +14,7 @@ final class LogTailCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $logDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs';
+        $dailyDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily';
         $type = 'request'; // default
         $lines = 20;
         $follow = false;
@@ -30,9 +30,9 @@ final class LogTailCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         // Pick the latest daily log file
-        $files = glob($logDir . DIRECTORY_SEPARATOR . $type . '-*.log') ?: [];
+        $files = glob($dailyDir . DIRECTORY_SEPARATOR . $type . '-*.log') ?: [];
         if ($files === []) {
-            $this->write("No {$type} log files found in {$logDir}");
+            $this->write("No {$type} log files found in {$dailyDir}");
             return 1;
         }
         rsort($files);

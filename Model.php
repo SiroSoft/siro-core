@@ -182,6 +182,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /** @return static|null */
     public static function find(int|string $id): ?static
     {
+        if (!isset(static::$identityMap[static::class])) {
+            static::$identityMap[static::class] = [];
+        }
         $map = &static::$identityMap[static::class];
         if (isset($map[$id])) {
             return $map[$id];

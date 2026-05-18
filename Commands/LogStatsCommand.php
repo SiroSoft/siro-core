@@ -14,7 +14,7 @@ final class LogStatsCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $logDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs';
+        $dailyDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily';
         $days = 1;
 
         foreach ($args as $arg) {
@@ -24,7 +24,7 @@ final class LogStatsCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $cutoff = time() - ($days * 86400);
-        $files = glob($logDir . DIRECTORY_SEPARATOR . 'request-*.log') ?: [];
+        $files = glob($dailyDir . DIRECTORY_SEPARATOR . 'request-*.log') ?: [];
 
         $this->write("  \033[1;33mRequest Statistics (last {$days} day(s))\033[0m");
         $this->write('');
