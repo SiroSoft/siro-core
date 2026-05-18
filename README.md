@@ -1,4 +1,4 @@
-# Siro Core Framework v0.27.0
+# Siro Core Framework v0.27.1
 
 **The debugging-first PHP framework.** Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default. Built for developers who want to fix production bugs in seconds, not hours.
 

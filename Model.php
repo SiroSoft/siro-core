@@ -653,6 +653,10 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             return $query;
         }
 
+        if (method_exists(ModelQueryBuilder::class, $method)) {
+            return self::query()->$method(...$parameters);
+        }
+
         throw new RuntimeException(sprintf('Method %s::%s does not exist.', static::class, $method));
     }
 }

@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.27.1 (2026-05-18) — Core Framework Bugfixes
+
+### 🐛 Fixed
+
+#### ModelQueryBuilder — `where()` wrong arg count (Bug #1)
+- `ModelQueryBuilder::where()` luôn pass 3 args xuống parent → `User::where('email', 'a@b.com')` crash vì tưởng `'a@b.com'` là operator
+- Fix: dùng `func_num_args()` để gọi parent với đúng số lượng args
+
+#### Model — `__callStatic` không proxy query methods (Bug #2)
+- `User::whereNull()`, `whereRaw()`, `inRandomOrder()` không dùng được trên Model
+- Fix: thêm `method_exists(ModelQueryBuilder::class, $method)` proxy xuống query builder
+
+#### SqlCompiler — `select()` quote tất cả identifier (Bug #3)
+- `select(['COUNT(*) as count'])` → quote thành `\`COUNT(*)\`` → MySQL crash
+- Fix: thêm `isRawColumn()` phát hiện `(`, `)`, `AS`, `DISTINCT`, `CASE` → bỏ qua quoting
+
+#### QueryBuilder — Các method bổ sung
+- `groupBy()` — chuyển sang variadic `groupBy(array|string ...$columns)` cho phép `groupBy('col1', 'col2')` (Bug #5)
+- `orderByRaw(string $expression, string $dir)` — ORDER BY với raw SQL expression (Bug #6)
+
+#### DB::raw() — Raw Expression Support (Bug #4)
+- Class mới `RawExpression` — đánh dấu raw SQL trong select/groupBy
+- `Database::raw(string $value): RawExpression` — factory method
+- `buildSelectQuery()`, `compileGroupBy()` xử lý `RawExpression` instance, bỏ qua quoting
+- Cho phép: `->select(['name', Database::raw('COUNT(*) as count')])`
+
+#### Database — `exec()` method cho DDL/SET (Bug #7)
+- `DatabaseInterface::exec(string $sql, ?string $connection)` — execute raw SQL không qua prepared statement
+- Fix: `Database::execStatement('SET FOREIGN_KEY_CHECKS = 0')` chạy được trong Seeder
+- Dùng `PDO::exec()` trực tiếp, phù hợp cho DDL, SET, PRAGMA
+
+### ✅ Quality
+- **PHPStan level max**: 0 errors
+- **PHPUnit**: 19038 tests, 31621 assertions — passed
+- **11 pre-existing failures** (infrastructure/environment tests): unchanged
+
 ## v0.27.0 (2026-05-16) — Full Enterprise Release
 
 ### 🚀 CLI & Developer Experience

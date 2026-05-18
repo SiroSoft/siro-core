@@ -36,6 +36,9 @@ interface DatabaseInterface
     /** @param array<int|string, mixed> $params */
     public function execute(string $sql, array $params = [], ?string $connection = null): int;
 
+    /** Execute raw SQL without prepared statement (for DDL, SET, etc.) */
+    public function exec(string $sql, ?string $connection = null): int;
+
     public function cache(int $ttl = 60): static;
     public function table(string $table, ?string $connection = null): QueryBuilder;
     public function transaction(callable $callback, ?string $connection = null): mixed;

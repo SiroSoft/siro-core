@@ -7,6 +7,7 @@ namespace Siro\Core\DB;
 use RuntimeException;
 use Siro\Core\Cache;
 use Siro\Core\Database;
+use Siro\Core\DB\RawExpression;
 
 final class SqlCompiler
 {
@@ -100,12 +101,26 @@ final class SqlCompiler
         return implode(', ', $parts);
     }
 
+    private function isRawColumn(string $column): bool
+    {
+        if ($column === '*') {
+            return false;
+        }
+        if (str_contains($column, '(') || str_contains($column, ')')) {
+            return true;
+        }
+        if (preg_match('/\b(AS|DISTINCT|CASE|WHEN|THEN|ELSE|END)\b/i', $column)) {
+            return true;
+        }
+        return false;
+    }
+
     /**
-     * @param array<int, string> $columns
+     * @param array<int, string|RawExpression> $columns
      * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
      * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
-     * @param array<int, string> $groups
+     * @param array<int, string|RawExpression> $groups
      * @param array<int, array{column:string, direction:string}> $orders
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
@@ -126,8 +141,23 @@ final class SqlCompiler
         [$whereSql, $whereBindings] = $this->compileWhere($wheres, $bindings);
         [$havingSql, $havingBindings] = $this->compileHaving($havings, $bindings);
 
-        $quotedColumns = $this->quoteColumnList(implode(', ', $columns));
-        $sql = sprintf('SELECT %s FROM %s', $quotedColumns, $this->quoteIdentifier($table));
+        $quotedColumns = [];
+        foreach ($columns as $column) {
+            if ($column instanceof RawExpression) {
+                $quotedColumns[] = $column->getValue();
+                continue;
+            }
+            $column = trim($column);
+            if ($column === '') {
+                continue;
+            }
+            if ($this->isRawColumn($column)) {
+                $quotedColumns[] = $column;
+            } else {
+                $quotedColumns[] = $this->quoteIdentifier($column);
+            }
+        }
+        $sql = sprintf('SELECT %s FROM %s', implode(', ', $quotedColumns), $this->quoteIdentifier($table));
         $sql .= $this->compileJoins($joins);
         $sql .= $whereSql;
         $sql .= $this->compileGroupBy($groups);
@@ -152,7 +182,7 @@ final class SqlCompiler
      * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
      * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
-     * @param array<int, string> $groups
+     * @param array<int, string|RawExpression> $groups
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
      */
@@ -186,7 +216,7 @@ final class SqlCompiler
      * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
      * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
-     * @param array<int, string> $groups
+     * @param array<int, string|RawExpression> $groups
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
      */
@@ -243,7 +273,7 @@ final class SqlCompiler
     }
 
     /**
-     * @param array<int, string> $groups
+     * @param array<int, string|RawExpression> $groups
      */
     public function compileGroupBy(array $groups): string
     {
@@ -251,7 +281,14 @@ final class SqlCompiler
             return '';
         }
 
-        $quoted = array_map(fn (string $col): string => $this->quoteIdentifier($col), $groups);
+        $quoted = [];
+        foreach ($groups as $col) {
+            if ($col instanceof RawExpression) {
+                $quoted[] = $col->getValue();
+            } else {
+                $quoted[] = $this->quoteIdentifier((string) $col);
+            }
+        }
         return ' GROUP BY ' . implode(', ', $quoted);
     }
 

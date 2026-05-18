@@ -210,6 +210,33 @@ final class DatabaseInstance implements DatabaseInterface
         return $stmt->rowCount();
     }
 
+    public function exec(string $sql, ?string $connection = null): int
+    {
+        $pdo = $this->connection($connection);
+        $start = microtime(true);
+        $affected = $pdo->exec($sql);
+        $elapsed = (microtime(true) - $start) * 1000;
+        $connName = $connection ?? $this->defaultConnection;
+        if ($this->queryCaptureEnabled) {
+            $this->capturedQueries[] = [
+                'sql' => $sql,
+                'bindings' => [],
+                'time_ms' => round($elapsed, 2),
+                'rows' => $affected !== false ? $affected : 0,
+                'connection' => $connName,
+            ];
+        }
+        if ($elapsed > $this->slowQueryThreshold) {
+            Logger::error(new \RuntimeException(sprintf(
+                'Slow query (%.2fms) [%s]: %s',
+                $elapsed,
+                $connName,
+                $sql
+            )));
+        }
+        return $affected !== false ? $affected : 0;
+    }
+
     public function cache(int $ttl = 60): static
     {
         $this->queryCacheTtl = max(0, $ttl);

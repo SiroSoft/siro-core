@@ -94,7 +94,11 @@ final class ModelQueryBuilder extends QueryBuilder
 
     public function where(string $column, mixed $operatorOrValue, mixed $value = null): static
     {
-        parent::where($column, $operatorOrValue, $value);
+        if (func_num_args() === 2) {
+            parent::where($column, $operatorOrValue);
+        } else {
+            parent::where($column, $operatorOrValue, $value);
+        }
         return $this;
     }
 
