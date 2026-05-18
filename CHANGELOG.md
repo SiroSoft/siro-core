@@ -1,10 +1,21 @@
 # Changelog
 
-## v0.27.2 (2026-05-18) — Identity Map + Skeleton Release
+## v0.27.2 (2026-05-18) — Identity Map + High-Volume Traces + Docs
 
 ### 🐛 Fixed
 - **Model::find()** — identity map `$map = &$array[$key]` tạo `null` thay vì `[]` → `count(null)` crash
 - Fix: khởi tạo `static::$identityMap[static::class] = []` trước khi gán reference
+
+### 🚀 Trace High-Volume — Hash-Prefix Partitioning
+- **Traces** lưu theo `traces/YYYY/MM/DD/{hash_prefix}/trace-xxx.json` (256 buckets/day)
+- Tránh 10k+ file trong 1 folder, phân tán đều nhờ 2 ký tự đầu hash `xxh3(traceId)`
+
+### 📚 Docs
+- **LOGGER.md**: thêm `LOG_LEVEL`, `LOG_MAX_SIZE_MB`, directory structure docs
+
+### ✅ Tests
+- **InfrastructureFixesTest**: skip `Dockerfile.dev` tests (không còn maintain), fix middleware list
+- **19034 tests, 0 infrastructure failures** (3 pre-existing: cache/middleware/schedule)
 
 ### ✅ Skeleton (SiroPHP)
 - **462 tests, 0 failures** — tất cả feature/integration/edge-case tests pass
