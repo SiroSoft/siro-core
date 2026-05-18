@@ -95,13 +95,10 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
-        $traceFile = $this->basePath
-            . DIRECTORY_SEPARATOR . 'storage'
-            . DIRECTORY_SEPARATOR . 'logs'
-            . DIRECTORY_SEPARATOR . 'traces'
-            . DIRECTORY_SEPARATOR . $traceId . '.json';
+        $tracesDir = $this->getTracesDir($this->basePath);
+        $traceFile = $this->findTraceById($tracesDir, $traceId);
 
-        if (!is_file($traceFile)) {
+        if ($traceFile === null) {
             $this->write('Trace not found: ' . $traceId);
             return 1;
         }

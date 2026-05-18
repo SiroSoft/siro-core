@@ -56,15 +56,12 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
 
     private function showTrace(string $traceId, bool $full = false): int
     {
-        $traceFile = $this->basePath
-            . DIRECTORY_SEPARATOR . 'storage'
-            . DIRECTORY_SEPARATOR . 'logs'
-            . DIRECTORY_SEPARATOR . 'traces'
-            . DIRECTORY_SEPARATOR . $traceId . '.json';
+        $tracesDir = $this->getTracesDir($this->basePath);
+        $traceFile = $this->findTraceById($tracesDir, $traceId);
 
-        if (!is_file($traceFile)) {
+        if ($traceFile === null) {
             $this->write('Trace not found: ' . $traceId);
-            $this->write('Looked in: ' . $traceFile);
+            $this->write('Looked in: ' . $tracesDir);
             return 1;
         }
 
@@ -181,18 +178,9 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
 
     private function listTraces(?int $status, ?string $method, bool $slow, int $limit): int
     {
-        $traceDir = $this->basePath
-            . DIRECTORY_SEPARATOR . 'storage'
-            . DIRECTORY_SEPARATOR . 'logs'
-            . DIRECTORY_SEPARATOR . 'traces';
+        $tracesDir = $this->getTracesDir($this->basePath);
 
-        if (!is_dir($traceDir)) {
-            $this->write('No traces found.');
-            $this->write('Traces are created automatically for each request when APP_DEBUG=true.');
-            return 0;
-        }
-
-        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        $files = $this->findTraceFiles($tracesDir);
         rsort($files);
 
         $count = 0;

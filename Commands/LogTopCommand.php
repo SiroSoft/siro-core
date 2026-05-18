@@ -16,7 +16,7 @@ final class LogTopCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $limit = 10;
         $minMs = 0;
-        $tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $tracesDir = $this->getTracesDir($this->basePath);
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--limit=')) {
@@ -26,12 +26,7 @@ final class LogTopCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        if (!is_dir($tracesDir)) {
-            $this->write('No traces found.');
-            return 0;
-        }
-
-        $files = glob($tracesDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        $files = $this->findTraceFiles($tracesDir);
         if ($files === []) {
             $this->write('No traces found.');
             return 0;

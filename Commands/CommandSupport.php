@@ -167,4 +167,63 @@ trait CommandSupport
         }
         return $default;
     }
+
+    /**
+     * Recursively find all trace JSON files in the traces directory.
+     * Handles nested structure: traces/YYYY/MM/DD/{hash_prefix}/*.json
+     *
+     * @return array<int, string>
+     */
+    protected function findTraceFiles(string $tracesDir): array
+    {
+        if (!is_dir($tracesDir)) {
+            return [];
+        }
+        $files = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($tracesDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $entry) {
+            /** @var \SplFileInfo $entry */
+            if ($entry->isFile() && $entry->getExtension() === 'json') {
+                $files[] = $entry->getPathname();
+            }
+        }
+        return $files;
+    }
+
+    /**
+     * Find a trace file by trace ID in the nested traces directory.
+     *
+     * @return string|null Absolute path to the trace file, or null if not found.
+     */
+    protected function findTraceById(string $tracesDir, string $traceId): ?string
+    {
+        $candidates = [
+            $tracesDir . DIRECTORY_SEPARATOR . $traceId . '.json',
+            $tracesDir . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR . date('d') . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . $traceId . '.json',
+        ];
+        foreach ($candidates as $pattern) {
+            if (str_contains($pattern, '*')) {
+                $matches = glob($pattern) ?: [];
+                if ($matches !== []) {
+                    return $matches[0];
+                }
+            } elseif (is_file($pattern)) {
+                return $pattern;
+            }
+        }
+        // Full recursive search as fallback
+        foreach ($this->findTraceFiles($tracesDir) as $file) {
+            if (basename($file, '.json') === $traceId) {
+                return $file;
+            }
+        }
+        return null;
+    }
+
+    protected function getTracesDir(string $basePath): string
+    {
+        return $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+    }
 }
