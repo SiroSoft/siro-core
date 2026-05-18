@@ -29,8 +29,8 @@ final class LogTailCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        // Pick the latest daily log file
-        $files = glob($dailyDir . DIRECTORY_SEPARATOR . $type . '-*.log') ?: [];
+        // Pick the latest daily log file (scan month subdirs)
+        $files = glob($dailyDir . DIRECTORY_SEPARATOR . '????-??' . DIRECTORY_SEPARATOR . $type . '-*.log') ?: [];
         if ($files === []) {
             $this->write("No {$type} log files found in {$dailyDir}");
             return 1;

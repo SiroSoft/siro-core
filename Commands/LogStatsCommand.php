@@ -24,7 +24,7 @@ final class LogStatsCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $cutoff = time() - ($days * 86400);
-        $files = glob($dailyDir . DIRECTORY_SEPARATOR . 'request-*.log') ?: [];
+        $files = glob($dailyDir . DIRECTORY_SEPARATOR . '????-??' . DIRECTORY_SEPARATOR . 'request-*.log') ?: [];
 
         $this->write("  \033[1;33mRequest Statistics (last {$days} day(s))\033[0m");
         $this->write('');
