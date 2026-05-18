@@ -4,9 +4,10 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.22.x  | :white_check_mark: |
-| 0.21.x  | :white_check_mark: |
-| < 0.20  | :x:                |
+| 1.0.x   | :white_check_mark: |
+| 0.27.x  | :white_check_mark: |
+| 0.26.x  | :white_check_mark: |
+| < 0.26  | :x:                |
 
 ---
 
@@ -173,7 +174,7 @@ Route::post('/auth/login', [AuthController::class, 'login'])
 php siro slow
 
 # View error logs
-tail -f storage/logs/error.log
+tail -f storage/logs/main/error.log
 
 # Monitor trace logs
 php siro log:trace --status=500

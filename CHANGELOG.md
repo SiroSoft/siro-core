@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.0 (TBD) — Stable Release
+
+### 🎯 Enterprise Readiness
+- **PHPStan level max**: 0 errors (core + skeleton)
+- **PHPUnit**: 19034 tests (core) + 462 tests (skeleton), 0 failures
+- **72 CLI commands** audited — all working with new log structure
+- **UPGRADE.md**: Full upgrade guide from v0.27.x to v1.0.0
+- **SECURITY.md**: Updated supported versions, log paths
+- All 8 critical bugs resolved
+
 ## v0.27.2 (2026-05-18) — Identity Map + High-Volume Traces + Docs
 
 ### 🐛 Fixed

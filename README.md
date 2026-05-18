@@ -267,4 +267,12 @@ We take security seriously. Report vulnerabilities to **security@sirophp.com**.
 
 ## License
 
+## Documentation
+
+- [UPGRADE.md](UPGRADE.md) — How to upgrade between versions
+- [SECURITY.md](SECURITY.md) — Security policy & vulnerability reporting
+- [docs/INDEX.md](docs/INDEX.md) — Full documentation index
+
+---
+
 MIT © SiroSoft
