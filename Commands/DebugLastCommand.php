@@ -205,9 +205,11 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('');
         }
 
-        // ── Replay shortcuts ──
+        // ── Replay shortcuts (adaptive theo method) ──
+        $isWriteMethod = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+        $forceFlag = $isWriteMethod ? ' --force' : '';
         $this->write('  ' . self::BOLD . 'Replay' . self::RESET);
-        $this->write('    ' . self::CYAN . '[r]' . self::RESET . '  php siro replay ' . $traceId);
+        $this->write('    ' . self::CYAN . '[r]' . self::RESET . '  php siro replay ' . $traceId . $forceFlag);
         $this->write('    ' . self::CYAN . '[e]' . self::RESET . '  php siro replay ' . $traceId . ' --edit');
         $this->write('    ' . self::CYAN . '[d]' . self::RESET . '  php siro replay ' . $traceId . ' --diff');
         $this->write('    ' . self::CYAN . '[p]' . self::RESET . '  php siro log:export ' . $traceId . ' --postman');
@@ -284,12 +286,16 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         $lowerMsg = strtolower($message);
         $lowerClass = strtolower($class);
 
+        $replay = 'php siro replay ' . $traceId;
+        $replayForce = $replay . ' --force';
+        $replayEdit = $replay . ' --edit';
+
         if (str_contains($lowerMsg, 'deadlock') || str_contains($lowerMsg, 'lock')) {
             return [
                 'Wrap transaction in retry loop (max 3 attempts)',
                 'Reduce transaction scope — only lock what you need',
                 'Add FOR UPDATE / SKIP LOCKED to SELECT queries',
-                'php siro replay ' . $traceId . ' --edit to test fix',
+                "$replayEdit to test fix",
             ];
         }
         if (str_contains($lowerMsg, 'timeout') || str_contains($lowerMsg, 'timed out')) {
@@ -326,14 +332,14 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         }
         if ($status === 422) {
             return [
-                'php siro replay ' . $traceId . ' --edit to fix request body',
+                "$replayEdit to fix request body",
                 'Check validation rules in FormRequest class',
             ];
         }
         if ($status >= 500) {
             return [
-                'php siro replay ' . $traceId . ' to reproduce locally',
-                'php siro replay ' . $traceId . ' --edit to test fixes',
+                "$replayForce to reproduce locally",
+                "$replayEdit to test fixes",
                 'Add error handling for the exception class above',
             ];
         }

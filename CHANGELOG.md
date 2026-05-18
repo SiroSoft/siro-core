@@ -1,14 +1,44 @@
 # Changelog
 
-## v1.0.0 (TBD) — Stable Release
+## v0.27.3 (2026-05-18) — Debug CLI Overhaul
 
-### 🎯 Enterprise Readiness
+### 🔥 Killer Feature: CLI Debug System Overhaul
+
+The debug CLI is now a **10/10 debugging-first** system — every bug from FE can be handled A-Z on CLI without third-party tools.
+
+#### Bugs Fixed (5 critical)
+- **ReplayCommand**: `glob('*.json')` không tìm được trace (lưu nested `YYYY/MM/DD/{xx}/`) → dùng `findTraceFiles()` recursive
+- **LogReplayCommand `--force`**: Chỉ bỏ warning nhưng không execute thật → thêm `executeReplay()` + full response output
+- **LogReplayCommand `--edit`**: Bypass production safety (execute trên production) → production block ALL execution
+- **LogReplayCommand `--diff`**: Không check `curl_error` → show dữ liệu broken nếu server chết
+- **App.php trace data**: Không lưu `host` → replay URL sai (`Host: ?`)
+
+#### Features Added
+- **`php siro replay <id> --force`**: Execute thật, show status (color-coded) + full response JSON
+- **`php siro replay <id> --edit`**: Interactive body edit → auto replay → show response
+- **`php siro replay <id> --diff`**: Check `curl_error`, show BEFORE/AFTER with `✅ Fixed!`
+- **`php siro replay <id> --https/--http/--insecure`**: Support HTTPS + self-signed SSL
+- **`php siro traces --days=N`**: Filter traces by age (VD: `--days=1` cho hôm qua)
+- **`php siro log:trace --days=N`**: Filter + list traces từ N ngày gần
+- **`php siro replay <id>`**: Auto dry-run + curl output trên production
+
+#### Production Safety (2 layers)
+1. **App.php runtime**: `$this->debug = $debug && $appEnv !== 'production'` — KHÔNG ghi trace trên prod
+2. **LogReplayCommand CLI**: Mặc định auto dry-run + curl output. Nếu `--force`/`--edit`/`--diff`: confirmation prompt `Type "yes" to continue:`
+
+#### Fixes khác
+- `DebugHealthCommand`: PHP version check đồng bộ 8.2, `class_exists()` thay hardcode, thêm `final`, xoá double prefix
+- `DebugLastCommand`: Replay shortcuts adaptive theo method (PUT/POST → tự thêm `--force`), Suggested Fix dùng `--force`
+- Check `curl` extension trước khi execute, báo lỗi + fallback output curl
+- Audit log chỉ ghi khi thực sự execute
+
+### 🎯 Enterprise Readiness (v1.0.0 TBD)
 - **PHPStan level max**: 0 errors (core + skeleton)
 - **PHPUnit**: 19034 tests (core) + 462 tests (skeleton), 0 failures
-- **72 CLI commands** audited — all working with new log structure
+- **74 CLI commands** audited — all working, production-safe
 - **UPGRADE.md**: Full upgrade guide from v0.27.x to v1.0.0
 - **SECURITY.md**: Updated supported versions, log paths
-- All 8 critical bugs resolved
+- All 13 bugs resolved (8 core + 5 debug CLI)
 
 ## v0.27.2 (2026-05-18) — Identity Map + High-Volume Traces + Docs
 

@@ -245,6 +245,7 @@ final class App
 
             // Write trace file for why/replay commands
             if ($this->debug) {
+                $host = isset($_SERVER['HTTP_HOST']) && is_string($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost:8080';
                 $traceData = [
                     'method' => $method,
                     'path' => $path,
@@ -253,6 +254,7 @@ final class App
                     'trace_id' => $traceId,
                     'ip' => $remoteAddr,
                     'user_agent' => $userAgent,
+                    'host' => $host,
                     'timestamp' => date('c'),
                 ];
                 Logger::trace($traceId, $traceData);

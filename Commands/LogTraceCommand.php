@@ -29,6 +29,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
         $slow = false;
         $limit = 10;
         $full = false;
+        $days = 0;
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--status=')) {
@@ -40,6 +41,8 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
                 $limit = 50;
             } elseif (str_starts_with($arg, '--limit=')) {
                 $limit = max(1, (int) substr($arg, 7));
+            } elseif (str_starts_with($arg, '--days=')) {
+                $days = max(1, (int) substr($arg, 7));
             } elseif ($arg === '--full') {
                 $full = true;
             } elseif ($arg !== '') {
@@ -51,7 +54,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             return $this->showTrace($traceId, $full);
         }
 
-        return $this->listTraces($status, $method, $slow, $limit);
+        return $this->listTraces($status, $method, $slow, $limit, $days);
     }
 
     private function showTrace(string $traceId, bool $full = false): int
@@ -176,11 +179,18 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
         return 0;
     }
 
-    private function listTraces(?int $status, ?string $method, bool $slow, int $limit): int
+    private function listTraces(?int $status, ?string $method, bool $slow, int $limit, int $days = 0): int
     {
         $tracesDir = $this->getTracesDir($this->basePath);
 
         $files = $this->findTraceFiles($tracesDir);
+
+        // Filter by age if --days specified
+        if ($days > 0) {
+            $cutoff = time() - ($days * 86400);
+            $files = array_values(array_filter($files, fn(string $f): bool => filemtime($f) >= $cutoff));
+        }
+
         rsort($files);
 
         $count = 0;
