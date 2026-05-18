@@ -30,14 +30,8 @@ final class TraceListCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
-
-        if (!is_dir($traceDir)) {
-            $this->write('  No traces found.');
-            return 1;
-        }
-
-        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        $tracesDir = $this->getTracesDir($this->basePath);
+        $files = $this->findTraceFiles($tracesDir);
         if ($files === []) {
             $this->write('  No traces found.');
             return 1;

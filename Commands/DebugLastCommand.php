@@ -36,16 +36,10 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
-
-        if (!is_dir($traceDir)) {
-            $this->write('  ' . self::YELLOW . 'No traces found. Enable APP_DEBUG=true to capture traces.' . self::RESET);
-            return 1;
-        }
-
-        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        $tracesDir = $this->getTracesDir($this->basePath);
+        $files = $this->findTraceFiles($tracesDir);
         if ($files === []) {
-            $this->write('  ' . self::YELLOW . 'No traces found.' . self::RESET);
+            $this->write('  ' . self::YELLOW . 'No traces found. Enable APP_DEBUG=true to capture traces.' . self::RESET);
             return 1;
         }
 
