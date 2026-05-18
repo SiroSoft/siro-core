@@ -139,20 +139,30 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $auth = $this->safeStr($data['auth_header'] ?? '');
         $ct = $this->safeStr($data['content_type'] ?? '');
 
+        // Default Content-Type for JSON body if missing
+        if ($ct === '' && $body !== '' && $body !== '{}') {
+            $ct = 'application/json';
+        }
+
         // --edit: interactive edit
         if ($editMode) {
             $this->write('');
             $this->write('  ✏️  Edit request body:');
             $this->write('  ' . str_repeat('-', 40));
             $decoded = json_decode($body, true);
-            if (is_array($decoded)) {
+            if (is_array($decoded) && $decoded !== []) {
                 foreach ($decoded as $key => $value) {
                     $this->write('  ' . $this->safeStr($key) . ': \033[33m' . $this->safeStr($value) . '\033[0m');
-                    $input = readline("  New value (Enter to keep): ");
+                    $input = $this->ask("  New value (Enter to keep): ");
                     if ($input !== '') {
                         $decoded[$key] = $input;
                     }
                 }
+            } elseif ($body !== '' && $body !== '{}') {
+                $this->write('  (non-JSON body — cannot edit)');
+            } else {
+                $this->write('  (empty body — no fields to edit)');
+                $this->write('  Use --set key=value to add fields');
             }
             $body = json_encode($decoded ?? [], JSON_UNESCAPED_UNICODE);
             $body = is_string($body) ? $body : '';
