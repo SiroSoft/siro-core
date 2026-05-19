@@ -8,6 +8,7 @@ use PDO;
 use Siro\Core\DB\DatabaseInterface;
 use Siro\Core\DB\DatabaseInstance;
 use Siro\Core\DB\QueryBuilder;
+use Siro\Core\DB\RawExpression;
 
 final class Database
 {
@@ -75,6 +76,11 @@ final class Database
         self::getInstance()->resetCapturedQueries();
     }
 
+    public static function enableQueryCapture(bool $enabled = true): void
+    {
+        self::getInstance()->enableQueryCapture($enabled);
+    }
+
     /**
      * @param array<int|string, mixed> $params
      * @return array<int, array<string, mixed>>
@@ -107,6 +113,16 @@ final class Database
     public static function table(string $table, ?string $connection = null): QueryBuilder
     {
         return self::getInstance()->table($table, $connection);
+    }
+
+    public static function raw(string $value): RawExpression
+    {
+        return new RawExpression($value);
+    }
+
+    public static function execStatement(string $sql, ?string $connection = null): int
+    {
+        return self::getInstance()->exec($sql, $connection);
     }
 
     public static function transaction(callable $callback, ?string $connection = null): mixed

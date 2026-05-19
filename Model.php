@@ -182,6 +182,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /** @return static|null */
     public static function find(int|string $id): ?static
     {
+        if (!isset(static::$identityMap[static::class])) {
+            static::$identityMap[static::class] = [];
+        }
         $map = &static::$identityMap[static::class];
         if (isset($map[$id])) {
             return $map[$id];
@@ -651,6 +654,10 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             $query = self::query();
             $instance->{$scopeMethod}($query, ...$parameters);
             return $query;
+        }
+
+        if (method_exists(ModelQueryBuilder::class, $method)) {
+            return self::query()->$method(...$parameters);
         }
 
         throw new RuntimeException(sprintf('Method %s::%s does not exist.', static::class, $method));

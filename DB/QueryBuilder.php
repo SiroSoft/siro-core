@@ -7,6 +7,7 @@ namespace Siro\Core\DB;
 use RuntimeException;
 use Siro\Core\Cache;
 use Siro\Core\Database;
+use Siro\Core\DB\RawExpression;
 
 /**
  * Fluent SQL query builder.
@@ -197,14 +198,17 @@ class QueryBuilder
         return $this;
     }
 
-    /** @param array<int, string>|string $columns */
-    public function groupBy(array|string $columns): self
+    /** @param array<int, string>|string ...$columns */
+    public function groupBy(array|string ...$columns): self
     {
-        if (is_string($columns)) {
-            $columns = [$columns];
+        if (count($columns) === 1 && is_array($columns[0])) {
+            $columns = $columns[0];
         }
         foreach ($columns as $column) {
-            $column = trim((string) $column);
+            if (!is_string($column)) {
+                continue;
+            }
+            $column = trim($column);
             if ($column !== '') {
                 $this->groups[] = $column;
             }
@@ -228,6 +232,13 @@ class QueryBuilder
     {
         $dir = strtoupper(trim($direction)) === 'DESC' ? 'DESC' : 'ASC';
         $this->orders[] = ['column' => trim($column), 'direction' => $dir];
+        return $this;
+    }
+
+    public function orderByRaw(string $expression, string $direction = 'asc'): self
+    {
+        $dir = strtoupper(trim($direction)) === 'DESC' ? 'DESC' : 'ASC';
+        $this->orders[] = ['column' => trim($expression), 'direction' => $dir, 'raw' => true];
         return $this;
     }
 

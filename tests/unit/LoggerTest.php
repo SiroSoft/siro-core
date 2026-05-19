@@ -30,10 +30,12 @@ final class LoggerTest extends TestCase
         $this->assertDirectoryExists($this->logDir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs');
     }
 
-    public function testBootCreatesAppLog(): void
+    public function testBootCreatesLogSubdirectories(): void
     {
-        $appLog = $this->logDir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'app.log';
-        $this->assertFileExists($appLog);
+        $logs = $this->logDir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs';
+        $this->assertDirectoryExists($logs . DIRECTORY_SEPARATOR . 'daily');
+        $this->assertDirectoryExists($logs . DIRECTORY_SEPARATOR . 'main');
+        $this->assertDirectoryExists($logs . DIRECTORY_SEPARATOR . 'traces');
     }
 
 public function testSanitizeHeaders(): void

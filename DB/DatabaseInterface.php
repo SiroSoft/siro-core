@@ -20,6 +20,7 @@ interface DatabaseInterface
     /** @return array<int, array{sql:string,bindings:array<int|string,mixed>,time_ms:float,rows:int,connection:string}> */
     public function getCapturedQueries(): array;
     public function resetCapturedQueries(): void;
+    public function enableQueryCapture(bool $enabled = true): void;
 
     /**
      * @param array<int|string, mixed> $params
@@ -35,6 +36,9 @@ interface DatabaseInterface
 
     /** @param array<int|string, mixed> $params */
     public function execute(string $sql, array $params = [], ?string $connection = null): int;
+
+    /** Execute raw SQL without prepared statement (for DDL, SET, etc.) */
+    public function exec(string $sql, ?string $connection = null): int;
 
     public function cache(int $ttl = 60): static;
     public function table(string $table, ?string $connection = null): QueryBuilder;

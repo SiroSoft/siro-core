@@ -79,29 +79,30 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('Options:');
             $this->write('  --format=curl     Output as curl (default)');
             $this->write('  --format=httpie   Output as httpie');
-            $this->write('  --force           Skip safe-mode warning (dangerous)');
+            $this->write('  --force           Execute replay (required for non-GET)');
             $this->write('  --safe            Safe mode: warn on non-GET (default)');
             $this->write('  --set key=value   Override request field');
             $this->write('  --seed            Seed database from request data');
             $this->write('  --edit            Interactive edit request before replay');
             $this->write('  --diff            Compare before/after responses');
+            $this->write('  --https           Use https:// instead of http://');
+            $this->write('  --http            Force http:// (default)');
+            $this->write('  --insecure        Skip SSL verification (self-signed certs)');
             $this->write('');
             $this->write('Examples:');
             $this->write('  php siro log:replay siro_a1b2');
             $this->write('  php siro log:replay siro_a1b2 --force');
+            $this->write('  php siro log:replay siro_a1b2 --force --https');
             $this->write('  php siro log:replay siro_a1b2 --set user_id=1');
             $this->write('  php siro log:replay siro_a1b2 --edit');
             $this->write('  php siro log:replay siro_a1b2 --diff');
             return 1;
         }
 
-        $traceFile = $this->basePath
-            . DIRECTORY_SEPARATOR . 'storage'
-            . DIRECTORY_SEPARATOR . 'logs'
-            . DIRECTORY_SEPARATOR . 'traces'
-            . DIRECTORY_SEPARATOR . $traceId . '.json';
+        $tracesDir = $this->getTracesDir($this->basePath);
+        $traceFile = $this->findTraceById($tracesDir, $traceId);
 
-        if (!is_file($traceFile)) {
+        if ($traceFile === null) {
             $this->write('Trace not found: ' . $traceId);
             return 1;
         }
@@ -111,15 +112,37 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('Invalid trace file.');
             return 1;
         }
+        /** @var array<string, mixed> $data */
 
         $method = strtoupper($this->safeStr($data['method'] ?? 'GET'));
-        $host = $this->safeStr($data['host'] ?? 'localhost:8080');
+        $host = $this->safeStr($data['host'] ?? '');
+        if ($host === '') {
+            $host = 'localhost:8080';
+        }
         $path = $this->safeStr($data['path'] ?? '/');
-        $url = 'http://' . $host . $path;
-        $headers = is_array($data['request_headers'] ?? null) ? $data['request_headers'] : [];
+
+        // Detect HTTPS and insecure flags
+        $useHttps = false;
+        $insecure = false;
+        foreach ($args as $arg) {
+            if ($arg === '--https')    { $useHttps = true; }
+            if ($arg === '--http')     { $useHttps = false; }
+            if ($arg === '--insecure') { $insecure = true; }
+        }
+        $scheme = $useHttps ? 'https' : 'http';
+        $url = $scheme . '://' . $host . $path;
+
+        /** @var array<string, string>|null $rawHeaders */
+        $rawHeaders = $data['request_headers'] ?? null;
+        $headers = is_array($rawHeaders) ? $rawHeaders : [];
         $body = $this->safeStr($data['request_body'] ?? '');
         $auth = $this->safeStr($data['auth_header'] ?? '');
         $ct = $this->safeStr($data['content_type'] ?? '');
+
+        // Default Content-Type for JSON body if missing
+        if ($ct === '' && $body !== '' && $body !== '{}') {
+            $ct = 'application/json';
+        }
 
         // --edit: interactive edit
         if ($editMode) {
@@ -127,14 +150,19 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  ✏️  Edit request body:');
             $this->write('  ' . str_repeat('-', 40));
             $decoded = json_decode($body, true);
-            if (is_array($decoded)) {
+            if (is_array($decoded) && $decoded !== []) {
                 foreach ($decoded as $key => $value) {
                     $this->write('  ' . $this->safeStr($key) . ': \033[33m' . $this->safeStr($value) . '\033[0m');
-                    $input = readline("  New value (Enter to keep): ");
+                    $input = $this->ask("  New value (Enter to keep): ");
                     if ($input !== '') {
                         $decoded[$key] = $input;
                     }
                 }
+            } elseif ($body !== '' && $body !== '{}') {
+                $this->write('  (non-JSON body — cannot edit)');
+            } else {
+                $this->write('  (empty body — no fields to edit)');
+                $this->write('  Use --set key=value to add fields');
             }
             $body = json_encode($decoded ?? [], JSON_UNESCAPED_UNICODE);
             $body = is_string($body) ? $body : '';
@@ -168,26 +196,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return 0;
         }
 
-        // Production safety: block unsafe replay
-        if ($isProduction && !$dryRun && !$diffMode && !$editMode) {
-            $this->write('');
-            $this->write('  ⚠ Production environment detected!');
-            $this->write('  Replaying requests on production is blocked by default.');
-            $this->write('');
-            $this->write('  Allowed on production:');
-            $this->write('    php siro replay ' . $traceId . ' --dry-run    # View only (safe)');
-            $this->write('    php siro replay ' . $traceId . ' --diff       # Compare (safe)');
-            $this->write('');
-            $this->write('  To force replay (NOT recommended on production):');
-            $this->write('    export APP_ENV=local && php siro replay ' . $traceId . ' --force');
-            $this->write('');
-            if ($method !== 'GET') {
-                $this->write('  ❌ Blocked: ' . $method . ' ' . $path . ' would modify data.');
-                return 1;
-            }
-        }
-
-        // --dry-run: just show what would be replayed
+        // Dry run: preview only, no request sent
         if ($dryRun) {
             $this->write('');
             $this->write('  🔍 Dry run — no request sent');
@@ -201,7 +210,51 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return 0;
         }
 
-        // --diff mode
+        // Production safety: by default auto dry-run, require explicit confirmation for exec
+        if ($isProduction) {
+            if (!$force && !$editMode && !$diffMode) {
+                $this->write('');
+                $this->write('  ⚠ Production environment detected — auto-switched to dry-run');
+                $this->write('  ' . str_repeat('-', 40));
+                $this->write('  Method: ' . $method);
+                $this->write('  URL:    ' . $url);
+                $this->write('  Body:   ' . $body);
+                $this->write('  Auth:   Bearer [token present]');
+                $this->write('  ' . str_repeat('-', 40));
+                $this->write('  To replay: php siro replay ' . $traceId . ' --force  (with confirmation)');
+                $this->write('');
+                $this->outputCurl($method, $url, $body, $headers, $auth, $data);
+                return 1;
+            }
+
+            // Dev explicitly passed --force, --edit, or --diff — require confirmation
+            $mode = $diffMode ? 'diff' : ($editMode ? 'edit' : 'replay');
+            $this->write('');
+            $this->write('  ' . "\033[41m\033[97m ⚠ DANGER: Production environment! ⚠ \033[0m");
+            $this->write('  You are about to ' . $mode . ' a ' . $method . ' request on PRODUCTION.');
+            $this->write('  URL: ' . $url);
+            if ($body !== '' && $body !== '{}') {
+                $this->write('  Body: ' . $body);
+            }
+            $this->write('');
+            $answer = $this->ask('  Are you sure? Type "yes" to continue: ');
+            if (strtolower(trim($answer)) !== 'yes') {
+                $this->write('  Cancelled.');
+                return 1;
+            }
+            $this->write('');
+        }
+
+        // Check curl extension before any execution
+        if (!function_exists('curl_init')) {
+            $this->write('  ❌ PHP curl extension is not installed.');
+            $this->write('  Install php-curl to use replay execution.');
+            $this->write('  Alternative: use --dry-run to preview, or copy the curl command below.');
+            $this->outputCurl($method, $url, $body, $headers, $auth, $data);
+            return 1;
+        }
+
+        // --diff mode: execute and compare
         if ($diffMode) {
             $this->write('');
             $this->write('  🔄 Replaying with diff...');
@@ -211,13 +264,20 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $beforeStatus = is_numeric($beforeStatusVal) ? (int) $beforeStatusVal : 0;
             $beforeBody = $this->safeStr($data['response_body'] ?? '');
 
-            /** @var array<string, string> $headers */
-            /** @var array<string, mixed> $data */
-            $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data);
+            $this->auditReplay($traceId, $method, $path, 'diff');
+            $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
+
+            $curlError = $this->safeStr($result['error'] ?? '');
+            if ($curlError !== '') {
+                $this->write('  ❌ curl error: ' . $curlError);
+                $this->write('  URL: ' . $url);
+                return 1;
+            }
 
             $this->write('');
             $this->write('  === BEFORE ===');
             $this->write('  Status: ' . $beforeStatus);
+            $this->write('  Body:   ' . ($beforeBody !== '' ? $beforeBody : '(empty)'));
             $decodedBefore = json_decode((string) $beforeBody, true);
             if (is_array($decodedBefore)) {
                 $beforeErrors = $decodedBefore['errors'] ?? [];
@@ -235,38 +295,81 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('');
             $this->write('  === AFTER ===');
             $statusAfter = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
-            $this->write('  Status: ' . $statusAfter);
-            $decodedAfter = json_decode($this->safeStr($result['body'] ?? '{}'), true);
+            $statusColor = $statusAfter >= 500 ? 31 : ($statusAfter >= 400 ? 33 : ($statusAfter >= 200 && $statusAfter < 300 ? 32 : 0));
+            $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$statusAfter}\033[0m" : $statusAfter));
+            $afterBody = $this->safeStr($result['body'] ?? '{}');
+            $decodedAfter = json_decode($afterBody, true);
             if (is_array($decodedAfter)) {
+                $pretty = (string) json_encode($decodedAfter, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $this->write('  Body:');
+                foreach (explode("\n", $pretty) as $line) {
+                    $this->write('    ' . $line);
+                }
                 $afterErrors = $decodedAfter['errors'] ?? [];
                 if ($afterErrors === [] && isset($decodedAfter['data']) && is_array($decodedAfter['data'])) {
                     $afterErrors = $decodedAfter['data']['errors'] ?? [];
                 }
-                if (is_array($afterErrors) && $afterErrors !== []) {
-                    foreach ($afterErrors as $f => $m) {
-                        $msgs = is_array($m) ? implode(', ', array_map(fn($v): string => $this->safeStr($v), (array) $m)) : $this->safeStr($m);
-                        $this->write('  ❌ ' . $this->safeStr($f) . ': ' . $msgs);
-                    }
-                } elseif ($statusAfter >= 200 && $statusAfter < 300) {
+                if (is_array($afterErrors) && $afterErrors === [] && $statusAfter >= 200 && $statusAfter < 300) {
                     $this->write('  ✅ Fixed!');
                 }
+            } else {
+                $this->write('  Body:   ' . $afterBody);
             }
 
             return 0;
         }
 
-        // Audit log for all replay operations
+        // Audit log for execution
         $replayMode = $editMode ? 'edit' : 'replay';
         $this->auditReplay($traceId, $method, $path, $replayMode);
 
-        // Normal replay (curl output or execute)
-        if (!$force && $method !== 'GET') {
-            $this->write('⚠ Safe mode: not replaying ' . $method . ' request. Use --force to execute.');
-            $this->write('  (Or use --format=curl to see the curl command without executing)');
-        }
-
         /** @var array<string, string> $headers */
         /** @var array<string, mixed> $data */
+
+        // Execute request if forced or edited, otherwise safe-mode warning
+        if ($force || $editMode) {
+            $this->write('');
+            $this->write('  🔄 Replaying ' . $method . ' ' . $path . '...');
+            $this->write('  ' . str_repeat('=', 40));
+            if ($body !== '' && $body !== '{}') {
+                $this->write('  Request Body:');
+                $decodedBody = json_decode($body, true);
+                if (is_array($decodedBody)) {
+                    $prettyBody = (string) json_encode($decodedBody, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    foreach (explode("\n", $prettyBody) as $line) {
+                        $this->write('    ' . $line);
+                    }
+                } else {
+                    $this->write('    ' . $body);
+                }
+                $this->write('  ' . str_repeat('-', 40));
+            }
+            $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
+            $curlError = $this->safeStr($result['error'] ?? '');
+            if ($curlError !== '') {
+                $this->write('  ❌ curl error: ' . $curlError);
+                $this->write('  URL: ' . $url);
+                return 1;
+            }
+            $status = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
+            $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
+            $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
+            $responseBody = $this->safeStr($result['body'] ?? '{}');
+            $decoded = json_decode($responseBody, true);
+            if (is_array($decoded)) {
+                $pretty = (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $this->write('  Response:');
+                foreach (explode("\n", $pretty) as $line) {
+                    $this->write('    ' . $line);
+                }
+            } else {
+                $this->write('  Response: ' . $responseBody);
+            }
+            return 0;
+        }
+
+        $this->write('⚠ Safe mode: not replaying ' . $method . ' request. Use --force to execute.');
+        $this->write('  (Or use --format=curl to see the curl command without executing)');
         if ($format === 'httpie') {
             $this->outputHttpie($method, $url, $body, $headers, $auth);
         } else {
@@ -307,7 +410,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    private function executeReplay(string $method, string $url, string $body, array $headers, string $auth, string $ct, array $data): array
+    private function executeReplay(string $method, string $url, string $body, array $headers, string $auth, string $ct, array $data, bool $insecure = false): array
     {
         $ch = curl_init($url);
         $curlHeaders = [];
@@ -325,13 +428,21 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_HTTPHEADER => $curlHeaders,
-            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_CONNECTTIMEOUT => 5,
         ];
+        if ($insecure) {
+            $curlOpts[CURLOPT_SSL_VERIFYPEER] = false;
+            $curlOpts[CURLOPT_SSL_VERIFYHOST] = 0;
+        }
+        if ($body !== '' && $body !== '{}') {
+            $curlOpts[CURLOPT_POSTFIELDS] = $body;
+        }
         curl_setopt_array($ch, $curlOpts);
         $response = curl_exec($ch);
+        $error = curl_error($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        return ['status' => $status, 'body' => $response];
+        return ['status' => $status, 'body' => $response, 'error' => $error];
     }
 
     /**

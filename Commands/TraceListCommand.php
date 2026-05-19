@@ -24,23 +24,30 @@ final class TraceListCommand implements \Siro\Core\Commands\CommandInterface {
     public function run(array $args): int
     {
         $limit = 20;
+        $days = 0;
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--limit=')) {
                 $limit = max(1, (int) substr($arg, 8));
+            } elseif (str_starts_with($arg, '--days=')) {
+                $days = max(1, (int) substr($arg, 7));
             }
         }
 
-        $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
-
-        if (!is_dir($traceDir)) {
+        $tracesDir = $this->getTracesDir($this->basePath);
+        $files = $this->findTraceFiles($tracesDir);
+        if ($files === []) {
             $this->write('  No traces found.');
             return 1;
         }
 
-        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
-        if ($files === []) {
-            $this->write('  No traces found.');
-            return 1;
+        // Filter by age if --days specified
+        if ($days > 0) {
+            $cutoff = time() - ($days * 86400);
+            $files = array_values(array_filter($files, fn(string $f): bool => filemtime($f) >= $cutoff));
+            if ($files === []) {
+                $this->write('  No traces from the last ' . $days . ' day(s).');
+                return 1;
+            }
         }
 
         rsort($files);

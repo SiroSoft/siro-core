@@ -29,6 +29,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
         $slow = false;
         $limit = 10;
         $full = false;
+        $days = 0;
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--status=')) {
@@ -40,6 +41,8 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
                 $limit = 50;
             } elseif (str_starts_with($arg, '--limit=')) {
                 $limit = max(1, (int) substr($arg, 7));
+            } elseif (str_starts_with($arg, '--days=')) {
+                $days = max(1, (int) substr($arg, 7));
             } elseif ($arg === '--full') {
                 $full = true;
             } elseif ($arg !== '') {
@@ -51,20 +54,17 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             return $this->showTrace($traceId, $full);
         }
 
-        return $this->listTraces($status, $method, $slow, $limit);
+        return $this->listTraces($status, $method, $slow, $limit, $days);
     }
 
     private function showTrace(string $traceId, bool $full = false): int
     {
-        $traceFile = $this->basePath
-            . DIRECTORY_SEPARATOR . 'storage'
-            . DIRECTORY_SEPARATOR . 'logs'
-            . DIRECTORY_SEPARATOR . 'traces'
-            . DIRECTORY_SEPARATOR . $traceId . '.json';
+        $tracesDir = $this->getTracesDir($this->basePath);
+        $traceFile = $this->findTraceById($tracesDir, $traceId);
 
-        if (!is_file($traceFile)) {
+        if ($traceFile === null) {
             $this->write('Trace not found: ' . $traceId);
-            $this->write('Looked in: ' . $traceFile);
+            $this->write('Looked in: ' . $tracesDir);
             return 1;
         }
 
@@ -179,20 +179,18 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
         return 0;
     }
 
-    private function listTraces(?int $status, ?string $method, bool $slow, int $limit): int
+    private function listTraces(?int $status, ?string $method, bool $slow, int $limit, int $days = 0): int
     {
-        $traceDir = $this->basePath
-            . DIRECTORY_SEPARATOR . 'storage'
-            . DIRECTORY_SEPARATOR . 'logs'
-            . DIRECTORY_SEPARATOR . 'traces';
+        $tracesDir = $this->getTracesDir($this->basePath);
 
-        if (!is_dir($traceDir)) {
-            $this->write('No traces found.');
-            $this->write('Traces are created automatically for each request when APP_DEBUG=true.');
-            return 0;
+        $files = $this->findTraceFiles($tracesDir);
+
+        // Filter by age if --days specified
+        if ($days > 0) {
+            $cutoff = time() - ($days * 86400);
+            $files = array_values(array_filter($files, fn(string $f): bool => filemtime($f) >= $cutoff));
         }
 
-        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
         rsort($files);
 
         $count = 0;

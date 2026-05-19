@@ -1,4 +1,4 @@
-# Siro Core Framework v0.27.0
+# Siro Core Framework v0.27.3
 
 **The debugging-first PHP framework.** Zero dependencies, sub-millisecond boot, OWASP Top 10 mitigated by default. Built for developers who want to fix production bugs in seconds, not hours.
 
@@ -39,6 +39,7 @@ $ php siro why
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![Tests](https://img.shields.io/badge/tests-19038%20total-brightgreen.svg)](tests/)
+[![Debug](https://img.shields.io/badge/debug-10%2F10-brightgreen)](docs/CLI.md)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-brightgreen.svg)](https://phpstan.org)
 [![Psalm](https://img.shields.io/badge/Psalm-Level%201-brightgreen.svg)](https://psalm.dev)
 [![Security](https://img.shields.io/badge/security-OWASP%20Top%2010%20Mitigated-brightgreen)](docs/SECURITY.md)
@@ -75,7 +76,11 @@ php siro t POST /api/orders --body='{"product_id":1,"quantity":5}'
 # ── DEBUG ──────────────────────────────────────────────
 php siro why                      # Why did production fail? (5 seconds)
 php siro replay siro_a1b2c3       # Replay exact failed request
+php siro replay siro_a1b2c3 --force # Replay with execution (show response)
 php siro replay siro_a1b2c3 --edit # Edit body → test fix
+php siro replay siro_a1b2c3 --diff # Compare before/after fix
+php siro replay siro_a1b2c3 --https # Replay with HTTPS
+php siro traces --days=1          # List traces from yesterday
 php siro tinker                   # Interactive PHP playground
 
 # ── MONITOR ────────────────────────────────────────────
@@ -167,7 +172,7 @@ php siro serve
 | **Encryption** | AES-256-CBC, HKDF key separation, Encrypt-then-MAC |
 | **DI Container** | Autowiring, circular detection, contextual bindings (`when`), tags (`tag`/`tagged`), rebound callbacks |
 | **Event System** | Pub/sub, wildcards, one-time listeners |
-| **Debug** | Trace headers, log replay, slow query detection, request profiling, `siro tinker` REPL |
+| **Debug** | `php siro why` (last error analysis), `replay --force/--edit/--diff`, trace filter `--days=N`, HTTPS replay, production safety (2-layer), slow query detection, request profiling, `siro tinker` REPL |
 | **Observers** | Model lifecycle hooks: saving, creating, updating, deleting, force deleting |
 | **Gzip** | Automatic compression for file downloads (text, JSON, XML, SVG, fonts) |
 
@@ -266,5 +271,13 @@ php vendor/bin/phpunit --coverage-html coverage/
 We take security seriously. Report vulnerabilities to **security@sirophp.com**.
 
 ## License
+
+## Documentation
+
+- [UPGRADE.md](UPGRADE.md) — How to upgrade between versions
+- [SECURITY.md](SECURITY.md) — Security policy & vulnerability reporting
+- [docs/INDEX.md](docs/INDEX.md) — Full documentation index
+
+---
 
 MIT © SiroSoft

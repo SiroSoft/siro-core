@@ -16,8 +16,8 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $limit = 10;
         $minMs = 100;
-        $tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
-        $slowFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'slow.log';
+        $tracesDir = $this->getTracesDir($this->basePath);
+        $slowFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'main' . DIRECTORY_SEPARATOR . 'slow.log';
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--limit=')) {
@@ -32,27 +32,25 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
 
         // Method 1: Parse trace files
         $entries = [];
-        if (is_dir($tracesDir)) {
-            $files = glob($tracesDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
-            rsort($files);
-            foreach ($files as $file) {
-                $data = json_decode((string) file_get_contents($file), true);
-                if (!is_array($data)) {
-                    continue;
-                }
-                $timeMsVal = $data['time_ms'] ?? 0;
-                $timeMs = is_numeric($timeMsVal) ? (float) $timeMsVal : 0;
-                if ($timeMs >= $minMs) {
-                    $entries[] = [
-                        'trace' => basename($file, '.json'),
-                        'time' => $this->safeStr($data['timestamp'] ?? '?'),
-                        'method' => $this->safeStr($data['method'] ?? '?'),
-                        'path' => $this->safeStr($data['path'] ?? '?'),
-                        'status' => $this->safeStr($data['status'] ?? '?'),
-                        'ms' => $timeMs,
-                        'queries' => isset($data['queries']) && is_array($data['queries']) ? count($data['queries']) : 0,
-                    ];
-                }
+        $files = $this->findTraceFiles($tracesDir);
+        rsort($files);
+        foreach ($files as $file) {
+            $data = json_decode((string) file_get_contents($file), true);
+            if (!is_array($data)) {
+                continue;
+            }
+            $timeMsVal = $data['time_ms'] ?? 0;
+            $timeMs = is_numeric($timeMsVal) ? (float) $timeMsVal : 0;
+            if ($timeMs >= $minMs) {
+                $entries[] = [
+                    'trace' => basename($file, '.json'),
+                    'time' => $this->safeStr($data['timestamp'] ?? '?'),
+                    'method' => $this->safeStr($data['method'] ?? '?'),
+                    'path' => $this->safeStr($data['path'] ?? '?'),
+                    'status' => $this->safeStr($data['status'] ?? '?'),
+                    'ms' => $timeMs,
+                    'queries' => isset($data['queries']) && is_array($data['queries']) ? count($data['queries']) : 0,
+                ];
             }
         }
 

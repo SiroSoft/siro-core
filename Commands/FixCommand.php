@@ -38,8 +38,9 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
 
         // If trace_id provided, just replay it once
         if ($targetTrace !== null && $targetTrace !== '__last__') {
-            $traceFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces' . DIRECTORY_SEPARATOR . $targetTrace . '.json';
-            if (!file_exists($traceFile)) {
+            $tracesDir = $this->getTracesDir($this->basePath);
+            $traceFile = $this->findTraceById($tracesDir, $targetTrace);
+            if ($traceFile === null) {
                 $this->write('  ⚠ Trace not found: ' . $targetTrace);
                 return 1;
             }
@@ -168,9 +169,8 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
 
     private function getLastTraceId(): ?string
     {
-        $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
-        if (!is_dir($traceDir)) return null;
-        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        $tracesDir = $this->getTracesDir($this->basePath);
+        $files = $this->findTraceFiles($tracesDir);
         if ($files === []) return null;
         rsort($files);
         return basename($files[0], '.json');

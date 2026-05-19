@@ -157,6 +157,14 @@ final class DatabaseInstance implements DatabaseInterface
         $this->capturedQueries = [];
     }
 
+    public function enableQueryCapture(bool $enabled = true): void
+    {
+        $this->queryCaptureEnabled = $enabled;
+        if ($enabled) {
+            $this->capturedQueries = [];
+        }
+    }
+
     /**
      * @param array<int|string, mixed> $params
      * @return array<int, array<string, mixed>>
@@ -208,6 +216,33 @@ final class DatabaseInstance implements DatabaseInterface
     {
         $stmt = $this->prepareAndExecute($sql, $params, $connection);
         return $stmt->rowCount();
+    }
+
+    public function exec(string $sql, ?string $connection = null): int
+    {
+        $pdo = $this->connection($connection);
+        $start = microtime(true);
+        $affected = $pdo->exec($sql);
+        $elapsed = (microtime(true) - $start) * 1000;
+        $connName = $connection ?? $this->defaultConnection;
+        if ($this->queryCaptureEnabled) {
+            $this->capturedQueries[] = [
+                'sql' => $sql,
+                'bindings' => [],
+                'time_ms' => round($elapsed, 2),
+                'rows' => $affected !== false ? $affected : 0,
+                'connection' => $connName,
+            ];
+        }
+        if ($elapsed > $this->slowQueryThreshold) {
+            Logger::error(new \RuntimeException(sprintf(
+                'Slow query (%.2fms) [%s]: %s',
+                $elapsed,
+                $connName,
+                $sql
+            )));
+        }
+        return $affected !== false ? $affected : 0;
     }
 
     public function cache(int $ttl = 60): static
@@ -294,7 +329,14 @@ final class DatabaseInstance implements DatabaseInterface
             }
             $this->preparedStatements[$stmtHash] = $stmt;
         }
-        $stmt->execute($params);
+
+        $exception = null;
+        try {
+            $stmt->execute($params);
+        } catch (\Throwable $e) {
+            $exception = $e;
+        }
+
         $elapsed = (microtime(true) - $start) * 1000;
 
         $rows = 0;
@@ -326,6 +368,10 @@ final class DatabaseInstance implements DatabaseInterface
                 $sql,
                 json_encode($params, JSON_UNESCAPED_UNICODE)
             )));
+        }
+
+        if ($exception !== null) {
+            throw $exception;
         }
 
         return $stmt;

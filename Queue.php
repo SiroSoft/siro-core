@@ -303,18 +303,20 @@ final class Queue
      * Forks N children using pcntl_fork(), each calling work() in a loop.
      * Falls back to single-process if pcntl is unavailable (Windows).
      */
-    public static function workAll(int $workers = 4): void
+    public static function workAll(int $workers = 4): int
     {
         if (!extension_loaded('pcntl') || !function_exists('pcntl_fork') || $workers <= 1) {
+            $processed = 0;
             $deadline = time() + 86400 * 365;
             while (time() < $deadline) {
                 try {
                     self::work();
+                    $processed++;
                 } catch (\Throwable) {
                 }
                 usleep(100000);
             }
-            return;
+            return $processed;
         }
 
         if (function_exists('pcntl_async_signals')) {
@@ -380,6 +382,8 @@ final class Queue
             }
             pcntl_waitpid($pid, $status);
         }
+
+        return 0;
     }
 
     /**
