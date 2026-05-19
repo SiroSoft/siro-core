@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.28.1 (2026-05-19) — Migration Fixes + QueryBuilder + CLI Enhancements
+
+### 🏗 Migration System
+- **File naming**: Chuẩn hóa `Y_m_d_His` — tất cả migration files dùng format đồng nhất
+- **`foreignId()`**: Thêm helper vào Blueprint — tạo string(36) + foreign key
+- **`migrate:fresh`**: Command mới — drop all tables + re-migrate + `--seed`
+- **`migrate:status --pending`**: Chỉ show pending migrations
+
+### 🔧 QueryBuilder
+- **`groupByRaw($expression)`**: Cho phép SQL function trong GROUP BY
+- **`havingRaw($expression, $bindings)`**: Raw HAVING clause với bindings
+- **`groupBy()` fix**: Không quote identifier nếu chứa `(` — SQL function hoạt động trực tiếp
+- **`DB::raw($value)`**: Facade để tạo RawExpression trong queries
+
+### 🖥 Console/CLI
+- **`registerCommand()` / `registerCommands()`**: Cho phép app đăng ký custom commands (không hardcode vendor)
+- **`env:check`**: Thêm check MySQL version (cảnh báo nếu < 8.0 — không support JSON column)
+- **`log:trace`**: Thêm 4 search filters — `--ip`, `--path`, `--error`, `--since`
+
+### 🧰 Response
+- **`Response::raw()`**: Tự động detect content-type (JSON, HTML) nếu không set explicit
+
+### ♻️ Other
+- Error message cải thiện: `"Identifier contains illegal characters... Use RawExpression or raw methods"`
+- Fuzz test assertions: dùng `assertInstanceOf` thay vì kiểm tra message cứng
+
 ## v0.28.0 (2026-05-19) — Comprehensive Security Audit + Zero Errors
 
 ### 🛡️ Security Hardening

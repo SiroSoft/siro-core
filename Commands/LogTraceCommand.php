@@ -30,6 +30,10 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
         $limit = 10;
         $full = false;
         $days = 0;
+        $ip = null;
+        $path = null;
+        $error = null;
+        $since = 0;
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--status=')) {
@@ -43,6 +47,23 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
                 $limit = max(1, (int) substr($arg, 7));
             } elseif (str_starts_with($arg, '--days=')) {
                 $days = max(1, (int) substr($arg, 7));
+            } elseif (str_starts_with($arg, '--ip=')) {
+                $ip = substr($arg, 5);
+            } elseif (str_starts_with($arg, '--path=')) {
+                $path = substr($arg, 7);
+            } elseif (str_starts_with($arg, '--error=')) {
+                $error = substr($arg, 8);
+            } elseif (str_starts_with($arg, '--since=')) {
+                $val = substr($arg, 8);
+                if (str_ends_with($val, 'm')) {
+                    $since = time() - ((int) substr($val, 0, -1) * 60);
+                } elseif (str_ends_with($val, 'h')) {
+                    $since = time() - ((int) substr($val, 0, -1) * 3600);
+                } elseif (str_ends_with($val, 'd')) {
+                    $since = time() - ((int) substr($val, 0, -1) * 86400);
+                } else {
+                    $since = (int) $val;
+                }
             } elseif ($arg === '--full') {
                 $full = true;
             } elseif ($arg !== '') {
@@ -54,7 +75,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             return $this->showTrace($traceId, $full);
         }
 
-        return $this->listTraces($status, $method, $slow, $limit, $days);
+        return $this->listTraces($status, $method, $slow, $limit, $days, $ip, $path, $error, $since);
     }
 
     private function showTrace(string $traceId, bool $full = false): int
@@ -179,7 +200,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
         return 0;
     }
 
-    private function listTraces(?int $status, ?string $method, bool $slow, int $limit, int $days = 0): int
+    private function listTraces(?int $status, ?string $method, bool $slow, int $limit, int $days = 0, ?string $ip = null, ?string $path = null, ?string $error = null, int $since = 0): int
     {
         $tracesDir = $this->getTracesDir($this->basePath);
 
@@ -210,6 +231,11 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             $dataStatus = $data['status'] ?? 0;
             $dataMethod = $this->safeStr($data['method'] ?? '');
             $dataTimeMs = $data['time_ms'] ?? 0;
+            $dataIp = $this->safeStr($data['ip'] ?? '');
+            $dataPath = $this->safeStr($data['path'] ?? '');
+            $exc = $data['exception'] ?? null;
+            $dataError = is_array($exc) ? ($exc['message'] ?? '') : '';
+
             if ($status !== null && (is_numeric($dataStatus) ? (int) $dataStatus : 0) !== $status) {
                 continue;
             }
@@ -217,6 +243,18 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
                 continue;
             }
             if ($slow && (is_numeric($dataTimeMs) ? (float) $dataTimeMs : 0) < 100) {
+                continue;
+            }
+            if ($ip !== null && !str_contains($dataIp, $ip)) {
+                continue;
+            }
+            if ($path !== null && !str_contains($dataPath, $path)) {
+                continue;
+            }
+            if ($error !== null && is_string($dataError) && !str_contains(strtolower($dataError), strtolower($error))) {
+                continue;
+            }
+            if ($since > 0 && filemtime($file) < $since) {
                 continue;
             }
 

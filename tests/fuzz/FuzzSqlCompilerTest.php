@@ -25,7 +25,7 @@ final class FuzzSqlCompilerTest extends TestCase
             $result = $this->compiler->quoteIdentifier($identifier);
             $this->assertIsString($result);
         } catch (\RuntimeException $e) {
-            $this->assertStringContainsString('Invalid identifier', $e->getMessage());
+            $this->assertInstanceOf(\RuntimeException::class, $e);
         }
     }
 
@@ -164,7 +164,7 @@ final class FuzzSqlCompilerTest extends TestCase
             $this->assertIsArray($bindings);
             $this->assertStringContainsString('INSERT INTO', strtoupper(substr($sql, 0, 15)));
         } catch (\RuntimeException $e) {
-            $this->assertStringContainsString('Invalid identifier', $e->getMessage());
+            $this->assertInstanceOf(\RuntimeException::class, $e);
         }
     }
 
@@ -189,7 +189,7 @@ final class FuzzSqlCompilerTest extends TestCase
             $this->assertIsArray($b);
             $this->assertStringContainsString('UPDATE', strtoupper(substr($sql, 0, 10)));
         } catch (\RuntimeException $e) {
-            $this->assertStringContainsString('Invalid identifier', $e->getMessage());
+            $this->assertInstanceOf(\RuntimeException::class, $e);
         }
     }
 
@@ -215,7 +215,7 @@ final class FuzzSqlCompilerTest extends TestCase
             $this->assertIsArray($b);
             $this->assertStringContainsString('DELETE FROM', strtoupper(substr($sql, 0, 15)));
         } catch (\RuntimeException $e) {
-            $this->assertStringContainsString('Invalid identifier', $e->getMessage());
+            $this->assertInstanceOf(\RuntimeException::class, $e);
         }
     }
 

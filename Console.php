@@ -75,11 +75,43 @@ use Siro\Core\Commands\MakeListenerCommand;
 use Siro\Core\Commands\TestCommand;
 use Siro\Core\Commands\BenchmarkCommand;
 use Siro\Core\Commands\FrankenphpServeCommand;
+use Siro\Core\Commands\MigrateFreshCommand;
 use Siro\Core\Commands\TinkerCommand;
 
 final class Console
 {
-    public const VERSION = '0.28.0';
+    public const VERSION = '0.28.1';
+
+    /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
+    private static array $appCommands = [];
+
+    /**
+     * Register a command from app code.
+     *
+     * @param class-string $handlerClass
+     */
+    public static function registerCommand(string $name, string $handlerClass, string $description = ''): void
+    {
+        self::$appCommands[$name] = [
+            'handler' => $handlerClass,
+            'desc' => $description,
+            'usage' => 'php siro ' . $name,
+        ];
+    }
+
+    /**
+     * Bulk register commands from app code.
+     *
+     * @param array<string, array{handler: class-string, desc?: string, usage?: string}> $commands
+     */
+    public static function registerCommands(array $commands): void
+    {
+        foreach ($commands as $name => $config) {
+            $handler = $config['handler'];
+            $desc = $config['desc'] ?? '';
+            self::registerCommand($name, $handler, $desc);
+        }
+    }
 
     public static function getVersion(): string
     {
@@ -124,6 +156,7 @@ final class Console
             'benchmark' => ['handler' => BenchmarkCommand::class, 'desc' => 'Performance benchmark', 'usage' => 'php siro benchmark [--iterations=N] [--json]'],
 
             'migrate'          => ['handler' => MigrateCommand::class, 'desc' => 'Run migrations', 'usage' => 'php siro migrate'],
+            'migrate:fresh'    => ['handler' => MigrateFreshCommand::class, 'desc' => 'Drop all tables and re-run all migrations', 'usage' => 'php siro migrate:fresh [--seed]'],
             'migrate:rollback'  => ['handler' => MigrateRollbackCommand::class, 'desc' => 'Rollback migrations', 'usage' => 'php siro migrate:rollback [--step=N]'],
             'migrate:status'    => ['handler' => MigrateStatusCommand::class, 'desc' => 'Migration status', 'usage' => 'php siro migrate:status'],
             'db:seed'           => ['handler' => SeedCommand::class, 'desc' => 'Run seeders', 'usage' => 'php siro db:seed'],
@@ -254,7 +287,7 @@ final class Console
             $args[] = '--postman';
         }
 
-        $registry = $this->commandRegistry();
+        $registry = array_merge($this->commandRegistry(), self::$appCommands);
 
         if ($command === 'start') {
             return $this->printStart();

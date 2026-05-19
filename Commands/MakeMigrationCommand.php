@@ -29,7 +29,7 @@ final class MakeMigrationCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $normalized = $this->normalizeName($name);
-        $timestamp = date('YmdHis');
+        $timestamp = date('Y_m_d_His');
         $filename = $timestamp . '_' . $normalized . '.php';
 
         $dir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';

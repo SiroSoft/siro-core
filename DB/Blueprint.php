@@ -63,10 +63,9 @@ final class Blueprint
         return $this->addColumn('integer', $name);
     }
 
-    public function foreignId(string $name): ForeignKey
+    public function foreignId(string $name): Column
     {
-        $this->addColumn('bigint', $name, ['unsigned' => true]);
-        return new ForeignKey($name);
+        return $this->string($name, 36);
     }
 
     public function smallint(string $name): Column

@@ -27,7 +27,12 @@ final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
  */
     public function run(array $args): int
     {
-        unset($args);
+        $showPending = false;
+        foreach ($args as $arg) {
+            if ($arg === '--pending') {
+                $showPending = true;
+            }
+        }
 
         Env::load($this->basePath . DIRECTORY_SEPARATOR . '.env');
         
@@ -62,6 +67,9 @@ final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
         foreach ($files as $file) {
             $name = basename($file);
             $isApplied = isset($applied[$name]);
+            if ($showPending && $isApplied) {
+                continue;
+            }
             $status = $isApplied ? '[Y]' : '[N]';
             $batch = $isApplied ? (string) $applied[$name] : '-';
 
@@ -69,6 +77,10 @@ final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $this->table(['', 'Migration', 'Batch'], $rows);
+
+        if ($rows === []) {
+            $this->write('No pending migrations.');
+        }
 
         return 0;
     }
