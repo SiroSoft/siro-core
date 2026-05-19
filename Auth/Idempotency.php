@@ -116,15 +116,23 @@ final class Idempotency
         $expiresAt = time() + $this->ttl;
         $responseJson = json_encode($responseData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        Database::execute(
-            "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
-             VALUES (?, ?, ?, ?, ?, ?)
-             ON CONFLICT(hash) DO UPDATE SET
-             response_data = EXCLUDED.response_data,
-             created_at = EXCLUDED.created_at,
-             expires_at = EXCLUDED.expires_at",
-            [$this->hash, $this->currentKey, $this->userId, $responseJson, time(), $expiresAt]
+        $existing = Database::select(
+            "SELECT id FROM " . self::$table . " WHERE hash = ? LIMIT 1",
+            [$this->hash]
         );
+
+        if (!empty($existing)) {
+            Database::execute(
+                "UPDATE " . self::$table . " SET response_data = ?, created_at = ?, expires_at = ? WHERE hash = ?",
+                [$responseJson, time(), $expiresAt, $this->hash]
+            );
+        } else {
+            Database::execute(
+                "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
+                 VALUES (?, ?, ?, ?, ?, ?)",
+                [$this->hash, $this->currentKey, $this->userId, $responseJson, time(), $expiresAt]
+            );
+        }
     }
 
     /**

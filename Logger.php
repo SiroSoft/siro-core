@@ -38,6 +38,7 @@ final class Logger
     public static function request(string $method, string $path, int $status, float $timeMs, string $ip = '', string $traceId = '', string $userAgent = ''): void { self::getInstance()->request($method, $path, $status, $timeMs, $ip, $traceId, $userAgent); }
     public static function slowRequest(string $method, string $path, int $status, float $timeMs): void { self::getInstance()->slowRequest($method, $path, $status, $timeMs); }
     public static function error(Throwable|string $error): void { self::getInstance()->error($error); }
+    public static function warning(string $message): void { self::getInstance()->warning($message); }
     /** @param array<string, mixed> $context */
     public static function debug(string $message, array $context = []): void { self::getInstance()->debug($message, $context); }
     /** @param array<string, mixed> $context */

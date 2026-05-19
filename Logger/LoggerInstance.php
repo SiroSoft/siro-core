@@ -134,6 +134,12 @@ final class LoggerInstance implements LoggerInterface
         $this->write('error', $this->escapeLog($line), true);
     }
 
+    public function warning(string $message): void
+    {
+        $line = sprintf('[%s] [WARNING] %s', date('Y-m-d H:i:s'), $this->sanitize($message));
+        $this->write('warning', $this->escapeLog($line), false);
+    }
+
     /** @param array<string, mixed> $context */
     public function debug(string $message, array $context = []): void
     {
@@ -342,14 +348,14 @@ final class LoggerInstance implements LoggerInterface
             mkdir($monthDir, 0775, true);
         }
         $dailyFile = $monthDir . DIRECTORY_SEPARATOR . $type . '-' . date('Y-m-d') . '.log';
-        error_log($line, 3, $dailyFile);
+        @file_put_contents($dailyFile, $line, FILE_APPEND | LOCK_EX);
 
         if ($alsoDaily) {
             if (!is_dir($this->mainDir)) {
                 mkdir($this->mainDir, 0775, true);
             }
             $mainFile = $this->mainDir . DIRECTORY_SEPARATOR . $type . '.log';
-            error_log($line, 3, $mainFile);
+            @file_put_contents($mainFile, $line, FILE_APPEND | LOCK_EX);
             if (is_file($mainFile) && filesize($mainFile) > $this->maxFileSize) {
                 $rotated = $mainFile . '.' . date('Y-m-d-Hi');
                 rename($mainFile, $rotated);

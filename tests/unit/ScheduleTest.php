@@ -90,7 +90,10 @@ final class ScheduleTest extends TestCase
     {
         $task = new ScheduleTask('command', 'test:cmd');
         $task->everyMinute()->withoutOverlapping();
-        $this->assertTrue($task->isLocked());
+        $this->assertFalse($task->isLocked(), 'Lock not acquired until markRun() is called');
+        $task->markRun(time());
+        $this->assertTrue($task->isLocked(), 'Lock should be acquired after markRun()');
+        $task->unlock();
     }
 
     public function testUnlock(): void

@@ -274,7 +274,7 @@ class OpenApiTest extends TestCase
             }
         }
 
-        $this->assertContains('List users', $summaries, 'GET /api/users should be "List users"');
+        $this->assertContains('List all users', $summaries, 'GET /api/users should be "List all users"');
         $this->assertContains('Create users', $summaries, 'POST /api/users should be "Create users"');
         $this->assertContains('Get users', $summaries, 'GET /api/users/{id} should be "Get users"');
         $this->assertContains('Delete users', $summaries, 'DELETE /api/users/{id} should be "Delete users"');

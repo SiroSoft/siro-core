@@ -24,11 +24,12 @@ trait ModelRelations
             $foreignKey = $this->getForeignKeyName($relatedClass);
         }
 
+        $localValue = $this->getAttribute($localKey);
         return new HasMany(
             $relatedClass,
             $foreignKey,
             $localKey,
-            $this->getAttribute($localKey) ?? 0,
+            is_int($localValue) || is_string($localValue) ? $localValue : 0,
         );
     }
 
@@ -43,11 +44,12 @@ trait ModelRelations
             $foreignKey = $this->getForeignKeyName($relatedClass);
         }
 
+        $localValue = $this->getAttribute($localKey);
         return new HasOne(
             $relatedClass,
             $foreignKey,
             $localKey,
-            $this->getAttribute($localKey) ?? 0,
+            is_int($localValue) || is_string($localValue) ? $localValue : 0,
         );
     }
 
@@ -73,13 +75,14 @@ trait ModelRelations
             $foreignKey = $this->getForeignKeyName(static::class);
         }
 
+        $idValue = $this->getAttribute('id');
         return new BelongsToMany(
             $relatedClass,
             $pivotTable,
             $foreignKey,
             $relatedKey,
             'id',
-            $this->getAttribute('id') ?? 0,
+            is_int($idValue) || is_string($idValue) ? $idValue : 0,
         );
     }
 
@@ -92,11 +95,12 @@ trait ModelRelations
             $foreignKey = $this->getForeignKeyName(static::class);
         }
 
+        $fkValue = $this->getAttribute($foreignKey);
         return new BelongsTo(
             $relatedClass,
             $foreignKey,
             $ownerKey,
-            $this->getAttribute($foreignKey) ?? 0,
+            is_int($fkValue) || is_string($fkValue) ? $fkValue : 0,
         );
     }
 

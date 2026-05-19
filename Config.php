@@ -22,10 +22,11 @@ final class Config
         self::$cache = [];
         self::$cachedGlob = null;
 
+        $secret = (string) \Siro\Core\Env::get('APP_KEY', '');
         $cacheFile = dirname(self::$configPath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'config.php';
 
-        if (is_file($cacheFile)) {
+        if ($secret !== '' && is_file($cacheFile)) {
             $cacheModified = filemtime($cacheFile);
             $configModified = self::getConfigDirMtime();
 
@@ -36,9 +37,8 @@ final class Config
                 if ($sep !== false) {
                     $data = json_decode(substr($payload, 0, $sep), true);
                     $hmac = trim(substr($payload, $sep + 6));
-                    $secret = (string) \Siro\Core\Env::get('APP_KEY', '');
-                    $expected = $secret !== '' ? hash_hmac('sha256', substr($payload, 0, $sep), $secret) : '';
-                    if (is_array($data) && $secret !== '' && hash_equals($expected, $hmac)) {
+                    $expected = hash_hmac('sha256', substr($payload, 0, $sep), $secret);
+                    if (is_array($data) && hash_equals($expected, $hmac)) {
                         /** @var array<string, mixed> $data */
                         self::$items = $data;
                         self::$loaded = true;
@@ -166,6 +166,11 @@ final class Config
 
     public static function cache(): ?string
     {
+        $secret = (string) \Siro\Core\Env::get('APP_KEY', '');
+        if ($secret === '') {
+            return null;
+        }
+
         $cacheDir = dirname(self::$configPath) . DIRECTORY_SEPARATOR
             . 'storage' . DIRECTORY_SEPARATOR . 'framework';
         if (!is_dir($cacheDir)) {
@@ -175,8 +180,7 @@ final class Config
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'config.php';
         $json = json_encode(self::$items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false) { return null; }
-        $secret = (string) \Siro\Core\Env::get('APP_KEY', '');
-        $hmac = $secret !== '' ? hash_hmac('sha256', $json, $secret) : '';
+        $hmac = hash_hmac('sha256', $json, $secret);
         $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
 
         if (file_put_contents($cacheFile, $content) !== false) {

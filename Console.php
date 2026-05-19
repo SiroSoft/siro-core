@@ -79,7 +79,7 @@ use Siro\Core\Commands\TinkerCommand;
 
 final class Console
 {
-    public const VERSION = '0.27.0';
+    public const VERSION = '0.28.0';
 
     public static function getVersion(): string
     {

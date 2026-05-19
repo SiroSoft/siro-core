@@ -28,10 +28,33 @@ final class Queue
     /** @var array<int, array{job: string, data: mixed}> */
     private static array $fakeJobs = [];
 
+    /** @var array<string, true> Whitelist of allowed job classes */
+    private static array $allowedJobs = [];
+
+    /** Register a job class as allowed for queue processing */
+    public static function registerJob(string $jobClass): void
+    {
+        self::$allowedJobs[$jobClass] = true;
+    }
+
+    /** Check if a job class is registered/allowed */
+    public static function isJobAllowed(string $jobClass): bool
+    {
+        return isset(self::$allowedJobs[$jobClass]);
+    }
+
     public static function reset(): void
     {
         self::$faked = false;
         self::$fakeJobs = [];
+    }
+
+    /** Register built-in core job classes */
+    private static function ensureBuiltinJobsRegistered(): void
+    {
+        if (!isset(self::$allowedJobs[SendMailJob::class])) {
+            self::$allowedJobs[SendMailJob::class] = true;
+        }
     }
 
     public static function fake(): void
@@ -146,6 +169,8 @@ final class Queue
         int $maxAttempts = self::DEFAULT_MAX_ATTEMPTS,
         int $timeout = self::DEFAULT_TIMEOUT,
     ): void {
+        self::ensureBuiltinJobsRegistered();
+
         if (self::$faked) {
             self::$fakeJobs[] = ['job' => $job, 'data' => $data];
             return;
@@ -171,6 +196,7 @@ final class Queue
      */
     public static function work(): bool
     {
+        self::ensureBuiltinJobsRegistered();
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
@@ -220,6 +246,10 @@ final class Queue
 
             $rowJob = $row['job'] ?? '';
             if (is_string($rowJob) && class_exists($rowJob)) {
+                if (!self::isJobAllowed($rowJob)) {
+                    throw new \RuntimeException("Job class '{$rowJob}' is not registered in the allowed jobs whitelist. Use Queue::registerJob() to allow it.");
+                }
+
                 $instance = new $rowJob();
 
                 if (method_exists($instance, 'handle')) {

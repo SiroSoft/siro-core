@@ -19,7 +19,7 @@ namespace Siro\Core;
  */
 final class Metrics
 {
-    private const METRICS_CACHE_FILE = 'storage/framework/metrics.php';
+    private const METRICS_CACHE_FILE = 'storage/framework/metrics.json';
 
     /** @var array<string, array{type: string, help: string, labels: array<string, string>, value: float|int}> */
     private static array $counters = [];
@@ -52,7 +52,10 @@ final class Metrics
         $data = ['counters' => self::$counters, 'histograms' => self::$histograms, 'gauges' => self::$gauges];
         $dir = dirname(self::METRICS_CACHE_FILE);
         if (!is_dir($dir)) { @mkdir($dir, 0775, true); }
-        file_put_contents(self::METRICS_CACHE_FILE, '<?php return ' . var_export($data, true) . ';');
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json !== false) {
+            file_put_contents(self::METRICS_CACHE_FILE, $json);
+        }
     }
 
     /**
@@ -230,8 +233,9 @@ final class Metrics
             $cacheFile = SIRO_BASE_PATH . '/' . $cacheFile;
         }
         if (!is_file($cacheFile)) { return; }
+        $raw = (string) file_get_contents($cacheFile);
         /** @var mixed $data */
-        $data = require $cacheFile;
+        $data = json_decode($raw, true);
         if (is_array($data)) {
             /** @var array<string, array{type: string, help: string, labels: array<string, string>, value: float|int}> $counters */
             $counters = $data['counters'] ?? [];
