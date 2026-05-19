@@ -291,22 +291,22 @@ DB::table('users')
     ->get();
 ```
 
-> **Note:** `groupBy()` tự động quote identifier. Nếu cần SQL function, dùng `groupByRaw()` hoặc `DB::raw()`.
+> **Note:** `groupBy()` quotes identifiers automatically. For SQL functions, use `groupByRaw()` or `DB::raw()`.
 
 ---
 
 ## Migrations
 
-### Tạo migration
+### Creating a Migration
 
 ```bash
 php siro make:migration create_products_table
 # → database/migrations/2026_05_19_100000_create_products_table.php
 ```
 
-File naming format: `Y_m_d_His_description.php` (chuẩn hóa từ v0.28.1).
+File naming format: `Y_m_d_His_description.php` (standardized since v0.28.1).
 
-### Viết migration
+### Writing a Migration
 
 ```php
 // database/migrations/2026_05_19_100000_create_products_table.php
@@ -321,20 +321,20 @@ Schema::create('products', function (Blueprint $table) {
 });
 ```
 
-### Migration tracking
+### Migration Tracking
 
-Siro dùng bảng `migrations` để track trạng thái:
+Siro uses a `migrations` table to track which migrations have been applied:
 
-| Column | Type | Mô tả |
+| Column | Type | Description |
 |---|---|---|
 | `id` | BIGINT AUTO_INCREMENT | PRIMARY KEY |
-| `migration` | VARCHAR(255) UNIQUE | Tên file migration |
-| `batch` | INT | Số batch (tăng dần mỗi lần migrate) |
-| `created_at` | TIMESTAMP | Thời điểm applied |
+| `migration` | VARCHAR(255) UNIQUE | Migration filename |
+| `batch` | INT | Batch number (increments each migrate run) |
+| `created_at` | TIMESTAMP | When the migration was applied |
 
-- **Rollback** xóa bản ghi trong `migrations` và chạy `down()`.
-- **File rename**: Nếu rename file migration sau khi đã migrate, bảng `migrations` vẫn lưu tên cũ → `migrate:status` sẽ show cả pending (tên mới) và applied (tên cũ). Để fix: `php siro migrate:rollback --step=1` hoặc update manual trong DB.
-- **`migrate:fresh`** (v0.28.1): Drop tất cả tables + chạy lại toàn bộ migrations từ đầu.
+- **Rollback** removes the migration record and runs `down()`.
+- **File rename**: If you rename a migration file after it's been applied, the `migrations` table still stores the old name. `migrate:status` will show both the pending new name and the applied old name. To fix: `php siro migrate:rollback --step=1` or update the record manually.
+- **`migrate:fresh`** (v0.28.1): Drops all tables and re-runs all migrations from scratch.
 
 ### Commands
 
@@ -349,16 +349,16 @@ php siro migrate:fresh --seed       # Drop + migrate + seed
 
 ### Blueprint Helpers
 
-| Method | Mô tả |
+| Method | Description |
 |---|---|
 | `$table->id()` | Auto-increment BIGINT primary key |
-| `$table->foreignId('user_id')` | Tạo string(36) column → dùng với `constrained()` (v0.28.1) |
+| `$table->foreignId('user_id')` | Create string(36) column, use with `constrained()` (v0.28.1) |
 | `$table->string('name', 100)` | VARCHAR column |
 | `$table->integer('count')` | INT column |
 | `$table->decimal('price', 10, 2)` | Decimal column |
 | `$table->text('body')` | TEXT column |
 | `$table->boolean('active')` | TINYINT(1) column |
-| `$table->json('metadata')` | JSON column (cần MySQL 8.0+ hoặc PostgreSQL) |
+| `$table->json('metadata')` | JSON column (requires MySQL 8.0+ or PostgreSQL) |
 | `$table->timestamps()` | created_at + updated_at |
 | `$table->softDeletes()` | deleted_at column |
 | `$table->index('email')` | Index |

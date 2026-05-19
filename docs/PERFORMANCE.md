@@ -576,7 +576,7 @@ EXPLAIN SELECT * FROM users WHERE email = 'test@example.com';
 
 | Framework | Avg Ops/s | Memory | Dependencies | Boot Time |
 |-----------|-----------|--------|--------------|-----------|
-| **SiroPHP v0.22** | **398K** | **2MB** | **0** | **<1ms** |
+| **SiroPHP v0.28.1** | **864K** | **4KB** | **0** | **<1ms** |
 | Laravel | 100-200 | 10-20MB | 50+ | 50-100ms |
 | Slim | 5K-10K | 3-5MB | 5+ | 10-20ms |
 | Lumen | 2K-5K | 4-8MB | 10+ | 20-40ms |
