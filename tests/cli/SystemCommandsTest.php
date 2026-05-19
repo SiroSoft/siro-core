@@ -130,14 +130,14 @@ final class SystemCommandsTest extends TestCase
     {
         [$exitCode, $output] = $this->runCommand('--version');
         $this->assertSame(0, $exitCode, '--version should exit 0');
-        $this->assertStringContainsString('0.27.0', $output, 'Should show version 0.27.0');
+        $this->assertStringContainsString('0.28.0', $output, 'Should show version 0.28.0');
     }
 
     public function testShortVersionOutput(): void
     {
         [$exitCode, $output] = $this->runCommand('-V');
         $this->assertSame(0, $exitCode, '-V should exit 0');
-        $this->assertStringContainsString('0.27.0', $output, 'Should show version 0.27.0');
+        $this->assertStringContainsString('0.28.0', $output, 'Should show version 0.28.0');
     }
 
     // ==================== HELP ====================
