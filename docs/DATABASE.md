@@ -262,6 +262,108 @@ DB::table('users')->inRandomOrder()->get();
 DB::table('users')->inRandomOrder(42)->get();  // MySQL only
 ```
 
+### Raw GROUP BY / HAVING (v0.28)
+
+Sử dụng `groupByRaw()` khi cần SQL function trong GROUP BY:
+
+```php
+DB::table('orders')
+    ->selectRaw('YEAR(created_at) AS year, COUNT(*) AS total')
+    ->groupByRaw('YEAR(created_at)')
+    ->get();
+```
+
+Sử dụng `havingRaw()` cho HAVING clause với raw expression:
+
+```php
+DB::table('orders')
+    ->groupBy('status')
+    ->havingRaw('COUNT(*) > ?', [10])
+    ->get();
+```
+
+Sử dụng `DB::raw()` để tạo raw expression trong bất kỳ clause nào:
+
+```php
+DB::table('users')
+    ->groupBy(DB::raw('YEAR(created_at)'))
+    ->orderBy(DB::raw('MAX(created_at)'), 'desc')
+    ->get();
+```
+
+> **Note:** `groupBy()` tự động quote identifier. Nếu cần SQL function, dùng `groupByRaw()` hoặc `DB::raw()`.
+
+---
+
+## Migrations
+
+### Tạo migration
+
+```bash
+php siro make:migration create_products_table
+# → database/migrations/2026_05_19_100000_create_products_table.php
+```
+
+File naming format: `Y_m_d_His_description.php` (chuẩn hóa từ v0.28.1).
+
+### Viết migration
+
+```php
+// database/migrations/2026_05_19_100000_create_products_table.php
+Schema::create('products', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+    $table->text('description')->nullable();
+    $table->decimal('price', 10, 2);
+    $table->timestamps();
+    $table->softDeletes();
+});
+```
+
+### Migration tracking
+
+Siro dùng bảng `migrations` để track trạng thái:
+
+| Column | Type | Mô tả |
+|---|---|---|
+| `id` | BIGINT AUTO_INCREMENT | PRIMARY KEY |
+| `migration` | VARCHAR(255) UNIQUE | Tên file migration |
+| `batch` | INT | Số batch (tăng dần mỗi lần migrate) |
+| `created_at` | TIMESTAMP | Thời điểm applied |
+
+- **Rollback** xóa bản ghi trong `migrations` và chạy `down()`.
+- **File rename**: Nếu rename file migration sau khi đã migrate, bảng `migrations` vẫn lưu tên cũ → `migrate:status` sẽ show cả pending (tên mới) và applied (tên cũ). Để fix: `php siro migrate:rollback --step=1` hoặc update manual trong DB.
+- **`migrate:fresh`** (v0.28.1): Drop tất cả tables + chạy lại toàn bộ migrations từ đầu.
+
+### Commands
+
+```bash
+php siro migrate                    # Run pending migrations
+php siro migrate:rollback --step=2  # Rollback 2 batches
+php siro migrate:status             # Show all migrations
+php siro migrate:status --pending   # Show only pending (v0.28.1)
+php siro migrate:fresh              # Drop + re-migrate (v0.28.1)
+php siro migrate:fresh --seed       # Drop + migrate + seed
+```
+
+### Blueprint Helpers
+
+| Method | Mô tả |
+|---|---|
+| `$table->id()` | Auto-increment BIGINT primary key |
+| `$table->foreignId('user_id')` | Tạo string(36) column → dùng với `constrained()` (v0.28.1) |
+| `$table->string('name', 100)` | VARCHAR column |
+| `$table->integer('count')` | INT column |
+| `$table->decimal('price', 10, 2)` | Decimal column |
+| `$table->text('body')` | TEXT column |
+| `$table->boolean('active')` | TINYINT(1) column |
+| `$table->json('metadata')` | JSON column (cần MySQL 8.0+ hoặc PostgreSQL) |
+| `$table->timestamps()` | created_at + updated_at |
+| `$table->softDeletes()` | deleted_at column |
+| `$table->index('email')` | Index |
+| `$table->unique('slug')` | Unique index |
+
 ---
 
 ## LIMIT, OFFSET, Pagination

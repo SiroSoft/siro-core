@@ -13,7 +13,7 @@ php siro                    # Core workflow overview
 php siro list               # List all 70 commands grouped by category
 php siro <command> --help   # Detailed help for a specific command
 php siro -h                 # Shorthand help overview
-php siro --version          # Show version (0.24.0)
+php siro --version          # Show version (0.28.1)
 ```
 
 ---
@@ -59,13 +59,14 @@ php siro make:apikey "External App" read,write 365
 
 ---
 
-## db:* — Database (5 commands)
+## db:* — Database (6 commands)
 
 | Command | Description | Usage |
 |---|---|---|
 | `migrate` | Run all pending migrations | `php siro migrate` |
 | `migrate:rollback` | Rollback the last batch of migrations | `php siro migrate:rollback [--step=N]` |
-| `migrate:status` | Show migration status (pending/ran) | `php siro migrate:status` |
+| `migrate:status` | Show migration status (pending/ran) | `php siro migrate:status [--pending]` |
+| `migrate:fresh` | Drop all tables and re-run all migrations | `php siro migrate:fresh [--seed]` |
 | `db:seed` | Run all database seeders | `php siro db:seed` |
 | `db:show` | Inspect table schema or data | `php siro db:show <table> [--schema]` |
 
@@ -75,6 +76,9 @@ php siro make:apikey "External App" read,write 365
 php siro migrate                          # Run all pending migrations
 php siro migrate:rollback --step=2        # Rollback last 2 batches
 php siro migrate:status                   # Check which migrations ran
+php siro migrate:status --pending         # Show only pending migrations
+php siro migrate:fresh                    # Drop all tables + re-migrate
+php siro migrate:fresh --seed             # Drop + migrate + seed
 php siro db:seed                          # Seed the database
 php siro db:show users                    # Show table data
 php siro db:show users --schema           # Show table columns & types
