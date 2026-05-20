@@ -27,11 +27,18 @@ final class DB
         return Database::table($table);
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     * @return list<array<string, mixed>>
+     */
     public static function select(string $sql, array $params = [], ?string $connection = null): array
     {
         return Database::select($sql, $params, $connection);
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     */
     public static function execute(string $sql, array $params = [], ?string $connection = null): int
     {
         return Database::execute($sql, $params, $connection);
