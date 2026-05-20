@@ -9,6 +9,7 @@ use RuntimeException;
 use Siro\Core\Middleware\JsonMiddleware;
 use Siro\Core\Middleware\MiddlewareInterface;
 
+
 final class Router
 {
     private RouteMatcher $matcher;
@@ -146,7 +147,15 @@ final class Router
         $route = $this->matcher->match($method, $path);
 
         if ($route === null) {
-            return Response::error('Route not found', 404);
+            $errors = [];
+            $debug = Env::bool('APP_DEBUG', false);
+            if ($debug) {
+                $suggestion = $this->findSimilarRoute($path);
+                $errors['route'] = $suggestion !== null
+                    ? ["Route not found: {$path}. Did you mean {$suggestion}?"]
+                    : ["Route not found: {$path}"];
+            }
+            return Response::error('Route not found', 404, $errors);
         }
 
         if (isset($route['params'])) {
@@ -231,20 +240,17 @@ final class Router
             return false;
         }
 
-        $raw = (string) file_get_contents($cacheFile);
-        $payload = substr($raw, strlen('<?php exit; ?>'));
-        $sep = strrpos($payload, '.hmac.');
-        if ($sep === false) {
-            return false;
-        }
-        $json = substr($payload, 0, $sep);
-        $hmac = trim(substr($payload, $sep + 6));
+        /** @var mixed $data */
+        $data = require $cacheFile;
+        if (!is_array($data)) { return false; }
+        $staticData = is_array($data['static'] ?? null) ? $data['static'] : [];
+        $dynamicData = is_array($data['dynamic'] ?? null) ? $data['dynamic'] : [];
+        $storedHmac = is_string($data['hmac'] ?? null) ? $data['hmac'] : '';
+        if ($storedHmac === '') { return false; }
+
         $secret = (string) Env::get('APP_KEY', '');
-        if ($secret === '' || !hash_equals(hash_hmac('sha256', $json, $secret), $hmac)) {
-            return false;
-        }
-        $data = json_decode($json, true);
-        if (!is_array($data) || !isset($data['static'], $data['dynamic'])) {
+        $hmacCheck = hash_hmac('sha256', serialize($staticData) . serialize($dynamicData), $secret);
+        if ($secret !== '' && !hash_equals($hmacCheck, $storedHmac)) {
             return false;
         }
 
@@ -284,11 +290,13 @@ final class Router
             }
         }
 
-        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($json === false) { return false; }
         $secret = (string) Env::get('APP_KEY', '');
-        $hmac = $secret !== '' ? hash_hmac('sha256', $json, $secret) : '';
-        $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
+        $staticData = $data['static'] ?? [];
+        $dynamicData = $data['dynamic'] ?? [];
+        $hmac = $secret !== '' ? hash_hmac('sha256', serialize($staticData) . serialize($dynamicData), $secret) : '';
+        $data['hmac'] = $hmac;
+        $exported = var_export($data, true);
+        $content = '<?php return ' . $exported . ';' . PHP_EOL;
 
         return file_put_contents($cacheFile, $content) !== false;
     }
@@ -740,5 +748,33 @@ final class Router
         $reqHeaders = function_exists('getallheaders') ? (getallheaders() ?: []) : [];
         $req = new Request('OPTIONS', $path, $_GET, $reqHeaders, []);
         return $finalHandler($req);
+    }
+
+    private function findSimilarRoute(string $path): ?string
+    {
+        $allRoutes = $this->getAllPaths();
+        $bestMatch = null;
+        $bestDistance = PHP_INT_MAX;
+
+        foreach ($allRoutes as $existingPath) {
+            $dist = levenshtein($path, $existingPath);
+            if ($dist < $bestDistance && $dist <= 5) {
+                $bestDistance = $dist;
+                $bestMatch = $existingPath;
+            }
+        }
+
+        return $bestMatch;
+    }
+
+    /** @return list<string> */
+    private function getAllPaths(): array
+    {
+        $routes = $this->getRoutes();
+        $paths = [];
+        foreach ($routes as $route) {
+            $paths[] = $route['path'];
+        }
+        return array_values(array_unique($paths));
     }
 }

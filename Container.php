@@ -11,7 +11,7 @@ use RuntimeException;
 
 final class Container
 {
-    private const MAX_CIRCULAR_DEPTH = 64;
+    private const MAX_RESOLVE_DEPTH = 64;
     private static ?Container $instance = null;
 
     /** @var array<string, array{reflectionClass: ReflectionClass<object>, constructorParams: array<int, \ReflectionParameter>|null}> */
@@ -195,13 +195,16 @@ final class Container
     /** @param class-string $class */
     private function resolve(string $class): object
     {
-        $depth = ($this->resolvingStack[$class] ?? 0);
-        if ($depth >= self::MAX_CIRCULAR_DEPTH) {
+        // Detect circular dependency: if class is already in the current resolution chain
+        if (isset($this->resolvingStack[$class])) {
             $chain = implode(' -> ', array_keys($this->resolvingStack));
             throw new RuntimeException("Circular dependency detected: {$chain} -> {$class}");
         }
+        if (count($this->resolvingStack) >= self::MAX_RESOLVE_DEPTH) {
+            throw new RuntimeException("Maximum resolution depth ({self::MAX_RESOLVE_DEPTH}) exceeded. Possible circular dependency.");
+        }
 
-        $this->resolvingStack[$class] = $depth + 1;
+        $this->resolvingStack[$class] = 1;
 
         try {
             if (isset(self::$reflectionCache[$class])) {

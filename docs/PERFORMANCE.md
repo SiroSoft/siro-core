@@ -10,8 +10,10 @@ SiroPHP is engineered for maximum performance. This guide covers benchmarking, o
 
 ### Cold Boot Performance
 
+Benchmarked on Linux 6.8, PHP 8.2, OPcache enabled. Windows may be ~5-8x slower due to filesystem I/O.
+
 ```
-App boot + dispatch:    0.87ms
+App boot + dispatch:    0.87ms  (Linux, OPcache warm)
 Memory overhead:        +16KB
 ```
 

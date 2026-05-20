@@ -125,9 +125,11 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         file_put_contents($outputDir . DIRECTORY_SEPARATOR . 'openapi.json', $json);
         $this->write('Generated: ' . $outputDir . DIRECTORY_SEPARATOR . 'openapi.json (' . count($paths) . ' endpoints)');
 
+        // Always copy to public for Swagger UI access
+        $this->copyToPublic($outputDir);
+
         if ($this->withSwagger) {
             $this->generateSwaggerUi($outputDir);
-            $this->copyToPublic($outputDir);
         }
         return 0;
     }
@@ -216,6 +218,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         // Build operation
         $operation = [
             'tags' => [$tag],
+            'operationId' => $this->deriveOperationId($handler, $method, $path),
             'summary' => $this->deriveSummary($method, $path),
             'security' => $hasAuth ? [['bearerAuth' => []]] : [],
         ];
@@ -343,6 +346,17 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         return $action . ' ' . ($resource !== false ? $resource : 'resource');
     }
 
+    private function deriveOperationId(string $handler, string $method, string $path): string
+    {
+        if (preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) {
+            return lcfirst($m[1]) . ucfirst($m[2]);
+        }
+        $parts = array_values(array_filter(explode('/', $path)));
+        $resource = end($parts);
+        $resource = str_replace(['{', '}'], '', $resource ?: 'resource');
+        return $method . ucfirst($resource);
+    }
+
     /**
      * @param array<string, string> $where
      * @return list<array<string, mixed>>
@@ -357,6 +371,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                     'name' => $name,
                     'in' => 'path',
                     'required' => true,
+                    'description' => ucfirst($name) . ' ID',
                     'schema' => $schema,
                 ];
             }
@@ -423,7 +438,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             'type' => 'object',
             'properties' => $properties,
         ];
-        if ($required !== []) {
+        // PATCH — all fields optional
+        if ($method !== 'patch' && $required !== []) {
             $this->schemas[$schemaName]['required'] = $required;
         }
         return $schemaName;
@@ -525,11 +541,35 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             $body = $m[1];
             preg_match_all('/\'(\w+)\'\s*=>/', $body, $keys);
             foreach ($keys[1] as $key) {
-                $properties[$key] = $this->inferPropertyType($key, $content);
+                $inferred = $this->inferPropertyType($key, $content);
+                $properties[$key] = $inferred;
+                // Add example values
+                $propType = is_string($inferred['type'] ?? null) ? $inferred['type'] : 'string';
+                $properties[$key]['example'] = $this->propertyExample($key, $propType);
             }
         }
 
         return ['type' => 'object', 'properties' => $properties];
+    }
+
+    private function propertyExample(string $key, string $type): mixed
+    {
+        return match (true) {
+            str_contains($key, 'email') => 'user@example.com',
+            str_contains($key, 'name') => 'John Doe',
+            str_contains($key, 'phone') => '+1-555-0123',
+            str_contains($key, 'address') => '123 Main St',
+            str_contains($key, 'city') => 'New York',
+            str_contains($key, 'country') => 'US',
+            str_contains($key, 'status') => 'active',
+            str_contains($key, 'role') => 'user',
+            str_contains($key, 'total') || str_contains($key, 'price') => 9.99,
+            str_contains($key, 'stock') || str_contains($key, 'count') => 42,
+            $type === 'integer' || $key === 'id' => 1,
+            $type === 'number' => 9.99,
+            $type === 'boolean' => true,
+            default => 'string',
+        };
     }
 
     /**
@@ -773,25 +813,64 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $successCode = $method === 'post' ? '201' : ($method === 'delete' ? '204' : '200');
         $responses = [];
+        $resource = $this->deriveResourceName($path);
 
         if ($method === 'delete') {
-            $responses[$successCode] = ['description' => 'No content'];
+            $responses[$successCode] = ['description' => $resource . ' deleted successfully'];
         } elseif ($responseSchema && isset($this->schemas[$responseSchema])) {
-            $responses[$successCode] = ['description' => 'Successful operation', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' . $responseSchema]]]];
+            $desc = match ($method) {
+                'post' => $resource . ' created successfully',
+                'put', 'patch' => $resource . ' updated successfully',
+                default => ($method === 'get' && str_contains($path, '{') ? $resource . ' details' : 'List of ' . $resource),
+            };
+            $responses[$successCode] = ['description' => $desc, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' . $responseSchema]]]];
         } else {
             $responses[$successCode] = ['description' => 'Successful operation'];
         }
 
         if (str_contains($path, '{')) {
-            $responses['404'] = ['description' => 'Resource not found'];
+            $responses['404'] = ['description' => $resource . ' not found'];
         }
         if (in_array($method, ['post', 'put', 'patch'])) {
             $responses['422'] = ['description' => 'Validation error', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ValidationErrorResponse']]]];
         }
-        $responses['401'] = ['description' => 'Unauthorized'];
-        $responses['403'] = ['description' => 'Forbidden'];
+        $responses['401'] = ['description' => 'Unauthorized — missing or invalid JWT token'];
+        $responses['403'] = ['description' => 'Forbidden — insufficient permissions'];
         $responses['500'] = ['description' => 'Internal server error'];
         return $responses;
+    }
+
+    private function deriveResourceName(string $path): string
+    {
+        // Auth paths — use action-specific names
+        if (str_contains($path, '/auth/')) {
+            return match (true) {
+                str_contains($path, 'login') => 'Login',
+                str_contains($path, 'register') => 'User',
+                str_contains($path, 'logout') => 'Logout',
+                str_contains($path, 'refresh') => 'Token',
+                str_contains($path, 'me') => 'Current user',
+                str_contains($path, 'forgot-password') => 'Password reset',
+                str_contains($path, 'reset-password') => 'Password reset',
+                str_contains($path, 'verify-email') => 'Email verification',
+                default => 'Auth',
+            };
+        }
+
+        // Health paths
+        if (str_contains($path, '/health')) return 'System';
+
+        $parts = array_values(array_filter(explode('/', $path)));
+        // Find the resource segment (skip 'api', path params)
+        foreach ($parts as $i => $p) {
+            if (!str_starts_with($p, '{') && $p !== 'api' && $p !== 'v1' && $p !== 'v2') {
+                if (isset($parts[$i + 1]) && str_starts_with($parts[$i + 1], '{')) {
+                    return ucfirst(rtrim($p, 's'));
+                }
+                return ucfirst(rtrim($p, 's'));
+            }
+        }
+        return 'Resource';
     }
 
     /**

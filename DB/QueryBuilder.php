@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\DB;
 
+use Closure;
 use RuntimeException;
 use Siro\Core\Cache;
 use Siro\Core\Database;
@@ -27,7 +28,7 @@ class QueryBuilder
     protected array $wheres = [];
     /** @var array<int, array{boolean:string, column:string, operator:string, param:string}> */
     protected array $havings = [];
-    /** @var array<int, array{type:string,table:string,first:string,operator:string,second:string}> */
+    /** @var list<array{type:string,table:string,first?:string,operator?:string,second?:string,clause?:JoinClause}> */
     protected array $joins = [];
     /** @var array<int, string|RawExpression> */
     protected array $groups = [];
@@ -150,40 +151,56 @@ class QueryBuilder
         return $this->addWhereIn('AND', $column, $values, true);
     }
 
-    public function join(string $table, string $first, string $operator, string $second): self
+    /**
+     * Join with simple condition or Closure for complex conditions.
+     *
+     * Simple: ->join('orders', 'users.id', '=', 'orders.user_id')
+     * Closure: ->join('orders', function (JoinClause $j) { $j->on(...)->where(...); })
+     */
+    public function join(string $table, Closure|string $first, string $operator = '', string $second = ''): self
     {
-        $this->joins[] = [
-            'type' => 'INNER',
-            'table' => trim($table),
-            'first' => trim($first),
-            'operator' => $this->compiler->normalizeOperator($operator),
-            'second' => trim($second),
-        ];
+        $this->addJoin('INNER', $table, $first, $operator, $second);
         return $this;
     }
 
-    public function leftJoin(string $table, string $first, string $operator, string $second): self
+    /**
+     * @see join()
+     */
+    public function leftJoin(string $table, Closure|string $first, string $operator = '', string $second = ''): self
     {
-        $this->joins[] = [
-            'type' => 'LEFT',
-            'table' => trim($table),
-            'first' => trim($first),
-            'operator' => $this->compiler->normalizeOperator($operator),
-            'second' => trim($second),
-        ];
+        $this->addJoin('LEFT', $table, $first, $operator, $second);
         return $this;
     }
 
-    public function rightJoin(string $table, string $first, string $operator, string $second): self
+    /**
+     * @see join()
+     */
+    public function rightJoin(string $table, Closure|string $first, string $operator = '', string $second = ''): self
     {
+        $this->addJoin('RIGHT', $table, $first, $operator, $second);
+        return $this;
+    }
+
+    private function addJoin(string $type, string $table, Closure|string $first, string $operator, string $second): void
+    {
+        if ($first instanceof Closure) {
+            $joinClause = new JoinClause($type, $table, $this->compiler);
+            $first($joinClause);
+            $this->joins[] = [
+                'type' => $type,
+                'table' => $joinClause->table,
+                'clause' => $joinClause,
+            ];
+            return;
+        }
+
         $this->joins[] = [
-            'type' => 'RIGHT',
+            'type' => $type,
             'table' => trim($table),
             'first' => trim($first),
             'operator' => $this->compiler->normalizeOperator($operator),
             'second' => trim($second),
         ];
-        return $this;
     }
 
     public function crossJoin(string $table): self
@@ -252,10 +269,14 @@ class QueryBuilder
         return $this;
     }
 
-    public function orderBy(string $column, string $direction = 'asc'): self
+    public function orderBy(string|RawExpression $column, string $direction = 'asc'): self
     {
         $dir = strtoupper(trim($direction)) === 'DESC' ? 'DESC' : 'ASC';
-        $this->orders[] = ['column' => trim($column), 'direction' => $dir];
+        if ($column instanceof RawExpression) {
+            $this->orders[] = ['column' => (string) $column, 'direction' => $dir, 'raw' => true];
+        } else {
+            $this->orders[] = ['column' => trim($column), 'direction' => $dir];
+        }
         return $this;
     }
 
@@ -875,6 +896,17 @@ class QueryBuilder
     private function addWhere(string $boolean, string $column, mixed $operatorOrValue, mixed $value, bool $hasExplicitValue): self
     {
         [$operator, $resolvedValue] = $this->resolveOperatorAndValue($operatorOrValue, $value, $hasExplicitValue);
+
+        // Handle null comparisons: = NULL → IS NULL, !=/<> NULL → IS NOT NULL
+        if ($resolvedValue === null && in_array($operator, ['=', '!=', '<>'], true)) {
+            $this->wheres[] = [
+                'type' => 'raw',
+                'boolean' => $boolean,
+                'sql' => $this->compiler->quoteIdentifier(trim($column)) . ' IS' . ($operator === '=' ? '' : ' NOT') . ' NULL',
+            ];
+            return $this;
+        }
+
         $param = 'w_' . $this->whereCounter;
         $this->whereCounter++;
 

@@ -34,6 +34,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     private array $original = [];
     private bool $exists = false;
     protected string $primaryKey = 'id';
+    protected bool $timestamps = true;
 
     /** @var array<string, array<int|string, static>> */
     protected static array $identityMap = [];
@@ -398,6 +399,19 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     public function save(): bool
     {
         $data = $this->getDirty();
+
+        // Auto-set timestamps
+        if ($this->timestamps) {
+            $now = date('Y-m-d H:i:s');
+            if (!$this->exists && !isset($data['created_at'])) {
+                $data['created_at'] = $now;
+                $this->attributes['created_at'] = $now;
+            }
+            if (!isset($data['updated_at'])) {
+                $data['updated_at'] = $now;
+                $this->attributes['updated_at'] = $now;
+            }
+        }
 
         if ($data === []) {
             return true;

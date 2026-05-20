@@ -25,13 +25,18 @@ final class NewProjectCommand implements \Siro\Core\Commands\CommandInterface {
 
         mkdir($targetDir, 0755, true);
 
-        $cmd = sprintf('composer create-project sirosoft/api %s --no-interaction 2>&1', escapeshellarg($targetDir));
+        $cmd = sprintf('composer create-project sirosoft/api %s --no-interaction 2>&1', escapeshellarg($name));
         passthru($cmd, $exitCode);
         if ($exitCode !== 0) { $this->error("Failed to create project."); return $exitCode; }
 
-        passthru("php " . escapeshellarg($targetDir . "/siro") . " key:generate 2>&1");
+        chdir($name);
+        passthru("php siro key:generate 2>&1");
 
-        copy($targetDir . '/.env.example', $targetDir . '/.env');
+        $envExample = getcwd() . '/.env.example';
+        $envFile = getcwd() . '/.env';
+        if (file_exists($envExample) && !file_exists($envFile)) {
+            copy($envExample, $envFile);
+        }
 
         $this->success("SiroPHP project '{$name}' created successfully!");
         $this->write("  cd {$name}");

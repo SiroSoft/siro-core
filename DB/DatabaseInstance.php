@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core\DB;
 
 use PDO;
+use PDOException;
 use PDOStatement;
 use RuntimeException;
 use Siro\Core\Cache;
@@ -77,20 +78,25 @@ final class DatabaseInstance implements DatabaseInterface
         $persistent = isset($config['persistent']) && $config['persistent'] === true;
         $emulatePrepares = $persistent || $driver === 'sqlite';
 
-        if ($driver === 'sqlite') {
-            $this->pdoInstances[$name] = new PDO($dsn, null, null, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_PERSISTENT => $persistent,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ]);
-        } else {
-            $this->pdoInstances[$name] = new PDO($dsn, $username, $password, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_PERSISTENT => $persistent,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ]);
+        try {
+            if ($driver === 'sqlite') {
+                $this->pdoInstances[$name] = new PDO($dsn, null, null, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_PERSISTENT => $persistent,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                ]);
+            } else {
+                $this->pdoInstances[$name] = new PDO($dsn, $username, $password, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_PERSISTENT => $persistent,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                ]);
+            }
+        } catch (PDOException $e) {
+            Logger::error('Database connection failed: ' . $e->getMessage() . " ({$driver}:{$host}:{$port}/{$database})");
+            throw new DatabaseConnectionException($driver, $host, $port, $e->getMessage());
         }
 
         return $this->pdoInstances[$name];
