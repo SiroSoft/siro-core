@@ -152,40 +152,40 @@ class QueryBuilder
     }
 
     /**
-     * @param string|Closure $table Table name or Closure receiving JoinClause
+     * Join with simple condition or Closure for complex conditions.
+     *
+     * Simple: ->join('orders', 'users.id', '=', 'orders.user_id')
+     * Closure: ->join('orders', function (JoinClause $j) { $j->on(...)->where(...); })
      */
-    public function join(string|Closure $table, string $first = '', string $operator = '', string $second = ''): self
+    public function join(string $table, Closure|string $first, string $operator = '', string $second = ''): self
     {
         $this->addJoin('INNER', $table, $first, $operator, $second);
         return $this;
     }
 
     /**
-     * @param string|Closure $table Table name or Closure receiving JoinClause
+     * @see join()
      */
-    public function leftJoin(string|Closure $table, string $first = '', string $operator = '', string $second = ''): self
+    public function leftJoin(string $table, Closure|string $first, string $operator = '', string $second = ''): self
     {
         $this->addJoin('LEFT', $table, $first, $operator, $second);
         return $this;
     }
 
     /**
-     * @param string|Closure $table Table name or Closure receiving JoinClause
+     * @see join()
      */
-    public function rightJoin(string|Closure $table, string $first = '', string $operator = '', string $second = ''): self
+    public function rightJoin(string $table, Closure|string $first, string $operator = '', string $second = ''): self
     {
         $this->addJoin('RIGHT', $table, $first, $operator, $second);
         return $this;
     }
 
-    /**
-     * @param string|Closure $table
-     */
-    private function addJoin(string $type, string|Closure $table, string $first, string $operator, string $second): void
+    private function addJoin(string $type, string $table, Closure|string $first, string $operator, string $second): void
     {
-        if ($table instanceof Closure) {
-            $joinClause = new JoinClause($type, '', $this->compiler);
-            $table($joinClause);
+        if ($first instanceof Closure) {
+            $joinClause = new JoinClause($type, $table, $this->compiler);
+            $first($joinClause);
             $this->joins[] = [
                 'type' => $type,
                 'table' => $joinClause->table,

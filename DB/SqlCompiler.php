@@ -58,8 +58,17 @@ final class SqlCompiler
             return $identifier;
         }
 
+        // Handle table aliases: "table_name as alias"
+        if (preg_match('/^(\S+)\s+as\s+(\S+)$/i', $identifier, $m)) {
+            $result = $this->quoteIdentifier($m[1]) . ' AS ' . $this->quoteIdentifier($m[2]);
+            self::$quotedIdentifierCache[$identifier] = $result;
+            return $result;
+        }
+
         if (preg_match('/[^a-zA-Z0-9_.\s\-]/', $identifier)) {
-            throw new \RuntimeException('Identifier contains illegal characters (semicolons, comments, parentheses). Use RawExpression or raw methods for SQL functions.');
+            preg_match_all('/[^a-zA-Z0-9_.\s\-]/', $identifier, $invalidChars);
+            $chars = array_unique($invalidChars[0]);
+            throw new \RuntimeException('Invalid identifier: contains illegal characters [' . implode('', $chars) . '] in "' . $identifier . '". Use RawExpression or raw methods for SQL functions.');
         }
 
         if (stripos($identifier, ';') !== false ||

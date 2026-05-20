@@ -4,29 +4,41 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+use PDO;
 use Siro\Core\DB\QueryBuilder;
 use Siro\Core\DB\RawExpression;
 
 /**
- * Facade for Database::table().
+ * Facade for Database operations.
  *
- * Provides syntactic sugar: DB::table('users') instead of
- * Database::table('users').
+ * Provides syntactic sugar for common Database methods.
  *
  * @package Siro\Core
  */
 final class DB
 {
+    public static function connection(?string $name = null): PDO
+    {
+        return Database::connection($name);
+    }
+
     public static function table(string $table): QueryBuilder
     {
         return Database::table($table);
     }
 
+    public static function select(string $sql, array $params = [], ?string $connection = null): array
+    {
+        return Database::select($sql, $params, $connection);
+    }
+
+    public static function execute(string $sql, array $params = [], ?string $connection = null): int
+    {
+        return Database::execute($sql, $params, $connection);
+    }
+
     /**
      * Create a raw expression for use in queries.
-     *
-     * Passthrough for RawExpression. Useful in groupBy, orderBy, select:
-     *   DB::table('users')->groupBy(DB::raw('YEAR(created_at)'))
      */
     public static function raw(string $value): RawExpression
     {
