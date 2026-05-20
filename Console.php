@@ -267,6 +267,10 @@ final class Console
         }
 
         if ($command === 'list') {
+            if (in_array('--raw', $args, true)) {
+                $this->printRawList();
+                return 0;
+            }
             $this->printList();
             return 0;
         }
@@ -437,6 +441,14 @@ final class Console
         }
 
         $this->write('Run "php siro <command> --help" for command details.');
+    }
+
+    private function printRawList(): void
+    {
+        $registry = array_merge($this->commandRegistry(), self::$appCommands);
+        foreach ($registry as $cmd => $info) {
+            $this->write($cmd);
+        }
     }
 
     /** @param array{handler: class-string, desc: string, usage: string} $info */
