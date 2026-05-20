@@ -248,6 +248,11 @@ final class Blueprint
         $type = $this->compileColumnType($col);
         $parts = [$type];
 
+        // AFTER clause (MySQL only)
+        if ($col->afterColumn !== null && $isAlter && ($this->driver === 'mysql' || $this->driver === 'mariadb')) {
+            $parts[] = 'AFTER ' . $this->quote($col->afterColumn);
+        }
+
         $defaultNotNull = !($col->type === 'id');
         foreach ($this->commands as $cmd) {
             /** @var array<int, string> $primaryColumns */
