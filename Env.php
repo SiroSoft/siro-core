@@ -24,6 +24,20 @@ final class Env
     private static bool $loaded = false;
     private static string $cachedFile = '';
 
+    private const SENSITIVE_KEYS = [
+        'APP_KEY',
+        'JWT_SECRET',
+        'JWT_PREVIOUS_SECRET',
+        'JWT_PRIVATE_KEY',
+        'JWT_PUBLIC_KEY',
+        'JWT_KEY_VERSION',
+        'MAIL_PASSWORD',
+        'MAIL_USERNAME',
+        'REDIS_PASSWORD',
+        'DB_PASSWORD',
+        'DB_DATABASE',
+    ];
+
     /** Priority-ordered env files (highest last) */
     private const ENV_PRIORITY = [
         'siro',       // .env.siro — framework defaults
@@ -180,7 +194,9 @@ final class Env
 
         $data = [];
         foreach ($_ENV as $key => $value) {
-            $data[$key] = $value;
+            if (!in_array($key, self::SENSITIVE_KEYS, true)) {
+                $data[$key] = $value;
+            }
         }
 
         $payload = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
