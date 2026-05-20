@@ -44,6 +44,7 @@ final class CspMiddleware implements MiddlewareInterface
             $response->header('Content-Security-Policy', $policy);
             $response->header('X-Content-Type-Options', 'nosniff');
             $response->header('X-Frame-Options', 'DENY');
+            $response->header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
         return $response;

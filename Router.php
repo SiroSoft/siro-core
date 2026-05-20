@@ -240,20 +240,17 @@ final class Router
             return false;
         }
 
-        $raw = (string) file_get_contents($cacheFile);
-        $payload = substr($raw, strlen('<?php exit; ?>'));
-        $sep = strrpos($payload, '.hmac.');
-        if ($sep === false) {
-            return false;
-        }
-        $json = substr($payload, 0, $sep);
-        $hmac = trim(substr($payload, $sep + 6));
+        /** @var mixed $data */
+        $data = require $cacheFile;
+        if (!is_array($data)) { return false; }
+        $staticData = is_array($data['static'] ?? null) ? $data['static'] : [];
+        $dynamicData = is_array($data['dynamic'] ?? null) ? $data['dynamic'] : [];
+        $storedHmac = is_string($data['hmac'] ?? null) ? $data['hmac'] : '';
+        if ($storedHmac === '') { return false; }
+
         $secret = (string) Env::get('APP_KEY', '');
-        if ($secret === '' || !hash_equals(hash_hmac('sha256', $json, $secret), $hmac)) {
-            return false;
-        }
-        $data = json_decode($json, true);
-        if (!is_array($data) || !isset($data['static'], $data['dynamic'])) {
+        $hmacCheck = hash_hmac('sha256', serialize($staticData) . serialize($dynamicData), $secret);
+        if ($secret !== '' && !hash_equals($hmacCheck, $storedHmac)) {
             return false;
         }
 
@@ -293,11 +290,13 @@ final class Router
             }
         }
 
-        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($json === false) { return false; }
         $secret = (string) Env::get('APP_KEY', '');
-        $hmac = $secret !== '' ? hash_hmac('sha256', $json, $secret) : '';
-        $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
+        $staticData = $data['static'] ?? [];
+        $dynamicData = $data['dynamic'] ?? [];
+        $hmac = $secret !== '' ? hash_hmac('sha256', serialize($staticData) . serialize($dynamicData), $secret) : '';
+        $data['hmac'] = $hmac;
+        $exported = var_export($data, true);
+        $content = '<?php return ' . $exported . ';' . PHP_EOL;
 
         return file_put_contents($cacheFile, $content) !== false;
     }
