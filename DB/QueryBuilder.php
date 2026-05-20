@@ -269,10 +269,14 @@ class QueryBuilder
         return $this;
     }
 
-    public function orderBy(string $column, string $direction = 'asc'): self
+    public function orderBy(string|RawExpression $column, string $direction = 'asc'): self
     {
         $dir = strtoupper(trim($direction)) === 'DESC' ? 'DESC' : 'ASC';
-        $this->orders[] = ['column' => trim($column), 'direction' => $dir];
+        if ($column instanceof RawExpression) {
+            $this->orders[] = ['column' => (string) $column, 'direction' => $dir, 'raw' => true];
+        } else {
+            $this->orders[] = ['column' => trim($column), 'direction' => $dir];
+        }
         return $this;
     }
 
@@ -892,6 +896,17 @@ class QueryBuilder
     private function addWhere(string $boolean, string $column, mixed $operatorOrValue, mixed $value, bool $hasExplicitValue): self
     {
         [$operator, $resolvedValue] = $this->resolveOperatorAndValue($operatorOrValue, $value, $hasExplicitValue);
+
+        // Handle null comparisons: = NULL → IS NULL, !=/<> NULL → IS NOT NULL
+        if ($resolvedValue === null && in_array($operator, ['=', '!=', '<>'], true)) {
+            $this->wheres[] = [
+                'type' => 'raw',
+                'boolean' => $boolean,
+                'sql' => $this->compiler->quoteIdentifier(trim($column)) . ' IS' . ($operator === '=' ? '' : ' NOT') . ' NULL',
+            ];
+            return $this;
+        }
+
         $param = 'w_' . $this->whereCounter;
         $this->whereCounter++;
 

@@ -86,7 +86,7 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this;
     }
 
-    public function orderBy(string $column, string $direction = 'asc'): static
+    public function orderBy(string|\Siro\Core\DB\RawExpression $column, string $direction = 'asc'): static
     {
         parent::orderBy($column, $direction);
         return $this;
