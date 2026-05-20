@@ -29,7 +29,7 @@ final class DB
 
     /**
      * @param array<int|string, mixed> $params
-     * @return list<array<string, mixed>>
+     * @return array<int, array<string, mixed>>
      */
     public static function select(string $sql, array $params = [], ?string $connection = null): array
     {
