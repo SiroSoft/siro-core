@@ -125,9 +125,11 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         file_put_contents($outputDir . DIRECTORY_SEPARATOR . 'openapi.json', $json);
         $this->write('Generated: ' . $outputDir . DIRECTORY_SEPARATOR . 'openapi.json (' . count($paths) . ' endpoints)');
 
+        // Always copy to public for Swagger UI access
+        $this->copyToPublic($outputDir);
+
         if ($this->withSwagger) {
             $this->generateSwaggerUi($outputDir);
-            $this->copyToPublic($outputDir);
         }
         return 0;
     }
