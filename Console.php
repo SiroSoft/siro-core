@@ -71,6 +71,7 @@ use Siro\Core\Commands\MakeIdempotencyTableCommand;
 use Siro\Core\Commands\MakeApiKeysTableCommand;
 use Siro\Core\Commands\MakeApiKeyCommand;
 use Siro\Core\Commands\MakeMiddlewareCommand;
+use Siro\Core\Commands\MakeRequestCommand;
 use Siro\Core\Commands\MakeListenerCommand;
 use Siro\Core\Commands\MakeObserverCommand;
 use Siro\Core\Commands\TestCommand;
@@ -151,6 +152,7 @@ final class Console
             'make:repository' => ['handler' => MakeRepositoryCommand::class, 'desc' => 'Generate repository class', 'usage' => 'php siro make:repository <name>'],
             'make:middleware'  => ['handler' => MakeMiddlewareCommand::class, 'desc' => 'Generate middleware class', 'usage' => 'php siro make:middleware <name>'],
             'make:listener'    => ['handler' => MakeListenerCommand::class, 'desc' => 'Generate event listener', 'usage' => 'php siro make:listener <name>'],
+            'make:request'     => ['handler' => MakeRequestCommand::class, 'desc' => 'Generate FormRequest class', 'usage' => 'php siro make:request <name>'],
             'make:observer'    => ['handler' => MakeObserverCommand::class, 'desc' => 'Generate model observer', 'usage' => 'php siro make:observer <name>'],
             'make:idempotency-table' => ['handler' => MakeIdempotencyTableCommand::class, 'desc' => 'Create idempotency table', 'usage' => 'php siro make:idempotency-table'],
             'make:apikey-table' => ['handler' => MakeApiKeysTableCommand::class, 'desc' => 'Create API keys table', 'usage' => 'php siro make:apikey-table'],
