@@ -60,6 +60,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
         $routes = $app->router->getRoutes();
 
         $items = [];
+        $folders = [];  // Group by tag
         $hasAuth = false;
         $authEndpoint = null;
         $registerEndpoint = null;
@@ -127,8 +128,8 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
                     'value' => '1',
                     'description' => $param,
                 ];
-                // Replace {param} with :param in raw URL for Postman
-                $request['url']['raw'] = '{{base_url}}' . ((string) preg_replace('/\{(\w+)\}/', ':$$1', $path));
+                // Replace {param} with {{param}} in raw URL for Postman
+                $request['url']['raw'] = '{{base_url}}' . ((string) preg_replace('/\{(\w+)\}/', '{{\$1}}', $path));
             }
 
             if ($body !== null) {
@@ -141,11 +142,20 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
 
             $tag = $this->handlerToTag($handler);
 
-            $items[] = [
+            // Build response example from handler
+            $responseExample = $this->buildResponseExample($handler, $method, $path);
+
+            $item = [
                 'name' => $method . ' ' . $path,
                 'request' => $request,
-                'response' => [],
+                'response' => $responseExample !== null ? [$responseExample] : [],
             ];
+
+            // Group by tag into folders
+            if (!isset($folders[$tag])) {
+                $folders[$tag] = ['name' => $tag, 'item' => []];
+            }
+            $folders[$tag]['item'][] = $item;
         }
 
         $collection = [
@@ -158,7 +168,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
                 ['key' => 'base_url', 'value' => 'http://' . $host, 'type' => 'string'],
                 ['key' => 'token', 'value' => '', 'type' => 'string'],
             ],
-            'item' => $items,
+            'item' => array_values($folders),
         ];
 
         // Add auth pre-request script if auth endpoints exist
@@ -329,5 +339,55 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         return 'string';
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function buildResponseExample(string $handler, string $method, string $path): ?array
+    {
+        if ($method === 'delete') {
+            return [
+                'name' => 'Success (204)',
+                'code' => 204,
+                'body' => '',
+            ];
+        }
+
+        // Try to find resource file for example data
+        $resourceName = null;
+        if (preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) {
+            $resourceName = $m[1];
+        }
+
+        if ($resourceName === null) return null;
+
+        $resourceFile = $this->basePath . '/app/Resources/' . $resourceName . 'Resource.php';
+        if (!file_exists($resourceFile)) return null;
+
+        $content = (string) file_get_contents($resourceFile);
+        $properties = [];
+
+        if (preg_match('/function\s+toArray\s*\(\)\s*:\s*array\s*\{([^}]+)\}/s', $content, $rm)) {
+            preg_match_all('/\'(\w+)\'\s*=>/', $rm[1], $keys);
+            foreach ($keys[1] as $key) {
+                if (str_contains($key, 'password') || str_contains($key, 'token') || $key === 'secret') continue;
+                $properties[$key] = $this->ruleToExample($key, []);
+            }
+        }
+
+        $isList = $method === 'get' && !str_contains($path, '{');
+        $data = $isList ? [$properties] : $properties;
+
+        return [
+            'name' => 'Success (' . ($method === 'post' ? '201' : '200') . ')',
+            'code' => (int) ($method === 'post' ? 201 : 200),
+            'body' => json_encode([
+                'success' => true,
+                'message' => ($method === 'post' ? 'Created' : ($method === 'get' ? ($isList ? 'Fetched' : 'Found') : 'Updated')),
+                'data' => $data,
+                'meta' => $isList ? ['page' => 1, 'per_page' => 20, 'total' => 50, 'last_page' => 3] : null,
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+        ];
     }
 }
