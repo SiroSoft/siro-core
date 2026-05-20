@@ -82,14 +82,14 @@ final class DatabaseInstance implements DatabaseInterface
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_PERSISTENT => $persistent,
-                PDO::ATTR_EMULATE_PREPARES => true,
+                PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } else {
             $this->pdoInstances[$name] = new PDO($dsn, $username, $password, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_PERSISTENT => $persistent,
-                PDO::ATTR_EMULATE_PREPARES => $emulatePrepares,
+                PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         }
 

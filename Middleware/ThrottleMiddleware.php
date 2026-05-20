@@ -30,7 +30,7 @@ final class ThrottleMiddleware implements MiddlewareInterface
         }
 
         $ip = $request->ip();
-        $route = rawurlencode($request->method() . ':' . $request->path());
+        $route = rawurlencode($request->method() . ':' . self::normalizePath($request->path()));
         $key = sprintf('rate:%s:%s', $ip, $route);
 
         try {
@@ -105,7 +105,7 @@ final class ThrottleMiddleware implements MiddlewareInterface
             : (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : (string) getcwd());
 
         $ip = $request->ip();
-        $route = rawurlencode($request->method() . ':' . $request->path());
+        $route = rawurlencode($request->method() . ':' . self::normalizePath($request->path()));
         $key = sprintf('rate:%s:%s', $ip, $route);
 
         $storeDir = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'rate_limit';
@@ -237,5 +237,20 @@ final class ThrottleMiddleware implements MiddlewareInterface
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /** Normalize path by replacing numeric IDs and UUIDs with placeholders */
+    private static function normalizePath(string $path): string
+    {
+        $segments = explode('/', $path);
+        foreach ($segments as &$segment) {
+            if ($segment === '') {
+                continue;
+            }
+            if (ctype_digit($segment)) {
+                $segment = '{id}';
+            }
+        }
+        return implode('/', $segments);
     }
 }

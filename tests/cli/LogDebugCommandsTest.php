@@ -20,17 +20,23 @@ class LogDebugCommandsTest extends TestCase
         mkdir($this->tempDir . '/storage/logs/traces', 0777, true);
         mkdir($this->tempDir . '/storage/framework', 0777, true);
         
-        // Create some fake log data
+        // Create some fake log data (daily/monthly subdirectory for log commands)
         $logDir = $this->tempDir . '/storage/logs';
-        file_put_contents($logDir . '/error-' . date('Y-m-d') . '.log', 
+        $monthDir = $logDir . '/daily/' . date('Y-m');
+        mkdir($monthDir, 0777, true);
+        mkdir($logDir . '/main', 0777, true);
+        file_put_contents($monthDir . '/error-' . date('Y-m-d') . '.log', 
             "[2026-05-13 10:00:00] RuntimeException: Test error in test.php:10\n" .
             "[2026-05-13 10:01:00] InvalidArgumentException: Bad request in api.php:50\n");
-        file_put_contents($logDir . '/request-' . date('Y-m-d') . '.log',
+        file_put_contents($monthDir . '/request-' . date('Y-m-d') . '.log',
             "[2026-05-13 10:00:00] GET /api/users 200 15.20ms trace:abc123 ip:127.0.0.1\n");
-        file_put_contents($logDir . '/security-' . date('Y-m-d') . '.log',
+        file_put_contents($monthDir . '/security-' . date('Y-m-d') . '.log',
             "[2026-05-13 10:00:00] [SECURITY] auth.failed {\"ip\":\"127.0.0.1\"}\n");
-        file_put_contents($logDir . '/slow-' . date('Y-m-d') . '.log',
+        file_put_contents($monthDir . '/slow-' . date('Y-m-d') . '.log',
             "[2026-05-13 10:00:00] GET /api/reports 500 2500.50ms (threshold: 100ms)\n");
+        // SlowLogCommand reads from main/slow.log (format: METHOD /path STATUS TIMEms)
+        file_put_contents($logDir . '/main/slow.log',
+            "[2026-05-13 10:00:00] GET /api/reports 500 2500.50ms\n");
         
         // Create a trace file
         file_put_contents($logDir . '/traces/trace_001.json',
@@ -38,7 +44,7 @@ class LogDebugCommandsTest extends TestCase
         
         putenv('SIRO_BASE_PATH=' . $this->tempDir);
         Logger::boot($this->tempDir);
-        $this->console = new Console('');
+        $this->console = new Console($this->tempDir);
     }
 
     protected function tearDown(): void
@@ -81,6 +87,8 @@ class LogDebugCommandsTest extends TestCase
 
     public function testLogSlow(): void
     {
+        $slowFile = $this->tempDir . '/storage/logs/main/slow.log';
+        $this->assertFileExists($slowFile, 'slow.log must exist');
         ob_start();
         $exitCode = $this->console->run(['siro', 'log:slow', '--limit=5']);
         $output = ob_get_clean();

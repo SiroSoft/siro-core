@@ -48,6 +48,22 @@ final class Mail
     private static array $fakeMails = [];
     private const DRIVER_SMTP = 'smtp';
 
+    /** Strip SMTP-injection characters (\r\n) from header values */
+    private static function sanitizeHeader(string $value): string
+    {
+        return str_replace(["\r\n", "\r", "\n", "\0"], '', $value);
+    }
+
+    /** Strip SMTP-injection from an email address */
+    private static function sanitizeAddress(string $address): string
+    {
+        $clean = str_replace(["\r\n", "\r", "\n", "\0", ' ', "\t"], '', $address);
+        if ($clean !== $address) {
+            Logger::warning("SMTP header injection blocked in address: " . $address);
+        }
+        return $clean;
+    }
+
     public static function reset(): void
     {
         self::$faked = false;
@@ -104,7 +120,7 @@ final class Mail
     public static function to(string $address): self
     {
         $instance = new self();
-        $instance->to = $address;
+        $instance->to = self::sanitizeAddress($address);
         return $instance;
     }
 
@@ -113,7 +129,7 @@ final class Mail
      */
     public function subject(string $subject): self
     {
-        $this->subject = $subject;
+        $this->subject = self::sanitizeHeader($subject);
         return $this;
     }
 
@@ -142,7 +158,7 @@ final class Mail
      */
     public function cc(string $address): self
     {
-        $this->cc[] = $address;
+        $this->cc[] = self::sanitizeAddress($address);
         return $this;
     }
 
@@ -151,7 +167,7 @@ final class Mail
      */
     public function bcc(string $address): self
     {
-        $this->bcc[] = $address;
+        $this->bcc[] = self::sanitizeAddress($address);
         return $this;
     }
 
@@ -160,7 +176,7 @@ final class Mail
      */
     public function replyTo(string $address): self
     {
-        $this->replyTo = $address;
+        $this->replyTo = self::sanitizeAddress($address);
         return $this;
     }
 
@@ -172,18 +188,19 @@ final class Mail
      */
     public function attach(string $path, string $name = ''): self
     {
-        if (!is_file($path)) {
+        $real = realpath($path);
+        if ($real === false || !is_file($real)) {
             throw new RuntimeException("Attachment file not found: {$path}");
         }
 
-        $mime = mime_content_type($path) ?: 'application/octet-stream';
+        $mime = mime_content_type($real) ?: 'application/octet-stream';
         if ($name === '') {
             $name = basename($path);
         }
 
         $this->attachments[] = [
-            'path' => $path,
-            'name' => $name,
+            'path' => $real,
+            'name' => self::sanitizeHeader($name),
             'mime' => $mime,
         ];
 
@@ -271,12 +288,13 @@ final class Mail
         $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost');
         $fromName = (string) Env::get('MAIL_FROM_NAME', 'Siro API');
 
+        $safeFromName = self::sanitizeHeader($fromName);
         $headers = [
-            'From: ' . $fromName . ' <' . $fromAddress . '>',
+            'From: ' . $safeFromName . ' <' . $fromAddress . '>',
             'MIME-Version: 1.0',
             'Content-Type: ' . $this->contentType . '; charset=' . $this->charset,
             'Content-Transfer-Encoding: base64',
-            'X-Mailer: SiroPHP/' . (Env::get('APP_VERSION', '0.8.4')),
+            'X-Mailer: SiroPHP/' . self::sanitizeHeader((string) Env::get('APP_VERSION', '0.8.4')),
         ];
 
         if ($this->replyTo !== '') {
@@ -319,12 +337,14 @@ final class Mail
         $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost');
         $fromName = (string) Env::get('MAIL_FROM_NAME', 'Siro API');
 
+        $safeFromName = self::sanitizeHeader($fromName);
+        $safeReplyTo = self::sanitizeAddress($this->replyTo ?: $fromAddress);
         $body = chunk_split(base64_encode($this->body), 76, "\r\n");
         $headers = [
-            'From: ' . $fromName . ' <' . $fromAddress . '>',
-            'Reply-To: ' . ($this->replyTo ?: $fromAddress),
+            'From: ' . $safeFromName . ' <' . $fromAddress . '>',
+            'Reply-To: ' . $safeReplyTo,
             'MIME-Version: 1.0',
-            'X-Mailer: SiroPHP/' . (Env::get('APP_VERSION', '0.8.4')),
+            'X-Mailer: SiroPHP/' . self::sanitizeHeader((string) Env::get('APP_VERSION', '0.8.4')),
         ];
 
         if ($this->attachments !== []) {
@@ -414,25 +434,29 @@ final class Mail
                 $this->smtpReadResponse($socket);
             }
 
-            $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost');
+            $fromAddress = self::sanitizeAddress((string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost'));
+            $safeTo = self::sanitizeAddress($to);
+            $safeSubject = self::sanitizeHeader($subject);
             $this->smtpCommand($socket, "MAIL FROM:<{$fromAddress}>");
             $this->smtpReadResponse($socket);
-            $this->smtpCommand($socket, "RCPT TO:<{$to}>");
+            $this->smtpCommand($socket, "RCPT TO:<{$safeTo}>");
             $this->smtpReadResponse($socket);
 
             foreach ($this->cc as $ccAddr) {
-                $this->smtpCommand($socket, "RCPT TO:<{$ccAddr}>");
+                $sanitizedCc = self::sanitizeAddress($ccAddr);
+                $this->smtpCommand($socket, "RCPT TO:<{$sanitizedCc}>");
                 $this->smtpReadResponse($socket);
             }
             foreach ($this->bcc as $bccAddr) {
-                $this->smtpCommand($socket, "RCPT TO:<{$bccAddr}>");
+                $sanitizedBcc = self::sanitizeAddress($bccAddr);
+                $this->smtpCommand($socket, "RCPT TO:<{$sanitizedBcc}>");
                 $this->smtpReadResponse($socket);
             }
 
             $this->smtpCommand($socket, "DATA");
             $this->smtpReadResponse($socket);
 
-            fwrite($socket, "Subject: {$subject}\r\n");
+            fwrite($socket, "Subject: {$safeSubject}\r\n");
             foreach ($headers as $header) {
                 fwrite($socket, $header . "\r\n");
             }

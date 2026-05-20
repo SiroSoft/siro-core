@@ -29,7 +29,7 @@ class QueryBuilder
     protected array $havings = [];
     /** @var array<int, array{type:string,table:string,first:string,operator:string,second:string}> */
     protected array $joins = [];
-    /** @var array<int, string> */
+    /** @var array<int, string|RawExpression> */
     protected array $groups = [];
     /** @var array<int, array{column:string,direction:string}> */
     protected array $orders = [];
@@ -199,6 +199,7 @@ class QueryBuilder
     }
 
     /** @param array<int, string>|string ...$columns */
+    /** @param array<int, string>|string ...$columns */
     public function groupBy(array|string ...$columns): self
     {
         if (count($columns) === 1 && is_array($columns[0])) {
@@ -216,6 +217,12 @@ class QueryBuilder
         return $this;
     }
 
+    public function groupByRaw(string $expression): self
+    {
+        $this->groups[] = new RawExpression($expression);
+        return $this;
+    }
+
     public function having(string $column, mixed $operatorOrValue, mixed $value = null): self
     {
         $hasExplicitValue = func_num_args() >= 3;
@@ -226,6 +233,23 @@ class QueryBuilder
     {
         $hasExplicitValue = func_num_args() >= 3;
         return $this->addHaving('OR', $column, $operatorOrValue, $value, $hasExplicitValue);
+    }
+
+    /**
+     * @param array<int|string, int|string> $bindings
+     */
+    public function havingRaw(string $expression, array $bindings = []): self
+    {
+        $this->havings[] = [
+            'boolean' => 'AND',
+            'column' => '1',
+            'operator' => '=',
+            'param' => '',
+            'raw' => true,
+            'sql' => $expression,
+            'bindings' => $bindings,
+        ];
+        return $this;
     }
 
     public function orderBy(string $column, string $direction = 'asc'): self

@@ -15,6 +15,7 @@ interface LoggerInterface
     public function request(string $method, string $path, int $status, float $timeMs, string $ip = '', string $traceId = '', string $userAgent = ''): void;
     public function slowRequest(string $method, string $path, int $status, float $timeMs): void;
     public function error(Throwable|string $error): void;
+    public function warning(string $message): void;
     /** @param array<string, mixed> $context */
     public function debug(string $message, array $context = []): void;
     /** @param array<string, mixed> $context */

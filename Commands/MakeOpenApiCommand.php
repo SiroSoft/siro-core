@@ -202,6 +202,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $path = $this->safeStr($route['path'] ?? '/');
         $handler = $this->safeStr($route['handler'] ?? '');
         $middleware = $route['middleware'] ?? [];
+        /** @var array<string, string> $where */
         $where = isset($route['where']) && is_array($route['where']) ? $route['where'] : [];
 
         // Derive tag from controller class or path
@@ -346,7 +347,6 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
      * @param array<string, string> $where
      * @return list<array<string, mixed>>
      */
-    /** @param array<string, string> $where */
     private function extractPathParams(string $path, array $where = []): array
     {
         $params = [];
@@ -704,9 +704,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         foreach ($rules as $rule) {
             if (str_starts_with($rule, 'in:')) {
                 $enumValues = explode(',', substr($rule, 3));
-                if (count($enumValues) > 0) {
-                    $prop['enum'] = $enumValues;
-                }
+                $prop['enum'] = $enumValues;
             }
         }
 
@@ -733,7 +731,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         // Example value
-        if (isset($prop['enum']) && count($prop['enum']) > 0) {
+        if (isset($prop['enum'])) {
             $prop['example'] = $prop['enum'][0];
         } else {
             $prop['example'] = match ($type) {

@@ -262,6 +262,108 @@ DB::table('users')->inRandomOrder()->get();
 DB::table('users')->inRandomOrder(42)->get();  // MySQL only
 ```
 
+### Raw GROUP BY / HAVING (v0.28)
+
+Sử dụng `groupByRaw()` khi cần SQL function trong GROUP BY:
+
+```php
+DB::table('orders')
+    ->selectRaw('YEAR(created_at) AS year, COUNT(*) AS total')
+    ->groupByRaw('YEAR(created_at)')
+    ->get();
+```
+
+Sử dụng `havingRaw()` cho HAVING clause với raw expression:
+
+```php
+DB::table('orders')
+    ->groupBy('status')
+    ->havingRaw('COUNT(*) > ?', [10])
+    ->get();
+```
+
+Sử dụng `DB::raw()` để tạo raw expression trong bất kỳ clause nào:
+
+```php
+DB::table('users')
+    ->groupBy(DB::raw('YEAR(created_at)'))
+    ->orderBy(DB::raw('MAX(created_at)'), 'desc')
+    ->get();
+```
+
+> **Note:** `groupBy()` quotes identifiers automatically. For SQL functions, use `groupByRaw()` or `DB::raw()`.
+
+---
+
+## Migrations
+
+### Creating a Migration
+
+```bash
+php siro make:migration create_products_table
+# → database/migrations/2026_05_19_100000_create_products_table.php
+```
+
+File naming format: `Y_m_d_His_description.php` (standardized since v0.28.1).
+
+### Writing a Migration
+
+```php
+// database/migrations/2026_05_19_100000_create_products_table.php
+Schema::create('products', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+    $table->text('description')->nullable();
+    $table->decimal('price', 10, 2);
+    $table->timestamps();
+    $table->softDeletes();
+});
+```
+
+### Migration Tracking
+
+Siro uses a `migrations` table to track which migrations have been applied:
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | BIGINT AUTO_INCREMENT | PRIMARY KEY |
+| `migration` | VARCHAR(255) UNIQUE | Migration filename |
+| `batch` | INT | Batch number (increments each migrate run) |
+| `created_at` | TIMESTAMP | When the migration was applied |
+
+- **Rollback** removes the migration record and runs `down()`.
+- **File rename**: If you rename a migration file after it's been applied, the `migrations` table still stores the old name. `migrate:status` will show both the pending new name and the applied old name. To fix: `php siro migrate:rollback --step=1` or update the record manually.
+- **`migrate:fresh`** (v0.28.1): Drops all tables and re-runs all migrations from scratch.
+
+### Commands
+
+```bash
+php siro migrate                    # Run pending migrations
+php siro migrate:rollback --step=2  # Rollback 2 batches
+php siro migrate:status             # Show all migrations
+php siro migrate:status --pending   # Show only pending (v0.28.1)
+php siro migrate:fresh              # Drop + re-migrate (v0.28.1)
+php siro migrate:fresh --seed       # Drop + migrate + seed
+```
+
+### Blueprint Helpers
+
+| Method | Description |
+|---|---|
+| `$table->id()` | Auto-increment BIGINT primary key |
+| `$table->foreignId('user_id')` | Create string(36) column, use with `constrained()` (v0.28.1) |
+| `$table->string('name', 100)` | VARCHAR column |
+| `$table->integer('count')` | INT column |
+| `$table->decimal('price', 10, 2)` | Decimal column |
+| `$table->text('body')` | TEXT column |
+| `$table->boolean('active')` | TINYINT(1) column |
+| `$table->json('metadata')` | JSON column (requires MySQL 8.0+ or PostgreSQL) |
+| `$table->timestamps()` | created_at + updated_at |
+| `$table->softDeletes()` | deleted_at column |
+| `$table->index('email')` | Index |
+| `$table->unique('slug')` | Unique index |
+
 ---
 
 ## LIMIT, OFFSET, Pagination

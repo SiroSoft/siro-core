@@ -60,12 +60,12 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
             $lines = file($slowFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             if ($lines !== false) {
                 foreach (array_reverse($lines) as $line) {
-                    if (preg_match('/(\d+\.?\d*)ms.*?(\w+)\s+(\/\S+)/', $line, $m)) {
+                    if (preg_match('/^\[.*?\]\s+(\w+)\s+(\/\S+).*?(\d+\.?\d*)ms/', $line, $m)) {
                         $slowEntries[] = [
                             'line' => $line,
-                            'ms' => (float) $m[1],
-                            'method' => $m[2],
-                            'path' => $m[3],
+                            'ms' => (float) $m[3],
+                            'method' => $m[1],
+                            'path' => $m[2],
                         ];
                     }
                 }
@@ -96,6 +96,10 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
                     ];
                 }, array_keys($entries), $entries)
             );
+        } elseif ($slowEntries !== []) {
+            foreach (array_slice($slowEntries, 0, $limit) as $e) {
+                $this->write('  ' . $e['line']);
+            }
         }
 
         $this->write('');

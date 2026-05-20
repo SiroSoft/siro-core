@@ -63,7 +63,7 @@ final class MakeCommandsTest extends TestCase
         foreach ([
             '/app/Controllers/AuthController.php',
             '/app/Models/User.php',
-            '/app/Services/User.php',
+            '/app/Services/UserService.php',
         ] as $rel) {
             $f = $this->tempDir . $rel;
             $this->assertFileExists($f, "Missing $rel");

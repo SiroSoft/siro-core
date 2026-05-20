@@ -44,12 +44,12 @@ final class CliTest extends TestCase
 
     public function testConsoleVersion(): void
     {
-        $this->assertEquals('0.24.0', Console::VERSION);
+        $this->assertEquals('0.28.0', Console::VERSION);
     }
 
     public function testGetVersion(): void
     {
-        $this->assertEquals('0.24.0', Console::getVersion());
+        $this->assertEquals('0.28.0', Console::getVersion());
     }
 
     public function testConsoleCanBeInstantiated(): void

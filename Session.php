@@ -53,8 +53,9 @@ final class Session
     {
         if ($this->started) return;
 
+        // Use explicitly set ID, then cookie, then parameter, then generate new
         $cookieSession = isset($_COOKIE['siro_session']) && is_string($_COOKIE['siro_session']) ? $_COOKIE['siro_session'] : null;
-        $this->sessionId = $sessionId ?? ($cookieSession ?? $this->generateId());
+        $this->sessionId = $this->sessionId ?: ($cookieSession ?: ($sessionId ?: $this->generateId()));
 
         if (preg_match('/^[a-f0-9]{64}$/', $this->sessionId) !== 1) {
             $this->sessionId = $this->generateId();
@@ -122,6 +123,9 @@ final class Session
 
     public function setId(string $id): void
     {
+        if (preg_match('/^[a-f0-9]{64}$/', $id) !== 1) {
+            return;
+        }
         $this->sessionId = $id;
     }
 
@@ -151,9 +155,13 @@ final class Session
         $this->flash = [];
         $this->started = false;
 
-        $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
-        if (is_file($path)) {
-            unlink($path);
+        if ($this->driver === self::DRIVER_REDIS) {
+            $this->deleteFromRedis();
+        } else {
+            $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
+            if (is_file($path)) {
+                unlink($path);
+            }
         }
 
         if (!headers_sent()) {
@@ -362,6 +370,17 @@ final class Session
                 if ($encoded !== false) {
                     $redis->setex('session:' . $this->sessionId, $ttl, $encoded);
                 }
+            }
+        } catch (\Throwable) {
+        }
+    }
+
+    private function deleteFromRedis(): void
+    {
+        try {
+            $redis = $this->getRedis();
+            if ($redis !== null) {
+                $redis->del('session:' . $this->sessionId);
             }
         } catch (\Throwable) {
         }

@@ -57,7 +57,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         }
 
         $className = basename(str_replace('\\', '/', static::class));
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $className) ?? $className) . 's';
+        $replaced = preg_replace('/(?<!^)[A-Z]/', '_$0', $className);
+        return strtolower($replaced ?? $className) . 's';
     }
 
     public function getKeyName(): string
@@ -180,6 +181,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     }
 
     /** @return static|null */
+    /** @phpstan-return static|null */
     public static function find(int|string $id): ?static
     {
         if (!isset(static::$identityMap[static::class])) {
@@ -190,6 +192,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             return $map[$id];
         }
 
+        /** @phpstan-ignore new.static (safe because Model is abstract) */
         $instance = new static();
         $key = $instance->getKeyName();
         $result = $instance->query()->where($key, '=', $id)->first();
@@ -205,8 +208,10 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         return $result;
     }
 
+    /** @return static */
     private static function createInstance(): static
     {
+        /** @phpstan-ignore new.static (safe because Model is abstract) */
         return new static();
     }
 
@@ -509,6 +514,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     public static function with(mixed ...$relations): ModelQueryBuilder
     {
         $query = self::query();
+        /** @var array<string, array<int, string>> $eagerLoads */
         $eagerLoads = [];
 
         foreach ($relations as $key => $value) {
@@ -535,6 +541,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
      */
     public function load(mixed ...$relations): self
     {
+        /** @var array<string, array<int, string>> $eagerLoads */
         $eagerLoads = [];
         foreach ($relations as $key => $value) {
             if (is_string($value)) {
@@ -610,7 +617,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     /**
      * @param array<int, array<string, mixed>> $rows
-     * @return array<int, static>
+     * @return array<int, self>
      */
     public static function hydrateAll(array $rows): array
     {

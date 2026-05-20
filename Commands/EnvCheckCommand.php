@@ -98,6 +98,33 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
+        // Check database version (MySQL 5.x không hỗ trợ JSON column)
+        $this->write('');
+        $this->write('Database:');
+        $dbDriver = Env::get('DB_CONNECTION', '');
+        if ($dbDriver === 'mysql') {
+            try {
+                $stmt = \Siro\Core\Database::connection()->query('SELECT VERSION() AS v');
+                if ($stmt === false) {
+                    $this->write('  [WARN] Không thể query MySQL version');
+                    $failed++;
+                } else {
+                    $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+                    $version = is_array($row) && isset($row['v']) && is_scalar($row['v']) ? (string) $row['v'] : '';
+                    if (version_compare($version, '8.0', '<')) {
+                        $this->write('  [FAIL] MySQL ' . $version . ' — phiên bản 5.x không hỗ trợ JSON column. Nâng cấp lên MySQL 8.0+');
+                        $failed++;
+                    } else {
+                        $this->write('  [OK]   MySQL ' . $version . ' (hỗ trợ JSON column)');
+                        $passed++;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $this->write('  [WARN] Không thể kết nối MySQL: ' . $e->getMessage());
+                $failed++;
+            }
+        }
+
         // Check storage writable
         $this->write('');
         $this->write('Storage:');

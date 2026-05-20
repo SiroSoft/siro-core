@@ -7,6 +7,7 @@ namespace Siro\Core\Auth;
 use RuntimeException;
 use Siro\Core\Cache;
 use Siro\Core\Env;
+use Siro\Core\Logger;
 
 final class JWT
 {
@@ -24,6 +25,7 @@ final class JWT
     {
         if (time() - self::$lastBlacklistCleanup > self::BLACKLIST_CLEANUP_INTERVAL) {
             self::$lastBlacklistCleanup = time();
+            // Actual cleanup happens lazily via Cache TTL expiration
         }
     }
 
@@ -81,6 +83,7 @@ final class JWT
         if ($audience !== null) {
             $payload['aud'] = $audience;
         }
+        $payload['iss'] = rtrim((string) Env::get('APP_URL', ''), '/') ?: 'siro-api';
         return self::encode($payload);
     }
 
@@ -98,6 +101,7 @@ final class JWT
         if ($audience !== null) {
             $payload['aud'] = $audience;
         }
+        $payload['iss'] = rtrim((string) Env::get('APP_URL', ''), '/') ?: 'siro-api';
         return self::encode($payload);
     }
 
@@ -368,11 +372,7 @@ final class JWT
 
     private static function isJtiBlacklisted(string $jti): bool
     {
-        try {
-            $cached = Cache::get('jti_blacklist:' . $jti);
-            return is_numeric($cached) && (int) $cached > time();
-        } catch (\Throwable) {
-            return false;
-        }
+        $cached = Cache::get('jti_blacklist:' . $jti);
+        return is_numeric($cached) && (int) $cached > time();
     }
 }

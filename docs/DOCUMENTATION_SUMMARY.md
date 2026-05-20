@@ -2,7 +2,7 @@
 
 **Date:** May 11, 2026  
 **Status:** ✅ Completed  
-**Version:** SiroPHP v0.22.0
+**Version:** SiroPHP v0.28.1
 
 ---
 

@@ -413,6 +413,7 @@ php siro env:check              # Validates all required vars
 - `APP_DEBUG` is `false` in production
 - Required PHP extensions loaded
 - Storage directories writable
+- MySQL version >= 8.0 (JSON column support)
 
 ---
 

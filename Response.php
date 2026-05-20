@@ -130,11 +130,42 @@ final class Response
      */
     public static function raw(string $content, string $contentType = 'text/plain', int $statusCode = 200): self
     {
+        // Auto-detect content-type from content if not explicitly set
+        if (func_num_args() < 2 || $contentType === 'text/plain') {
+            $detected = self::detectMimeType($content);
+            if ($detected !== null) {
+                $contentType = $detected;
+            }
+        }
+
         $response = new self([], $statusCode);
         $response->isRaw = true;
         $response->rawContent = $content;
         $response->extraHeaders['Content-Type'] = $contentType;
         return $response;
+    }
+
+    /** Auto-detect MIME type từ nội dung response */
+    private static function detectMimeType(string $content): ?string
+    {
+        if ($content === '') {
+            return null;
+        }
+
+        // JSON
+        if (str_starts_with($content, '{') || str_starts_with($content, '[')) {
+            json_decode($content);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return 'application/json';
+            }
+        }
+
+        // XML
+        if (str_starts_with($content, '<')) {
+            return 'text/html';
+        }
+
+        return null;
     }
 
     /**

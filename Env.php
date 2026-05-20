@@ -5,10 +5,17 @@ declare(strict_types=1);
 namespace Siro\Core;
 
 /**
- * Environment variable loader and accessor.
+ * Env — Environment loader với priority chain 5 tầng.
  *
- * Parses .env files and provides typed access to environment
- * variables via get(), bool(), and related methods.
+ * Siro là framework PHP duy nhất có priority chain đầy đủ:
+ *   1. .env.siro          → Framework defaults (bundled, always available)
+ *   2. .env               → Server/CI defaults (committed)
+ *   3. .env.{APP_ENV}     → Environment-specific (e.g. .env.prod, .env.dev)
+ *   4. .env.local         → Local overrides (gitignored)
+ *   5. .env.{APP_ENV}.local → Env-specific local (gitignored)
+ *
+ * File sau ghi đè file trước. Fresh clone chạy ngay nhờ .env.siro.
+ * Biến hỗ trợ interpolation: ${VAR} hoặc $VAR.
  *
  * @package Siro\Core
  */
@@ -17,53 +24,101 @@ final class Env
     private static bool $loaded = false;
     private static string $cachedFile = '';
 
+    /** Priority-ordered env files (highest last) */
+    private const ENV_PRIORITY = [
+        'siro',       // .env.siro — framework defaults
+        '',           // .env — server defaults
+        '{env}',      // .env.{APP_ENV} — env-specific
+        'local',      // .env.local — local overrides
+        '{env}.local', // .env.{APP_ENV}.local — env-specific local
+    ];
+
     public static function load(string $filePath): void
     {
         if (self::$loaded) {
             return;
         }
 
-        if (!is_file($filePath)) {
-            self::$loaded = true;
-            return;
+        $baseDir = dirname($filePath);
+        $appEnv = trim((string) self::get('APP_ENV', ''));
+
+        // Load .env.siro from framework root first (always available)
+        $frameworkSiro = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env.siro';
+        if (is_file($frameworkSiro)) {
+            self::parseEnvFile($frameworkSiro);
         }
 
-        // Check for cached env file — invalidate if .env is newer
-        self::$cachedFile = dirname($filePath) . DIRECTORY_SEPARATOR
-            . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php';
-        $useCache = false;
-        if (is_file(self::$cachedFile)) {
-            $cacheMtime = filemtime(self::$cachedFile);
-            $envMtime = filemtime($filePath);
-            $useCache = $cacheMtime !== false && $envMtime !== false && $cacheMtime >= $envMtime;
-        }
-        if ($useCache && is_file(self::$cachedFile)) {
-            $raw = substr((string) file_get_contents(self::$cachedFile), strlen('<?php exit; ?>'));
-            $cached = json_decode($raw, true);
-            if (!is_array($cached) && class_exists(\Siro\Core\Encrypter::class)) {
-                try {
-                    $appKey = (string) self::get('APP_KEY', '');
-                    if ($appKey !== '') {
-                        $decrypted = \Siro\Core\Encrypter::decrypt($raw, $appKey);
-                        $cached = json_decode($decrypted, true);
+        // Check cache (based on .env mtime if exists)
+        $mainFile = $filePath;
+        if (is_file($mainFile)) {
+            self::$cachedFile = $baseDir . DIRECTORY_SEPARATOR
+                . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php';
+            $useCache = false;
+            if (is_file(self::$cachedFile)) {
+                $cacheMtime = filemtime(self::$cachedFile);
+                $envMtime = filemtime($mainFile);
+                $useCache = $cacheMtime !== false && $envMtime !== false && $cacheMtime >= $envMtime;
+            }
+            if ($useCache && is_file(self::$cachedFile)) {
+                $raw = substr((string) file_get_contents(self::$cachedFile), strlen('<?php exit; ?>'));
+                $cached = json_decode($raw, true);
+                if (!is_array($cached) && class_exists(\Siro\Core\Encrypter::class)) {
+                    try {
+                        $appKey = (string) self::get('APP_KEY', '');
+                        if ($appKey !== '') {
+                            $decrypted = \Siro\Core\Encrypter::decrypt($raw, $appKey);
+                            $cached = json_decode($decrypted, true);
+                        }
+                    } catch (\Throwable) {
+                        $cached = null;
                     }
-                } catch (\Throwable) {
-                    $cached = null;
                 }
-            }
-            if (is_array($cached)) {
-                foreach ($cached as $key => $value) {
-                    $strKey = (string) $key;
-                    $strValue = is_scalar($value) ? (string) $value : '';
-                    $_ENV[$strKey] = $strValue;
-                    $_SERVER[$strKey] = $strValue;
-                    putenv($strKey . '=' . $strValue);
+                if (is_array($cached)) {
+                    foreach ($cached as $key => $value) {
+                        $strKey = (string) $key;
+                        $strValue = is_scalar($value) ? (string) $value : '';
+                        $_ENV[$strKey] = $strValue;
+                        $_SERVER[$strKey] = $strValue;
+                        putenv($strKey . '=' . $strValue);
+                    }
+                    self::$loaded = true;
+                    return;
                 }
-                self::$loaded = true;
-                return;
             }
         }
 
+        // === Priority chain: load từng file, file sau ghi đè file trước ===
+        $loadedAny = false;
+        foreach (self::ENV_PRIORITY as $suffix) {
+            $resolved = str_replace('{env}', $appEnv, $suffix);
+            $envFile = $resolved === ''
+                ? $filePath
+                : $baseDir . DIRECTORY_SEPARATOR . '.env.' . $resolved;
+
+            if (is_file($envFile)) {
+                self::parseEnvFile($envFile);
+                $loadedAny = true;
+            }
+        }
+
+        self::$loaded = true;
+
+        // Nếu không load được file nào, log warning (ko crash)
+        if (!$loadedAny) {
+            trigger_error(
+                'SIRO_ENV: No .env file found. Create .env or .env.local in project root.',
+                E_USER_NOTICE
+            );
+        }
+    }
+
+    /**
+     * Parse a .env file: supports quotes, comments, variable interpolation.
+     *
+     * Interpolation: APP_KEY=${BASE_KEY}_suffix hoặc $BASE_KEY
+     */
+    private static function parseEnvFile(string $filePath): void
+    {
         $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         if ($lines === false) {
             return;
@@ -71,7 +126,6 @@ final class Env
 
         foreach ($lines as $line) {
             $line = trim($line);
-
             if ($line === '' || str_starts_with($line, '#')) {
                 continue;
             }
@@ -88,19 +142,33 @@ final class Env
                 continue;
             }
 
+            $useInterpolation = true;
             if (
                 (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
                 (str_starts_with($value, "'") && str_ends_with($value, "'"))
             ) {
+                $quote = $value[0];
                 $value = substr($value, 1, -1);
+                if ($quote === "'") {
+                    $useInterpolation = false;
+                }
+            }
+
+            if ($useInterpolation) {
+                $value = (string) preg_replace_callback(
+                    '/\$\{([^}]+)\}|\$([a-zA-Z_][a-zA-Z0-9_]*)/',
+                    function (array $m): string {
+                        $name = $m[1] !== '' ? $m[1] : $m[2];
+                        return self::get($name) ?? '';
+                    },
+                    $value
+                );
             }
 
             $_ENV[$key] = $value;
             $_SERVER[$key] = $value;
             putenv(sprintf('%s=%s', $key, $value));
         }
-
-        self::$loaded = true;
     }
 
     public static function cache(string $filePath): bool

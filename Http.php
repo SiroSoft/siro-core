@@ -19,6 +19,7 @@ final class Http
 {
     private static int $timeout = 30;
     private static bool $verifySsl = true;
+    private static bool $sslConfigured = false;
     /** @var array<string, string> */ private static array $defaultHeaders = [];
 
     public static function timeout(int $seconds): void
@@ -28,7 +29,11 @@ final class Http
 
     public static function verify(bool $verify = true): void
     {
+        if (self::$sslConfigured) {
+            return;
+        }
         self::$verifySsl = $verify;
+        self::$sslConfigured = true;
     }
 
     /** @param array<string, string> $headers */ public static function withHeaders(array $headers): void
@@ -83,12 +88,13 @@ final class Http
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS => 5,
             CURLOPT_HEADER => true,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
         ];
         if (!self::$verifySsl) {
             $curlOpts[CURLOPT_SSL_VERIFYPEER] = false;
             $curlOpts[CURLOPT_SSL_VERIFYHOST] = 0;
         }
-        /** @var array{10002: non-empty-string, 19913: bool, 13: int, 78: int, 52: bool, 68: int, 42: bool, 64?: bool, 81?: int, 19914?: int} $curlOpts */
         curl_setopt_array($ch, $curlOpts);
 
         $allHeaders = array_merge(self::$defaultHeaders, $headers);

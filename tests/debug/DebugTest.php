@@ -96,7 +96,8 @@ class DebugTest extends TestCase
         $this->assertEquals(422, $resp->statusCode());
         $payload = $resp->payload();
         $this->assertFalse($payload['success'] ?? true);
-        $this->assertArrayHasKey('errors', $payload);
+        $this->assertArrayHasKey('meta', $payload);
+        $this->assertArrayHasKey('errors', $payload['meta']);
         echo "\n [PASS] ValidationException returns proper 422 format";
     }
 
@@ -105,7 +106,8 @@ class DebugTest extends TestCase
         $resp = Response::error('Not Found', 404, ['resource' => ['User not found']]);
         $this->assertEquals(404, $resp->statusCode());
         $payload = $resp->payload();
-        $this->assertArrayHasKey('errors', $payload);
+        $this->assertArrayHasKey('meta', $payload);
+        $this->assertArrayHasKey('errors', $payload['meta']);
         $this->assertEquals('Not Found', $payload['message'] ?? '');
         echo "\n [PASS] Error response format is consistent";
     }

@@ -1,22 +1,10 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Comparison operation "\>" between int\<1, max\> and 0 is always true\.$#'
-			identifier: greater.alwaysTrue
-			count: 2
-			path: Commands/MakeOpenApiCommand.php
-
-		-
-			message: '#^Method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:extractPathParams\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: Commands/MakeOpenApiCommand.php
-
-		-
-			message: '#^Parameter \#2 \$where of method Siro\\Core\\Commands\\MakeOpenApiCommand\:\:extractPathParams\(\) expects array\<string, string\>, array\<mixed\> given\.$#'
+			message: '#^Parameter \#2 \$options of function curl_setopt_array expects array\{10002\: non\-empty\-string, 19913\: bool, 13\: int, 78\: int, 52\: bool, 68\: int, 42\: bool, 181\: int, \.\.\.\}, array\{10002\: string, 19913\: true, 13\: int, 78\: 10, 52\: true, 68\: 5, 42\: true, 181\: 3, \.\.\.\} given\.$#'
 			identifier: argument.type
 			count: 1
-			path: Commands/MakeOpenApiCommand.php
+			path: Http.php
 
 		-
 			message: '#^Cannot cast mixed to float\.$#'
@@ -43,12 +31,6 @@ parameters:
 			path: Model.php
 
 		-
-			message: '#^Method Siro\\Core\\Model\:\:hydrateAll\(\) should return array\<int, static\(Siro\\Core\\Model\)\> but returns array\<int, Siro\\Core\\Model\>\.$#'
-			identifier: return.type
-			count: 1
-			path: Model.php
-
-		-
 			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
 			identifier: argument.type
 			count: 1
@@ -64,34 +46,4 @@ parameters:
 			message: '#^Parameter \#2 \$eagerLoads of method Siro\\Core\\DB\\EagerLoader\:\:load\(\) expects array\<string, array\<int, string\>\>, array\<string, array\<int\|string, array\<int, string\>\|string\>\> given\.$#'
 			identifier: argument.type
 			count: 1
-			path: Model.php
-
-		-
-			message: '#^Parameter \#4 \$foreignValue of class Siro\\Core\\DB\\Relations\\BelongsTo constructor expects int\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model.php
-
-		-
-			message: '#^Parameter \#4 \$localValue of class Siro\\Core\\DB\\Relations\\HasMany constructor expects int\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model.php
-
-		-
-			message: '#^Parameter \#4 \$localValue of class Siro\\Core\\DB\\Relations\\HasOne constructor expects int\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model.php
-
-		-
-			message: '#^Parameter \#6 \$localValue of class Siro\\Core\\DB\\Relations\\BelongsToMany constructor expects int\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model.php
-
-		-
-			message: '#^Unsafe usage of new static\(\)\.$#'
-			identifier: new.static
-			count: 2
 			path: Model.php

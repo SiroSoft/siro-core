@@ -6,6 +6,7 @@ namespace Siro\Core\Tests\Unit;
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Config;
+use Siro\Core\Env;
 
 final class ConfigTest extends TestCase
 {
@@ -15,6 +16,8 @@ final class ConfigTest extends TestCase
     {
         parent::setUp();
         Config::reset();
+        $_ENV['APP_KEY'] = 'test_key_for_config_cache_32chars_long!!';
+        putenv('APP_KEY=test_key_for_config_cache_32chars_long!!');
         $this->configDir = sys_get_temp_dir() . '/siro_config_test_' . uniqid();
         mkdir($this->configDir, 0777, true);
     }

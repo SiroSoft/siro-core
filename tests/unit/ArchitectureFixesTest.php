@@ -48,8 +48,11 @@ final class ArchitectureFixesTest extends TestCase
             $this->assertSame(401, $response->statusCode(), "Status code mismatch: {$label}");
 
             $payload = $response->payload();
-            $this->assertArrayHasKey('errors', $payload, "Payload missing 'errors' key: {$label}");
-            $this->assertSame($expectedError, $payload['errors'], "Error detail mismatch: {$label}");
+            $this->assertArrayHasKey('meta', $payload, "Payload missing 'meta' key: {$label}");
+            $meta = $payload['meta'] ?? [];
+            $this->assertIsArray($meta);
+            $this->assertArrayHasKey('errors', $meta, "Payload missing 'meta.errors' key: {$label}");
+            $this->assertSame($expectedError, $meta['errors'], "Error detail mismatch: {$label}");
         }
     }
 

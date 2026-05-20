@@ -6,5 +6,7 @@ parameters:
         - vendor/
         - tests/
         - scripts/
+    scanFiles:
+        - vendor/phpunit/phpunit/src/Framework/Assert.php
 includes:
     - phpstan-baseline.neon

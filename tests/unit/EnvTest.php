@@ -175,12 +175,16 @@ final class EnvTest extends TestCase
 
     public function testCacheGeneratesPhpFile(): void
     {
-        $_ENV['CACHE_TEST'] = 'cached_value';
-        $cacheDir = sys_get_temp_dir() . '/siro_env_cache_test';
+        $originalAppKey = $_ENV['APP_KEY'] ?? '';
+        $_ENV['APP_KEY'] = '';
+        putenv('APP_KEY=');
+
+        $cacheDir = sys_get_temp_dir() . '/siro_env_test_' . uniqid();
         $envFile = $cacheDir . '/.env';
         @mkdir($cacheDir, 0777, true);
         file_put_contents($envFile, "CACHE_TEST=cached_value");
 
+        Env::reset();
         Env::load($envFile);
         $result = Env::cache($envFile);
 
@@ -190,6 +194,11 @@ final class EnvTest extends TestCase
 
         $loaded = json_decode(substr((string) file_get_contents($cacheFile), 14), true);
         $this->assertIsArray($loaded);
+
+        if ($originalAppKey !== '') {
+            $_ENV['APP_KEY'] = $originalAppKey;
+            putenv('APP_KEY=' . $originalAppKey);
+        }
 
         array_map('unlink', glob($cacheDir . '/storage/framework/*.php'));
         @rmdir($cacheDir . '/storage/framework');

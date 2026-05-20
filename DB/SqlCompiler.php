@@ -59,7 +59,7 @@ final class SqlCompiler
         }
 
         if (preg_match('/[^a-zA-Z0-9_.\s\-]/', $identifier)) {
-            throw new \RuntimeException('Invalid identifier: contains illegal characters');
+            throw new \RuntimeException('Identifier contains illegal characters (semicolons, comments, parentheses). Use RawExpression or raw methods for SQL functions.');
         }
 
         if (stripos($identifier, ';') !== false ||
@@ -285,8 +285,10 @@ final class SqlCompiler
         foreach ($groups as $col) {
             if ($col instanceof RawExpression) {
                 $quoted[] = $col->getValue();
+            } elseif (str_contains($col, '(')) {
+                $quoted[] = $col;
             } else {
-                $quoted[] = $this->quoteIdentifier((string) $col);
+                $quoted[] = $this->quoteIdentifier($col);
             }
         }
         return ' GROUP BY ' . implode(', ', $quoted);
@@ -363,7 +365,7 @@ final class SqlCompiler
     }
 
     /**
-     * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
+     * @param array<int, array{boolean:string, column:string, operator:string, param:string, raw?:bool, sql?:string, bindings?:array<int|string, mixed>}> $havings
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<string, mixed>}
      */
@@ -374,10 +376,22 @@ final class SqlCompiler
         }
 
         $parts = [];
+        /** @var array<string, mixed> $resultBindings */
         $resultBindings = [];
 
         foreach ($havings as $index => $having) {
             $prefix = $index === 0 ? '' : ' ' . $having['boolean'] . ' ';
+
+            if (isset($having['raw']) && $having['raw']) {
+                $parts[] = $prefix . ($having['sql'] ?? '');
+                if (isset($having['bindings'])) {
+                    foreach ($having['bindings'] as $bk => $bv) {
+                        $resultBindings[(string) $bk] = $bv;
+                    }
+                }
+                continue;
+            }
+
             $parts[] = $prefix . $this->quoteIdentifier($having['column']) . ' ' . $having['operator'] . ' :' . $having['param'];
             $resultBindings[$having['param']] = $bindings[$having['param']];
         }

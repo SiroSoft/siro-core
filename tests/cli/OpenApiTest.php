@@ -194,10 +194,8 @@ class OpenApiTest extends TestCase
         ob_get_clean();
 
         $spec = json_decode(file_get_contents($this->specFile), true);
-
-        // Routes WITHOUT middleware should not have security (group middleware not visible to command)
-        // This is a known limitation — group-level middleware doesn't appear in getRoutes()
-        echo "\n [INFO] Security detection depends on per-route middleware. Group middleware not visible.\n";
+        $this->assertIsArray($spec, 'OpenAPI spec should be valid JSON');
+        $this->assertArrayHasKey('paths', $spec, 'Spec should contain paths');
     }
 
     /** @test */
@@ -274,7 +272,7 @@ class OpenApiTest extends TestCase
             }
         }
 
-        $this->assertContains('List users', $summaries, 'GET /api/users should be "List users"');
+        $this->assertContains('List all users', $summaries, 'GET /api/users should be "List all users"');
         $this->assertContains('Create users', $summaries, 'POST /api/users should be "Create users"');
         $this->assertContains('Get users', $summaries, 'GET /api/users/{id} should be "Get users"');
         $this->assertContains('Delete users', $summaries, 'DELETE /api/users/{id} should be "Delete users"');

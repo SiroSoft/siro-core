@@ -74,7 +74,8 @@ final class SessionTest extends TestCase
 
         $session2 = new Session('file');
         $sessionId = $this->session->getId();
-        $session2->start($sessionId);
+        $session2->setId($sessionId);
+        $session2->start();
         $this->assertSame('Saved!', $session2->getFlash('success'));
     }
 
