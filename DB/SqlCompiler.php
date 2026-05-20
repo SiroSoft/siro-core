@@ -119,13 +119,13 @@ final class SqlCompiler
      * @param array<int, string|RawExpression> $columns
      * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
-     * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
-     * @param array<int, string|RawExpression> $groups
-     * @param array<int, array{column:string, direction:string}> $orders
-     * @param array<string, mixed> $bindings
-     * @return array{0: string, 1: array<int|string, mixed>}
-     */
-    public function buildSelectQuery(
+ * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+ * @param array<int, string|RawExpression> $groups
+ * @param array<int, array{column:string, direction:string}> $orders
+ * @param array<string, mixed> $bindings
+ * @return array{0: string, 1: array<int|string, mixed>}
+ */
+public function buildSelectQuery(
         array $columns,
         string $table,
         array $wheres,
@@ -181,12 +181,12 @@ final class SqlCompiler
     /**
      * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
-     * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
-     * @param array<int, string|RawExpression> $groups
-     * @param array<string, mixed> $bindings
-     * @return array{0: string, 1: array<int|string, mixed>}
-     */
-    public function buildCountQuery(
+ * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+ * @param array<int, string|RawExpression> $groups
+ * @param array<string, mixed> $bindings
+ * @return array{0: string, 1: array<int|string, mixed>}
+ */
+public function buildCountQuery(
         string $table,
         array $wheres,
         array $havings,
@@ -215,12 +215,12 @@ final class SqlCompiler
     /**
      * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
-     * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
-     * @param array<int, string|RawExpression> $groups
-     * @param array<string, mixed> $bindings
-     * @return array{0: string, 1: array<int|string, mixed>}
-     */
-    public function buildAggregateQuery(
+ * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+ * @param array<int, string|RawExpression> $groups
+ * @param array<string, mixed> $bindings
+ * @return array{0: string, 1: array<int|string, mixed>}
+ */
+public function buildAggregateQuery(
         string $function,
         string $column,
         string $table,
@@ -249,7 +249,7 @@ final class SqlCompiler
     }
 
     /**
-     * @param array<int, array{type:string, table:string, first:string, operator:string, second:string}> $joins
+     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
      */
     public function compileJoins(array $joins): string
     {
@@ -259,14 +259,24 @@ final class SqlCompiler
 
         $parts = [];
         foreach ($joins as $join) {
-            $parts[] = sprintf(
-                ' %s JOIN %s ON %s %s %s',
-                $join['type'],
-                $this->quoteIdentifier($join['table']),
-                $this->quoteIdentifier($join['first']),
-                $join['operator'],
-                $this->quoteIdentifier($join['second'])
-            );
+            if (isset($join['clause'])) {
+                /** @var JoinClause $clause */
+                $clause = $join['clause'];
+                $tableName = $join['table'] !== '' ? $join['table'] : $clause->table;
+                $table = $this->quoteIdentifier($tableName);
+                $conditions = $clause->compile();
+                $onClause = $conditions !== '' ? 'ON ' . $conditions : '';
+                $parts[] = sprintf(' %s JOIN %s %s', $join['type'], $table, $onClause);
+            } else {
+                $parts[] = sprintf(
+                    ' %s JOIN %s ON %s %s %s',
+                    $join['type'],
+                    $this->quoteIdentifier($join['table']),
+                    $this->quoteIdentifier($join['first'] ?? ''),
+                    $join['operator'] ?? '=',
+                    $this->quoteIdentifier($join['second'] ?? '')
+                );
+            }
         }
 
         return implode('', $parts);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\DB;
 
+use Closure;
 use RuntimeException;
 use Siro\Core\Cache;
 use Siro\Core\Database;
@@ -27,7 +28,7 @@ class QueryBuilder
     protected array $wheres = [];
     /** @var array<int, array{boolean:string, column:string, operator:string, param:string}> */
     protected array $havings = [];
-    /** @var array<int, array{type:string,table:string,first:string,operator:string,second:string}> */
+    /** @var list<array{type:string,table:string,first?:string,operator?:string,second?:string,clause?:JoinClause}> */
     protected array $joins = [];
     /** @var array<int, string|RawExpression> */
     protected array $groups = [];
@@ -150,40 +151,56 @@ class QueryBuilder
         return $this->addWhereIn('AND', $column, $values, true);
     }
 
-    public function join(string $table, string $first, string $operator, string $second): self
+    /**
+     * @param string|Closure $table Table name or Closure receiving JoinClause
+     */
+    public function join(string|Closure $table, string $first = '', string $operator = '', string $second = ''): self
     {
-        $this->joins[] = [
-            'type' => 'INNER',
-            'table' => trim($table),
-            'first' => trim($first),
-            'operator' => $this->compiler->normalizeOperator($operator),
-            'second' => trim($second),
-        ];
+        $this->addJoin('INNER', $table, $first, $operator, $second);
         return $this;
     }
 
-    public function leftJoin(string $table, string $first, string $operator, string $second): self
+    /**
+     * @param string|Closure $table Table name or Closure receiving JoinClause
+     */
+    public function leftJoin(string|Closure $table, string $first = '', string $operator = '', string $second = ''): self
     {
-        $this->joins[] = [
-            'type' => 'LEFT',
-            'table' => trim($table),
-            'first' => trim($first),
-            'operator' => $this->compiler->normalizeOperator($operator),
-            'second' => trim($second),
-        ];
+        $this->addJoin('LEFT', $table, $first, $operator, $second);
         return $this;
     }
 
-    public function rightJoin(string $table, string $first, string $operator, string $second): self
+    /**
+     * @param string|Closure $table Table name or Closure receiving JoinClause
+     */
+    public function rightJoin(string|Closure $table, string $first = '', string $operator = '', string $second = ''): self
     {
+        $this->addJoin('RIGHT', $table, $first, $operator, $second);
+        return $this;
+    }
+
+    /**
+     * @param string|Closure $table
+     */
+    private function addJoin(string $type, string|Closure $table, string $first, string $operator, string $second): void
+    {
+        if ($table instanceof Closure) {
+            $joinClause = new JoinClause($type, '', $this->compiler);
+            $table($joinClause);
+            $this->joins[] = [
+                'type' => $type,
+                'table' => $joinClause->table,
+                'clause' => $joinClause,
+            ];
+            return;
+        }
+
         $this->joins[] = [
-            'type' => 'RIGHT',
+            'type' => $type,
             'table' => trim($table),
             'first' => trim($first),
             'operator' => $this->compiler->normalizeOperator($operator),
             'second' => trim($second),
         ];
-        return $this;
     }
 
     public function crossJoin(string $table): self
