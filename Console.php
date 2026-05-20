@@ -72,6 +72,7 @@ use Siro\Core\Commands\MakeApiKeysTableCommand;
 use Siro\Core\Commands\MakeApiKeyCommand;
 use Siro\Core\Commands\MakeMiddlewareCommand;
 use Siro\Core\Commands\MakeListenerCommand;
+use Siro\Core\Commands\MakeObserverCommand;
 use Siro\Core\Commands\TestCommand;
 use Siro\Core\Commands\BenchmarkCommand;
 use Siro\Core\Commands\FrankenphpServeCommand;
@@ -150,6 +151,7 @@ final class Console
             'make:repository' => ['handler' => MakeRepositoryCommand::class, 'desc' => 'Generate repository class', 'usage' => 'php siro make:repository <name>'],
             'make:middleware'  => ['handler' => MakeMiddlewareCommand::class, 'desc' => 'Generate middleware class', 'usage' => 'php siro make:middleware <name>'],
             'make:listener'    => ['handler' => MakeListenerCommand::class, 'desc' => 'Generate event listener', 'usage' => 'php siro make:listener <name>'],
+            'make:observer'    => ['handler' => MakeObserverCommand::class, 'desc' => 'Generate model observer', 'usage' => 'php siro make:observer <name>'],
             'make:idempotency-table' => ['handler' => MakeIdempotencyTableCommand::class, 'desc' => 'Create idempotency table', 'usage' => 'php siro make:idempotency-table'],
             'make:apikey-table' => ['handler' => MakeApiKeysTableCommand::class, 'desc' => 'Create API keys table', 'usage' => 'php siro make:apikey-table'],
             'make:apikey' => ['handler' => MakeApiKeyCommand::class, 'desc' => 'Generate API key', 'usage' => 'php siro make:apikey <name> [scopes] [expires_days]'],
@@ -397,7 +399,7 @@ final class Console
             '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'why', 'fix', 'replay', 'trace:list'],
             '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
                                     'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
-            '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
+            '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:observer', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
                                     'queue:work', 'queue:status', 'schedule:run', 'deploy', 'optimize', 'config:cache',
                                     'down', 'up', 'log:trace', 'log:replay', 'log:slow', 'debug:last'],
             '⚙️ System'        => ['key:generate', 'doctor', 'env:check', 'env:switch', 'route:search', 'route:rules',

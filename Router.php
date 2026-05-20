@@ -9,6 +9,7 @@ use RuntimeException;
 use Siro\Core\Middleware\JsonMiddleware;
 use Siro\Core\Middleware\MiddlewareInterface;
 
+
 final class Router
 {
     private RouteMatcher $matcher;
@@ -146,7 +147,15 @@ final class Router
         $route = $this->matcher->match($method, $path);
 
         if ($route === null) {
-            return Response::error('Route not found', 404);
+            $errors = [];
+            $debug = Env::bool('APP_DEBUG', false);
+            if ($debug) {
+                $suggestion = $this->findSimilarRoute($path);
+                $errors['route'] = $suggestion !== null
+                    ? ["Route not found: {$path}. Did you mean {$suggestion}?"]
+                    : ["Route not found: {$path}"];
+            }
+            return Response::error('Route not found', 404, $errors);
         }
 
         if (isset($route['params'])) {
@@ -740,5 +749,33 @@ final class Router
         $reqHeaders = function_exists('getallheaders') ? (getallheaders() ?: []) : [];
         $req = new Request('OPTIONS', $path, $_GET, $reqHeaders, []);
         return $finalHandler($req);
+    }
+
+    private function findSimilarRoute(string $path): ?string
+    {
+        $allRoutes = $this->getAllPaths();
+        $bestMatch = null;
+        $bestDistance = PHP_INT_MAX;
+
+        foreach ($allRoutes as $existingPath) {
+            $dist = levenshtein($path, $existingPath);
+            if ($dist < $bestDistance && $dist <= 5) {
+                $bestDistance = $dist;
+                $bestMatch = $existingPath;
+            }
+        }
+
+        return $bestMatch;
+    }
+
+    /** @return list<string> */
+    private function getAllPaths(): array
+    {
+        $routes = $this->getRoutes();
+        $paths = [];
+        foreach ($routes as $route) {
+            $paths[] = $route['path'];
+        }
+        return array_values(array_unique($paths));
     }
 }

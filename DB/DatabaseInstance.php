@@ -95,13 +95,7 @@ final class DatabaseInstance implements DatabaseInterface
                 ]);
             }
         } catch (PDOException $e) {
-            Logger::error('Database connection failed', [
-                'driver' => $driver,
-                'host' => $host,
-                'port' => $port,
-                'database' => $database,
-                'error' => $e->getMessage(),
-            ]);
+            Logger::error('Database connection failed: ' . $e->getMessage() . " ({$driver}:{$host}:{$port}/{$database})");
             throw new DatabaseConnectionException($driver, $host, $port, $e->getMessage());
         }
 
