@@ -38,7 +38,8 @@ final class App
 
     /**
      * Super-fast boot: only essential services, everything else is lazy-loaded.
-     * Boot time target: < 1ms (cold), < 0.3ms (OPcache warm).
+     * Boot time: ~1ms (Linux, cold), ~0.3ms (Linux, OPcache warm), ~6-8ms (Windows, cold).
+     * Windows is slower due to filesystem I/O (mkdir, file scanning).
      */
     public function boot(): void
     {
