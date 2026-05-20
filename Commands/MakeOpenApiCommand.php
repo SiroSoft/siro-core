@@ -346,10 +346,6 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         return $action . ' ' . ($resource !== false ? $resource : 'resource');
     }
 
-    /**
-     * @param array<string, string> $where
-     * @return list<array<string, mixed>>
-     */
     private function deriveOperationId(string $handler, string $method, string $path): string
     {
         if (preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) {
@@ -361,6 +357,10 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         return $method . ucfirst($resource);
     }
 
+    /**
+     * @param array<string, string> $where
+     * @return list<array<string, mixed>>
+     */
     private function extractPathParams(string $path, array $where = []): array
     {
         $params = [];
@@ -541,9 +541,11 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             $body = $m[1];
             preg_match_all('/\'(\w+)\'\s*=>/', $body, $keys);
             foreach ($keys[1] as $key) {
-                $properties[$key] = $this->inferPropertyType($key, $content);
+                $inferred = $this->inferPropertyType($key, $content);
+                $properties[$key] = $inferred;
                 // Add example values
-                $properties[$key]['example'] = $this->propertyExample($key, $properties[$key]['type'] ?? 'string');
+                $propType = is_string($inferred['type'] ?? null) ? $inferred['type'] : 'string';
+                $properties[$key]['example'] = $this->propertyExample($key, $propType);
             }
         }
 
