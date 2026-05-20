@@ -14,6 +14,40 @@ namespace Siro\Core\Commands;
  */
 trait CommandSupport
 {
+    private static ?bool $supportsColor = null;
+
+    private function hasColor(): bool
+    {
+        if (self::$supportsColor !== null) return self::$supportsColor;
+        // Detect if terminal supports ANSI color
+        $rawTerm = $_SERVER['TERM'] ?? '';
+        $term = is_string($rawTerm) ? $rawTerm : '';
+        $wtSession = getenv('WT_SESSION');
+        if (PHP_OS_FAMILY === 'Windows') {
+            self::$supportsColor = str_contains($term, 'xterm') || (is_string($wtSession) && $wtSession !== '');
+        } else {
+            self::$supportsColor = $term !== '' && $term !== 'dumb';
+        }
+        return self::$supportsColor;
+    }
+
+    private function colorize(string $text, string $color): string
+    {
+        if (!$this->hasColor()) return $text;
+        $colors = [
+            'red' => "\033[31m",
+            'green' => "\033[32m",
+            'yellow' => "\033[33m",
+            'blue' => "\033[34m",
+            'magenta' => "\033[35m",
+            'cyan' => "\033[36m",
+            'bold' => "\033[1m",
+            'reset' => "\033[0m",
+        ];
+        $code = $colors[$color] ?? '';
+        return $code . $text . $colors['reset'];
+    }
+
     protected function write(string $line): void
     {
         echo $line . PHP_EOL;
@@ -21,22 +55,27 @@ trait CommandSupport
 
     protected function info(string $message): void
     {
-        $this->write('  ' . $message);
+        $this->write('  ' . $this->colorize($message, 'blue'));
     }
 
     protected function success(string $message): void
     {
-        $this->write('✓ ' . $message);
+        $this->write($this->colorize('✓ ', 'green') . $this->colorize($message, 'green'));
     }
 
     protected function error(string $message): void
     {
-        $this->write('✗ ' . $message);
+        $this->write($this->colorize('✗ ', 'red') . $this->colorize($message, 'red'));
     }
 
     protected function warn(string $message): void
     {
-        $this->write('⚠ ' . $message);
+        $this->write($this->colorize('⚠ ', 'yellow') . $this->colorize($message, 'yellow'));
+    }
+
+    protected function highlight(string $message): void
+    {
+        $this->write($this->colorize($message, 'bold'));
     }
 
     protected function comment(string $message): void
