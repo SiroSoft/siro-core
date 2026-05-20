@@ -72,6 +72,7 @@ use Siro\Core\Commands\MakeApiKeysTableCommand;
 use Siro\Core\Commands\MakeApiKeyCommand;
 use Siro\Core\Commands\MakeMiddlewareCommand;
 use Siro\Core\Commands\MakeRequestCommand;
+use Siro\Core\Commands\MakeRuleCommand;
 use Siro\Core\Commands\MakeListenerCommand;
 use Siro\Core\Commands\MakeObserverCommand;
 use Siro\Core\Commands\TestCommand;
@@ -153,6 +154,7 @@ final class Console
             'make:middleware'  => ['handler' => MakeMiddlewareCommand::class, 'desc' => 'Generate middleware class', 'usage' => 'php siro make:middleware <name>'],
             'make:listener'    => ['handler' => MakeListenerCommand::class, 'desc' => 'Generate event listener', 'usage' => 'php siro make:listener <name>'],
             'make:request'     => ['handler' => MakeRequestCommand::class, 'desc' => 'Generate FormRequest class', 'usage' => 'php siro make:request <name>'],
+            'make:rule'        => ['handler' => MakeRuleCommand::class, 'desc' => 'Generate custom validation rule', 'usage' => 'php siro make:rule <name>'],
             'make:observer'    => ['handler' => MakeObserverCommand::class, 'desc' => 'Generate model observer', 'usage' => 'php siro make:observer <name>'],
             'make:idempotency-table' => ['handler' => MakeIdempotencyTableCommand::class, 'desc' => 'Create idempotency table', 'usage' => 'php siro make:idempotency-table'],
             'make:apikey-table' => ['handler' => MakeApiKeysTableCommand::class, 'desc' => 'Create API keys table', 'usage' => 'php siro make:apikey-table'],
@@ -273,6 +275,10 @@ final class Console
         if ($command === 'list') {
             if (in_array('--raw', $args, true)) {
                 $this->printRawList();
+                return 0;
+            }
+            if (in_array('--json', $args, true)) {
+                $this->printJsonList();
                 return 0;
             }
             $this->printList();
@@ -453,6 +459,26 @@ final class Console
         foreach ($registry as $cmd => $info) {
             $this->write($cmd);
         }
+    }
+
+    private function printJsonList(): void
+    {
+        $registry = array_merge($this->commandRegistry(), self::$appCommands);
+        $groups = $this->groupedCommands();
+        $output = [];
+        foreach ($groups as $group => $commands) {
+            $items = [];
+            foreach ($commands as $cmd => $desc) {
+                $items[] = [
+                    'command' => $cmd,
+                    'description' => $desc,
+                    'usage' => $registry[$cmd]['usage'] ?? 'php siro ' . $cmd,
+                ];
+            }
+            $output[] = ['group' => $group, 'commands' => $items];
+        }
+        $json = json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $this->write($json !== false ? $json : '[]');
     }
 
     /** @param array{handler: class-string, desc: string, usage: string} $info */
