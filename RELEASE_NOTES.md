@@ -1,6 +1,43 @@
 # Release Notes
 
-## v0.28.3 — Schema & Migration Enhancements (2026-05-22)
+## v0.29.2 — Package Auto-Discovery (2026-05-22)
+
+### ✨ New Features
+- **Package Auto-Discovery (“composer require” = instant use)**:
+  - `Console::discoverPackageCommands()` — reads `vendor/composer/installed.json`, scans `extra.siro.commands` in all installed packages, registers each command automatically
+  - `App::discoverPackageProviders()` — reads `vendor/composer/installed.json`, scans `extra.siro.providers` in all installed packages, instantiates and calls `->register($app)` on each
+
+### 📋 Package Convention
+Packages declare in their `composer.json`:
+```json
+{
+    "extra": {
+        "siro": {
+            "commands": {
+                "my:command": {
+                    "handler": "Vendor\\Package\\MyCommand",
+                    "desc": "Description"
+                }
+            },
+            "providers": [
+                "Vendor\\Package\\ServiceProvider"
+            ]
+        }
+    }
+}
+```
+No manual registration needed — `php siro` picks them up instantly.
+
+### 📝 Documentation
+- Updated `docs/CLI.md` with Package Commands & Auto-Discovery section
+
+### 🛡️ Internal
+- PHPStan Level Max: 0 errors
+- All tests pass
+
+---
+
+## v0.29.1 — Schema & Migration Enhancements (2026-05-22)
 
 ### ✨ New Features
 - **`Blueprint::dropIndex()`, `dropUnique()`, `dropForeign()`**: Remove indexes, unique constraints, and foreign keys in ALTER TABLE migrations
