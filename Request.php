@@ -37,6 +37,11 @@ final class Request
 
     private static ?string $rawBodyCache = null;
 
+    public static function getRawBodyCache(): ?string
+    {
+        return self::$rawBodyCache;
+    }
+
     /**
      * @param array<int|string, mixed> $query
      * @param array<string, string> $headers

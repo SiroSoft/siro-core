@@ -30,7 +30,9 @@ final class Schema
     {
         $blueprint = new Blueprint($table, self::driver());
         $callback($blueprint);
-        self::execute($blueprint->compileAlter());
+        foreach ($blueprint->compileAlter() as $sql) {
+            self::execute($sql);
+        }
     }
 
     public static function drop(string $table): void

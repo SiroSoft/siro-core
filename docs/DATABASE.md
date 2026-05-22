@@ -1,8 +1,43 @@
-# Database — Query Builder & Connection Manager
+# Database — Query Builder, Model ORM & Connection Manager
 
 The `Database` class provides a static facade over a `DatabaseInterface` instance resolved through Siro's service container. At boot, `App::boot()` registers a `DatabaseInstance` singleton under `DatabaseInterface::class`. You can override it by binding your own implementation to the container.
 
 The `DB` class is pure syntactic sugar — `DB::table('x')` simply calls `Database::table('x')`.
+
+---
+
+## Quick Start: Model vs Query Builder
+
+Siro provides **two ways** to interact with the database:
+
+### Query Builder (Fluent API)
+```php
+use Siro\Core\DB;
+
+$users = DB::table('users')
+    ->where('active', 1)
+    ->orderBy('name')
+    ->get();
+```
+
+### Model ORM (Active Record Pattern)
+```php
+use App\Models\User;
+
+$users = User::where('active', 1)
+    ->orderBy('name')
+    ->get();
+
+// Or find by ID
+$user = User::find(1);
+```
+
+**When to use which:**
+- **Model**: For standard CRUD operations with business logic, relationships, serialization
+- **Query Builder**: For complex queries, analytics, raw SQL operations
+- **DB::select()**: For raw SQL with complex functions (P95, GROUP_CONCAT, etc.)
+
+See [Model Documentation](#model-orm) below for full details.
 
 ---
 
@@ -349,20 +384,55 @@ php siro migrate:fresh --seed       # Drop + migrate + seed
 
 ### Blueprint Helpers
 
+#### Column Types
+
 | Method | Description |
 |---|---|
 | `$table->id()` | Auto-increment BIGINT primary key |
-| `$table->foreignId('user_id')` | Create string(36) column, use with `constrained()` (v0.28.1) |
+| `$table->increments('id')` | Auto-increment INT primary key |
+| `$table->foreignId('user_id')` | Create string(36) column, use with `constrained()` |
 | `$table->string('name', 100)` | VARCHAR column |
-| `$table->integer('count')` | INT column |
-| `$table->decimal('price', 10, 2)` | Decimal column |
 | `$table->text('body')` | TEXT column |
-| `$table->boolean('active')` | TINYINT(1) column |
-| `$table->json('metadata')` | JSON column (requires MySQL 8.0+ or PostgreSQL) |
-| `$table->timestamps()` | created_at + updated_at |
-| `$table->softDeletes()` | deleted_at column |
-| `$table->index('email')` | Index |
-| `$table->unique('slug')` | Unique index |
+| `$table->integer('count')` | INT column |
+| `$table->smallint('flag')` | TINYINT(1) / SMALLINT column |
+| `$table->bigint('visits')` | BIGINT column (unsigned by default) |
+| `$table->decimal('price', 10, 2)` | DECIMAL column |
+| `$table->float('rating', 10)` | FLOAT / REAL column |
+| `$table->boolean('active')` | TINYINT(1) / BOOLEAN column |
+| `$table->date('birthday')` | DATE column |
+| `$table->datetime('published_at')` | DATETIME / TIMESTAMP column |
+| `$table->timestamp('created_at')` | TIMESTAMP column |
+| `$table->json('metadata')` | JSON / JSONB column |
+
+#### Shortcut Methods
+
+| Method | Description |
+|---|---|
+| `$table->timestamps()` | Adds `created_at` + `updated_at` TIMESTAMP columns |
+| `$table->softDeletes('deleted_at')` | Adds nullable TIMESTAMP for soft deletes |
+| `$table->rememberToken()` | Adds nullable VARCHAR(100) `remember_token` column |
+
+#### Indexes & Constraints
+
+| Method | Description |
+|---|---|
+| `$table->primary(['order_id', 'product_id'])` | Composite PRIMARY KEY (skipped if all columns are `id()` type) |
+| `$table->index('email')` | Add index (auto-name: `idx_table_column`) |
+| `$table->unique('slug')` | Add unique index (auto-name: `uq_table_column`) |
+| `$table->foreign('user_id')->constrained('users')` | Foreign key constraint |
+| `$table->dropIndex('idx_email')` | Drop index in ALTER TABLE (v0.28.3) |
+| `$table->dropUnique('uq_users_slug')` | Drop unique index in ALTER TABLE (v0.28.3) |
+| `$table->dropForeign('orders_user_id_foreign')` | Drop foreign key in ALTER TABLE (v0.28.3) |
+
+#### Column Modifiers
+
+| Method | Description |
+|---|---|
+| `->nullable()` | Allow NULL values |
+| `->default('pending')` | Default value (supports string, int, float, boolean) |
+| `->default(false)` | Boolean `false` → `DEFAULT 0`, `true` → `DEFAULT 1` |
+| `->useCurrent()` | `DEFAULT CURRENT_TIMESTAMP` |
+| `->after('column_name')` | Position column after another (ALTER TABLE only, MySQL) |
 
 ---
 
@@ -583,3 +653,336 @@ Database::setInstance(new MyCustomDatabaseDriver());
 ```
 
 This allows swapping implementations for testing (mock driver) or using a custom connection pool.
+
+---
+
+## Model ORM
+
+Siro's Model layer provides an Active Record implementation with full ORM features including relationships, accessors/mutators, serialization, and more.
+
+### Creating a Model
+
+```php
+// app/Models/User.php
+namespace App\Models;
+
+use Siro\Core\Model;
+
+class User extends Model
+{
+    protected string $table = 'users';
+    protected array $fillable = ['name', 'email', 'password'];
+    protected array $hidden = ['password'];
+    protected array $casts = [
+        'email_verified_at' => 'datetime',
+        'created_at' => 'datetime',
+    ];
+}
+```
+
+### Basic CRUD Operations
+
+```php
+// Create
+$user = User::create([
+    'name' => 'John Doe',
+    'email' => 'john@example.com',
+]);
+
+// Read
+$user = User::find(1);
+$users = User::where('active', 1)->orderBy('name')->get();
+$count = User::count();
+
+// Update
+$user->update(['name' => 'Jane Doe']);
+
+// Delete
+$user->delete();
+
+// Find or fail
+$user = User::findOrFail(1); // Throws ModelNotFoundException if not found
+```
+
+### Accessors & Mutators (v0.28+)
+
+Transform attributes automatically when getting or setting:
+
+```php
+class User extends Model
+{
+    // Accessor - called when accessing $user->name
+    public function getNameAttribute(mixed $value): string
+    {
+        return ucfirst(strtolower((string) $value));
+    }
+    
+    // Mutator - called when setting $user->email = '...'
+    public function setEmailAttribute(string $value): void
+    {
+        // Set directly to avoid infinite recursion
+        $reflection = new \ReflectionClass($this);
+        $property = $reflection->getProperty('attributes');
+        $property->setAccessible(true);
+        $attrs = $property->getValue($this);
+        $attrs['email'] = strtolower($value);
+        $property->setValue($this, $attrs);
+    }
+}
+
+$user = User::find(1);
+echo $user->name; // Auto-capitalized: "John Doe"
+$user->email = 'TEST@EXAMPLE.COM'; // Auto-lowercased
+```
+
+**Note:** Mutators must set attributes directly (via reflection or helper trait) to avoid infinite recursion. Do NOT call `$this->setAttribute()` inside a mutator.
+
+### Virtual Attributes with Appends (v0.28+)
+
+Add computed/virtual attributes to JSON serialization:
+
+```php
+class User extends Model
+{
+    protected array $appends = ['full_name', 'initials'];
+    
+    public function getFullNameAttribute(): string
+    {
+        return ($this->first_name ?? '') . ' ' . ($this->last_name ?? '');
+    }
+    
+    public function getInitialsAttribute(): string
+    {
+        $first = $this->first_name ?? '';
+        $last = $this->last_name ?? '';
+        return strtoupper(substr($first, 0, 1) . substr($last, 0, 1));
+    }
+}
+
+$user = User::find(1);
+$data = $user->toArray();
+// Includes: id, first_name, last_name, full_name, initials
+
+$json = json_encode($user);
+// {"id":1,"first_name":"John","last_name":"Doe","full_name":"John Doe","initials":"JD"}
+```
+
+### DateTime Auto-Formatting (v0.28+)
+
+DateTime casts now auto-format to strings for JSON-safe serialization:
+
+```php
+class Post extends Model
+{
+    protected array $casts = [
+        'created_at' => 'datetime',
+        'published_at' => 'date',
+    ];
+}
+
+$post = Post::find(1);
+echo $post->created_at; // "2024-01-15 10:30:00" (string, not DateTime object)
+
+// JSON serialization works perfectly
+json_encode($post); // No errors!
+```
+
+### Relationships
+
+```php
+class User extends Model
+{
+    // One-to-many
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+    
+    // One-to-one
+    public function profile()
+    {
+        return $this->hasOne(Profile::class);
+    }
+    
+    // Many-to-many
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class);
+    }
+}
+
+// Eager loading (prevents N+1 queries)
+$users = User::with('posts', 'profile')->get();
+
+foreach ($users as $user) {
+    echo $user->posts->count(); // No additional queries!
+}
+```
+
+### Query Scopes
+
+Reusable query constraints:
+
+```php
+class User extends Model
+{
+    public function scopeActive($query)
+    {
+        return $query->where('active', 1);
+    }
+    
+    public function scopePopular($query)
+    {
+        return $query->where('views', '>', 1000);
+    }
+}
+
+// Usage
+$users = User::active()->popular()->orderBy('name')->get();
+```
+
+### Soft Deletes
+
+```php
+use Siro\Core\DB\SoftDeletes;
+
+class User extends Model
+{
+    use SoftDeletes;
+    
+    protected array $fillable = ['name', 'email'];
+}
+
+// Soft delete (sets deleted_at timestamp)
+$user->delete();
+
+// Query excludes soft-deleted records by default
+$users = User::all(); // Only non-deleted
+
+// Include soft-deleted
+$users = User::withTrashed()->get();
+
+// Only soft-deleted
+$users = User::onlyTrashed()->get();
+
+// Restore
+$user->restore();
+
+// Force delete (permanent)
+$user->forceDelete();
+```
+
+### Mass Assignment Protection
+
+```php
+class User extends Model
+{
+    // Only these fields can be mass-assigned
+    protected array $fillable = ['name', 'email'];
+    
+    // Or explicitly guard fields
+    // protected array $guarded = ['id', 'role'];
+}
+
+// ✅ Allowed
+User::create(['name' => 'John', 'email' => 'john@example.com']);
+
+// ❌ Blocked (not in $fillable)
+User::create(['name' => 'John', 'role' => 'admin']);
+```
+
+### Serialization Control
+
+```php
+class User extends Model
+{
+    // Hidden from JSON/array output
+    protected array $hidden = ['password', 'remember_token'];
+    
+    // Visible only (opposite of hidden)
+    // protected array $visible = ['id', 'name', 'email'];
+    
+    // Cast types
+    protected array $casts = [
+        'email_verified_at' => 'datetime',
+        'is_admin' => 'boolean',
+        'metadata' => 'array',
+    ];
+}
+
+$user = User::find(1);
+$array = $user->toArray(); // Excludes hidden fields
+$json = json_encode($user); // Same as above
+```
+
+### Pagination
+
+```php
+// Offset-based pagination
+$result = User::paginate(perPage: 15, page: 2);
+// Returns: ['data' => [...], 'meta' => ['page' => 2, 'per_page' => 15, 'total' => 100, 'last_page' => 7]]
+
+// In controller
+return Response::paginated(
+    UserResource::collection($result['data']),
+    $result['meta']
+);
+```
+
+### Advanced Queries
+
+Model inherits all Query Builder methods:
+
+```php
+// Complex queries
+$users = User::select('id', 'name')
+    ->whereRaw('YEAR(created_at) = ?', [2024])
+    ->join('orders', 'users.id', '=', 'orders.user_id')
+    ->groupBy('users.id')
+    ->havingRaw('COUNT(orders.id) > ?', [5])
+    ->orderByRaw('RAND()')
+    ->limit(10)
+    ->get();
+
+// Aggregations
+$count = User::where('active', 1)->count();
+$avgAge = User::avg('age');
+$maxScore = User::max('score');
+
+// Existence checks
+$exists = User::where('email', 'test@example.com')->exists();
+```
+
+### When to Use DB::select() Instead of Model
+
+Use raw SQL via `DB::select()` for complex analytics that Models cannot express:
+
+```php
+use Siro\Core\DB;
+
+// P95 latency calculation (requires SQL functions)
+$p95 = DB::select(
+    'SELECT PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency) as p95 
+     FROM traces WHERE created_at >= ?',
+    [$startDate]
+);
+
+// GROUP_CONCAT for comma-separated values
+$tags = DB::select(
+    'SELECT post_id, GROUP_CONCAT(tag_name) as tags 
+     FROM post_tags GROUP BY post_id'
+);
+
+// Complex window functions
+$rankings = DB::select(
+    'SELECT *, RANK() OVER (PARTITION BY category ORDER BY score DESC) as rank 
+     FROM products'
+);
+```
+
+**Rule of thumb:**
+- **Model**: Standard CRUD, relationships, business logic
+- **ModelQueryBuilder**: Complex JOINs, GROUP BY, HAVING
+- **DB::select()**: SQL functions (P95, GROUP_CONCAT), window functions, CTEs
+
+For more details, see the complete [Model API Documentation](../api/Model.md).

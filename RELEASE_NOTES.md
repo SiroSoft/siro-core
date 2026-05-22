@@ -1,6 +1,44 @@
 # Release Notes
 
-## v0.23.1 — Composer Plugin Fix (2026-05-12)
+## v0.28.3 — Schema & Migration Enhancements (2026-05-22)
+
+### ✨ New Features
+- **`Blueprint::dropIndex()`, `dropUnique()`, `dropForeign()`**: Remove indexes, unique constraints, and foreign keys in ALTER TABLE migrations
+- **`Blueprint::primary()` for composite keys**: Non-id columns can now define composite PRIMARY KEY via `$table->primary(['order_id', 'product_id'])`
+- **`compileAlter()` full command support**: ALTER TABLE now handles `foreign`, `unique`, `index`, `dropIndex`, `dropForeign` in addition to `addColumn`/`dropColumn`
+- **`Schema::table()` now returns array**: Iterates multiple ALTER statements instead of only the first
+
+### 🔧 Bug Fixes
+- **PRIMARY KEY not compiled**: `compileCreate()` silently dropped `primary` commands — now handles them (skips duplicate when column type is `id`)
+- **DEFAULT false → invalid SQL**: `(string) false` produced empty string causing `DEFAULT ` syntax error — now outputs `DEFAULT 0` / `DEFAULT 1`
+
+### 🧪 Testing
+- Added 8 new tests: compositePrimaryKey, defaultBooleanFalse/True, defaultStringValue, idNoDuplicatePrimary, dropIndex, dropUnique, dropForeign, afterModifier
+- PHPStan Level Max: 0 errors
+- All 28 tests pass
+
+### 📚 Documentation
+- Updated `docs/DATABASE.md` with full Blueprint reference table
+
+---
+
+## v0.28.2 — Model DX Enhancement (2026-05-22)
+
+### ✨ New Features
+- **Accessors & Mutators**: Transform attributes automatically when getting (`getNameAttribute()`) or setting (`setEmailAttribute()`)
+- **Virtual Attributes (Appends)**: Add computed fields like `full_name`, `initials` to JSON/array serialization via `$appends` property
+- **DateTime Auto-Formatting**: `'datetime'` and `'date'` casts now return formatted strings instead of DateTime objects, fixing JSON serialization errors
+- **Appends Getters/Setters**: `getAppends()`, `setAppends()` for runtime manipulation
+- **forceFill bypass**: `forceFill()` now sets attributes directly, bypassing mutators (useful for migrations, bulk ops)
+
+### 🧪 Testing
+- Added `tests/unit/AccessorsMutatorsTest.php` with 8 tests, 16 assertions
+- PHPStan Level Max: No errors
+- All existing Model tests: 38 tests, 46 assertions — 100% pass
+
+---
+
+## v0.28.1 — Composer Plugin Fix (2026-05-12)
 
 ### 🔧 Bug Fixes
 - **Composer allow-plugins**: Added configuration to allow `infection/extension-installer` plugin

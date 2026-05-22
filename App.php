@@ -192,14 +192,19 @@ final class App
             $allHeaders = function_exists('getallheaders') ? getallheaders() : [];
             /** @var array<string, string> $allHeaders */
             TraceData::setRequestHeaders($allHeaders);
-            $rawBody = file_get_contents('php://input');
-            TraceData::setRequestBody(is_string($rawBody) ? $rawBody : '');
         }
 
         try {
             $request = Request::fromGlobals();
             $method = $request->method();
             $path = $request->path();
+
+            // Capture request body for debug AFTER Request::fromGlobals()
+            // php://input is read-once, so we must not consume it before fromGlobals()
+            if ($this->debug) {
+                $rawBody = Request::getRawBodyCache();
+                TraceData::setRequestBody($rawBody ?? '');
+            }
 
             $maintenance = self::isDown();
             if ($maintenance !== null) {
