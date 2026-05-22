@@ -432,7 +432,28 @@ php siro migrate:fresh --seed       # Drop + migrate + seed
 | `->default('pending')` | Default value (supports string, int, float, boolean) |
 | `->default(false)` | Boolean `false` → `DEFAULT 0`, `true` → `DEFAULT 1` |
 | `->useCurrent()` | `DEFAULT CURRENT_TIMESTAMP` |
-| `->after('column_name')` | Position column after another (ALTER TABLE only, MySQL) |
+| `->after('column_name')` | Position column after another (ALTER TABLE only, MySQL/MariaDB) |
+
+#### Schema Inspection
+
+Available via `Schema::` (no connection needed) — these query the database directly:
+
+| Method | Returns | Description |
+|---|---|---|
+| `Schema::hasTable('products')` | `bool` | Check if a table exists (supports SQLite, MySQL, PostgreSQL) |
+| `Schema::hasColumn('products', 'price')` | `bool` | Check if a column exists in a table |
+| `Schema::getColumnListing('products')` | `string[]` | Get all column names in a table |
+
+```php
+if (Schema::hasTable('products')) {
+    $columns = Schema::getColumnListing('products');
+    // ['id', 'name', 'price', ...]
+
+    if (Schema::hasColumn('products', 'price')) {
+        echo 'price column exists';
+    }
+}
+```
 
 ---
 

@@ -250,4 +250,52 @@ final class SchemaTest extends TestCase
         $sql = $b->compileAlter();
         $this->assertStringContainsString('CREATE INDEX', $sql[0]);
     }
+
+    // ========================================================================
+    // after() modifier
+    // ========================================================================
+
+    public function testAfterInAlterMysql(): void
+    {
+        $b = new Blueprint('test', 'mysql');
+        $b->string('email')->after('id');
+        $sql = $b->compileAlter();
+        $this->assertStringContainsString('AFTER `id`', $sql[0]);
+    }
+
+    public function testAfterInAlterMariadb(): void
+    {
+        $b = new Blueprint('test', 'mariadb');
+        $b->string('email')->after('id');
+        $sql = $b->compileAlter();
+        $this->assertStringContainsString('AFTER `id`', $sql[0]);
+    }
+
+    public function testAfterSilentInCreate(): void
+    {
+        // AFTER is NOT valid MySQL syntax in CREATE TABLE — must be ignored
+        $b = new Blueprint('test', 'mysql');
+        $b->id();
+        $b->string('name')->after('id');
+        $sql = $b->compileCreate();
+        $this->assertStringNotContainsString('AFTER', $sql[0]);
+    }
+
+    public function testAfterSilentInAlterSqlite(): void
+    {
+        // SQLite does NOT support AFTER column placement
+        $b = new Blueprint('test', 'sqlite');
+        $b->string('email')->after('id');
+        $sql = $b->compileAlter();
+        $this->assertStringNotContainsString('AFTER', $sql[0]);
+    }
+
+    public function testAfterSilentInAlterPgsql(): void
+    {
+        // PostgreSQL does NOT support AFTER column placement
+        $b = new Blueprint('test', 'pgsql');
+        $b->string('email')->after('id');
+        $sql = $b->compileAlter();
+        $this->assertStringNotContainsString('AFTER', $sql[0]);
+    }
 }

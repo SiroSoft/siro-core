@@ -1,5 +1,25 @@
 # Release Notes
 
+## v0.29.3 — Schema Inspection & after() Test Coverage (2026-05-22)
+
+### 🧪 Testing
+- Added 8 new tests:
+  - `testAfterInAlterMysql` — after() generates `AFTER col` in ALTER TABLE (MySQL)
+  - `testAfterInAlterMariadb` — after() generates `AFTER col` in ALTER TABLE (MariaDB)
+  - `testAfterSilentInCreate` — after() silently ignored in CREATE TABLE (MySQL syntax rule)
+  - `testAfterSilentInAlterSqlite` — after() silently ignored on SQLite
+  - `testAfterSilentInAlterPgsql` — after() silently ignored on PostgreSQL
+  - `testHasColumnWithSqliteMemoryConnection` — Schema::hasColumn() integration test
+  - `testGetColumnListingWithSqliteMemoryConnection` — Schema::getColumnListing() integration test
+- All 34 Schema tests + 19 CodeQualityFixes tests pass
+- PHPStan Level Max: 0 errors
+
+### 📚 Documentation
+- Added **Schema Inspection** section to `docs/DATABASE.md` — documents `Schema::hasTable()`, `Schema::hasColumn()`, `Schema::getColumnListing()` with examples
+- Clarified `->after()` modifier: MySQL/MariaDB only, ALTER TABLE only
+
+---
+
 ## v0.29.2 — Package Auto-Discovery (2026-05-22)
 
 ### ✨ New Features
