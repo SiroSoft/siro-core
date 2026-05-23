@@ -229,4 +229,36 @@ final class CodeQualityFixesTest extends TestCase
         $escaped = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $subject);
         $this->assertSame('test\\\\\\\\_table', $escaped);
     }
+
+    // ========================================================================
+    // Fix 8: Schema::hasColumn() + getColumnListing()
+    // ========================================================================
+
+    public function testHasColumnWithSqliteMemoryConnection(): void
+    {
+        Database::configure(['driver' => 'sqlite', 'database' => ':memory:']);
+        Schema::connect(Database::connection());
+
+        $pdo = Database::connection();
+        $pdo->exec('CREATE TABLE "users" (id INTEGER, name TEXT, email TEXT)');
+
+        $this->assertTrue(Schema::hasColumn('users', 'id'));
+        $this->assertTrue(Schema::hasColumn('users', 'name'));
+        $this->assertTrue(Schema::hasColumn('users', 'email'));
+        $this->assertFalse(Schema::hasColumn('users', 'nonexistent'));
+    }
+
+    public function testGetColumnListingWithSqliteMemoryConnection(): void
+    {
+        Database::configure(['driver' => 'sqlite', 'database' => ':memory:']);
+        Schema::connect(Database::connection());
+
+        $pdo = Database::connection();
+        $pdo->exec('CREATE TABLE "test" (id INTEGER, name TEXT NOT NULL, email TEXT DEFAULT NULL)');
+
+        $columns = Schema::getColumnListing('test');
+        $this->assertIsArray($columns);
+        $this->assertCount(3, $columns);
+        $this->assertSame(['id', 'name', 'email'], $columns);
+    }
 }

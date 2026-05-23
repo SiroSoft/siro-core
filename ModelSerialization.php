@@ -6,8 +6,11 @@ namespace Siro\Core;
 
 trait ModelSerialization
 {
+    /** @var array<int, string> */
+    protected array $appends = [];
+
     /**
-     * Convert model to array (excluding hidden fields).
+     * Convert model to array (excluding hidden fields, including appends).
      *
      * @return array<string, mixed>
      */
@@ -18,6 +21,13 @@ trait ModelSerialization
         foreach ($this->attributes as $key => $value) {
             if (!in_array($key, $this->hidden, true)) {
                 $array[$key] = $this->getAttribute($key);
+            }
+        }
+
+        // Append virtual attributes
+        foreach ($this->appends as $attribute) {
+            if (!in_array($attribute, $this->hidden, true)) {
+                $array[$attribute] = $this->getAttribute($attribute);
             }
         }
 
@@ -91,6 +101,27 @@ trait ModelSerialization
     }
 
     /**
+     * Get the appended attributes.
+     *
+     * @return array<int, string>
+     */
+    public function getAppends(): array
+    {
+        return $this->appends;
+    }
+
+    /**
+     * Set the appended attributes.
+     *
+     * @param array<int, string> $appends
+     */
+    public function setAppends(array $appends): self
+    {
+        $this->appends = $appends;
+        return $this;
+    }
+
+    /**
      * Cast an attribute to a native PHP type.
      */
     private function castAttribute(string $key, mixed $value): mixed
@@ -106,7 +137,9 @@ trait ModelSerialization
             'bool', 'boolean' => (bool) $value,
             'array' => is_array($value) ? $value : json_decode((string) $value, true),
             'object' => is_object($value) ? $value : json_decode((string) $value),
-            'datetime' => $value instanceof \DateTimeImmutable || $value instanceof \DateTime ? $value : new \DateTime((string) $value),
+            'datetime', 'date' => $value instanceof \DateTimeInterface
+                ? $value->format('Y-m-d H:i:s')
+                : new \DateTime((string) $value),
             default => $value,
         };
     }

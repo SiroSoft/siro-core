@@ -127,6 +127,56 @@ final class Console
         if (file_exists($envFile)) {
             Env::load($envFile);
         }
+        $this->discoverPackageCommands();
+    }
+
+    private function discoverPackageCommands(): void
+    {
+        $installedFile = $this->basePath . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'installed.json';
+
+        if (!file_exists($installedFile)) {
+            return;
+        }
+
+        $contents = file_get_contents($installedFile);
+        if ($contents === false) {
+            return;
+        }
+
+        $data = json_decode($contents, true);
+        if (!is_array($data) || !isset($data['packages']) || !is_array($data['packages'])) {
+            return;
+        }
+
+        foreach ($data['packages'] as $package) {
+            if (!is_array($package)) {
+                continue;
+            }
+            $extra = $package['extra'] ?? null;
+            if (!is_array($extra)) {
+                continue;
+            }
+            $siro = $extra['siro'] ?? null;
+            if (!is_array($siro)) {
+                continue;
+            }
+            $commands = $siro['commands'] ?? null;
+            if (!is_array($commands)) {
+                continue;
+            }
+
+            foreach ($commands as $name => $commandConfig) {
+                if (!is_string($name) || !is_array($commandConfig)) {
+                    continue;
+                }
+                $handler = $commandConfig['handler'] ?? '';
+                if (!is_string($handler) || $handler === '' || !class_exists($handler)) {
+                    continue;
+                }
+                $desc = $commandConfig['desc'] ?? '';
+                self::registerCommand($name, $handler, is_string($desc) ? $desc : '');
+            }
+        }
     }
 
     /** @return array<string, array{handler: class-string, desc: string, usage: string}> */

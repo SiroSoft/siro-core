@@ -1,6 +1,119 @@
 # Release Notes
 
-## v0.23.1 — Composer Plugin Fix (2026-05-12)
+## v0.29.5 — Bug Fixes (2026-05-22)
+
+### 🔧 Bug Fixes
+- **`__call()` proxy**: `ModelQueryBuilder::__call()` giờ proxy các method (như `whereNull()`, `whereRaw()`, `whereIn()`, `inRandomOrder()`) xuống parent `QueryBuilder` thay vì chỉ throw exception — sửa lỗi scope lookup fail cho các method không phải scope
+- **`getStatusCode()` alias**: Thêm method `getStatusCode()` vào `Response` class, alias cho `statusCode()`, tương thích ngược với Laravel-style code
+
+### 🧪 Testing
+- PHP syntax check pass cho cả 2 file
+
+## v0.29.4 — MCP Server Package Support (2026-05-22)
+
+### 🎯 New
+- Added `discoverPackageCommands()` to auto-register commands from `extra.siro.commands` in third-party packages
+- Added `registerCommands()` bulk registration method
+- `sirosoft/mcp-server` package auto-discovers `mcp:serve` command
+
+### 🧪 Testing
+- 53 unit/integration tests pass
+## v0.29.3 — Schema Inspection & after() Test Coverage (2026-05-22)
+
+### 🧪 Testing
+- Added 8 new tests:
+  - `testAfterInAlterMysql` — after() generates `AFTER col` in ALTER TABLE (MySQL)
+  - `testAfterInAlterMariadb` — after() generates `AFTER col` in ALTER TABLE (MariaDB)
+  - `testAfterSilentInCreate` — after() silently ignored in CREATE TABLE (MySQL syntax rule)
+  - `testAfterSilentInAlterSqlite` — after() silently ignored on SQLite
+  - `testAfterSilentInAlterPgsql` — after() silently ignored on PostgreSQL
+  - `testHasColumnWithSqliteMemoryConnection` — Schema::hasColumn() integration test
+  - `testGetColumnListingWithSqliteMemoryConnection` — Schema::getColumnListing() integration test
+- All 34 Schema tests + 19 CodeQualityFixes tests pass
+- PHPStan Level Max: 0 errors
+
+### 📚 Documentation
+- Added **Schema Inspection** section to `docs/DATABASE.md` — documents `Schema::hasTable()`, `Schema::hasColumn()`, `Schema::getColumnListing()` with examples
+- Clarified `->after()` modifier: MySQL/MariaDB only, ALTER TABLE only
+
+---
+
+## v0.29.2 — Package Auto-Discovery (2026-05-22)
+
+### ✨ New Features
+- **Package Auto-Discovery (“composer require” = instant use)**:
+  - `Console::discoverPackageCommands()` — reads `vendor/composer/installed.json`, scans `extra.siro.commands` in all installed packages, registers each command automatically
+  - `App::discoverPackageProviders()` — reads `vendor/composer/installed.json`, scans `extra.siro.providers` in all installed packages, instantiates and calls `->register($app)` on each
+
+### 📋 Package Convention
+Packages declare in their `composer.json`:
+```json
+{
+    "extra": {
+        "siro": {
+            "commands": {
+                "my:command": {
+                    "handler": "Vendor\\Package\\MyCommand",
+                    "desc": "Description"
+                }
+            },
+            "providers": [
+                "Vendor\\Package\\ServiceProvider"
+            ]
+        }
+    }
+}
+```
+No manual registration needed — `php siro` picks them up instantly.
+
+### 📝 Documentation
+- Updated `docs/CLI.md` with Package Commands & Auto-Discovery section
+
+### 🛡️ Internal
+- PHPStan Level Max: 0 errors
+- All tests pass
+
+---
+
+## v0.29.1 — Schema & Migration Enhancements (2026-05-22)
+
+### ✨ New Features
+- **`Blueprint::dropIndex()`, `dropUnique()`, `dropForeign()`**: Remove indexes, unique constraints, and foreign keys in ALTER TABLE migrations
+- **`Blueprint::primary()` for composite keys**: Non-id columns can now define composite PRIMARY KEY via `$table->primary(['order_id', 'product_id'])`
+- **`compileAlter()` full command support**: ALTER TABLE now handles `foreign`, `unique`, `index`, `dropIndex`, `dropForeign` in addition to `addColumn`/`dropColumn`
+- **`Schema::table()` now returns array**: Iterates multiple ALTER statements instead of only the first
+
+### 🔧 Bug Fixes
+- **PRIMARY KEY not compiled**: `compileCreate()` silently dropped `primary` commands — now handles them (skips duplicate when column type is `id`)
+- **DEFAULT false → invalid SQL**: `(string) false` produced empty string causing `DEFAULT ` syntax error — now outputs `DEFAULT 0` / `DEFAULT 1`
+
+### 🧪 Testing
+- Added 8 new tests: compositePrimaryKey, defaultBooleanFalse/True, defaultStringValue, idNoDuplicatePrimary, dropIndex, dropUnique, dropForeign, afterModifier
+- PHPStan Level Max: 0 errors
+- All 28 tests pass
+
+### 📚 Documentation
+- Updated `docs/DATABASE.md` with full Blueprint reference table
+
+---
+
+## v0.28.2 — Model DX Enhancement (2026-05-22)
+
+### ✨ New Features
+- **Accessors & Mutators**: Transform attributes automatically when getting (`getNameAttribute()`) or setting (`setEmailAttribute()`)
+- **Virtual Attributes (Appends)**: Add computed fields like `full_name`, `initials` to JSON/array serialization via `$appends` property
+- **DateTime Auto-Formatting**: `'datetime'` and `'date'` casts now return formatted strings instead of DateTime objects, fixing JSON serialization errors
+- **Appends Getters/Setters**: `getAppends()`, `setAppends()` for runtime manipulation
+- **forceFill bypass**: `forceFill()` now sets attributes directly, bypassing mutators (useful for migrations, bulk ops)
+
+### 🧪 Testing
+- Added `tests/unit/AccessorsMutatorsTest.php` with 8 tests, 16 assertions
+- PHPStan Level Max: No errors
+- All existing Model tests: 38 tests, 46 assertions — 100% pass
+
+---
+
+## v0.28.1 — Composer Plugin Fix (2026-05-12)
 
 ### 🔧 Bug Fixes
 - **Composer allow-plugins**: Added configuration to allow `infection/extension-installer` plugin

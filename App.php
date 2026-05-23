@@ -86,6 +86,8 @@ final class App
         // Lazy-boot Cache (only initializes config, no connection)
         Cache::boot($this->basePath);
 
+        $this->discoverPackageProviders();
+
         // Defer Lang & Storage — they're rarely needed on every request
         // Accessed via __call or explicit boot methods when first used
 
@@ -119,6 +121,53 @@ final class App
     public function router(): Router
     {
         return $this->router;
+    }
+
+    private function discoverPackageProviders(): void
+    {
+        $installedFile = $this->basePath . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'installed.json';
+
+        if (!file_exists($installedFile)) {
+            return;
+        }
+
+        $contents = file_get_contents($installedFile);
+        if ($contents === false) {
+            return;
+        }
+
+        $data = json_decode($contents, true);
+        if (!is_array($data) || !isset($data['packages']) || !is_array($data['packages'])) {
+            return;
+        }
+
+        foreach ($data['packages'] as $package) {
+            if (!is_array($package)) {
+                continue;
+            }
+            $extra = $package['extra'] ?? null;
+            if (!is_array($extra)) {
+                continue;
+            }
+            $siro = $extra['siro'] ?? null;
+            if (!is_array($siro)) {
+                continue;
+            }
+            $providers = $siro['providers'] ?? null;
+            if (!is_array($providers)) {
+                continue;
+            }
+
+            foreach ($providers as $providerClass) {
+                if (!is_string($providerClass) || $providerClass === '' || !class_exists($providerClass)) {
+                    continue;
+                }
+                $provider = new $providerClass();
+                if (method_exists($provider, 'register')) {
+                    $provider->register($this);
+                }
+            }
+        }
     }
 
     public function loadRoutes(string $routesFile): void
@@ -192,14 +241,19 @@ final class App
             $allHeaders = function_exists('getallheaders') ? getallheaders() : [];
             /** @var array<string, string> $allHeaders */
             TraceData::setRequestHeaders($allHeaders);
-            $rawBody = file_get_contents('php://input');
-            TraceData::setRequestBody(is_string($rawBody) ? $rawBody : '');
         }
 
         try {
             $request = Request::fromGlobals();
             $method = $request->method();
             $path = $request->path();
+
+            // Capture request body for debug AFTER Request::fromGlobals()
+            // php://input is read-once, so we must not consume it before fromGlobals()
+            if ($this->debug) {
+                $rawBody = Request::getRawBodyCache();
+                TraceData::setRequestBody($rawBody ?? '');
+            }
 
             $maintenance = self::isDown();
             if ($maintenance !== null) {

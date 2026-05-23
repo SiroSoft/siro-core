@@ -128,11 +128,25 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function setAttribute(string $key, mixed $value): void
     {
+        // Check for mutator method first
+        $mutatorMethod = 'set' . Str::studly($key) . 'Attribute';
+        if (method_exists($this, $mutatorMethod)) {
+            // Call mutator directly - it should handle setting the value
+            $this->{$mutatorMethod}($value);
+            return;
+        }
+
         $this->attributes[$key] = $value;
     }
 
     public function getAttribute(string $key): mixed
     {
+        // Check for accessor method first
+        $accessorMethod = 'get' . Str::studly($key) . 'Attribute';
+        if (method_exists($this, $accessorMethod)) {
+            return $this->{$accessorMethod}($this->attributes[$key] ?? null);
+        }
+
         if (!array_key_exists($key, $this->attributes)) {
             return null;
         }
@@ -653,7 +667,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     protected function forceFill(array $attributes): self
     {
         foreach ($attributes as $key => $value) {
-            $this->setAttribute($key, $value);
+            // Bypass mutators by setting directly
+            $this->attributes[$key] = $value;
         }
 
         return $this;

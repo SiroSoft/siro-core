@@ -49,8 +49,16 @@ final class ServeCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $publicPath = $this->basePath . DIRECTORY_SEPARATOR . 'public';
+        $routerScript = $publicPath . DIRECTORY_SEPARATOR . 'router.php';
+
         if (!is_dir($publicPath)) {
             $this->write('public directory not found at: ' . $publicPath);
+            return 1;
+        }
+
+        if (!file_exists($routerScript)) {
+            $this->write('Router script not found at: ' . $routerScript);
+            $this->write('Make sure public/router.php exists.');
             return 1;
         }
 
@@ -74,11 +82,12 @@ final class ServeCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('');
 
         $command = sprintf(
-            '"%s" -S %s:%s -t "%s"',
-            PHP_BINARY,
+            '%s -S %s:%s -t %s %s',
+            escapeshellarg(PHP_BINARY),
             $host,
             $port,
-            $publicPath
+            escapeshellarg($publicPath),
+            escapeshellarg($routerScript)
         );
 
         passthru($command, $status);

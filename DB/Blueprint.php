@@ -165,6 +165,21 @@ final class Blueprint
         ];
     }
 
+    public function dropIndex(string $name): void
+    {
+        $this->commands[] = ['type' => 'dropIndex', 'name' => $name];
+    }
+
+    public function dropUnique(string $name): void
+    {
+        $this->commands[] = ['type' => 'dropUnique', 'name' => $name];
+    }
+
+    public function dropForeign(string $name): void
+    {
+        $this->commands[] = ['type' => 'dropForeign', 'name' => $name];
+    }
+
     /** @return array<int, string> */
     public function compileCreate(): array
     {
@@ -180,6 +195,27 @@ final class Blueprint
         foreach ($this->commands as $cmd) {
             if ($cmd['type'] === 'foreign') {
                 $parts[] = '  ' . $this->compileCommandAsSql($cmd, true);
+            } elseif ($cmd['type'] === 'primary') {
+                /** @var array<int, string> $primaryColumns */
+                $primaryColumns = (array) ($cmd['columns'] ?? []);
+                // Skip 'primary' command when all columns already have type 'id' (inline PRIMARY KEY)
+                $alreadyHasInline = true;
+                foreach ($primaryColumns as $pc) {
+                    $found = false;
+                    foreach ($this->columns as $col) {
+                        if ($col->name === $pc && $col->type === 'id') {
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        $alreadyHasInline = false;
+                        break;
+                    }
+                }
+                if (!$alreadyHasInline) {
+                    $parts[] = '  PRIMARY KEY (' . implode(', ', array_map(fn(string $c): string => $this->quote($c), $primaryColumns)) . ')';
+                }
             } elseif ($cmd['type'] === 'unique' || $cmd['type'] === 'index') {
                 if ($isMysql) {
                     $parts[] = '  ' . $this->compileCommandAsSql($cmd, true);
@@ -206,10 +242,12 @@ final class Blueprint
         $this->commands[] = ['type' => 'dropColumn', 'column' => $name];
     }
 
-    public function compileAlter(): string
+    /** @return array<int, string> */
+    public function compileAlter(): array
     {
         $parts = [];
         $tableSql = $this->quote($this->table);
+        $isMysql = $this->driver === 'mysql' || $this->driver === 'mariadb';
 
         foreach ($this->columns as $col) {
             $def = $this->compileColumnDef($col, true);
@@ -217,14 +255,36 @@ final class Blueprint
         }
 
         foreach ($this->commands as $cmd) {
-            if ($cmd['type'] === 'dropColumn') {
+            $type = is_string($cmd['type'] ?? null) ? $cmd['type'] : '';
+
+            if ($type === 'dropColumn') {
                 $colName = $cmd['column'] ?? '';
                 $col = $this->quote(is_string($colName) ? $colName : '');
                 $parts[] = "ALTER TABLE {$tableSql} DROP COLUMN {$col}";
+            } elseif ($type === 'foreign') {
+                $sql = $this->compileCommandAsSql($cmd, true);
+                if ($sql !== null) {
+                    $parts[] = "ALTER TABLE {$tableSql} ADD {$sql}";
+                }
+            } elseif ($type === 'unique' || $type === 'index') {
+                $sql = $this->compileCommandAsSql($cmd, false);
+                if ($sql !== null) {
+                    $parts[] = $sql;
+                }
+            } elseif ($type === 'dropIndex' || $type === 'dropUnique') {
+                $name = is_string($cmd['name'] ?? null) ? $this->quote($cmd['name']) : '';
+                if ($isMysql) {
+                    $parts[] = "ALTER TABLE {$tableSql} DROP INDEX {$name}";
+                } else {
+                    $parts[] = "DROP INDEX {$name}";
+                }
+            } elseif ($type === 'dropForeign') {
+                $name = is_string($cmd['name'] ?? null) ? $this->quote($cmd['name']) : '';
+                $parts[] = "ALTER TABLE {$tableSql} DROP FOREIGN KEY {$name}";
             }
         }
 
-        return implode(";\n", $parts);
+        return $parts;
     }
 
     /** @param array<string, mixed> $params */
@@ -247,6 +307,11 @@ final class Blueprint
 
         $type = $this->compileColumnType($col);
         $parts = [$type];
+
+        // AFTER clause (MySQL only)
+        if ($col->afterColumn !== null && $isAlter && ($this->driver === 'mysql' || $this->driver === 'mariadb')) {
+            $parts[] = 'AFTER ' . $this->quote($col->afterColumn);
+        }
 
         $defaultNotNull = !($col->type === 'id');
         foreach ($this->commands as $cmd) {
@@ -272,7 +337,14 @@ final class Blueprint
                 $parts[] = 'DEFAULT CURRENT_TIMESTAMP';
             }
         } elseif ($col->defaultValue !== null) {
-            $default = is_string($col->defaultValue) ? "'{$col->defaultValue}'" : (is_scalar($col->defaultValue) ? (string) $col->defaultValue : '');
+            // Boolean values must be handled explicitly — (string) false → '' (invalid SQL)
+            if ($col->defaultValue === true) {
+                $default = '1';
+            } elseif ($col->defaultValue === false) {
+                $default = '0';
+            } else {
+                $default = is_string($col->defaultValue) ? "'{$col->defaultValue}'" : (is_scalar($col->defaultValue) ? (string) $col->defaultValue : '');
+            }
             $parts[] = "DEFAULT {$default}";
         }
 

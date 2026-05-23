@@ -6,6 +6,79 @@ All 72 SiroPHP CLI commands, grouped by category.
 
 ---
 
+## Package Commands & Auto-Discovery
+
+Siro-core **v0.29.2+** can auto-discover CLI commands and HTTP service providers from any installed Composer package. No manual registration needed.
+
+### How It Works
+
+When `php siro` boots, it reads `vendor/composer/installed.json` and scans every installed package for an `extra.siro` key in its `composer.json`:
+
+#### Registering CLI Commands
+
+```json
+{
+    "extra": {
+        "siro": {
+            "commands": {
+                "my:command": {
+                    "handler": "Vendor\\Package\\MyCommand",
+                    "desc": "Do something useful"
+                }
+            }
+        }
+    }
+}
+```
+
+- `my:command` — The command name shown in `php siro list`
+- `handler` — Fully qualified class name, must extend `Siro\Core\Console` or implement the same contract
+- `desc` — Description shown in help output (optional)
+
+Once declared, the command appears in:
+```bash
+php siro list              # Shows your command alongside all built-in ones
+php siro my:command        # Runs it
+```
+
+#### Registering Service Providers
+
+```json
+{
+    "extra": {
+        "siro": {
+            "providers": [
+                "Vendor\\Package\\ServiceProvider"
+            ]
+        }
+    }
+}
+```
+
+The provider class needs only a `register(Siro\Core\App $app): void` method:
+```php
+namespace Vendor\Package;
+
+use Siro\Core\App;
+
+class ServiceProvider
+{
+    public function register(App $app): void
+    {
+        // Bind to container, register routes, middleware, etc.
+    }
+}
+```
+
+### Benefits
+
+- **Zero config**: `composer require vendor/package` — everything works immediately
+- **No cache files** (no `services.php`, `compiled.php`, etc.)
+- **Works with both root and `require`/`require-dev` packages**
+- **Graceful fallback**: If `installed.json` is missing or a handler class doesn't exist, the framework silently skips it
+
+---
+
 ## Getting Help
 
 ```bash

@@ -22,6 +22,7 @@ final class Column
     public mixed $defaultValue = null;
     public bool $useCurrent = false;
     public bool $unique_ = false;
+    public ?string $afterColumn = null;
     private ?Blueprint $blueprint;
 
     /** @param array<string, mixed> $params */
@@ -57,6 +58,16 @@ final class Column
         if ($this->blueprint !== null) {
             $this->blueprint->unique($this->name);
         }
+        return $this;
+    }
+
+    /**
+     * Specify column placement (MySQL only): AFTER `column_name`.
+     * Ignored on SQLite/PostgreSQL which don't support column ordering.
+     */
+    public function after(string $column): self
+    {
+        $this->afterColumn = $column;
         return $this;
     }
 }
