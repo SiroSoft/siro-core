@@ -1,5 +1,23 @@
 # Release Notes
 
+## v0.29.5 — Bug Fixes (2026-05-22)
+
+### 🔧 Bug Fixes
+- **`__call()` proxy**: `ModelQueryBuilder::__call()` giờ proxy các method (như `whereNull()`, `whereRaw()`, `whereIn()`, `inRandomOrder()`) xuống parent `QueryBuilder` thay vì chỉ throw exception — sửa lỗi scope lookup fail cho các method không phải scope
+- **`getStatusCode()` alias**: Thêm method `getStatusCode()` vào `Response` class, alias cho `statusCode()`, tương thích ngược với Laravel-style code
+
+### 🧪 Testing
+- PHP syntax check pass cho cả 2 file
+
+## v0.29.4 — MCP Server Package Support (2026-05-22)
+
+### 🎯 New
+- Added `discoverPackageCommands()` to auto-register commands from `extra.siro.commands` in third-party packages
+- Added `registerCommands()` bulk registration method
+- `sirosoft/mcp-server` package auto-discovers `mcp:serve` command
+
+### 🧪 Testing
+- 53 unit/integration tests pass
 ## v0.29.3 — Schema Inspection & after() Test Coverage (2026-05-22)
 
 ### 🧪 Testing

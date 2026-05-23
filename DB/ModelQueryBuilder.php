@@ -71,6 +71,12 @@ final class ModelQueryBuilder extends QueryBuilder
             return $this;
         }
 
+        // Proxy to parent QueryBuilder for methods like whereNull, whereRaw, whereIn, etc.
+        if (method_exists(QueryBuilder::class, $method)) {
+            $this->$method(...$parameters);
+            return $this;
+        }
+
         throw new RuntimeException(sprintf('Scope %s not found on %s.', $method, $modelClass));
     }
 

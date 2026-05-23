@@ -532,4 +532,9 @@ final class Response
     {
         return $this->statusCode;
     }
+
+    public function getStatusCode(): int
+    {
+        return $this->statusCode;
+    }
 }
