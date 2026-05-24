@@ -31,10 +31,70 @@ parameters:
 			path: DB/ModelQueryBuilder.php
 
 		-
+			message: '#^Parameter \#2 \$wheres of method Siro\\Core\\DB\\SqlCompiler\:\:buildCountQuery\(\) expects array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\>, array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''column'', boolean\: string, first\: string, operator\: string, second\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Parameter \#2 \$wheres of method Siro\\Core\\DB\\SqlCompiler\:\:buildDeleteSql\(\) expects array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\>, array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''column'', boolean\: string, first\: string, operator\: string, second\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Parameter \#3 \$wheres of method Siro\\Core\\DB\\SqlCompiler\:\:buildSelectQuery\(\) expects array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\>, array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''column'', boolean\: string, first\: string, operator\: string, second\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\> given\.$#'
+			identifier: argument.type
+			count: 5
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Parameter \#3 \$wheres of method Siro\\Core\\DB\\SqlCompiler\:\:buildUpdateSql\(\) expects array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\>, array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''column'', boolean\: string, first\: string, operator\: string, second\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Parameter \#4 \$wheres of method Siro\\Core\\DB\\SqlCompiler\:\:buildAggregateQuery\(\) expects array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\>, array\<int, array\{type\: ''basic'', boolean\: string, column\: string, operator\: string, param\: string\}\|array\{type\: ''column'', boolean\: string, first\: string, operator\: string, second\: string\}\|array\{type\: ''in'', boolean\: string, column\: string, not\: bool, params\: array\<int, string\>\}\|array\{type\: ''raw'', boolean\: string, sql\: string, bindings\?\: mixed\}\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: DB/QueryBuilder.php
+
+		-
+			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: DB/SqlCompiler.php
+
+		-
+			message: '#^Parameter \#1 \$identifier of method Siro\\Core\\DB\\SqlCompiler\:\:quoteIdentifier\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: DB/SqlCompiler.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''basic'' and ''column'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: DB/SqlCompiler.php
+
+		-
 			message: '#^Parameter \#2 \$options of function curl_setopt_array expects array\{10002\: non\-empty\-string, 19913\: bool, 13\: int, 78\: int, 52\: bool, 68\: int, 42\: bool, 181\: int, \.\.\.\}, array\{10002\: string, 19913\: true, 13\: int, 78\: 10, 52\: true, 68\: 5, 42\: true, 181\: 3, \.\.\.\} given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Http.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, array\<int, string\>\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Model.php
 
 		-
 			message: '#^Cannot cast mixed to float\.$#'
@@ -56,6 +116,12 @@ parameters:
 
 		-
 			message: '#^Method Siro\\Core\\Model\:\:find\(\) should return static\(Siro\\Core\\Model\)\|null but returns Siro\\Core\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: Model.php
+
+		-
+			message: '#^Method Siro\\Core\\Model\:\:fresh\(\) should return static\(Siro\\Core\\Model\)\|null but returns Siro\\Core\\Model\|null\.$#'
 			identifier: return.type
 			count: 1
 			path: Model.php

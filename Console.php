@@ -31,6 +31,8 @@ use Siro\Core\Commands\MigrateCommand;
 use Siro\Core\Commands\QueueFlushCommand;
 use Siro\Core\Commands\QueueRetryCommand;
 use Siro\Core\Commands\QueueStatusCommand;
+use Siro\Core\Commands\MigrateResetCommand;
+use Siro\Core\Commands\MigrateRefreshCommand;
 use Siro\Core\Commands\MigrateRollbackCommand;
 use Siro\Core\Commands\MigrateStatusCommand;
 use Siro\Core\Commands\OptimizeCommand;
@@ -215,6 +217,8 @@ final class Console
             'migrate:fresh'    => ['handler' => MigrateFreshCommand::class, 'desc' => 'Drop all tables and re-run all migrations', 'usage' => 'php siro migrate:fresh [--seed]'],
             'migrate:rollback'  => ['handler' => MigrateRollbackCommand::class, 'desc' => 'Rollback migrations', 'usage' => 'php siro migrate:rollback [--step=N]'],
             'migrate:status'    => ['handler' => MigrateStatusCommand::class, 'desc' => 'Migration status', 'usage' => 'php siro migrate:status'],
+            'migrate:reset'     => ['handler' => MigrateResetCommand::class, 'desc' => 'Rollback all migrations', 'usage' => 'php siro migrate:reset'],
+            'migrate:refresh'   => ['handler' => MigrateRefreshCommand::class, 'desc' => 'Rollback all and re-run migrations', 'usage' => 'php siro migrate:refresh [--seed]'],
             'db:seed'           => ['handler' => SeedCommand::class, 'desc' => 'Run seeders', 'usage' => 'php siro db:seed'],
             'db:show'           => ['handler' => DbShowCommand::class, 'desc' => 'Show table data/schema', 'usage' => 'php siro db:show <table> [--schema]'],
 

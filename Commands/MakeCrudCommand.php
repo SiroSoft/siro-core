@@ -285,7 +285,7 @@ final class {$class}
     public function store(Request \$request): Response
     {
         \$data = \$request->validate([{$rules}]);
-        \$item = {$model}::create(\$data + ['created_at' => date('Y-m-d H:i:s')]);
+        \$item = {$model}::create(\$data);
         return Response::created({$resource}::make(\$item), '{$model} created');
     }
 

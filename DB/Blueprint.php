@@ -171,6 +171,34 @@ final class Blueprint
         return $this->string($name, 100)->nullable();
     }
 
+    private ?string $charset = null;
+    private ?string $collation = null;
+    private ?string $engine = null;
+
+    public function charset(string $charset): self
+    {
+        $this->charset = $charset;
+        return $this;
+    }
+
+    public function collation(string $collation): self
+    {
+        $this->collation = $collation;
+        return $this;
+    }
+
+    public function engine(string $engine): self
+    {
+        $this->engine = $engine;
+        return $this;
+    }
+
+    public function comment(string $comment): self
+    {
+        $this->commands[] = ['type' => 'tableComment', 'comment' => $comment];
+        return $this;
+    }
+
     public function foreign(string $column): ForeignKey
     {
         $fk = new ForeignKey($column);
@@ -272,7 +300,12 @@ final class Blueprint
 
         $sql = "CREATE TABLE IF NOT EXISTS {$tableSql} (\n" . implode(",\n", $parts) . "\n)";
         if ($isMysql) {
-            $sql .= ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+            $engine = $this->engine ?? 'InnoDB';
+            $charset = $this->charset ?? 'utf8mb4';
+            $sql .= " ENGINE={$engine} DEFAULT CHARSET={$charset}";
+            if ($this->collation !== null) {
+                $sql .= " COLLATE={$this->collation}";
+            }
         }
 
         array_unshift($statements, $sql);

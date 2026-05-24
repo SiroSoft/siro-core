@@ -376,6 +376,14 @@ public function buildAggregateQuery(
                 continue;
             }
 
+            if ($where['type'] === 'column') {
+                $parts[] = $prefix
+                    . $this->quoteIdentifier($where['first'])
+                    . ' ' . $where['operator'] . ' '
+                    . $this->quoteIdentifier($where['second']);
+                continue;
+            }
+
             $parts[] = $prefix . $this->quoteIdentifier($where['column']) . ' ' . $where['operator'] . ' :' . $where['param'];
             $resultBindings[$where['param']] = $bindings[$where['param']];
         }

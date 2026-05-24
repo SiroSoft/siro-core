@@ -60,6 +60,20 @@ final class Schema
         }
     }
 
+    public static function renameColumn(string $table, string $from, string $to): void
+    {
+        $driver = self::driver();
+        $qt = self::quoteIdentifier($table);
+        $qf = self::quoteIdentifier($from);
+        $qto = self::quoteIdentifier($to);
+        $sql = match ($driver) {
+            'pgsql' => "ALTER TABLE {$qt} RENAME COLUMN {$qf} TO {$qto}",
+            'sqlite' => "ALTER TABLE {$qt} RENAME COLUMN {$qf} TO {$qto}",
+            default => "ALTER TABLE {$qt} CHANGE {$qf} {$qto}",
+        };
+        self::execute($sql);
+    }
+
     public static function rename(string $from, string $to): void
     {
         $driver = self::driver();

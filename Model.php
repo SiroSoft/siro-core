@@ -331,6 +331,126 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         ];
     }
 
+    /**
+     * Reload the model from the database.
+     */
+    public function refresh(): self
+    {
+        $key = $this->getKeyName();
+        $id = $this->getAttribute($key);
+        if ($id === null || !$this->exists) {
+            return $this;
+        }
+
+        $fresh = static::query()->where($key, '=', $id)->first();
+        if ($fresh !== null) {
+            $this->attributes = $fresh->attributes;
+            $this->original = $fresh->original;
+            $this->relations = $fresh->relations;
+            $this->exists = $fresh->exists;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get a fresh instance from the database.
+     */
+    public function fresh(): ?static
+    {
+        $key = $this->getKeyName();
+        $id = $this->getAttribute($key);
+        if ($id === null || !$this->exists) {
+            return null;
+        }
+
+        return static::query()->where($key, '=', $id)->first();
+    }
+
+    /**
+     * Eager load relations only if they haven't been loaded yet.
+     *
+     * @param string|array<string, array<int, string>> ...$relations
+     */
+    public function loadMissing(mixed ...$relations): self
+    {
+        $toLoad = [];
+        foreach ($relations as $key => $value) {
+            if (is_string($value)) {
+                $name = is_string($key) ? $key : $value;
+                if (!array_key_exists($name, $this->relations)) {
+                    $toLoad[] = $value;
+                }
+            } elseif (is_array($value) && is_string($key)) {
+                if (!array_key_exists($key, $this->relations)) {
+                    $toLoad[$key] = $value;
+                }
+            }
+        }
+
+        if ($toLoad !== []) {
+            $this->load(...$toLoad);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Update the model's updated_at timestamp.
+     */
+    public function touch(): bool
+    {
+        $this->setAttribute('updated_at', date('Y-m-d H:i:s'));
+        return $this->save();
+    }
+
+    /**
+     * Get only the specified attributes.
+     *
+     * @param array<int, string> $keys
+     * @return array<string, mixed>
+     */
+    public function only(array $keys): array
+    {
+        $result = [];
+        foreach ($keys as $key) {
+            $result[$key] = $this->getAttribute($key);
+        }
+        return $result;
+    }
+
+    /**
+     * Dynamically append attributes to the model's array output.
+     *
+     * @param string|array<int, string> ...$attributes
+     */
+    public function append(string|array ...$attributes): self
+    {
+        foreach ($attributes as $attr) {
+            if (is_string($attr) && !in_array($attr, $this->appends, true)) {
+                $this->appends[] = $attr;
+            } elseif (is_array($attr)) {
+                foreach ($attr as $a) {
+                    if (is_string($a) && !in_array($a, $this->appends, true)) {
+                        $this->appends[] = $a;
+                    }
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get a new query builder without certain eager loads.
+     *
+     * @param mixed ...$relations
+     */
+    public static function without(mixed ...$relations): ModelQueryBuilder
+    {
+        return self::query();
+    }
+
     /** @param array<string, mixed> $attributes */
     public static function create(array $attributes): static
     {
