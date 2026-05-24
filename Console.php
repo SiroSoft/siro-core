@@ -59,6 +59,7 @@ use Siro\Core\Commands\SlowLogCommand;
 use Siro\Core\Commands\LogCleanupCommand;
 use Siro\Core\Commands\LogTailCommand;
 use Siro\Core\Commands\ApiWhyCommand;
+use Siro\Core\Commands\DbWhyCommand;
 use Siro\Core\Commands\LogStatsCommand;
 use Siro\Core\Commands\MakeFactoryCommand;
 use Siro\Core\Commands\DebugHealthCommand;
@@ -229,6 +230,7 @@ final class Console
             'log:cleanup' => ['handler' => LogCleanupCommand::class, 'desc' => 'Clean old trace files', 'usage' => 'php siro log:cleanup [--days=N] [--dry-run]'],
             'log:slow'    => ['handler' => SlowLogCommand::class, 'desc' => 'Show slow requests', 'usage' => 'php siro log:slow [--limit=N] [--min=MS]'],
             'api:why'     => ['handler' => ApiWhyCommand::class, 'desc' => 'Trace a specific request — middleware, SQL, timing, exception', 'usage' => 'php siro api:why <METHOD> <path>'],
+            'db:why'      => ['handler' => DbWhyCommand::class, 'desc' => 'Analyze slow query — EXPLAIN, index suggestion', 'usage' => 'php siro db:why <query_hash>'],
             'log:tail'    => ['handler' => LogTailCommand::class, 'desc' => 'Tail log files in real-time', 'usage' => 'php siro log:tail [--type=request|error|slow] [--lines=N] [--follow|-f]'],
             'log:stats'   => ['handler' => LogStatsCommand::class, 'desc' => 'Request statistics with charts', 'usage' => 'php siro log:stats [--days=N]'],
             'log:top'     => ['handler' => LogTopCommand::class, 'desc' => 'Top slowest APIs by total time', 'usage' => 'php siro log:top [--limit=N] [--min=MS]'],
@@ -460,7 +462,7 @@ final class Console
         $this->write('');
 
         $layers = [
-            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'api:why', 'why', 'fix', 'replay', 'trace:list'],
+            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'api:why', 'db:why', 'why', 'fix', 'replay', 'trace:list'],
             '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
                                     'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
             '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:observer', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
