@@ -108,7 +108,7 @@ php siro --version          # Show version (0.28.1)
 | `make:event` | Generate event class | `php siro make:event <name>` |
 | `make:job` | Generate queue job class | `php siro make:job <name>` |
 | `make:mail` | Generate mail class | `php siro make:mail <name>` |
-| `make:test` | Generate PHPUnit test file | `php siro make:test <name>` |
+| `make:test` | Generate PHPUnit test file (--from-trace, --unit) | `php siro make:test <name> [--unit]` / `php siro make:test --from-trace=<id>` |
 | `make:factory` | Generate model factory | `php siro make:factory <name>` |
 | `make:openapi` | Generate OpenAPI 3.0 spec from route annotations | `php siro make:openapi [--with-swagger] [--tag=TAG] [--flow=auth\|crud]` |
 | `make:postman` | Generate Postman collection JSON | `php siro make:postman [--flow=crud]` |
@@ -169,7 +169,7 @@ php siro db:show users --schema           # Show table columns & types
 
 ---
 
-## log:* — Logs & Debugging (9 commands)
+## log:* — Logs & Debugging (11 commands)
 
 | Command | Description | Usage |
 |---|---|---|
@@ -185,6 +185,7 @@ php siro db:show users --schema           # Show table columns & types
 | `log:top` | Top slowest APIs by total cumulative time | `php siro log:top [--limit=N] [--min=MS]` |
 | `debug:last` | Show why the last request failed (alias: why) | `php siro debug:last` |
 | `debug:health` | Debug system health check | `php siro debug:health` |
+| `db:why` | Analyze slow query — EXPLAIN, index suggestion | `php siro db:why <query_hash>` / `php siro db:why --slow` |
 | `migrate:reset` | Rollback all migrations | `php siro migrate:reset` |
 | `migrate:refresh` | Rollback all and re-run migrations | `php siro migrate:refresh [--seed]` |
 
