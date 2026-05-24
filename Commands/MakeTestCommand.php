@@ -24,12 +24,14 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface {
 
         $name = preg_replace('/[^a-zA-Z0-9_]+/', '', $name) ?? $name;
         $name = trim($name, '_');
+        // Strip trailing 'Test' to avoid double suffix
+        $className = preg_replace('/Test$/', '', $name) ?? $name;
 
         $isUnit = in_array('--unit', $args, true);
         $dirName = $isUnit ? 'Unit' : 'Feature';
         $suffix = 'Test';
 
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . $dirName . DIRECTORY_SEPARATOR . $name . $suffix . '.php';
+        $path = $this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . $dirName . DIRECTORY_SEPARATOR . $className . $suffix . '.php';
 
         if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
             return 0;
@@ -41,16 +43,16 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         if ($isUnit) {
-            file_put_contents($path, $this->unitTemplate($name));
+            file_put_contents($path, $this->unitTemplate($className));
         } else {
-            $endpoint = '/api/' . strtolower((string) preg_replace('/Test$/', '', $name));
-            file_put_contents($path, $this->featureTemplate($name, $endpoint));
+            $endpoint = '/api/' . strtolower($className);
+            file_put_contents($path, $this->featureTemplate($className, $endpoint));
         }
 
-        $this->write('Generated: tests/' . $dirName . '/' . $name . $suffix . '.php');
-        $short = $isUnit ? 'tests/Unit/' . $name . $suffix . '.php' : 'tests/Feature/' . $name . $suffix . '.php';
+        $this->write('Generated: tests/' . $dirName . '/' . $className . $suffix . '.php');
+        $short = $isUnit ? 'tests/Unit/' . $className . $suffix . '.php' : 'tests/Feature/' . $className . $suffix . '.php';
         $suite = $isUnit ? 'Unit' : 'Feature';
-        $this->write('  Run: vendor/bin/phpunit --testsuite=' . $suite . ' --filter=' . $name . $suffix);
+        $this->write('  Run: vendor/bin/phpunit --testsuite=' . $suite . ' --filter=' . $className . $suffix);
         return 0;
     }
 
