@@ -337,6 +337,11 @@ final class Blueprint
                 $col = $this->quote(is_string($colName) ? $colName : '');
                 $parts[] = "ALTER TABLE {$tableSql} DROP COLUMN {$col}";
             } elseif ($type === 'foreign') {
+                if ($this->driver === 'sqlite') {
+                    // SQLite does not support ALTER TABLE ADD FOREIGN KEY
+                    // Foreign keys must be defined at CREATE TABLE time
+                    continue;
+                }
                 $sql = $this->compileCommandAsSql($cmd, true);
                 if ($sql !== null) {
                     $parts[] = "ALTER TABLE {$tableSql} ADD {$sql}";

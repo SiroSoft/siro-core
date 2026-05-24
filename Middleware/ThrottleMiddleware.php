@@ -86,7 +86,7 @@ final class ThrottleMiddleware implements MiddlewareInterface
     {
         $strategy = strtolower((string) Env::get('THROTTLE_FALLBACK', self::FALLBACK_FILE));
 
-        if ($strategy === self::FALLBACK_DISABLED) {
+        if ($strategy === self::FALLBACK_DISABLED || $strategy === 'fail_open') {
             return $next($request);
         }
 

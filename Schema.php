@@ -30,8 +30,20 @@ final class Schema
     {
         $blueprint = new Blueprint($table, self::driver());
         $callback($blueprint);
+        $driver = self::driver();
         foreach ($blueprint->compileAlter() as $sql) {
-            self::execute($sql);
+            try {
+                self::execute($sql);
+            } catch (\Throwable $e) {
+                // SQLite: skip "duplicate column" and unsupported FK errors gracefully
+                if ($driver === 'sqlite') {
+                    $msg = strtolower($e->getMessage());
+                    if (str_contains($msg, 'duplicate column name') || str_contains($msg, 'foreign')) {
+                        continue;
+                    }
+                }
+                throw $e;
+            }
         }
     }
 
