@@ -50,9 +50,8 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
 
         rsort($files);
 
-        $matchedTrace = null;
         $matchedData = null;
-        $matchedFile = null;
+        $matchedTrace = '';
 
         foreach ($files as $file) {
             $data = json_decode((string) file_get_contents($file), true);
@@ -66,7 +65,6 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
             if ($traceMethod === $method && $tracePath === $normalizedPath) {
                 $matchedTrace = basename($file, '.json');
                 $matchedData = $data;
-                $matchedFile = $file;
                 break;
             }
         }
@@ -147,7 +145,7 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
                 $slowLabel = $qTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
 
                 $connector = ($idx < count($queries) - 1) ? '├' : '└';
-                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . self::RESET . $qDisplay . " " . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
+                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . self::RESET . " " . $qDisplay . " " . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
             }
             $this->write('    ' . self::GRAY . '  Total SQL: ' . sprintf('%.0fms', $totalSqlTime) . self::RESET);
             $this->write('');
@@ -307,24 +305,5 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         return [];
-    }
-
-    private function getTracesDir(string $basePath): string
-    {
-        $loggerDir = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
-        if (is_dir($loggerDir)) {
-            return $loggerDir;
-        }
-        return $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
-    }
-
-    /** @return list<string> */
-    private function findTraceFiles(string $dir): array
-    {
-        if (!is_dir($dir)) {
-            return [];
-        }
-        $files = glob($dir . DIRECTORY_SEPARATOR . '*.json');
-        return is_array($files) ? $files : [];
     }
 }

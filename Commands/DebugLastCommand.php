@@ -112,7 +112,7 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
                 $slowLabel = $qTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
 
                 $connector = ($idx < count($queries) - 1) ? '├' : '└';
-                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . self::RESET . $qDisplay . " " . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
+                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . self::RESET . " " . $qDisplay . " " . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
             }
             $this->write('    ' . self::GRAY . '  Total SQL: ' . sprintf('%.0fms', $totalSqlTime) . self::RESET);
             $this->write('');

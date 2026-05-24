@@ -36,7 +36,7 @@ final class LogCleanupCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $cutoff = time() - ($days * 86400);
-        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        $files = $this->findTraceFiles($traceDir);
 
         $deleted = 0;
         $skipped = 0;

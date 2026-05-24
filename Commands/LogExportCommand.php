@@ -54,7 +54,7 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
-        $files = glob($traceDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        $files = $this->findTraceFiles($traceDir);
         rsort($files);
 
         $cutoff = $days !== null ? time() - ($days * 86400) : 0;
@@ -121,13 +121,14 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
-        $traceFile = $this->basePath
+        $traceDir = $this->basePath
             . DIRECTORY_SEPARATOR . 'storage'
             . DIRECTORY_SEPARATOR . 'logs'
-            . DIRECTORY_SEPARATOR . 'traces'
-            . DIRECTORY_SEPARATOR . $traceId . '.json';
+            . DIRECTORY_SEPARATOR . 'traces';
 
-        if (!is_file($traceFile)) {
+        $traceFile = $this->findTraceById($traceDir, $traceId);
+
+        if ($traceFile === null) {
             $this->write('Trace not found: ' . $traceId);
             return 1;
         }
