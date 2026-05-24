@@ -334,8 +334,31 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('');
             $this->write('  🔄 Replaying ' . $method . ' ' . $path . '...');
             $this->write('  ' . str_repeat('=', 40));
-            if ($body !== '' && $body !== '{}') {
-                $this->write('  Request Body:');
+            // Show headers
+            $hasAnyHeader = false;
+            if ($headers !== []) {
+                $hasAnyHeader = true;
+                $this->write('  Headers:');
+                foreach ($headers as $k => $v) {
+                    $lk = strtolower((string) $k);
+                    if ($lk === 'host' || $lk === 'content-length') continue;
+                    $this->write('    ' . $this->safeStr($k) . ': ' . $this->safeStr($v));
+                }
+            }
+            if ($auth !== '') {
+                $hasAnyHeader = true;
+                $this->write('    Authorization: Bearer [token present]');
+            }
+            if ($ct !== '') {
+                $hasAnyHeader = true;
+                $this->write('    Content-Type: ' . $ct);
+            }
+            if (!$hasAnyHeader) {
+                $this->write('  Headers: (none captured — enable APP_DEBUG=true)');
+            }
+            // Show body
+            if ($body !== '' && $body !== '{}' && $body !== '[]') {
+                $this->write('  Body:');
                 $decodedBody = json_decode($body, true);
                 if (is_array($decodedBody)) {
                     $prettyBody = (string) json_encode($decodedBody, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -345,8 +368,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 } else {
                     $this->write('    ' . $body);
                 }
-                $this->write('  ' . str_repeat('-', 40));
             }
+            $this->write('  ' . str_repeat('-', 40));
             $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
             $curlError = $this->safeStr($result['error'] ?? '');
             if ($curlError !== '') {
@@ -465,14 +488,29 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $parts[] = escapeshellarg('Authorization: ' . $auth);
         }
 
-        if ($body !== '' && $body !== '{}') {
+        if ($body !== '' && $body !== '[]' && $body !== '{}') {
             $parts[] = '-d';
             $parts[] = escapeshellarg($body);
         }
 
         $this->write('');
-        $this->write('  # Copy and run this command to replay the request:');
         $this->write('  ' . implode(' \\' . PHP_EOL . '    ', $parts));
+
+        // Show what data is available from the trace
+        $this->write('');
+        $hasHeaders = $headers !== [] || $auth !== '';
+        $hasBody = $body !== '' && $body !== '[]' && $body !== '{}';
+        if (!$hasHeaders && !$hasBody) {
+            $this->write('  ⚠ This trace has limited data (no headers/body captured).');
+            $this->write('  Enable APP_DEBUG=true in .env for full capture.');
+        } else {
+            if ($hasHeaders) {
+                $this->write('  Headers: ' . (count($headers) + ($auth !== '' ? 1 : 0)) . ' included');
+            }
+            if ($hasBody) {
+                $this->write('  Body: ' . strlen($body) . ' bytes');
+            }
+        }
     }
 
     /**
