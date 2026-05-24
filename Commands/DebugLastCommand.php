@@ -61,57 +61,59 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
 
         // ── Header ──
         $this->write('');
-        $this->write('  ' . self::BOLD . 'Last Request Summary' . self::RESET);
+        $this->write('  ' . self::BOLD . 'Request' . self::RESET);
         $this->write('  ' . self::GRAY . str_repeat('─', 56) . self::RESET);
         $this->write('  Route:    ' . self::CYAN . $method . ' ' . $path . self::RESET);
 
         $statusIcon = $status >= 500 ? '✗' : ($status >= 400 ? '!' : ($status >= 200 && $status < 300 ? '✓' : '?'));
         $statusColor = $status >= 500 ? self::RED : ($status >= 400 ? self::YELLOW : self::GREEN);
-        $this->write("  Status:   $statusColor$statusIcon $status ({$timeMs}ms)" . self::RESET);
-
+        $durationColor = $timeMs > 500 ? self::RED : ($timeMs > 100 ? self::YELLOW : self::GREEN);
+        $this->write("  Status:   " . $statusColor . $statusIcon . " " . $status . self::RESET);
+        $this->write("  Duration: " . $durationColor . sprintf('%.0fms', $timeMs) . self::RESET);
         $this->write('  Trace ID: ' . self::CYAN . $traceId . self::RESET);
         $this->write('  ' . self::GRAY . str_repeat('─', 56) . self::RESET);
 
-        // ── Timeline (waterfall) ──
-        $this->write('  ' . self::BOLD . 'Timeline' . self::RESET);
-        $hasTimeline = false;
-
+        // ── Middleware Pipeline ──
         $middleware = $data['middleware'] ?? null;
-        if (is_array($middleware)) {
-            foreach ($middleware as $mw) {
+        if (is_array($middleware) && $middleware !== []) {
+            $this->write('  ' . self::BOLD . 'Middleware Pipeline' . self::RESET);
+            $mwCount = count($middleware);
+            foreach ($middleware as $idx => $mw) {
                 if (!is_array($mw)) continue;
                 $mwName = $this->safeStr(is_string($mw['name'] ?? null) ? $mw['name'] : '?');
                 $mwPassed = (bool) ($mw['passed'] ?? true);
                 $mwTime = is_numeric($mw['time_ms'] ?? null) ? (float) $mw['time_ms'] : 0.0;
-                $mwIcon = $mwPassed ? self::GREEN . '✓' : self::RED . '✗';
-                $timeStr = $mwTime > 0 ? sprintf(' [%.0fms]', $mwTime) : '';
-                $bar = $mwTime > 0 ? ' ' . str_repeat('▬', max(1, (int) ($mwTime / 10))) : '';
-                $this->write("    $mwIcon" . self::RESET . " $mwName$timeStr" . self::GRAY . "$bar" . self::RESET);
-                $hasTimeline = true;
+
+                $connector = ($idx < $mwCount - 1) ? '├' : '└';
+                $icon = $mwPassed ? self::GREEN . '✓' : self::RED . '✗';
+                $timeStr = sprintf('%.1fms', $mwTime);
+                $slowMark = $mwTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
+                $lineColor = !$mwPassed ? self::RED : self::GRAY;
+                $this->write("    " . $lineColor . $connector . " " . $icon . self::RESET . " " . $mwName . " " . self::GRAY . $timeStr . self::RESET . $slowMark);
             }
+            $this->write('');
         }
 
+        // ── SQL Queries ──
         $queries = $data['queries'] ?? [];
         if (is_array($queries) && $queries !== []) {
+            $this->write('  ' . self::BOLD . 'SQL Queries' . self::RESET);
             $totalSqlTime = 0.0;
-            foreach ($queries as $q) {
+            foreach ($queries as $idx => $q) {
                 if (!is_array($q)) continue;
                 $qTime = is_numeric($q['time_ms'] ?? null) ? (float) $q['time_ms'] : 0.0;
                 $totalSqlTime += $qTime;
                 $qSql = $this->safeStr(is_string($q['sql'] ?? null) ? $q['sql'] : '?');
-                $qRows = is_numeric($q['rows'] ?? null) ? (int) $q['rows'] : 0;
-                $slow = $qTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ SLOW' . self::RESET : '';
-                $timeStr = sprintf('[%.1fms]', $qTime);
-                $bar = str_repeat('▬', max(1, (int) ($qTime / 10)));
-                $this->write("    " . self::GRAY . "▸" . self::RESET . " $qSql " . self::GRAY . $timeStr . $bar . self::RESET . $slow);
-                $hasTimeline = true;
-            }
-            $this->write("    " . self::GRAY . "──────────────────────────" . self::RESET);
-            $this->write("    " . self::BOLD . "Total SQL:" . self::RESET . sprintf(' %.1fms', $totalSqlTime));
-        }
+                $qAction = strtoupper(explode(' ', trim($qSql))[0] ?? '');
+                $qColor = $qTime > self::SLOW_SQL_MS ? self::YELLOW : self::GRAY;
+                $qIcon = $qTime > self::SLOW_SQL_MS ? '⚠' : '▸';
+                $slowLabel = $qTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
 
-        if (!$hasTimeline) {
-            $this->write('    ' . self::GRAY . '(no middleware or query data captured)' . self::RESET);
+                $connector = ($idx < count($queries) - 1) ? '├' : '└';
+                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . " " . self::RESET . $qSql . " " . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
+            }
+            $this->write('    ' . self::GRAY . '  Total SQL: ' . sprintf('%.0fms', $totalSqlTime) . self::RESET);
+            $this->write('');
         }
 
         // ── N+1 Detection ──
@@ -120,16 +122,14 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
             if ($accessCount !== []) {
                 foreach ($accessCount as $key => $count) {
                     if ($count >= 2) {
-                        $n1Color = self::YELLOW;
                         $parts = explode('::', $key);
-                        $relName = isset($parts[1]) && $parts[1] !== '' ? $parts[1] : $key;
-                        $this->write("    " . $n1Color . "⚠ N+1" . self::RESET . " $key accessed {$count}x. Use " . self::CYAN . "with('" . $relName . "')" . self::RESET . " to eager load.");
+                        $relName = $parts[1] ?? $key;
+                        $this->write('  ' . self::YELLOW . '⚠ N+1' . self::RESET . ' ' . $key . ' accessed ' . $count . 'x');
+                        $this->write('    Fix: ' . self::CYAN . "with('" . $relName . "')" . self::RESET);
                     }
                 }
             }
         }
-
-        $this->write('');
 
         // ── Exception + Cause + Fix ──
         $exceptionMsg = '';
@@ -142,12 +142,11 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         if ($exceptionMsg !== '') {
-            $displayEx = $exceptionClass !== '' ? "$exceptionClass: $exceptionMsg" : $exceptionMsg;
+            $displayEx = $exceptionClass !== '' ? $exceptionClass . ': ' . $exceptionMsg : $exceptionMsg;
             $this->write('  ' . self::BOLD . self::RED . 'Exception' . self::RESET);
-            $this->write('    ' . $displayEx);
+            $this->write('    └ ' . $displayEx);
             $this->write('');
 
-            // Possible cause
             $cause = $this->guessCause($exceptionClass, $exceptionMsg, $status);
             if ($cause !== []) {
                 $this->write('  ' . self::BOLD . 'Possible Cause' . self::RESET);
@@ -157,7 +156,6 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
                 $this->write('');
             }
 
-            // Suggested fix
             $fix = $this->guessFix($exceptionClass, $exceptionMsg, $status, $traceId);
             if ($fix !== []) {
                 $this->write('  ' . self::BOLD . 'Suggested Fix' . self::RESET);
@@ -168,52 +166,25 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        // ── Validation errors ──
-        $responseBody = $this->safeStr($data['response_body'] ?? '');
-        if ($responseBody !== '' && $responseBody !== '{}') {
-            $decoded = json_decode($responseBody, true);
-            if (is_array($decoded)) {
-                $errors = $decoded['errors'] ?? [];
-                if ($errors === [] && isset($decoded['data']) && is_array($decoded['data'])) {
-                    $errors = $decoded['data']['errors'] ?? [];
-                }
-                if (is_array($errors) && $errors !== []) {
-                    $this->write('  ' . self::BOLD . self::YELLOW . 'Validation Failed' . self::RESET);
-                    foreach ($errors as $field => $msgs) {
-                        $fieldStr = is_array($msgs) ? implode(', ', array_map(fn($v): string => $this->safeStr($v), (array) $msgs)) : $this->safeStr($msgs);
-                        $this->write('    ' . self::YELLOW . '•' . self::RESET . ' ' . $this->safeStr((string) $field) . ': ' . $fieldStr);
-                    }
-                    $this->write('  Fix: ' . self::CYAN . 'php siro log:replay ' . $traceId . ' --edit' . self::RESET);
-                    $this->write('');
-                }
-            }
+        // ── Response Source ──
+        $source = $data['response_source'] ?? '';
+        if ($source === '' || !is_string($source)) {
+            $source = $this->findResponseSource($data);
         }
-
-        // ── Auth hint ──
-        $headers = $data['request_headers'] ?? [];
-        $hasAuth = false;
-        if (is_array($headers)) {
-            foreach ($headers as $key => $value) {
-                if (strtolower((string) $key) === 'authorization') {
-                    $hasAuth = true;
-                    break;
-                }
-            }
-        }
-        if ($status === 401 && !$hasAuth) {
-            $this->write('  ' . self::YELLOW . 'Requires authentication.' . self::RESET . ' Add --as=admin or login first.');
+        if ($source !== '') {
+            $this->write('  ' . self::BOLD . 'Response Source' . self::RESET);
+            $this->write('    └ ' . self::CYAN . $source . self::RESET);
             $this->write('');
         }
 
-        // ── Replay shortcuts (adaptive theo method) ──
+        // ── Replay shortcuts ──
         $isWriteMethod = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
         $forceFlag = $isWriteMethod ? ' --force' : '';
         $this->write('  ' . self::BOLD . 'Replay' . self::RESET);
         $this->write('    ' . self::CYAN . '[r]' . self::RESET . '  php siro replay ' . $traceId . $forceFlag);
         $this->write('    ' . self::CYAN . '[e]' . self::RESET . '  php siro replay ' . $traceId . ' --edit');
         $this->write('    ' . self::CYAN . '[d]' . self::RESET . '  php siro replay ' . $traceId . ' --diff');
-        $this->write('    ' . self::CYAN . '[p]' . self::RESET . '  php siro log:export ' . $traceId . ' --postman');
-        $this->write('    ' . self::CYAN . '[s]' . self::RESET . '  php siro replay ' . $traceId . ' --dry-run');
+        $this->write('    ' . self::CYAN . '[t]' . self::RESET . '  php siro make:test --from-trace=' . $traceId);
         $this->write('');
 
         $this->write('  ' . self::GRAY . str_repeat('─', 56) . self::RESET);
@@ -345,5 +316,18 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         return [];
+    }
+
+    /** @param array<string, mixed> $data */
+    private function findResponseSource(array $data): string
+    {
+        $responseBody = $data['response_body'] ?? '';
+        if (is_string($responseBody) && $responseBody !== '') {
+            $decoded = json_decode($responseBody, true);
+            if (is_array($decoded) && isset($decoded['_source'])) {
+                return is_string($decoded['_source']) ? $decoded['_source'] : '';
+            }
+        }
+        return '';
     }
 }
