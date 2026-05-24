@@ -31,6 +31,12 @@ parameters:
 			path: Commands/DebugLastCommand.php
 
 		-
+			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:outputHttpie\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: Commands/LogReplayCommand.php
+
+		-
 			message: '#^Call to function is_scalar\(\) with float\|int\|string will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1

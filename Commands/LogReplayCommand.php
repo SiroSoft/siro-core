@@ -79,8 +79,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('Options:');
             $this->write('  --format=curl     Output as curl (default)');
             $this->write('  --format=httpie   Output as httpie');
-            $this->write('  --force           Execute replay (required for non-GET)');
-            $this->write('  --safe            Safe mode: warn on non-GET (default)');
+            $this->write('  --force           Execute replay (required for POST/PUT/DELETE)');
+            $this->write('  --safe            Safe mode: warn on mutating methods (default)');
             $this->write('  --set key=value   Override request field');
             $this->write('  --seed            Seed database from request data');
             $this->write('  --edit            Interactive edit request before replay');
@@ -326,8 +326,11 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         /** @var array<string, string> $headers */
         /** @var array<string, mixed> $data */
 
-        // Execute request if forced or edited, otherwise safe-mode warning
-        if ($force || $editMode) {
+        // GET requests are idempotent — allow without --force
+        // POST/PUT/DELETE/PATCH require --force or --edit
+        $isWriteMethod = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+
+        if ($force || $editMode || !$isWriteMethod) {
             $this->write('');
             $this->write('  🔄 Replaying ' . $method . ' ' . $path . '...');
             $this->write('  ' . str_repeat('=', 40));
@@ -368,13 +371,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return 0;
         }
 
-        $this->write('⚠ Safe mode: not replaying ' . $method . ' request. Use --force to execute.');
-        $this->write('  (Or use --format=curl to see the curl command without executing)');
-        if ($format === 'httpie') {
-            $this->outputHttpie($method, $url, $body, $headers, $auth);
-        } else {
-            $this->outputCurl($method, $url, $body, $headers, $auth, $data);
-        }
+        $this->write('  Run with --force to execute, or --edit to modify body before replay.');
+        $this->outputCurl($method, $url, $body, $headers, $auth, $data);
 
         return 0;
     }
@@ -451,32 +449,30 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
      */
     private function outputCurl(string $method, string $url, string $body, array $headers, string $auth, array $data): void
     {
-        $this->write('');
-        $this->write('curl \\');
-        $this->write('  -X \\');
-        $this->write('  ' . escapeshellarg($method) . ' \\');
-        $this->write('  ' . escapeshellarg($url) . ' \\');
+        $parts = ['curl', '-X', $method, escapeshellarg($url)];
 
         $seen = [];
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
             if ($lk === 'host' || $lk === 'content-length' || isset($seen[$lk])) continue;
             $seen[$lk] = true;
-            $this->write('  -H \\');
-            $this->write('  ' . escapeshellarg((string) $k . ': ' . (string) $v) . ' \\');
+            $parts[] = '-H';
+            $parts[] = escapeshellarg((string) $k . ': ' . (string) $v);
         }
 
         if ($auth !== '') {
-            $this->write('  -H \\');
-            $this->write('  ' . escapeshellarg('Authorization: ' . $auth) . ' \\');
+            $parts[] = '-H';
+            $parts[] = escapeshellarg('Authorization: ' . $auth);
         }
 
         if ($body !== '' && $body !== '{}') {
-            $this->write('  -d \\');
-            $this->write('  ' . escapeshellarg($body));
-        } else {
-            $this->write('');
+            $parts[] = '-d';
+            $parts[] = escapeshellarg($body);
         }
+
+        $this->write('');
+        $this->write('  # Copy and run this command to replay the request:');
+        $this->write('  ' . implode(' \\' . PHP_EOL . '    ', $parts));
     }
 
     /**
