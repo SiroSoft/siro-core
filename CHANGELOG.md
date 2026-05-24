@@ -4,6 +4,9 @@
 
 ### 🔥 New CLI Commands
 - `api:why <METHOD> <path>` — trace specific request
+- `db:why <hash>` — query analysis, EXPLAIN, index suggestion
+- `test:regression` — replay all traces, detect regressions
+- `make:test --from-trace=<id>` — generate PHPUnit test from production trace
 - `migrate:reset` — rollback all migrations
 - `migrate:refresh` — rollback + re-run migrations
 - `fix [trace_id]` — replay + verify fix

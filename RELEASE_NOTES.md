@@ -6,6 +6,9 @@
 - **`api:why <METHOD> <path>`**: Trace a specific request — middleware pipeline, SQL queries, timing, exception, possible cause + suggested fix
 - **`migrate:reset`**: Rollback all migrations
 - **`migrate:refresh`**: Rollback all and re-run migrations
+- **`db:why <query_hash>`**: Analyze slow query — EXPLAIN, index suggestion, `--slow` list
+- **`test:regression`**: Replay all traces & compare responses — detect status/JSON changes
+- **`make:test --from-trace=<id>`**: Generate PHPUnit test from production trace
 - **`fix <trace_id>`**: Replay + verify fix nhanh (có watch mode: `php siro fix`)
 
 ### 🧩 ORM — 22+ New Features

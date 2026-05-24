@@ -83,7 +83,7 @@ class ServiceProvider
 
 ```bash
 php siro                    # Core workflow overview
-php siro list               # List all 72 commands grouped by category
+php siro list               # List all 80+ commands grouped by category
 php siro <command> --help   # Detailed help for a specific command
 php siro -h                 # Shorthand help overview
 php siro --version          # Show version (0.28.1)
