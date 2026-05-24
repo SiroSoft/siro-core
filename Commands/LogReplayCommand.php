@@ -343,22 +343,26 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  ' . str_repeat('=', 40));
             // Show headers
             $hasAnyHeader = false;
+            $headersOutput = [];
             if ($headers !== []) {
-                $hasAnyHeader = true;
-                $this->write('  Headers:');
                 foreach ($headers as $k => $v) {
                     $lk = strtolower((string) $k);
                     if ($lk === 'host' || $lk === 'content-length') continue;
-                    $this->write('    ' . $this->safeStr($k) . ': ' . $this->safeStr($v));
+                    $headersOutput[$lk] = $this->safeStr($k) . ': ' . $this->safeStr($v);
                 }
             }
-            if ($auth !== '') {
-                $hasAnyHeader = true;
-                $this->write('    Authorization: Bearer [token present]');
+            if ($auth !== '' && !isset($headersOutput['authorization'])) {
+                $headersOutput['authorization'] = 'Authorization: Bearer [token present]';
             }
-            if ($ct !== '') {
+            if ($ct !== '' && !isset($headersOutput['content-type'])) {
+                $headersOutput['content-type'] = 'Content-Type: ' . $ct;
+            }
+            if ($headersOutput !== []) {
                 $hasAnyHeader = true;
-                $this->write('    Content-Type: ' . $ct);
+                $this->write('  Headers:');
+                foreach ($headersOutput as $h) {
+                    $this->write('    ' . $h);
+                }
             }
             if (!$hasAnyHeader) {
                 $this->write('  Headers: (none captured — enable APP_DEBUG=true)');
