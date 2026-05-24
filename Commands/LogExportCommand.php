@@ -148,16 +148,18 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
         $body = '';
 
         $requestHeaders = $data['request_headers'] ?? [];
+        $hasAuth = false;
         if (is_array($requestHeaders)) {
             foreach ($requestHeaders as $k => $v) {
-                if (strtolower($this->safeStr($k)) !== 'host') {
-                    $safeV = str_replace("'", "'\\''", $this->safeStr($v));
-                    $headers[] = "-H '" . $this->safeStr($k) . ": " . $safeV . "'";
-                }
+                $lk = strtolower($this->safeStr($k));
+                if ($lk === 'host') continue;
+                if ($lk === 'authorization') $hasAuth = true;
+                $safeV = str_replace("'", "'\\''", $this->safeStr($v));
+                $headers[] = "-H '" . $this->safeStr($k) . ": " . $safeV . "'";
             }
         }
 
-        if (isset($data['auth_header']) && $data['auth_header'] !== '') {
+        if (isset($data['auth_header']) && $data['auth_header'] !== '' && !$hasAuth) {
             $safeAuth = str_replace("'", "'\\''", $this->safeStr($data['auth_header']));
             $headers[] = "-H 'Authorization: " . $safeAuth . "'";
         }
