@@ -388,7 +388,6 @@ PHP;
         } elseif (str_contains($name, 'product') || str_contains($name, 'item')) {
             $rules[] = "'name' => 'required|min:2|max:200'";
             $rules[] = "'price' => 'required|numeric|min:0'";
-            $rules[] = "'sku' => 'required|min:2|max:50'";
         } elseif (str_contains($name, 'category') || str_contains($name, 'tag')) {
             $rules[] = "'name' => 'required|min:2|max:100'";
             $rules[] = "'slug' => 'required|min:2|max:100'";

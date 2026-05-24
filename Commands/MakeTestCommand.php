@@ -91,9 +91,8 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $method = strtoupper($this->safeStr($data['method'] ?? 'GET'));
-        $rawPath = $this->safeStr($data['path'] ?? '/');
-        $path = $rawPath;
-        $normalizedPath = $path;
+        $apiPath = $this->safeStr($data['path'] ?? '/');
+        $path = $apiPath;
         $status = is_numeric($data['status'] ?? null) ? (int) $data['status'] : 200;
         $bodyRaw = $this->safeStr($data['request_body'] ?? '');
         $authHeader = $this->safeStr($data['auth_header'] ?? '');
@@ -120,7 +119,7 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         // Generate test method name from path
-        $testName = 'test_' . strtolower($method) . '_' . trim(preg_replace('/[^a-zA-Z0-9]+/', '_', $path), '_');
+        $testName = 'test_' . strtolower($method) . '_' . trim(preg_replace('/[^a-zA-Z0-9]+/', '_', $apiPath), '_');
         $testName = substr($testName, 0, 80);
 
         // Status assertion method
@@ -196,7 +195,7 @@ PHP;
         $this->write('  Run: vendor/bin/phpunit --testsuite=Feature --filter=FromTrace' . $traceId);
         $this->write('');
         $this->write('  This test reproduces the exact request from trace: ' . $traceId);
-        $this->write('  Request: ' . $method . ' ' . $path . ' → ' . $status);
+        $this->write('  Request: ' . $method . ' ' . $apiPath . ' → ' . $status);
         $this->write('  Status: ' . $status);
         if ($hasAuth) {
             $this->write('  Auth:  Bearer token (auto-fetched via authenticate())');
