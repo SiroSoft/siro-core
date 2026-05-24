@@ -484,29 +484,27 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
      */
     private function outputCurl(string $method, string $url, string $body, array $headers, string $auth, array $data): void
     {
-        $parts = ['curl', '-X', $method, escapeshellarg($url)];
+        $cmd = 'curl -X ' . $method . ' ' . escapeshellarg($url);
 
         $seen = [];
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
             if ($lk === 'host' || $lk === 'content-length' || isset($seen[$lk])) continue;
             $seen[$lk] = true;
-            $parts[] = '-H';
-            $parts[] = escapeshellarg((string) $k . ': ' . (string) $v);
+            $cmd .= " \\\n    -H " . escapeshellarg((string) $k . ': ' . (string) $v);
         }
 
-        if ($auth !== '') {
-            $parts[] = '-H';
-            $parts[] = escapeshellarg('Authorization: ' . $auth);
+        if ($auth !== '' && !isset($seen['authorization'])) {
+            $seen['authorization'] = true;
+            $cmd .= " \\\n    -H " . escapeshellarg('Authorization: ' . $auth);
         }
 
         if ($body !== '' && $body !== '[]' && $body !== '{}') {
-            $parts[] = '-d';
-            $parts[] = escapeshellarg($body);
+            $cmd .= " \\\n    -d " . escapeshellarg($body);
         }
 
         $this->write('');
-        $this->write('  ' . implode(' \\' . PHP_EOL . '    ', $parts));
+        $this->write('  ' . $cmd);
 
         // Show what data is available from the trace
         $this->write('');
