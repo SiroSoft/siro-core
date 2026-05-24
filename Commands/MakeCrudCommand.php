@@ -92,9 +92,9 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('');
         if ($ok) {
             $this->write('');
-            $this->write('  ' . str_repeat('=', 54));
-            $this->write('  ' . $mode . ' CRUD — ' . $classBase . ' created successfully!');
-            $this->write('  ' . str_repeat('=', 54));
+            $this->success(str_repeat('═', 54));
+            $this->success($mode . ' CRUD — ' . $classBase . ' created successfully!');
+            $this->success(str_repeat('═', 54));
             $this->write('');
             $this->write('  Next steps:');
             $this->write('');
