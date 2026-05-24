@@ -53,6 +53,7 @@ use Siro\Core\Commands\ApiTestCommand;
 use Siro\Core\Commands\MakeCrudCommand;
 use Siro\Core\Commands\MakeTestCommand;
 use Siro\Core\Commands\RateStatusCommand;
+use Siro\Core\Commands\TestRegressionCommand;
 use Siro\Core\Commands\TestRunCommand;
 use Siro\Core\Commands\EnvSwitchCommand;
 use Siro\Core\Commands\SlowLogCommand;
@@ -237,6 +238,7 @@ final class Console
             'debug:last'    => ['handler' => DebugLastCommand::class, 'desc' => 'Show why last request failed (alias: why)', 'usage' => 'php siro debug:last'],
             'debug:health'  => ['handler' => DebugHealthCommand::class, 'desc' => 'Check debug system health and configuration', 'usage' => 'php siro debug:health'],
 
+            'test:regression' => ['handler' => TestRegressionCommand::class, 'desc' => 'Replay all traces & compare responses — detect regressions', 'usage' => 'php siro test:regression [--limit=N] [--status=500] [--fail]'],
             'test:run'      => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite (legacy)', 'usage' => 'php siro test:run'],
             'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API (--loop, --as=admin/guest)', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]'],
 

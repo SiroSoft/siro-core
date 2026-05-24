@@ -196,8 +196,7 @@ PHP;
         $this->write('  Run: vendor/bin/phpunit --testsuite=Feature --filter=FromTrace' . $traceId);
         $this->write('');
         $this->write('  This test reproduces the exact request from trace: ' . $traceId);
-        $displayPath = $path !== '' ? $path : $rawPath;
-        $this->write('  Request: ' . $method . ' ' . $displayPath . ' → ' . $status);
+        $this->write('  Request: ' . $method . ' ' . $path . ' → ' . $status);
         $this->write('  Status: ' . $status);
         if ($hasAuth) {
             $this->write('  Auth:  Bearer token (auto-fetched via authenticate())');

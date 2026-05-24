@@ -121,6 +121,18 @@ parameters:
 			path: Commands/MakeTestCommand.php
 
 		-
+			message: '#^Parameter \#1 \$json of function json_decode expects string, string\|true given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/TestRegressionCommand.php
+
+		-
+			message: '#^Parameter \#2 \$options of function curl_setopt_array expects array\{10036\: non\-empty\-string\|null, 19913\: bool, 13\: int, 78\: int, 10023\: array\<int, string\>\}, array\{10036\: string, 19913\: true, 13\: 10, 78\: 5, 10023\: list\<non\-falsy\-string\>\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/TestRegressionCommand.php
+
+		-
 			message: '#^Call to function is_scalar\(\) with float\|int\|string will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
