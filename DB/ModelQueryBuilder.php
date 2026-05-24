@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core\DB;
 
 use RuntimeException;
+use Siro\Core\Database;
 use Siro\Core\Model;
 
 if (!function_exists(__NAMESPACE__ . '\class_uses_recursive')) {
@@ -36,6 +37,9 @@ final class ModelQueryBuilder extends QueryBuilder
     /** @var array<string, array<int, string>> */
     private array $eagerLoads = [];
 
+    /** @var array<string, array<string, mixed>> */
+    public array $withCounts = [];
+
     /** @var array<string, array<string, string>> */
     private static array $classUsesCache = [];
 
@@ -56,6 +60,44 @@ final class ModelQueryBuilder extends QueryBuilder
     public function eagerLoad(string $relation, array $columns = ['*']): self
     {
         $this->eagerLoads[$relation] = $columns;
+        return $this;
+    }
+
+    /**
+     * Add relation count to the query results.
+     *
+     * @param string|array<string, (callable(ModelQueryBuilder): void)|null> $relation
+     * Usage:
+     *   User::withCount('posts')
+     *   User::withCount('posts as post_count')
+     *   User::withCount(['posts', 'comments' => fn($q) => $q->where('approved', true)])
+     */
+    public function withCount(string|array $relation, ?callable $callback = null): self
+    {
+        if (is_string($relation)) {
+            $alias = $relation;
+            $name = $relation;
+            if (str_contains($relation, ' as ')) {
+                $parts = explode(' as ', $relation);
+                $name = trim($parts[0]);
+                $alias = trim($parts[1]);
+            }
+            $this->withCounts[$name] = [
+                'alias' => $alias,
+                'callback' => $callback,
+            ];
+        } elseif (is_array($relation)) {
+            foreach ($relation as $key => $value) {
+                if (is_callable($value)) {
+                    $this->withCounts[(string) $key] = [
+                        'alias' => (string) $key,
+                        'callback' => $value,
+                    ];
+                } else {
+                    $this->withCount((string) $value);
+                }
+            }
+        }
         return $this;
     }
 
@@ -108,44 +150,16 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this;
     }
 
+    /**
+     * Add a where clause to filter by relation existence.
+     *
+     * Supports nested dot-notation: whereHas('user.comments', fn($q) => $q->where('approved', true))
+     */
     public function whereHas(string $relation, ?callable $callback = null, string $boolean = 'AND'): static
     {
-        $model = $this->newModelInstance();
-        $relatedModel = $this->resolveRelatedModel($relation);
-        $modelTable = $model->getTable();
-        $relTable = $relatedModel->getTable();
-        $modelSingular = strtolower(basename(str_replace('\\', '/', $this->modelClass)));
-
-        $rel = method_exists($model, $relation) ? $model->{$relation}() : null;
-        $cond = $rel instanceof \Siro\Core\DB\Relations\BelongsTo
-            ? $relTable . '.id = ' . $modelTable . '.' . $relation . '_id'
-            : $relTable . '.' . $modelSingular . '_id = ' . $modelTable . '.id';
-
-        return $this->buildExistsSubquery($relatedModel, $cond, $callback, $boolean);
-    }
-
-    private function newModelInstance(): \Siro\Core\Model
-    {
-        /** @var \Siro\Core\Model $instance */
-        $instance = new ($this->modelClass)();
-        return $instance;
-    }
-
-    private function resolveRelatedModel(string $relation): \Siro\Core\Model
-    {
-        $studly = ucfirst($relation);
-        $nsParts = explode('\\', $this->modelClass);
-        array_pop($nsParts);
-        $appNs = implode('\\', $nsParts);
-        $candidates = $appNs !== '' ? [$appNs . '\\' . $studly] : ['App\\Models\\' . $studly];
-        foreach ($candidates as $class) {
-            if (class_exists($class)) {
-                /** @var \Siro\Core\Model $instance */
-                $instance = new $class();
-                return $instance;
-            }
-        }
-        throw new \RuntimeException("Cannot resolve related model for relation: {$relation} on {$this->modelClass}");
+        $segments = explode('.', $relation);
+        $this->buildNestedExists($segments, $callback, $boolean);
+        return $this;
     }
 
     public function orWhereHas(string $relation, ?callable $callback = null): static
@@ -153,6 +167,9 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this->whereHas($relation, $callback, 'OR');
     }
 
+    /**
+     * Add a where clause to filter by relation absence.
+     */
     public function whereDoesntHave(string $relation, ?callable $callback = null): static
     {
         $this->whereHas($relation, $callback, 'AND');
@@ -163,27 +180,267 @@ final class ModelQueryBuilder extends QueryBuilder
                 $this->wheres[$lastKey] = [
                     'type' => 'raw',
                     'boolean' => $last['boolean'] === 'OR' ? 'OR' : 'AND',
-                    'sql' => 'NOT ' . $last['sql'],
+                    'sql' => 'NOT (' . $last['sql'] . ')',
                 ];
             }
         }
         return $this;
     }
 
-    private function buildExistsSubquery(Model $relModel, string $condition, ?callable $callback, string $boolean): static
+    public function orWhereDoesntHave(string $relation, ?callable $callback = null): static
     {
-        $qb = $relModel->query();
-        $qb->selectRaw('1')->whereRaw($condition);
-        if ($callback !== null) {
-            $callback($qb);
+        $this->whereHas($relation, $callback, 'OR');
+        $lastKey = array_key_last($this->wheres);
+        if ($lastKey !== null) {
+            $last = $this->wheres[$lastKey];
+            if (isset($last['sql'])) {
+                $this->wheres[$lastKey] = [
+                    'type' => 'raw',
+                    'boolean' => 'OR',
+                    'sql' => 'NOT (' . $last['sql'] . ')',
+                ];
+            }
         }
+        return $this;
+    }
+
+    /**
+     * Add a has clause (relation count condition).
+     *
+     * Examples:
+     *   User::has('posts')              -> EXISTS (SELECT 1 FROM posts WHERE ...)
+     *   User::has('posts', '>=', 3)     -> (SELECT COUNT(*) FROM posts WHERE ...) >= 3
+     */
+    public function has(string $relation, string $operator = '>=', int $count = 1, string $boolean = 'AND'): static
+    {
+        $segments = explode('.', $relation);
+        $model = $this->newModelInstance();
+        $currentTable = $model->getTable();
+
+        $segCount = count($segments);
+
+        if ($segCount > 1) {
+            throw new \RuntimeException('Nested has() is not supported yet. Use whereHas() for nested relations.');
+        }
+
+        $relName = $segments[0];
+        $rel = $this->resolveRelation(method_exists($model, $relName) ? $model->{$relName}() : null);
+        if ($rel === null) {
+            throw new \RuntimeException("Relation '{$relName}' not found on " . $this->modelClass);
+        }
+        $relatedModel = $this->resolveRelationModel($rel);
+        $relTable = $relatedModel->getTable();
+
+        [$cond, $relQuery] = $this->buildRelationCondition($rel, $model, $currentTable, $relTable, $relName);
+
+        // For simple existence check (>= 1), use EXISTS
+        if ($operator === '>=' && $count === 1) {
+            $qb = $relQuery;
+            $qb->selectRaw('1')->whereRaw($cond);
+            $subSql = $qb->toSql();
+            $this->wheres[] = [
+                'type' => 'raw',
+                'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
+                'sql' => 'EXISTS (' . $subSql . ')',
+            ];
+            return $this;
+        }
+
+        // For count conditions, use (SELECT COUNT(*) ... HAVING ...) >= count
+        $qb = $relQuery;
+        $qb->whereRaw($cond);
         $subSql = $qb->toSql();
+        $disallowed = ['!=', '<>'];
+        $safeOp = in_array($operator, $disallowed, true) ? $operator : '>=';
         $this->wheres[] = [
             'type' => 'raw',
             'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
-            'sql' => 'EXISTS (' . $subSql . ')',
+            'sql' => '(SELECT COUNT(*) FROM (' . $subSql . ') AS siro_has_count) ' . $safeOp . ' ' . $count,
         ];
         return $this;
+    }
+
+    public function orHas(string $relation, string $operator = '>=', int $count = 1): static
+    {
+        return $this->has($relation, $operator, $count, 'OR');
+    }
+
+    /**
+     * @param array<int, string> $segments
+     */
+    private function buildNestedExists(array $segments, ?callable $callback, string $boolean): void
+    {
+        $model = $this->newModelInstance();
+        $currentTable = $model->getTable();
+
+        $segCount = count($segments);
+
+        if ($segCount === 1) {
+            $relName = $segments[0];
+            $rel = $this->resolveRelation(method_exists($model, $relName) ? $model->{$relName}() : null);
+            if ($rel === null) {
+                throw new \RuntimeException("Relation '{$relName}' not found on " . $this->modelClass);
+            }
+            $relatedModel = $this->resolveRelationModel($rel);
+            $relTable = $relatedModel->getTable();
+
+            [$cond, $relQuery] = $this->buildRelationCondition($rel, $model, $currentTable, $relTable, $relName);
+            $relQuery->selectRaw('1')->whereRaw($cond);
+
+            if ($callback !== null) {
+                $callback($relQuery);
+            }
+
+            $subSql = $relQuery->toSql();
+            $this->wheres[] = [
+                'type' => 'raw',
+                'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
+                'sql' => 'EXISTS (' . $subSql . ')',
+            ];
+            return;
+        }
+
+        $relations = [];
+        $resolved = [];
+
+        for ($i = 0; $i < $segCount; $i++) {
+            $relName = $segments[$i];
+            $srcModel = $i === 0 ? $model : $resolved[$i - 1];
+            $rawRel = method_exists($srcModel, $relName) ? $srcModel->{$relName}() : null;
+            $relations[$i] = $rawRel;
+            $rel = $this->resolveRelation($rawRel);
+            if ($rel === null) {
+                throw new \RuntimeException("Relation '{$relName}' not found in nested path");
+            }
+            $resolved[$i] = $this->resolveRelationModel($rel);
+        }
+
+        $innerQb = $resolved[$segCount - 1]->query();
+        $innerTable = $resolved[$segCount - 1]->getTable();
+        $prevTable = $segCount >= 2 ? $resolved[$segCount - 2]->getTable() : $currentTable;
+        $prevModel = $segCount >= 2 ? $resolved[$segCount - 2] : $model;
+        /** @var \Siro\Core\DB\Relations\HasOne|\Siro\Core\DB\Relations\HasMany|\Siro\Core\DB\Relations\BelongsTo|\Siro\Core\DB\Relations\BelongsToMany $lastRel */
+        $lastRel = $this->resolveRelation($relations[$segCount - 1]);
+        [$innerCond,] = $this->buildRelationCondition($lastRel, $prevModel, $prevTable, $innerTable, $segments[$segCount - 1]);
+
+        $innerQb->selectRaw('1')->whereRaw($innerCond);
+        if ($callback !== null) {
+            $callback($innerQb);
+        }
+
+        $subSql = $innerQb->toSql();
+        $fullSql = 'EXISTS (' . $subSql . ')';
+
+        for ($i = $segCount - 2; $i >= 0; $i--) {
+            /** @var \Siro\Core\Model $relModel */
+            $relModel = $resolved[$i];
+            $relTable = $relModel->getTable();
+            $parentModel = $i > 0 ? $resolved[$i - 1] : $model;
+            $parentTable = $i > 0 ? $resolved[$i - 1]->getTable() : $currentTable;
+
+            /** @var \Siro\Core\DB\Relations\HasOne|\Siro\Core\DB\Relations\HasMany|\Siro\Core\DB\Relations\BelongsTo|\Siro\Core\DB\Relations\BelongsToMany $currentRel */
+            $currentRel = $this->resolveRelation($relations[$i]);
+            [$cond,] = $this->buildRelationCondition($currentRel, $parentModel, $parentTable, $relTable, $segments[$i]);
+
+            $outerQb = $relModel->query();
+            $outerQb->selectRaw('1')->whereRaw($cond);
+            $outerQb->wheres[] = [
+                'type' => 'raw',
+                'boolean' => 'AND',
+                'sql' => $fullSql,
+            ];
+            $fullSql = 'EXISTS (' . $outerQb->toSql() . ')';
+        }
+
+        $this->wheres[] = [
+            'type' => 'raw',
+            'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
+            'sql' => $fullSql,
+        ];
+    }
+
+    private function newModelInstance(): \Siro\Core\Model
+    {
+        /** @var \Siro\Core\Model $instance */
+        $instance = new ($this->modelClass)();
+        return $instance;
+    }
+
+    /**
+     * Resolve the related model from a relation object.
+     */
+    /**
+     * @return \Siro\Core\DB\Relations\HasOne|\Siro\Core\DB\Relations\HasMany|\Siro\Core\DB\Relations\BelongsTo|\Siro\Core\DB\Relations\BelongsToMany|null
+     */
+    private function resolveRelation(mixed $rel): mixed
+    {
+        if ($rel instanceof \Siro\Core\DB\Relations\HasOne
+            || $rel instanceof \Siro\Core\DB\Relations\HasMany
+            || $rel instanceof \Siro\Core\DB\Relations\BelongsTo
+            || $rel instanceof \Siro\Core\DB\Relations\BelongsToMany
+        ) {
+            return $rel;
+        }
+        return null;
+    }
+
+    private function resolveRelationModel(object $rel): \Siro\Core\Model
+    {
+        $class = match (true) {
+            $rel instanceof \Siro\Core\DB\Relations\HasOne => $rel->getRelatedClass(),
+            $rel instanceof \Siro\Core\DB\Relations\HasMany => $rel->getRelatedClass(),
+            $rel instanceof \Siro\Core\DB\Relations\BelongsTo => $rel->getRelatedClass(),
+            $rel instanceof \Siro\Core\DB\Relations\BelongsToMany => $rel->getRelatedClass(),
+            default => throw new \RuntimeException('Unknown relation type: ' . $rel::class),
+        };
+        /** @var \Siro\Core\Model $instance */
+        $instance = new $class();
+        return $instance;
+    }
+
+    /**
+     * Build the JOIN condition for a relation.
+     *
+     * @param \Siro\Core\DB\Relations\HasOne|\Siro\Core\DB\Relations\HasMany|\Siro\Core\DB\Relations\BelongsTo|\Siro\Core\DB\Relations\BelongsToMany $rel
+     * @return array{0: string, 1: ModelQueryBuilder}
+     */
+    private function buildRelationCondition(object $rel, \Siro\Core\Model $parentModel, string $parentTable, string $relTable, string $relName): array
+    {
+        if ($rel instanceof \Siro\Core\DB\Relations\BelongsTo) {
+            /** @var class-string<\Siro\Core\Model> $relClass */
+            $relClass = $rel->getRelatedClass();
+            $query = (new $relClass())->query();
+            /** @var ModelQueryBuilder $query */
+            return [
+                "{$relTable}.{$rel->getOwnerKey()} = {$parentTable}.{$rel->getForeignKey()}",
+                $query,
+            ];
+        }
+
+        if ($rel instanceof \Siro\Core\DB\Relations\HasOne || $rel instanceof \Siro\Core\DB\Relations\HasMany) {
+            /** @var class-string<\Siro\Core\Model> $relClass */
+            $relClass = $rel->getRelatedClass();
+            $query = (new $relClass())->query();
+            /** @var ModelQueryBuilder $query */
+            return [
+                "{$relTable}.{$rel->getForeignKey()} = {$parentTable}.{$rel->getLocalKey()}",
+                $query,
+            ];
+        }
+
+        if ($rel instanceof \Siro\Core\DB\Relations\BelongsToMany) {
+            /** @var class-string<\Siro\Core\Model> $relClass */
+            $relClass = $rel->getRelatedClass();
+            $query = (new $relClass())->query();
+            /** @var ModelQueryBuilder $query */
+            return [
+                "{$relTable}.{$rel->getRelatedKey()} IN (SELECT {$rel->getRelatedKey()} FROM {$rel->getPivotTable()} WHERE {$rel->getForeignKey()} = {$parentTable}.id)",
+                $query,
+            ];
+        }
+
+        // @phpstan-ignore deadCode.unreachable
+        throw new \RuntimeException("Cannot build condition for relation: {$relName}");
     }
 
     public function select(array|string ...$columns): static
@@ -225,6 +482,10 @@ final class ModelQueryBuilder extends QueryBuilder
         if ($this->eagerLoads !== []) {
             $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
             $loader->loadBatch($models, $this->eagerLoads);
+        }
+
+        if ($this->withCounts !== []) {
+            $this->loadCountsIntoModels($models);
         }
 
         return $models;
@@ -332,6 +593,98 @@ final class ModelQueryBuilder extends QueryBuilder
     {
         $this->applySoftDeleteFilter();
         return parent::avg($column);
+    }
+
+    /**
+     * @param array<int, Model> $models
+     */
+    public function loadCountsIntoModels(array $models): void
+    {
+        if ($models === []) {
+            return;
+        }
+
+        $modelInstance = $this->newModelInstance();
+
+        foreach ($this->withCounts as $relation => $config) {
+            $alias = (string) ($config['alias'] ?? $relation);
+            $callback = isset($config['callback']) && is_callable($config['callback']) ? $config['callback'] : null;
+
+            if (!method_exists($modelInstance, $relation)) {
+                continue;
+            }
+
+            $rel = $this->resolveRelation(method_exists($modelInstance, $relation) ? $modelInstance->{$relation}() : null);
+            if ($rel === null) {
+                continue;
+            }
+            $relatedModel = $this->resolveRelationModel($rel);
+            $relTable = $relatedModel->getTable();
+
+            [$cond] = $this->buildRelationCondition($rel, $modelInstance, $modelInstance->getTable(), $relTable, $relation);
+
+            $localIds = [];
+            $idKey = 'id';
+            if ($rel instanceof \Siro\Core\DB\Relations\BelongsTo) {
+                $idKey = $rel->getForeignKey();
+            } elseif ($rel instanceof \Siro\Core\DB\Relations\HasOne || $rel instanceof \Siro\Core\DB\Relations\HasMany) {
+                $idKey = $rel->getLocalKey();
+            }
+            foreach ($models as $m) {
+                $id = $m->getAttribute($idKey);
+                if (is_numeric($id) || is_string($id)) {
+                    $localIds[] = $id;
+                }
+            }
+
+            $localIds = array_unique($localIds);
+            if ($localIds === []) {
+                continue;
+            }
+
+            // Determine the grouping column
+            $groupCol = $rel instanceof \Siro\Core\DB\Relations\BelongsTo
+                ? $relTable . '.' . $rel->getOwnerKey()
+                : $relTable . '.' . $rel->getForeignKey();
+
+            // Build count query: SELECT fk, COUNT(*) as count FROM related WHERE fk IN (...) GROUP BY fk
+            $qb = $relatedModel->query();
+            $qb->selectRaw("{$groupCol} AS siro_fk, COUNT(*) AS siro_count");
+            $placeholders = [];
+            $bindings = [];
+            foreach ($localIds as $i => $lid) {
+                $key = 'sc_' . $i;
+                $placeholders[] = ':' . $key;
+                $bindings[$key] = is_scalar($lid) ? $lid : (string) $lid;
+            }
+            $qb->whereRaw("{$groupCol} IN (" . implode(', ', $placeholders) . ")", $bindings);
+            $qb->groupByRaw("{$groupCol}");
+
+            if ($callback !== null) {
+                $callback($qb);
+            }
+
+            [$countSql, $countBindings] = $qb->toCompiled();
+            $rows = Database::select($countSql, $countBindings);
+
+            $counts = [];
+            foreach ($rows as $row) {
+                /** @var array<string, mixed> $row */
+                $fkRaw = $row['siro_fk'] ?? 0;
+                $fk = is_scalar($fkRaw) ? (string) $fkRaw : '0';
+                $countRaw = $row['siro_count'] ?? 0;
+                $counts[$fk] = is_numeric($countRaw) ? (int) $countRaw : 0;
+            }
+
+            $countKey = str_replace('.', '_', (string) $alias) . '_count';
+            foreach ($models as $m) {
+                $id = $rel instanceof \Siro\Core\DB\Relations\BelongsTo
+                    ? $m->getAttribute($rel->getForeignKey())
+                    : $m->getAttribute('id');
+                $idStr = is_scalar($id) ? (string) $id : '0';
+                $m->setAttribute($countKey, $counts[$idStr] ?? 0);
+            }
+        }
     }
 
     private function applySoftDeleteFilter(): void

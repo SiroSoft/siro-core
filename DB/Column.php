@@ -23,6 +23,8 @@ final class Column
     public bool $useCurrent = false;
     public bool $unique_ = false;
     public ?string $afterColumn = null;
+    /** @var list<string> */
+    public array $allowedValues = [];
     private ?Blueprint $blueprint;
 
     /** @param array<string, mixed> $params */
@@ -68,6 +70,17 @@ final class Column
     public function after(string $column): self
     {
         $this->afterColumn = $column;
+        return $this;
+    }
+
+    /**
+     * Set allowed values for ENUM type.
+     *
+     * @param list<string> $values
+     */
+    public function allowedValues(array $values): self
+    {
+        $this->allowedValues = $values;
         return $this;
     }
 }

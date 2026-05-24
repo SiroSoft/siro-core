@@ -567,6 +567,37 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /**
      * @param string|array<string, array<int, string>> ...$relations
      */
+    /**
+     * Load relation counts into the model.
+     *
+     * Usage:
+     *   $user->loadCount('posts');
+     *   $user->loadCount(['posts', 'comments']);
+     */
+    public function loadCount(string|array ...$relations): self
+    {
+        $counts = [];
+        foreach ($relations as $rel) {
+            if (is_string($rel)) {
+                $counts[$rel] = ['alias' => $rel, 'callback' => null];
+            } elseif (is_array($rel)) {
+                foreach ($rel as $key => $value) {
+                    if (is_string($key) && is_callable($value)) {
+                        $counts[$key] = ['alias' => $key, 'callback' => $value];
+                    } elseif (is_int($key) && is_string($value)) {
+                        $counts[$value] = ['alias' => $value, 'callback' => null];
+                    }
+                }
+            }
+        }
+
+        $q = static::query();
+        $q->withCounts = $counts;
+        $q->loadCountsIntoModels([$this]);
+
+        return $this;
+    }
+
     public function load(mixed ...$relations): self
     {
         /** @var array<string, array<int, string>> $eagerLoads */
