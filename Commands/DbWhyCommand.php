@@ -172,14 +172,21 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         // Try to run EXPLAIN
         $this->write('  ' . self::BOLD . 'EXPLAIN' . self::RESET);
         $explainResult = $this->runExplain($sql);
-        if ($explainResult !== null) {
+        if ($explainResult !== null && $explainResult !== []) {
+            $driver = $this->detectDriver();
             foreach ($explainResult as $row) {
-                // Format depends on driver
-                foreach ($row as $key => $val) {
-                    $valStr = is_scalar($val) ? (string) $val : '';
-                    if (in_array(strtolower((string) $key), ['type', 'key', 'rows', 'extra', 'possible_keys', 'ref'], true)) {
-                        $color = $this->getExplainColor((string) $key, $valStr);
-                        $this->write('    ' . self::GRAY . $key . ': ' . self::RESET . $color . $valStr . self::RESET);
+                if ($driver === 'sqlite') {
+                    $detail = is_string($row['detail'] ?? null) ? $row['detail'] : '';
+                    $this->write('    ' . $this->colorizeExplainText($detail));
+                } else {
+                    // MySQL/PostgreSQL format: show if using index or scanning
+                    // MySQL/PostgreSQL EXPLAIN format
+                    foreach ($row as $key => $val) {
+                        $valStr = is_scalar($val) ? (string) $val : '';
+                        if (in_array(strtolower((string) $key), ['type', 'key', 'rows', 'extra', 'possible_keys', 'ref'], true)) {
+                            $color = $this->getExplainColor((string) $key, $valStr);
+                            $this->write('    ' . self::GRAY . $key . ': ' . self::RESET . $color . $valStr . self::RESET);
+                        }
                     }
                 }
             }
@@ -218,21 +225,20 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
     private function runExplain(string $sql): ?array
     {
         try {
-            $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';
-            if (!file_exists($envFile)) {
-                return null;
-            }
-            Env::load($envFile);
-            $configPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
-            if (!file_exists($configPath)) {
-                return null;
-            }
-            /** @var array<string, mixed> $config */
-            $config = require $configPath;
-            Database::configure($config);
+            // Try primary database connection
             $pdo = Database::connection();
-        } catch (\Throwable $e) {
-            return null;
+        } catch (\Throwable) {
+            // Try direct SQLite connection (common for dev/testing)
+            try {
+                $dbPath = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'test.db';
+                if (file_exists($dbPath)) {
+                    $pdo = new \PDO('sqlite:' . $dbPath);
+                } else {
+                    return null;
+                }
+            } catch (\Throwable) {
+                return null;
+            }
         }
 
         // Normalize: replace ? and :named params with literal values for EXPLAIN
@@ -322,6 +328,38 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
             }
         }
         return $cols;
+    }
+
+    private function detectDriver(): string
+    {
+        try {
+            $pdo = Database::connection();
+            $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+            return is_string($driver) ? $driver : 'mysql';
+        } catch (\Throwable) {
+            // Try SQLite
+            $dbPath = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'test.db';
+            if (file_exists($dbPath)) {
+                return 'sqlite';
+            }
+            return 'mysql';
+        }
+    }
+
+    private function colorizeExplainText(string $text): string
+    {
+        $lower = strtolower($text);
+        $color = self::GRAY; // default
+        if (str_contains($lower, 'full scan') || (str_contains($lower, 'scan') && !str_contains($lower, 'using'))) {
+            $color = self::RED;
+        }
+        if (str_contains($lower, 'temp') || str_contains($lower, 'sort') || str_contains($lower, 'filesort')) {
+            $color = self::YELLOW;
+        }
+        if (str_contains($lower, 'primary key') || str_contains($lower, 'unique')) {
+            $color = self::GREEN;
+        }
+        return $color . $text . self::RESET;
     }
 
     private function getExplainColor(string $key, string $value): string
