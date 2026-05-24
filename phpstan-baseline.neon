@@ -109,6 +109,18 @@ parameters:
 			path: Commands/LogReplayCommand.php
 
 		-
+			message: '#^Parameter \#1 \$data of method Siro\\Core\\Commands\\MakeTestCommand\:\:extractKeys\(\) expects array\<string, mixed\>, array\<mixed, mixed\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Commands/MakeTestCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function trim expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/MakeTestCommand.php
+
+		-
 			message: '#^Call to function is_scalar\(\) with float\|int\|string will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
