@@ -393,6 +393,7 @@ Prefix matching also triggers suggestions (e.g. `migrat` → `migrate`, `migrate
 | 68 | `new` | system:* |
 | 69 | `api:test` | system:* |
 | 70 | `test:run` | system:* |
+| 71 | `test:regression` | system:* |
 
 ---
 
