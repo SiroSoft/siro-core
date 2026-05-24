@@ -140,7 +140,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $ct = $this->safeStr($data['content_type'] ?? '');
 
         // Default Content-Type for JSON body if missing
-        if ($ct === '' && $body !== '' && $body !== '{}') {
+        if ($ct === '' && $body !== '' && $body !== '{}' && $body !== '[]') {
             $ct = 'application/json';
         }
 
@@ -357,7 +357,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 $this->write('  Headers: (none captured — enable APP_DEBUG=true)');
             }
             // Show body
-            if ($body !== '' && $body !== '{}' && $body !== '[]') {
+            $hasBody = $body !== '' && $body !== '{}' && $body !== '[]';
+            if ($hasBody) {
                 $this->write('  Body:');
                 $decodedBody = json_decode($body, true);
                 if (is_array($decodedBody)) {
