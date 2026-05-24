@@ -1,20 +1,21 @@
 <div align="center">
   <h1>⚡ Siro Core</h1>
   <p><strong>Production Debugging & Testing Framework for PHP APIs.</strong><br>
-  Debug a production bug in 4 commands. Zero runtime dependencies.</p>
+  Cold boot ~1ms · Zero dependencies · OWASP Top 10 mitigated · PHPStan Level Max</p>
 </div>
 
 <div align="center">
 
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-brightgreen)](https://phpstan.org)
+[![Security Audit](https://img.shields.io/badge/audit-9.0%2F10-brightgreen)](docs/AUDIT_SUMMARY.md)
 [![Tests](https://img.shields.io/badge/tests-19.000%2B%20pass-brightgreen)](tests/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
 
 ```bash
-# 5 seconds → production-ready API with JWT auth
+# 5 seconds → production-ready API with JWT auth + CRUD + tests
 composer create-project sirosoft/api my-api && cd my-api && php siro serve
 ```
 
@@ -40,6 +41,17 @@ php siro test:regression
 
 **This is not a feature list. This is a workflow.**  
 No other framework — PHP, Node, Go, Rust, Python, Ruby — has this flow.
+
+---
+
+## But it's also a full API framework
+
+| ⚡ **Speed** | 🔒 **Security** | 🧩 **Architecture** |
+|---|---|---|
+| Cold boot ~1ms | OWASP Top 10 mitigated | DI Container (autowiring) |
+| 864K ops/sec (avg) | 7 rounds audit — 9.0/10 | Router O(1) dispatch |
+| Zero runtime deps | JWT with key rotation | ORM with identity map |
+| ~2 KB memory/request | CSP, CORS, CSRF built-in | 80 CLI commands |
 
 ---
 
