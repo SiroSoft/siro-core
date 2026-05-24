@@ -186,7 +186,7 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('    ' . self::CYAN . '[r]' . self::RESET . '  php siro replay ' . $traceId . $forceFlag);
         $this->write('    ' . self::CYAN . '[e]' . self::RESET . '  php siro replay ' . $traceId . ' --edit');
         $this->write('    ' . self::CYAN . '[d]' . self::RESET . '  php siro replay ' . $traceId . ' --diff');
-        $this->write('    ' . self::CYAN . '[t]' . self::RESET . '  php siro make:test --from-trace=' . $traceId);
+        $this->write('    ' . self::CYAN . '[t]' . self::RESET . '  php siro replay ' . $traceId . ' --test');
         $this->write('');
 
         $this->write('  ' . self::GRAY . str_repeat('─', 56) . self::RESET);
@@ -199,55 +199,38 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         $lowerMsg = strtolower($message);
         $lowerClass = strtolower($class);
 
-        if (str_contains($lowerMsg, 'deadlock') || str_contains($lowerMsg, 'lock')) {
-            return [
-                'Concurrent transaction conflict',
-                'Missing retry logic for deadlock scenarios',
-                'Long-running transaction holding locks',
-            ];
+        if (str_contains($lowerMsg, 'no such table')) {
+            return ['Referenced table does not exist in database', 'Migration may not have been run yet'];
+        }
+        if (str_contains($lowerMsg, 'no such column') || str_contains($lowerMsg, 'unknown column')) {
+            return ['Referenced column does not exist', 'Migration or schema is out of sync with code'];
+        }
+        if (str_contains($lowerMsg, 'deadlock')) {
+            return ['Concurrent transaction conflict', 'Missing retry logic for deadlock scenarios'];
         }
         if (str_contains($lowerMsg, 'timeout') || str_contains($lowerMsg, 'timed out')) {
-            return [
-                'Database connection timeout',
-                'Slow query exceeding default timeout',
-                'Network congestion or DB overload',
-            ];
+            return ['Database connection or query timeout', 'Slow query exceeding default threshold'];
         }
-        if (str_contains($lowerMsg, 'not found') || str_contains($lowerMsg, 'not exist')) {
-            return [
-                'Missing record in database',
-                'Invalid foreign key reference',
-            ];
+        if (str_contains($lowerMsg, 'not found') || str_contains($lowerMsg, 'not exist') || str_contains($lowerMsg, 'does not exist')) {
+            return ['Missing record in database', 'Invalid foreign key or ID reference'];
         }
-        if (str_contains($lowerMsg, 'duplicate') || str_contains($lowerMsg, 'unique')) {
-            return [
-                'Duplicate entry violates unique constraint',
-                'Missing duplicate check before insert',
-            ];
+        if (str_contains($lowerMsg, 'duplicate') || str_contains($lowerMsg, 'unique constraint')) {
+            return ['Duplicate entry violates unique constraint', 'Record with this value already exists'];
         }
-        if ($status === 401 || str_contains($lowerMsg, 'auth') || str_contains($lowerMsg, 'unauthorized')) {
-            return [
-                'Missing or expired authentication token',
-                'Insufficient permissions for this route',
-            ];
+        if (str_contains($lowerMsg, 'syntax error')) {
+            return ['SQL syntax error in query', 'Check for missing quotes, commas, or keywords'];
+        }
+        if ($status === 401 || str_contains($lowerMsg, 'unauthorized') || str_contains($lowerMsg, 'unauthenticated')) {
+            return ['Missing or expired authentication token'];
         }
         if ($status === 403 || str_contains($lowerMsg, 'forbidden')) {
-            return [
-                'Authenticated user lacks required role',
-                'Missing role middleware on this route',
-            ];
+            return ['Authenticated user lacks required role or permission'];
         }
         if ($status === 422) {
-            return [
-                'Request body fails validation rules',
-                'Missing or malformed required fields',
-            ];
+            return ['Request body fails validation rules', 'Missing or malformed required fields'];
         }
-        if ($status >= 500 && $status < 600) {
-            return [
-                'Unhandled exception in controller or service',
-                'Check exception details above for root cause',
-            ];
+        if ($status >= 500) {
+            return ['Unhandled exception in controller or service layer', 'Review exception details above for root cause'];
         }
 
         return [];
@@ -259,61 +242,68 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
         $lowerMsg = strtolower($message);
         $lowerClass = strtolower($class);
 
-        $replay = 'php siro replay ' . $traceId;
-        $replayForce = $replay . ' --force';
-        $replayEdit = $replay . ' --edit';
+        $replayCmd = 'php siro replay ' . $traceId;
+        $testCmd = 'php siro replay ' . $traceId . ' --test';
 
-        if (str_contains($lowerMsg, 'deadlock') || str_contains($lowerMsg, 'lock')) {
+        if (str_contains($lowerMsg, 'no such table')) {
+            return [
+                'Run pending migrations: php siro migrate',
+                'Check if the migration file exists in database/migrations/',
+                $testCmd . ' to generate regression test',
+            ];
+        }
+        if (str_contains($lowerMsg, 'deadlock')) {
             return [
                 'Wrap transaction in retry loop (max 3 attempts)',
                 'Reduce transaction scope — only lock what you need',
-                'Add FOR UPDATE / SKIP LOCKED to SELECT queries',
-                "$replayEdit to test fix",
+                $replayCmd . ' --edit to test fix',
             ];
         }
         if (str_contains($lowerMsg, 'timeout') || str_contains($lowerMsg, 'timed out')) {
             return [
-                'Check slow query with SLOW LOG above',
-                'Add missing database indexes',
+                'Add missing database indexes for slow queries',
                 'Increase timeout in config/database.php',
+                $testCmd,
             ];
         }
-        if (str_contains($lowerMsg, 'not found') || str_contains($lowerMsg, 'not exist')) {
+        if (str_contains($lowerMsg, 'not found') || str_contains($lowerMsg, 'does not exist')) {
             return [
                 'Verify the record exists before querying',
                 'Check foreign key constraint integrity',
+                $testCmd,
             ];
         }
         if (str_contains($lowerMsg, 'duplicate') || str_contains($lowerMsg, 'unique')) {
             return [
-                'Add duplicate check before insert',
-                'Use INSERT ... ON DUPLICATE KEY UPDATE',
+                'Add duplicate check before insert/update',
+                'Use updateOrCreate() or firstOrCreate()',
+                $testCmd,
             ];
         }
         if ($status === 401) {
             return [
-                'php siro make:auth to generate auth endpoints',
                 'Include Authorization: Bearer <token> header',
-                'Login first: php siro t POST /api/auth/login --body={"email":"...","password":"..."}',
+                'Login first: php siro t POST /api/auth/login',
             ];
         }
         if ($status === 403) {
             return [
-                'Check your role: user() in your controller',
-                'Add route middleware: ->middleware(["auth", "role:admin"])',
+                'Check user role in controller or middleware',
+                'Add ->middleware(["auth", "role:admin"]) to route',
             ];
         }
         if ($status === 422) {
             return [
-                "$replayEdit to fix request body",
-                'Check validation rules in FormRequest class',
+                $replayCmd . ' --edit to fix request body',
+                'Check validation rules in controller or FormRequest',
+                $testCmd,
             ];
         }
         if ($status >= 500) {
             return [
-                "$replayForce to reproduce locally",
-                "$replayEdit to test fixes",
-                'Add error handling for the exception class above',
+                $replayCmd . ' --force to reproduce locally',
+                $replayCmd . ' --edit to test potential fixes',
+                $testCmd . ' to lock in the fix',
             ];
         }
 

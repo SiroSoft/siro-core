@@ -70,6 +70,13 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 }
             } elseif (str_starts_with($arg, '--seed')) {
                 $overrides['_seed'] = '1';
+            } elseif ($arg === '--test') {
+                // Delegate to make:test --from-trace
+                $testArgs = ['siro', 'make:test', '--from-trace=' . $traceId];
+                $_SERVER['argv'] = $testArgs;
+                $_SERVER['argc'] = count($testArgs);
+                $console = new \Siro\Core\Console($this->basePath);
+                return $console->run($testArgs);
             }
         }
 
