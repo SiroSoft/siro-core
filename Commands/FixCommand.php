@@ -53,33 +53,49 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $host = $this->safeStr($data['host'] ?? 'localhost:8080');
             $path = $this->safeStr($data['path'] ?? '/');
             $body = $this->safeStr($data['request_body'] ?? '');
+            $auth = $this->safeStr($data['auth_header'] ?? '');
+            $ct = $this->safeStr($data['content_type'] ?? '');
+            $headers = $data['request_headers'] ?? [];
+
+            $curlHeaders = ['Content-Type: ' . ($ct !== '' ? $ct : 'application/json')];
+            if ($auth !== '') {
+                $curlHeaders[] = 'Authorization: ' . $auth;
+            }
+            if (is_array($headers)) {
+                foreach ($headers as $k => $v) {
+                    $lk = strtolower((string) $k);
+                    if (in_array($lk, ['host', 'content-length', 'content-type', 'authorization'], true)) continue;
+                    $curlHeaders[] = (string) $k . ': ' . (string) $v;
+                }
+            }
 
             $ch = curl_init('http://' . $host . $path);
             $safeMethod = $method !== '' ? $method : 'GET';
-            if ($body !== '') {
-                curl_setopt_array($ch, [
-                    CURLOPT_CUSTOMREQUEST => $safeMethod,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT => 10,
-                    CURLOPT_POSTFIELDS => $body,
-                    CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-                ]);
-            } else {
-                curl_setopt_array($ch, [
-                    CURLOPT_CUSTOMREQUEST => $safeMethod,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT => 10,
-                    CURLOPT_POSTFIELDS => '',
-                    CURLOPT_HTTPHEADER => [],
-                ]);
+            curl_setopt_array($ch, [
+                CURLOPT_CUSTOMREQUEST => $safeMethod,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_HTTPHEADER => $curlHeaders,
+            ]);
+            if ($body !== '' && $body !== '[]' && $body !== '{}') {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
             }
             $response = curl_exec($ch);
             $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
             $this->write('');
-            $this->write('  🔄 Replayed: ' . $method . ' ' . $path);
-            $this->write('  Status: ' . $status . ' ' . ($status >= 200 && $status < 300 ? '✅' : '❌'));
+            $this->write('  🔄 Fix replay: ' . $method . ' ' . $path);
+            $statusColor = $status >= 500 ? '❌' : ($status >= 400 ? '⚠️' : '✅');
+            $this->write('  Status: ' . $status . ' ' . $statusColor);
+            if ($response !== false && $response !== '') {
+                $decoded = json_decode($response, true);
+                if (is_array($decoded)) {
+                    $this->write('  Response: ' . (string) json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                } else {
+                    $this->write('  Response: ' . substr($response, 0, 200));
+                }
+            }
             return $status >= 200 && $status < 300 ? 0 : 1;
         }
 
