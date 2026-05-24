@@ -31,6 +31,30 @@ parameters:
 			path: Commands/DebugLastCommand.php
 
 		-
+			message: '#^Call to function is_array\(\) with array\<string, string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Parameter \#1 \$json of function json_decode expects string, string\|true given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
+			message: '#^Parameter \#1 \$string of function substr expects string, string\|true given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Commands/FixCommand.php
+
+		-
 			message: '#^Method Siro\\Core\\Commands\\LogReplayCommand\:\:outputHttpie\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1

@@ -55,7 +55,9 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $body = $this->safeStr($data['request_body'] ?? '');
             $auth = $this->safeStr($data['auth_header'] ?? '');
             $ct = $this->safeStr($data['content_type'] ?? '');
-            $headers = $data['request_headers'] ?? [];
+            /** @var array<string, string>|null $rawHeaders */
+            $rawHeaders = $data['request_headers'] ?? null;
+            $headers = is_array($rawHeaders) ? $rawHeaders : [];
 
             $curlHeaders = ['Content-Type: ' . ($ct !== '' ? $ct : 'application/json')];
             if ($auth !== '') {
@@ -65,7 +67,7 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
                 foreach ($headers as $k => $v) {
                     $lk = strtolower((string) $k);
                     if (in_array($lk, ['host', 'content-length', 'content-type', 'authorization'], true)) continue;
-                    $curlHeaders[] = (string) $k . ': ' . (string) $v;
+                    $curlHeaders[] = (string) $k . ': ' . (is_string($v) ? $v : (string) $v);
                 }
             }
 

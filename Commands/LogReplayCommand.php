@@ -484,23 +484,29 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
      */
     private function outputCurl(string $method, string $url, string $body, array $headers, string $auth, array $data): void
     {
-        $cmd = 'curl -X ' . $method . ' ' . escapeshellarg($url);
+        // Quote a value for curl display (single quotes for cross-platform safety)
+        $q = function (string $s): string {
+            // Use single quotes to avoid shell escaping issues with JSON
+            return "'" . str_replace("'", "'\\''", $s) . "'";
+        };
+
+        $cmd = 'curl -X ' . $method . ' ' . $q($url);
 
         $seen = [];
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
             if ($lk === 'host' || $lk === 'content-length' || isset($seen[$lk])) continue;
             $seen[$lk] = true;
-            $cmd .= " \\\n    -H " . escapeshellarg((string) $k . ': ' . (string) $v);
+            $cmd .= " \\\n    -H " . $q((string) $k . ': ' . (string) $v);
         }
 
         if ($auth !== '' && !isset($seen['authorization'])) {
             $seen['authorization'] = true;
-            $cmd .= " \\\n    -H " . escapeshellarg('Authorization: ' . $auth);
+            $cmd .= " \\\n    -H " . $q('Authorization: ' . $auth);
         }
 
         if ($body !== '' && $body !== '[]' && $body !== '{}') {
-            $cmd .= " \\\n    -d " . escapeshellarg($body);
+            $cmd .= " \\\n    -d " . $q($body);
         }
 
         $this->write('');
