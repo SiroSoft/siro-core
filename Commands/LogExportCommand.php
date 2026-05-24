@@ -141,7 +141,9 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
 
         $method = $this->safeStr($data['method'] ?? 'GET');
         $path = $this->safeStr($data['path'] ?? '/');
-        $host = 'http://localhost:8000';
+        $rawHost = $this->safeStr($data['host'] ?? '');
+        $scheme = 'http';
+        $host = $rawHost !== '' ? $rawHost : 'localhost:8000';
         $headers = [];
         $body = '';
 
@@ -149,13 +151,15 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
         if (is_array($requestHeaders)) {
             foreach ($requestHeaders as $k => $v) {
                 if (strtolower($this->safeStr($k)) !== 'host') {
-                    $headers[] = "-H '" . $this->safeStr($k) . ": " . $this->safeStr($v) . "'";
+                    $safeV = str_replace("'", "'\\''", $this->safeStr($v));
+                    $headers[] = "-H '" . $this->safeStr($k) . ": " . $safeV . "'";
                 }
             }
         }
 
         if (isset($data['auth_header']) && $data['auth_header'] !== '') {
-            $headers[] = "-H 'Authorization: " . $this->safeStr($data['auth_header']) . "'";
+            $safeAuth = str_replace("'", "'\\''", $this->safeStr($data['auth_header']));
+            $headers[] = "-H 'Authorization: " . $safeAuth . "'";
         }
 
         $requestBody = $this->safeStr($data['request_body'] ?? '');
@@ -163,7 +167,8 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
             $body = "  -d '" . str_replace("'", "'\\''", $requestBody) . "'";
         }
 
-        $curlCmd = "curl -X " . $method . " " . $host . $path;
+        $url = $scheme . '://' . $host . $path;
+        $curlCmd = "curl -X " . $method . " " . $url;
         if ($headers !== []) {
             $curlCmd .= " \\\n  " . implode(" \\\n  ", $headers);
         }
