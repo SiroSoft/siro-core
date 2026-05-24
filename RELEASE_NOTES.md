@@ -1,5 +1,60 @@
 # Release Notes
 
+## v0.29.6 — ORM Enhancements + Debug Workflow Overhaul (2026-05-24)
+
+### 🔥 New CLI Commands
+- **`api:why <METHOD> <path>`**: Trace a specific request — middleware pipeline, SQL queries, timing, exception, possible cause + suggested fix
+- **`migrate:reset`**: Rollback all migrations
+- **`migrate:refresh`**: Rollback all and re-run migrations
+- **`fix <trace_id>`**: Replay + verify fix nhanh (có watch mode: `php siro fix`)
+
+### 🧩 ORM — 22+ New Features
+- **`withCount()` / `loadCount()`**: Query relation counts without loading (+ callback filter support)
+- **`has()` / `orHas()`**: Relation count conditions (`has('posts', '>=', 3)`)
+- **`whereHas()` nested**: Dot-notation support (`whereHas('user.comments', fn)`)
+- **`whereDoesntHave()` / `orWhereDoesntHave()`**: Filter by relation absence
+- **`refresh()` / `fresh()`**: Reload model from DB / get fresh instance
+- **`loadMissing()`**: Only load relations not yet loaded
+- **`touch()`**: Update model's updated_at timestamp
+- **`only()` / `append()` / `without()`**: Attribute subset, dynamic appends, skip eager loads
+- **`whereColumn()`**: Compare two columns against each other
+- **`whereDate/Month/Day/Year/Time()`**: Date-based where clauses
+- **`when()` / `unless()`**: Conditional query clauses
+- **`distinct()`**: SELECT DISTINCT support
+- **`latest()` / `oldest()`**: Order by created_at convenience
+- **`orderByDesc()` / `reorder()`**: Convenience ordering methods
+- **Column types**: `enum`, `uuid`, `jsonb`, `ipAddress`, `macAddress`
+- **Schema**: `comment()`, `renameColumn()`, charset/collation/engine table options
+
+### 🐛 Bug Fixes
+- **`log:export`**: Fix "trace not found" — nested trace directory support via `findTraceById()`
+- **`log:cleanup`**: Fix recursive trace directory — use `findTraceFiles()` instead of `glob('*.json')`
+- **`api:why`**: Fix trace search — use `CommandSupport::findTraceFiles()` (recursive)
+- **`log:replay`**: Fix safe mode block GET requests — GET now auto-executes without `--force`
+- **`log:replay`**: Fix curl format — compact single-line, JSON body quotes preserved (Windows `escapeshellarg` fix)
+- **`log:replay`**: Fix duplicate headers — deduplicate Authorization/Content-Type from `headers` + `auth_header`
+- **`debug:health`**: Fix "Log directory missing" — check path from `$basePath` directly
+- **`make:test`**: Fix double Test suffix — `OrderTest` → `OrderTest.php` (was `OrderTestTest.php`)
+- **`DebugLastCommand`**: Fix SQL duplicate action prefix — deduplicate "UPDATE UPDATE..."
+- **`DebugLastCommand`**: Fix middleware tree connector — remove broken `failingIdx` logic
+
+### 💄 Output Polish
+- **`php siro why`**: New format — tree connectors (`├`/`└`), "Middleware Pipeline" section, SQL action prefix (SELECT/INSERT/UPDATE), compact timing
+- **`log:replay`**: Show headers (deduplicated), body, warning when trace data incomplete
+- **`replay --test`**: Generate regression test from trace
+- **`replay --diff`**: Compare before/after response with color-coded status
+
+### 📚 Documentation
+- `docs/CLI.md`: 72 → 80+ commands, add new debug commands
+- `docs/cli-debug-workflow.md`: Complete rewrite with real output examples
+- `SiroPHP/docs/api/Debug.md`: Update workflow
+
+### ⚡ Performance
+- PHPStan Level Max: **0 errors** (45 baseline)
+- All existing tests pass
+
+---
+
 ## v0.29.5 — Bug Fixes (2026-05-22)
 
 ### 🔧 Bug Fixes

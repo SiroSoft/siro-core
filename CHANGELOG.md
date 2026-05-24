@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.29.6 (2026-05-24) — ORM Enhancements + Debug Workflow Overhaul
+
+### 🔥 New CLI Commands
+- `api:why <METHOD> <path>` — trace specific request
+- `migrate:reset` — rollback all migrations
+- `migrate:refresh` — rollback + re-run migrations
+- `fix [trace_id]` — replay + verify fix
+
+### 🧩 ORM (22+ Features)
+- `withCount()` / `loadCount()` + callback filter
+- `has()` / `orHas()` relation count conditions
+- `whereHas()` nested dot-notation support
+- `whereDoesntHave()` / `orWhereDoesntHave()`
+- `refresh()` / `fresh()` / `loadMissing()` / `touch()`
+- `only()` / `append()` / `without()`
+- `whereColumn()` / `whereDate/Month/Day/Year/Time()`
+- `when()` / `unless()` conditional clauses
+- `distinct()` / `latest()` / `oldest()` / `orderByDesc()` / `reorder()`
+- Column types: `enum`, `uuid`, `jsonb`, `ipAddress`, `macAddress`
+- Schema: `comment()`, `renameColumn()`, charset/collation/engine
+
+### 🐛 Bug Fixes
+- `log:export` / `log:cleanup` / `api:why` — nested trace directory support
+- `log:replay` — GET auto-executes, curl format compact, JSON quotes preserved
+- `debug:health` — log directory path fix
+- `make:test` — double Test suffix fix
+- `DebugLastCommand` — SQL duplicate action, middleware tree connector fix
+
+---
+
 ## v0.28.1 (2026-05-19) — Migration Fixes + QueryBuilder + CLI Enhancements
 
 ### 🏗 Migration System
