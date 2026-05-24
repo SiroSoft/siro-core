@@ -1,6 +1,24 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 2
+			path: Commands/ApiWhyCommand.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Commands/ApiWhyCommand.php
+
+		-
+			message: '#^Variable \$matchedTrace on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: Commands/ApiWhyCommand.php
+
+		-
 			message: '#^Call to function is_scalar\(\) with float\|int\|string will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
