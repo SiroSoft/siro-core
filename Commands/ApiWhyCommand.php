@@ -111,25 +111,18 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
         $middleware = $data['middleware'] ?? null;
         if (is_array($middleware) && $middleware !== []) {
             $this->write('  ' . self::BOLD . 'Middleware Pipeline' . self::RESET);
-            // Find the failing middleware for grouping
-            $failingIdx = -1;
-            foreach ($middleware as $idx => $mw) {
-                if (is_array($mw) && !($mw['passed'] ?? true)) {
-                    $failingIdx = $idx;
-                }
-            }
+            $mwCount = count($middleware);
             foreach ($middleware as $idx => $mw) {
                 if (!is_array($mw)) continue;
                 $mwName = $this->safeStr(is_string($mw['name'] ?? null) ? $mw['name'] : '?');
                 $mwPassed = (bool) ($mw['passed'] ?? true);
                 $mwTime = is_numeric($mw['time_ms'] ?? null) ? (float) $mw['time_ms'] : 0.0;
-                $isFailing = $idx === $failingIdx || (!$mwPassed && $failingIdx === -1);
 
-                $connector = $idx === $failingIdx ? '└' : (($idx < count($middleware) - 1) ? '├' : '└');
+                $connector = ($idx < $mwCount - 1) ? '├' : '└';
                 $icon = $mwPassed ? self::GREEN . '✓' : self::RED . '✗';
                 $timeStr = sprintf('%.1fms', $mwTime);
                 $slowMark = $mwTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
-                $lineColor = $isFailing && !$mwPassed ? self::RED : self::GRAY;
+                $lineColor = !$mwPassed ? self::RED : self::GRAY;
                 $this->write("    " . $lineColor . $connector . " " . $icon . self::RESET . " " . $mwName . " " . self::GRAY . $timeStr . self::RESET . $slowMark);
             }
             $this->write('');
@@ -146,12 +139,15 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
                 $totalSqlTime += $qTime;
                 $qSql = $this->safeStr(is_string($q['sql'] ?? null) ? $q['sql'] : '?');
                 $qAction = strtoupper(explode(' ', trim($qSql))[0] ?? '');
+                // Show only first 80 chars of SQL body (after action word)
+                $qBody = trim(substr($qSql, strlen($qAction)));
+                $qDisplay = strlen($qBody) > 80 ? substr($qBody, 0, 77) . '...' : $qBody;
                 $qColor = $qTime > self::SLOW_SQL_MS ? self::YELLOW : self::GRAY;
                 $qIcon = $qTime > self::SLOW_SQL_MS ? '⚠' : '▸';
                 $slowLabel = $qTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
 
                 $connector = ($idx < count($queries) - 1) ? '├' : '└';
-                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . " " . self::RESET . $qSql . " " . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
+                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . self::RESET . $qDisplay . " " . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
             }
             $this->write('    ' . self::GRAY . '  Total SQL: ' . sprintf('%.0fms', $totalSqlTime) . self::RESET);
             $this->write('');
