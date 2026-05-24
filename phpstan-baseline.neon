@@ -1,6 +1,36 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Call to function is_scalar\(\) with float\|int\|string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
+			message: '#^Offset \-1\|int\<1, max\> might not exist on array\<int\<0, max\>, Siro\\Core\\Model\>\.$#'
+			identifier: offsetAccess.notFound
+			count: 2
+			path: DB/ModelQueryBuilder.php
+
+		-
+			message: '#^Offset \-1\|int\<1, max\> might not exist on array\<int\<0, max\>, mixed\>\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
+			message: '#^Parameter \#2 \$bindings of method Siro\\Core\\DB\\QueryBuilder\:\:whereRaw\(\) expects array\<int\|string, int\|string\>, array\<string, float\|int\|string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: DB/ModelQueryBuilder.php
+
+		-
 			message: '#^Parameter \#2 \$options of function curl_setopt_array expects array\{10002\: non\-empty\-string, 19913\: bool, 13\: int, 78\: int, 52\: bool, 68\: int, 42\: bool, 181\: int, \.\.\.\}, array\{10002\: string, 19913\: true, 13\: int, 78\: 10, 52\: true, 68\: 5, 42\: true, 181\: 3, \.\.\.\} given\.$#'
 			identifier: argument.type
 			count: 1
@@ -31,6 +61,12 @@ parameters:
 			path: Model.php
 
 		-
+			message: '#^Method Siro\\Core\\Model\:\:loadCount\(\) has parameter \$relations with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: Model.php
+
+		-
 			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
 			identifier: argument.type
 			count: 1
@@ -43,7 +79,7 @@ parameters:
 			path: Model.php
 
 		-
-			message: '#^Parameter \#2 \$eagerLoads of method Siro\\Core\\DB\\EagerLoader\:\:load\(\) expects array\<string, array\<int, string\>\>, array\<string, array\<int\|string, array\<int, string\>\|string\>\> given\.$#'
+			message: '#^Parameter \#2 \$eagerLoads of method Siro\\Core\\DB\\EagerLoader\:\:load\(\) expects array\<string, array\<int, string\>\>, array\<string, array\<mixed\>\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: Model.php

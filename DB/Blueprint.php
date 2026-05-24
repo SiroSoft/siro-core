@@ -113,6 +113,48 @@ final class Blueprint
         return $this->addColumn('json', $name);
     }
 
+    /**
+     * ENUM column with allowed values.
+     *
+     * @param list<string> $allowedValues
+     */
+    public function enum(string $name, array $allowedValues): Column
+    {
+        return $this->addColumn('enum', $name, ['allowedValues' => $allowedValues]);
+    }
+
+    /**
+     * JSONB column (native JSONB on PostgreSQL, JSON otherwise).
+     */
+    public function jsonb(string $name): Column
+    {
+        return $this->addColumn('jsonb', $name);
+    }
+
+    /**
+     * UUID column (native UUID on PostgreSQL, CHAR(36) otherwise).
+     */
+    public function uuid(string $name): Column
+    {
+        return $this->addColumn('uuid', $name);
+    }
+
+    /**
+     * IP address column (VARCHAR(45) — supports both IPv4 and IPv6).
+     */
+    public function ipAddress(string $name): Column
+    {
+        return $this->addColumn('ipAddress', $name);
+    }
+
+    /**
+     * MAC address column (VARCHAR(17)).
+     */
+    public function macAddress(string $name): Column
+    {
+        return $this->addColumn('macAddress', $name);
+    }
+
     public function timestamps(?string $createdAt = 'created_at', ?string $updatedAt = 'updated_at'): void
     {
         $this->timestamp((string) $createdAt)->useCurrent();
@@ -409,7 +451,35 @@ final class Blueprint
                 'sqlite' => 'TEXT',
                 default => 'JSON',
             },
+            'enum' => $this->compileEnumType($col, $q),
+            'jsonb' => $q . ' ' . match ($this->driver) {
+                'pgsql' => 'JSONB',
+                'sqlite' => 'TEXT',
+                default => 'JSON',
+            },
+            'uuid' => $q . ' ' . match ($this->driver) {
+                'pgsql' => 'UUID',
+                'sqlite' => 'TEXT',
+                default => 'CHAR(36)',
+            },
+            'ipAddress' => $q . ' VARCHAR(45)',
+            'macAddress' => $q . ' VARCHAR(17)',
             default => $q . ' TEXT',
+        };
+    }
+
+    private function compileEnumType(Column $col, string $quotedName): string
+    {
+        $values = array_map(
+            fn (string $v): string => "'" . addslashes($v) . "'",
+            $col->allowedValues
+        );
+        $valuesStr = implode(', ', $values);
+
+        return match ($this->driver) {
+            'mysql' => $quotedName . " ENUM({$valuesStr})",
+            'pgsql' => $quotedName . " VARCHAR(255) CHECK ({$col->name} IN ({$valuesStr}))",
+            default => $quotedName . " TEXT CHECK ({$col->name} IN ({$valuesStr}))",
         };
     }
 

@@ -587,6 +587,20 @@ class QueryBuilder
         return $sql;
     }
 
+    /**
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
+    public function toCompiled(): array
+    {
+        [$sql, $bindings] = $this->compiler->buildSelectQuery(
+            $this->columns, $this->table, $this->wheres, $this->havings,
+            $this->joins, $this->groups, $this->orders,
+            $this->limitValue, $this->offsetValue, $this->bindings
+        );
+        /** @var array<int|string, mixed> $bindings */
+        return [$sql, $bindings];
+    }
+
     public function count(string $column = '*'): int
     {
         return (int) $this->aggregate('COUNT', $column);
