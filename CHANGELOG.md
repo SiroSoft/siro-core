@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.30.1 (2026-05-25) — README UI, description
+
+### 🧹 Chore
+- Rewrote README — technical-oriented, core engine positioning, cleaner layout
+- Added ASCII workflow diagram
+- Shortened Packagist description
+
+---
+
+## v0.30.0 (2026-05-25) — Production Debugging Workflow
+
+### 🔥 New CLI Commands (same additions as v0.29.6)
+- `api:why <METHOD> <path>` — trace specific request
+- `db:why <hash>` — query analysis, EXPLAIN, index suggestion
+- `test:regression` — replay all traces, detect regressions
+- `make:test --from-trace=<id>` — generate PHPUnit test from production trace
+- `migrate:reset` — rollback all migrations
+- `migrate:refresh` — rollback + re-run migrations
+- `fix [trace_id]` — replay + verify fix
+
+### 📦 ORM (Select features from iterative releases)
+- `withCount()` / `loadCount()` + callback filter
+- `has()` / `orHas()` relation count conditions
+- `whereHas()` nested dot-notation support
+- `whereDoesntHave()` / `orWhereDoesntHave()`
+- `refresh()` / `fresh()` / `loadMissing()` / `touch()`
+- `only()` / `append()` / `without()`
+- Enum / UUID / JSONB / IP Address / MAC Address column types
+
+### 🧹 Chore
+- PHPStan Level Max — 0 errors (59 fixes)
+- All benchmark scripts repaired, honest numbers
+- All docs updated (BENCHMARK.md, SIRO_COMPLETE.md, etc.)
+
+---
+
 ## v0.29.6 (2026-05-24) — ORM Enhancements + Debug Workflow Overhaul
 
 ### 🔥 New CLI Commands
