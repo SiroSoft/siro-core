@@ -179,7 +179,7 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
         if ($exceptionMsg !== '') {
             $displayEx = $exceptionClass !== '' ? $exceptionClass . ': ' . $exceptionMsg : $exceptionMsg;
             $this->write('  ' . self::BOLD . self::RED . 'Exception' . self::RESET);
-            $this->write('    ' . $displayEx);
+            $this->write('    └ ' . $displayEx);
             $this->write('');
 
             // Possible cause
@@ -218,7 +218,7 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('    ' . self::CYAN . '[r]' . self::RESET . '  php siro replay ' . $traceId . $forceFlag);
         $this->write('    ' . self::CYAN . '[e]' . self::RESET . '  php siro replay ' . $traceId . ' --edit');
         $this->write('    ' . self::CYAN . '[d]' . self::RESET . '  php siro replay ' . $traceId . ' --diff');
-        $this->write('    ' . self::CYAN . '[t]' . self::RESET . '  php siro make:test --from-trace=' . $traceId);
+        $this->write('    ' . self::CYAN . '[t]' . self::RESET . '  php siro replay ' . $traceId . ' --test');
         $this->write('');
 
         $this->write('  ' . self::GRAY . str_repeat('─', 56) . self::RESET);
@@ -252,56 +252,114 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
     private function guessCause(string $class, string $message, int $status): array
     {
         $lowerMsg = strtolower($message);
+        $lowerClass = strtolower($class);
 
+        if (str_contains($lowerMsg, 'no such table')) {
+            return ['Referenced table does not exist in database', 'Migration may not have been run yet'];
+        }
+        if (str_contains($lowerMsg, 'no such column') || str_contains($lowerMsg, 'unknown column')) {
+            return ['Referenced column does not exist', 'Migration or schema is out of sync with code'];
+        }
         if (str_contains($lowerMsg, 'deadlock')) {
             return ['Concurrent transaction conflict', 'Missing retry logic for deadlock scenarios'];
         }
-        if (str_contains($lowerMsg, 'timeout')) {
-            return ['Slow query exceeding timeout', 'Database connection timeout'];
+        if (str_contains($lowerMsg, 'timeout') || str_contains($lowerMsg, 'timed out')) {
+            return ['Database connection or query timeout', 'Slow query exceeding default threshold'];
         }
-        if (str_contains($lowerMsg, 'not found')) {
-            return ['Missing record in database', 'Invalid foreign key reference'];
+        if (str_contains($lowerMsg, 'not found') || str_contains($lowerMsg, 'not exist') || str_contains($lowerMsg, 'does not exist')) {
+            return ['Missing record in database', 'Invalid foreign key or ID reference'];
         }
-        if (str_contains($lowerMsg, 'duplicate') || str_contains($lowerMsg, 'unique')) {
-            return ['Duplicate entry violates unique constraint'];
+        if (str_contains($lowerMsg, 'duplicate') || str_contains($lowerMsg, 'unique constraint')) {
+            return ['Duplicate entry violates unique constraint', 'Record with this value already exists'];
         }
-        if ($status === 401) {
+        if (str_contains($lowerMsg, 'syntax error')) {
+            return ['SQL syntax error in query', 'Check for missing quotes, commas, or keywords'];
+        }
+        if ($status === 401 || str_contains($lowerMsg, 'unauthorized') || str_contains($lowerMsg, 'unauthenticated')) {
             return ['Missing or expired authentication token'];
         }
-        if ($status === 403) {
-            return ['Authenticated user lacks required role'];
+        if ($status === 403 || str_contains($lowerMsg, 'forbidden')) {
+            return ['Authenticated user lacks required role or permission'];
         }
         if ($status === 422) {
-            return ['Request body fails validation rules'];
+            return ['Request body fails validation rules', 'Missing or malformed required fields'];
         }
         if ($status >= 500) {
-            return ['Unhandled exception in controller or service'];
+            return ['Unhandled exception in controller or service layer', 'Review exception details above for root cause'];
         }
 
         return [];
     }
 
     /** @return list<string> */
-    private function guessFix(string $class, string $message, int $status, string $traceId): array
+    private function guessFix(string $class, string $message, int $status, string $traceId = ''): array
     {
         $lowerMsg = strtolower($message);
-        $replayForce = 'php siro replay ' . $traceId . ' --force';
-        $replayEdit = 'php siro replay ' . $traceId . ' --edit';
+        $lowerClass = strtolower($class);
 
-        if (str_contains($lowerMsg, 'deadlock')) {
-            return ['Wrap transaction in retry loop (max 3 attempts)', 'Reduce transaction scope', $replayEdit];
+        $replayCmd = 'php siro replay ' . $traceId;
+        $testCmd = 'php siro replay ' . $traceId . ' --test';
+
+        if (str_contains($lowerMsg, 'no such table')) {
+            return [
+                'Run pending migrations: php siro migrate',
+                'Check if the migration file exists in database/migrations/',
+                $testCmd . ' to generate regression test',
+            ];
         }
-        if (str_contains($lowerMsg, 'timeout')) {
-            return ['Add missing database indexes', 'Increase timeout in config/database.php'];
+        if (str_contains($lowerMsg, 'deadlock')) {
+            return [
+                'Wrap transaction in retry loop (max 3 attempts)',
+                'Reduce transaction scope — only lock what you need',
+                $replayCmd . ' --edit to test fix',
+            ];
+        }
+        if (str_contains($lowerMsg, 'timeout') || str_contains($lowerMsg, 'timed out')) {
+            return [
+                'Add missing database indexes for slow queries',
+                'Increase timeout in config/database.php',
+                $testCmd,
+            ];
+        }
+        if (str_contains($lowerMsg, 'not found') || str_contains($lowerMsg, 'does not exist')) {
+            return [
+                'Verify the record exists before querying',
+                'Check foreign key constraint integrity',
+                $testCmd,
+            ];
+        }
+        if (str_contains($lowerMsg, 'duplicate') || str_contains($lowerMsg, 'unique')) {
+            return [
+                'Add duplicate check before insert/update',
+                'Use updateOrCreate() or firstOrCreate()',
+                $testCmd,
+            ];
         }
         if ($status === 401) {
-            return ['Include Authorization: Bearer <token> header', 'Login first via POST /api/auth/login'];
+            return [
+                'Include Authorization: Bearer <token> header',
+                'Login first: php siro t POST /api/auth/login',
+            ];
+        }
+        if ($status === 403) {
+            return [
+                'Check user role in controller or middleware',
+                'Add ->middleware(["auth", "role:admin"]) to route',
+            ];
         }
         if ($status === 422) {
-            return [$replayEdit . ' to fix request body', 'Check validation rules in FormRequest'];
+            return [
+                $replayCmd . ' --edit to fix request body',
+                'Check validation rules in controller or FormRequest',
+                $testCmd,
+            ];
         }
         if ($status >= 500) {
-            return [$replayForce . ' to reproduce', $replayEdit . ' to test fixes'];
+            return [
+                $replayCmd . ' --force to reproduce locally',
+                $replayCmd . ' --edit to test potential fixes',
+                $testCmd . ' to lock in the fix',
+            ];
         }
 
         return [];
