@@ -59,8 +59,14 @@ One command. Full context. No other framework has this flow.
 
 ---
 
-## Architecture
+## Full workflow: build → why → replay → fix → regression
 
+```bash
+# 1. Generate CRUD
+php siro make:crud Product
+
+# 2. Debug failure — real output
+php siro why
 ```
 index.php
   → App::boot() (~2.4ms Win / ~0.5ms Linux+OPcache)
