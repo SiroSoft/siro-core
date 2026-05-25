@@ -1,7 +1,7 @@
 <div align="center">
   <h1>⚡ Siro Core</h1>
   <p><strong>Core engine powering the Siro API Framework.</strong><br>
-  Zero dependencies · PHPStan Level Max</p>
+  Routing · ORM · CLI · Debug. Zero external dependencies.</p>
 </div>
 
 <div align="center">
@@ -15,11 +15,19 @@
 
 ---
 
-Siro Core is the engine behind the [Siro API Framework](https://github.com/SiroSoft/SiroPHP). It provides routing, ORM, JWT auth, middleware, CLI, queue, mail, caching, validation, and the production debugging workflow — all with zero external runtime dependencies.
+## Install
+
+```bash
+# Standalone engine
+composer require sirosoft/core
+
+# Or with full skeleton (recommended)
+composer create-project sirosoft/api my-app
+```
 
 ---
 
-## Signature
+## Debug production in 1 command
 
 ```bash
 php siro api:why POST /api/orders
@@ -59,24 +67,38 @@ One command. Full context. No other framework has this flow.
 
 ---
 
-## Full workflow: build → why → replay → fix → regression
+## Full workflow
+
+```
+                        ┌─────────────────┐
+                        │   HTTP Request   │
+                        └────────┬────────┘
+                                 ▼
+                        ┌─────────────────┐
+                        │  Router (O(1))   │
+                        └────────┬────────┘
+                                 ▼
+                        ┌─────────────────┐
+                        │   Middleware     │
+                        └────────┬────────┘
+                                 ▼
+                        ┌─────────────────┐
+                        │  Controller      │
+                        │  → Service       │
+                        │  → Model / DB    │
+                        └────────┬────────┘
+                                 ▼
+                        ┌─────────────────┐
+                        │  Resource / JSON │
+                        └─────────────────┘
+```
 
 ```bash
-# 1. Generate CRUD
-php siro make:crud Product
-
-# 2. Debug failure — real output
-php siro why
+php siro make:crud Product   # Build
+php siro why                 # Debug
+php siro replay --diff       # Replay
+php siro fix                 # Fix & auto-test
 ```
-index.php
-  → App::boot() (~2.4ms Win / ~0.5ms Linux+OPcache)
-    → Router::dispatch() (O(1) hash lookup)
-      → Middleware chain
-        → Controller → Service → Model/DB
-          → Resource → JSON Response
-```
-
-Zero file parsing at boot. Zero heavy bootstrapping. Zero runtime deps.
 
 ---
 
@@ -126,18 +148,6 @@ Methodology: [BENCHMARK.md](BENCHMARK.md)
 | DAST security tests | **157 — 0 failures** |
 | Mutation testing | MSI ≥80% |
 | Composer audit | **0 vulnerabilities** |
-
----
-
-## Integration
-
-```bash
-# Use as a standalone engine
-composer require sirosoft/core
-
-# Or with the full skeleton (recommended)
-composer create-project sirosoft/api my-app
-```
 
 ---
 
