@@ -70,6 +70,13 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 }
             } elseif (str_starts_with($arg, '--seed')) {
                 $overrides['_seed'] = '1';
+            } elseif ($arg === '--test') {
+                // Delegate to make:test --from-trace
+                $testArgs = ['siro', 'make:test', '--from-trace=' . $traceId];
+                $_SERVER['argv'] = $testArgs;
+                $_SERVER['argc'] = count($testArgs);
+                $console = new \Siro\Core\Console($this->basePath);
+                return $console->run($testArgs);
             }
         }
 
@@ -79,8 +86,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('Options:');
             $this->write('  --format=curl     Output as curl (default)');
             $this->write('  --format=httpie   Output as httpie');
-            $this->write('  --force           Execute replay (required for non-GET)');
-            $this->write('  --safe            Safe mode: warn on non-GET (default)');
+            $this->write('  --force           Execute replay (required for POST/PUT/DELETE)');
+            $this->write('  --safe            Safe mode: warn on mutating methods (default)');
             $this->write('  --set key=value   Override request field');
             $this->write('  --seed            Seed database from request data');
             $this->write('  --edit            Interactive edit request before replay');
@@ -140,7 +147,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $ct = $this->safeStr($data['content_type'] ?? '');
 
         // Default Content-Type for JSON body if missing
-        if ($ct === '' && $body !== '' && $body !== '{}') {
+        if ($ct === '' && $body !== '' && $body !== '{}' && $body !== '[]') {
             $ct = 'application/json';
         }
 
@@ -326,13 +333,44 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         /** @var array<string, string> $headers */
         /** @var array<string, mixed> $data */
 
-        // Execute request if forced or edited, otherwise safe-mode warning
-        if ($force || $editMode) {
+        // GET requests are idempotent — allow without --force
+        // POST/PUT/DELETE/PATCH require --force or --edit
+        $isWriteMethod = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+
+        if ($force || $editMode || !$isWriteMethod) {
             $this->write('');
             $this->write('  🔄 Replaying ' . $method . ' ' . $path . '...');
             $this->write('  ' . str_repeat('=', 40));
-            if ($body !== '' && $body !== '{}') {
-                $this->write('  Request Body:');
+            // Show headers
+            $hasAnyHeader = false;
+            $headersOutput = [];
+            if ($headers !== []) {
+                foreach ($headers as $k => $v) {
+                    $lk = strtolower((string) $k);
+                    if ($lk === 'host' || $lk === 'content-length') continue;
+                    $headersOutput[$lk] = $this->safeStr($k) . ': ' . $this->safeStr($v);
+                }
+            }
+            if ($auth !== '' && !isset($headersOutput['authorization'])) {
+                $headersOutput['authorization'] = 'Authorization: Bearer [token present]';
+            }
+            if ($ct !== '' && !isset($headersOutput['content-type'])) {
+                $headersOutput['content-type'] = 'Content-Type: ' . $ct;
+            }
+            if ($headersOutput !== []) {
+                $hasAnyHeader = true;
+                $this->write('  Headers:');
+                foreach ($headersOutput as $h) {
+                    $this->write('    ' . $h);
+                }
+            }
+            if (!$hasAnyHeader) {
+                $this->write('  Headers: (none captured — enable APP_DEBUG=true)');
+            }
+            // Show body
+            $hasBody = $body !== '' && $body !== '{}' && $body !== '[]';
+            if ($hasBody) {
+                $this->write('  Body:');
                 $decodedBody = json_decode($body, true);
                 if (is_array($decodedBody)) {
                     $prettyBody = (string) json_encode($decodedBody, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -342,8 +380,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 } else {
                     $this->write('    ' . $body);
                 }
-                $this->write('  ' . str_repeat('-', 40));
             }
+            $this->write('  ' . str_repeat('-', 40));
             $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
             $curlError = $this->safeStr($result['error'] ?? '');
             if ($curlError !== '') {
@@ -368,13 +406,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return 0;
         }
 
-        $this->write('⚠ Safe mode: not replaying ' . $method . ' request. Use --force to execute.');
-        $this->write('  (Or use --format=curl to see the curl command without executing)');
-        if ($format === 'httpie') {
-            $this->outputHttpie($method, $url, $body, $headers, $auth);
-        } else {
-            $this->outputCurl($method, $url, $body, $headers, $auth, $data);
-        }
+        $this->write('  Run with --force to execute, or --edit to modify body before replay.');
+        $this->outputCurl($method, $url, $body, $headers, $auth, $data);
 
         return 0;
     }
@@ -451,36 +484,54 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
      */
     private function outputCurl(string $method, string $url, string $body, array $headers, string $auth, array $data): void
     {
-        $this->write('');
-        $this->write('curl \\');
-        $this->write('  -X \\');
-        $this->write('  ' . escapeshellarg($method) . ' \\');
-        $this->write('  ' . escapeshellarg($url) . ' \\');
+        // Quote a value for curl display (single quotes for cross-platform safety)
+        $q = function (string $s): string {
+            // Use single quotes to avoid shell escaping issues with JSON
+            return "'" . str_replace("'", "'\\''", $s) . "'";
+        };
+
+        $cmd = 'curl -X ' . $method . ' ' . $q($url);
 
         $seen = [];
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
             if ($lk === 'host' || $lk === 'content-length' || isset($seen[$lk])) continue;
             $seen[$lk] = true;
-            $this->write('  -H \\');
-            $this->write('  ' . escapeshellarg((string) $k . ': ' . (string) $v) . ' \\');
+            $cmd .= " \\\n    -H " . $q((string) $k . ': ' . (string) $v);
         }
 
-        if ($auth !== '') {
-            $this->write('  -H \\');
-            $this->write('  ' . escapeshellarg('Authorization: ' . $auth) . ' \\');
+        if ($auth !== '' && !isset($seen['authorization'])) {
+            $seen['authorization'] = true;
+            $cmd .= " \\\n    -H " . $q('Authorization: ' . $auth);
         }
 
-        if ($body !== '' && $body !== '{}') {
-            $this->write('  -d \\');
-            $this->write('  ' . escapeshellarg($body));
+        if ($body !== '' && $body !== '[]' && $body !== '{}') {
+            $cmd .= " \\\n    -d " . $q($body);
+        }
+
+        $this->write('');
+        $this->write('  ' . $cmd);
+
+        // Show what data is available from the trace
+        $this->write('');
+        $hasHeaders = $headers !== [] || $auth !== '';
+        $hasBody = $body !== '' && $body !== '[]' && $body !== '{}';
+        if (!$hasHeaders && !$hasBody) {
+            $this->write('  ⚠ This trace has limited data (no headers/body captured).');
+            $this->write('  Enable APP_DEBUG=true in .env for full capture.');
         } else {
-            $this->write('');
+            if ($hasHeaders) {
+                $this->write('  Headers: ' . (count($headers) + ($auth !== '' ? 1 : 0)) . ' included');
+            }
+            if ($hasBody) {
+                $this->write('  Body: ' . strlen($body) . ' bytes');
+            }
         }
     }
 
     /**
      * @param array<string, string> $headers
+     * @phpstan-ignore-next-line method.unused
      */
     private function outputHttpie(string $method, string $url, string $body, array $headers, string $auth): void
     {
@@ -490,7 +541,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
             if ($lk === 'host' || $lk === 'content-length') continue;
-            $parts[] = (string) $k . ':' . (string) $v;
+            $parts[] = $k . ':' . $v;
         }
         if ($auth !== '') {
             $parts[] = 'Authorization:' . $auth;

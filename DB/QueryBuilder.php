@@ -24,7 +24,7 @@ class QueryBuilder
     protected string $table = '';
     /** @var array<int, string> */
     protected array $columns = ['*'];
-    /** @var array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> */
+    /** @var array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}> */
     protected array $wheres = [];
     /** @var array<int, array{boolean:string, column:string, operator:string, param:string}> */
     protected array $havings = [];
@@ -123,6 +123,114 @@ class QueryBuilder
     public function whereIn(string $column, array $values): self
     {
         return $this->addWhereIn('AND', $column, $values, false);
+    }
+
+    public function distinct(): self
+    {
+        $this->columns = array_merge(['DISTINCT'], $this->columns);
+        return $this;
+    }
+
+    /**
+     * Compare two columns against each other.
+     *
+     * Usage: ->whereColumn('created_at', '>=', 'updated_at')
+     */
+    public function whereColumn(string $first, string $operator, string $second = ''): self
+    {
+        if ($second === '') {
+            $second = $operator;
+            $operator = '=';
+        }
+
+        $this->wheres[] = [
+            'type' => 'column',
+            'boolean' => 'AND',
+            'first' => $first,
+            'operator' => $operator,
+            'second' => $second,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Add a where clause on a date column.
+     */
+    public function whereDate(string $column, string $operator, ?string $value = null): self
+    {
+        if ($value === null) {
+            $value = $operator;
+            $operator = '=';
+        }
+        return $this->whereRaw("DATE({$column}) {$operator} ?", [':date_val' => $value]);
+    }
+
+    public function whereMonth(string $column, string $operator, ?string $value = null): self
+    {
+        if ($value === null) {
+            $value = $operator;
+            $operator = '=';
+        }
+        return $this->whereRaw("MONTH({$column}) {$operator} ?", [':month_val' => $value]);
+    }
+
+    public function whereDay(string $column, string $operator, ?string $value = null): self
+    {
+        if ($value === null) {
+            $value = $operator;
+            $operator = '=';
+        }
+        return $this->whereRaw("DAY({$column}) {$operator} ?", [':day_val' => $value]);
+    }
+
+    public function whereYear(string $column, string $operator, ?string $value = null): self
+    {
+        if ($value === null) {
+            $value = $operator;
+            $operator = '=';
+        }
+        return $this->whereRaw("YEAR({$column}) {$operator} ?", [':year_val' => $value]);
+    }
+
+    public function whereTime(string $column, string $operator, ?string $value = null): self
+    {
+        if ($value === null) {
+            $value = $operator;
+            $operator = '=';
+        }
+        return $this->whereRaw("TIME({$column}) {$operator} ?", [':time_val' => $value]);
+    }
+
+    /**
+     * Add a conditional clause — only applies the callback when the condition is truthy.
+     *
+     * Usage:
+     *   ->when($request->search, fn($q, $v) => $q->where('name', 'LIKE', "%$v%"))
+     */
+    public function when(mixed $condition, callable $callback, ?callable $default = null): self
+    {
+        if ($condition) {
+            $callback($this, $condition);
+        } elseif ($default !== null) {
+            $default($this, $condition);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Add a conditional clause — only applies the callback when the condition is falsy.
+     */
+    public function unless(mixed $condition, callable $callback, ?callable $default = null): self
+    {
+        if (!$condition) {
+            $callback($this, $condition);
+        } elseif ($default !== null) {
+            $default($this, $condition);
+        }
+
+        return $this;
     }
 
     /**
@@ -284,6 +392,30 @@ class QueryBuilder
     {
         $dir = strtoupper(trim($direction)) === 'DESC' ? 'DESC' : 'ASC';
         $this->orders[] = ['column' => trim($expression), 'direction' => $dir, 'raw' => true];
+        return $this;
+    }
+
+    public function orderByDesc(string $column): self
+    {
+        return $this->orderBy($column, 'desc');
+    }
+
+    public function latest(string $column = 'created_at'): self
+    {
+        return $this->orderBy($column, 'desc');
+    }
+
+    public function oldest(string $column = 'created_at'): self
+    {
+        return $this->orderBy($column, 'asc');
+    }
+
+    /**
+     * Remove all existing order clauses.
+     */
+    public function reorder(): self
+    {
+        $this->orders = [];
         return $this;
     }
 

@@ -100,7 +100,11 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write(str_repeat('-', 56));
         $this->write('  Time:    ' . $this->safeStr($data['timestamp'] ?? '?'));
         $this->write('  Method:  ' . $this->safeStr($data['method'] ?? '?') . ' ' . $this->safeStr($data['path'] ?? '?'));
-        $this->write('  Status:  ' . $this->safeStr($data['status'] ?? '?') . ' (' . $this->safeStr($data['time_ms'] ?? '?') . 'ms)');
+        $statusVal = $data['status'] ?? 0;
+        $statusNum = is_numeric($statusVal) ? (int) $statusVal : 0;
+        $statusColor = $statusNum >= 500 ? 'red' : ($statusNum >= 400 ? 'yellow' : ($statusNum >= 200 ? 'green' : ''));
+        $statusStr = $this->safeStr($data['status'] ?? '?') . ' (' . $this->safeStr($data['time_ms'] ?? '?') . 'ms)';
+        $this->write('  Status:  ' . ($statusColor !== '' ? $this->colorize($statusStr, $statusColor) : $statusStr));
         $this->write('  IP:      ' . $this->safeStr($data['ip'] ?? '?'));
         $this->write('  Host:    ' . $this->safeStr($data['host'] ?? '?'));
 
@@ -261,10 +265,13 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             $id = basename($file, '.json');
             $m = $this->safeStr($data['method'] ?? '?');
             $s = $this->safeStr($data['status'] ?? '?');
+            $statusRaw = $data['status'] ?? 0;
+            $sNum = is_numeric($statusRaw) ? (int) $statusRaw : 0;
             $t = $this->safeStr($data['time_ms'] ?? '?') . 'ms';
             $p = $this->safeStr($data['path'] ?? '?');
+            $sColored = $sNum >= 500 ? $this->colorize($s, 'red') : ($sNum >= 400 ? $this->colorize($s, 'yellow') : ($sNum >= 200 ? $this->colorize($s, 'green') : $s));
 
-            $this->write(str_pad($id, 20) . ' ' . str_pad($m, 8) . ' ' . str_pad($s, 7) . ' ' . str_pad($t, 8) . ' ' . $p);
+            $this->write(str_pad(substr($id, 0, 20), 20) . ' ' . str_pad($m, 8) . ' ' . str_pad($sColored, 7) . ' ' . str_pad($t, 8) . ' ' . $p);
             $count++;
         }
 

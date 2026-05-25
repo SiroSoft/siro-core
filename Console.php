@@ -31,6 +31,8 @@ use Siro\Core\Commands\MigrateCommand;
 use Siro\Core\Commands\QueueFlushCommand;
 use Siro\Core\Commands\QueueRetryCommand;
 use Siro\Core\Commands\QueueStatusCommand;
+use Siro\Core\Commands\MigrateResetCommand;
+use Siro\Core\Commands\MigrateRefreshCommand;
 use Siro\Core\Commands\MigrateRollbackCommand;
 use Siro\Core\Commands\MigrateStatusCommand;
 use Siro\Core\Commands\OptimizeCommand;
@@ -51,11 +53,14 @@ use Siro\Core\Commands\ApiTestCommand;
 use Siro\Core\Commands\MakeCrudCommand;
 use Siro\Core\Commands\MakeTestCommand;
 use Siro\Core\Commands\RateStatusCommand;
+use Siro\Core\Commands\TestRegressionCommand;
 use Siro\Core\Commands\TestRunCommand;
 use Siro\Core\Commands\EnvSwitchCommand;
 use Siro\Core\Commands\SlowLogCommand;
 use Siro\Core\Commands\LogCleanupCommand;
 use Siro\Core\Commands\LogTailCommand;
+use Siro\Core\Commands\ApiWhyCommand;
+use Siro\Core\Commands\DbWhyCommand;
 use Siro\Core\Commands\LogStatsCommand;
 use Siro\Core\Commands\MakeFactoryCommand;
 use Siro\Core\Commands\DebugHealthCommand;
@@ -215,6 +220,8 @@ final class Console
             'migrate:fresh'    => ['handler' => MigrateFreshCommand::class, 'desc' => 'Drop all tables and re-run all migrations', 'usage' => 'php siro migrate:fresh [--seed]'],
             'migrate:rollback'  => ['handler' => MigrateRollbackCommand::class, 'desc' => 'Rollback migrations', 'usage' => 'php siro migrate:rollback [--step=N]'],
             'migrate:status'    => ['handler' => MigrateStatusCommand::class, 'desc' => 'Migration status', 'usage' => 'php siro migrate:status'],
+            'migrate:reset'     => ['handler' => MigrateResetCommand::class, 'desc' => 'Rollback all migrations', 'usage' => 'php siro migrate:reset'],
+            'migrate:refresh'   => ['handler' => MigrateRefreshCommand::class, 'desc' => 'Rollback all and re-run migrations', 'usage' => 'php siro migrate:refresh [--seed]'],
             'db:seed'           => ['handler' => SeedCommand::class, 'desc' => 'Run seeders', 'usage' => 'php siro db:seed'],
             'db:show'           => ['handler' => DbShowCommand::class, 'desc' => 'Show table data/schema', 'usage' => 'php siro db:show <table> [--schema]'],
 
@@ -223,12 +230,15 @@ final class Console
             'log:export'  => ['handler' => LogExportCommand::class, 'desc' => 'Export trace (JSON/CSV/Postman)', 'usage' => 'php siro log:export <trace_id> --postman'],
             'log:cleanup' => ['handler' => LogCleanupCommand::class, 'desc' => 'Clean old trace files', 'usage' => 'php siro log:cleanup [--days=N] [--dry-run]'],
             'log:slow'    => ['handler' => SlowLogCommand::class, 'desc' => 'Show slow requests', 'usage' => 'php siro log:slow [--limit=N] [--min=MS]'],
+            'api:why'     => ['handler' => ApiWhyCommand::class, 'desc' => 'Trace a specific request — middleware, SQL, timing, exception', 'usage' => 'php siro api:why <METHOD> <path>'],
+            'db:why'      => ['handler' => DbWhyCommand::class, 'desc' => 'Analyze slow query — EXPLAIN, index suggestion', 'usage' => 'php siro db:why <query_hash>'],
             'log:tail'    => ['handler' => LogTailCommand::class, 'desc' => 'Tail log files in real-time', 'usage' => 'php siro log:tail [--type=request|error|slow] [--lines=N] [--follow|-f]'],
             'log:stats'   => ['handler' => LogStatsCommand::class, 'desc' => 'Request statistics with charts', 'usage' => 'php siro log:stats [--days=N]'],
             'log:top'     => ['handler' => LogTopCommand::class, 'desc' => 'Top slowest APIs by total time', 'usage' => 'php siro log:top [--limit=N] [--min=MS]'],
             'debug:last'    => ['handler' => DebugLastCommand::class, 'desc' => 'Show why last request failed (alias: why)', 'usage' => 'php siro debug:last'],
             'debug:health'  => ['handler' => DebugHealthCommand::class, 'desc' => 'Check debug system health and configuration', 'usage' => 'php siro debug:health'],
 
+            'test:regression' => ['handler' => TestRegressionCommand::class, 'desc' => 'Replay all traces & compare responses — detect regressions', 'usage' => 'php siro test:regression [--limit=N] [--status=500] [--fail]'],
             'test:run'      => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite (legacy)', 'usage' => 'php siro test:run'],
             'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API (--loop, --as=admin/guest)', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]'],
 
@@ -454,7 +464,7 @@ final class Console
         $this->write('');
 
         $layers = [
-            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'why', 'fix', 'replay', 'trace:list'],
+            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'api:why', 'db:why', 'why', 'fix', 'replay', 'trace:list'],
             '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
                                     'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
             '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:observer', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',

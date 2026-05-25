@@ -88,13 +88,13 @@ final class ModelQueryBuilder extends QueryBuilder
             ];
         } elseif (is_array($relation)) {
             foreach ($relation as $key => $value) {
-                if (is_callable($value)) {
+                if (is_string($value)) {
+                    $this->withCount($value);
+                } elseif (is_callable($value)) {
                     $this->withCounts[(string) $key] = [
                         'alias' => (string) $key,
                         'callback' => $value,
                     ];
-                } else {
-                    $this->withCount((string) $value);
                 }
             }
         }
@@ -275,7 +275,7 @@ final class ModelQueryBuilder extends QueryBuilder
 
         $segCount = count($segments);
 
-        if ($segCount === 1) {
+        if ($segCount <= 1) {
             $relName = $segments[0];
             $rel = $this->resolveRelation(method_exists($model, $relName) ? $model->{$relName}() : null);
             if ($rel === null) {
@@ -317,8 +317,8 @@ final class ModelQueryBuilder extends QueryBuilder
 
         $innerQb = $resolved[$segCount - 1]->query();
         $innerTable = $resolved[$segCount - 1]->getTable();
-        $prevTable = $segCount >= 2 ? $resolved[$segCount - 2]->getTable() : $currentTable;
-        $prevModel = $segCount >= 2 ? $resolved[$segCount - 2] : $model;
+        $prevTable = $resolved[$segCount - 2]->getTable();
+        $prevModel = $resolved[$segCount - 2];
         /** @var \Siro\Core\DB\Relations\HasOne|\Siro\Core\DB\Relations\HasMany|\Siro\Core\DB\Relations\BelongsTo|\Siro\Core\DB\Relations\BelongsToMany $lastRel */
         $lastRel = $this->resolveRelation($relations[$segCount - 1]);
         [$innerCond,] = $this->buildRelationCondition($lastRel, $prevModel, $prevTable, $innerTable, $segments[$segCount - 1]);
@@ -607,8 +607,9 @@ final class ModelQueryBuilder extends QueryBuilder
         $modelInstance = $this->newModelInstance();
 
         foreach ($this->withCounts as $relation => $config) {
+            /** @var array{alias?: string, callback?: \Closure|null} $config */
             $alias = (string) ($config['alias'] ?? $relation);
-            $callback = isset($config['callback']) && is_callable($config['callback']) ? $config['callback'] : null;
+            $callback = $config['callback'] ?? null;
 
             if (!method_exists($modelInstance, $relation)) {
                 continue;
@@ -655,7 +656,7 @@ final class ModelQueryBuilder extends QueryBuilder
             foreach ($localIds as $i => $lid) {
                 $key = 'sc_' . $i;
                 $placeholders[] = ':' . $key;
-                $bindings[$key] = is_scalar($lid) ? $lid : (string) $lid;
+                $bindings[$key] = is_string($lid) ? $lid : (string) $lid;
             }
             $qb->whereRaw("{$groupCol} IN (" . implode(', ', $placeholders) . ")", $bindings);
             $qb->groupByRaw("{$groupCol}");

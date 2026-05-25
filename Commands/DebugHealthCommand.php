@@ -11,9 +11,9 @@ final class DebugHealthCommand implements CommandInterface
 {
     use CommandSupport;
 
-    public static string $name = 'debug:health';
-    public static string $desc = 'Check debug system health and configuration';
-    public static string $usage = 'debug:health';
+    public function __construct(private readonly string $basePath)
+    {
+    }
 
     /** @param array<int, string> $args */
     public function run(array $args = []): int
@@ -47,13 +47,13 @@ final class DebugHealthCommand implements CommandInterface
         }
 
         $checks++;
-        $logDir = Logger::getLogDir();
-        if ($logDir !== '' && is_dir($logDir)) {
+        $logDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs';
+        if (is_dir($logDir)) {
             $this->success('Log directory: ' . $logDir);
             $passed++;
         } else {
-            $this->error('Log directory missing');
-            $issues[] = 'Log directory missing';
+            $this->error('Log directory: ' . $logDir . ' (not found)');
+            $issues[] = 'Log directory not created yet (will be auto-created on first request)';
         }
 
         $checks++;

@@ -60,8 +60,8 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
         $ran = 0;
         $batch = $this->nextBatch($pdo);
 
-        $this->write('Pending migrations: ' . $pending);
-        $this->write('Running batch: ' . $batch);
+        $this->info('Pending migrations: ' . $pending);
+        $this->info('Running batch: ' . $batch);
 
         foreach ($files as $file) {
             $migrationName = basename($file);
@@ -97,15 +97,25 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
                 }
                 
                 $ran++;
-                $this->write('Migrated: ' . $migrationName);
+                $this->success('Migrated: ' . $migrationName);
             } catch (Throwable $e) {
                 if ($canTransaction && $pdo->inTransaction()) {
                     $pdo->rollBack();
                 }
 
-                $this->write('Migration failed: ' . $migrationName);
-                $this->write($e->getMessage());
-                return 1;
+                $msg = $e->getMessage();
+                if (str_contains($msg, 'already exists') || str_contains($msg, 'duplicate column')) {
+                    $this->warn('Skipped (already applied): ' . $migrationName);
+                    // Record as migrated to avoid re-running
+                    try {
+                        $stmt = $pdo->prepare('INSERT OR IGNORE INTO migrations (migration, batch) VALUES (:migration, :batch)');
+                        $stmt->execute(['migration' => $migrationName, 'batch' => $batch]);
+                    } catch (Throwable) {}
+                } else {
+                    $this->error('Migration failed: ' . $migrationName);
+                    $this->write($msg);
+                    return 1;
+                }
             }
         }
 

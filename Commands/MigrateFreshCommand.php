@@ -89,7 +89,7 @@ final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface 
             $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
         }
 
-        $this->write('All tables dropped.');
+        $this->info('All tables dropped.');
 
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
         if (!is_dir($migrationDir)) {
@@ -125,19 +125,19 @@ final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface 
                 }
 
                 $ran++;
-                $this->write('Migrated: ' . $migrationName);
+                $this->success('Migrated: ' . $migrationName);
             } catch (Throwable $e) {
                 if ($canTransaction && $pdo->inTransaction()) {
                     $pdo->rollBack();
                 }
 
-                $this->write('Migration failed: ' . $migrationName);
+                $this->error('Migration failed: ' . $migrationName);
                 $this->write($e->getMessage());
                 return 1;
             }
         }
 
-        $this->write('Migration completed. Ran ' . $ran . ' migration(s).');
+        $this->success('Migration completed. Ran ' . $ran . ' migration(s).');
 
         if ($seed) {
             $this->write('');

@@ -43,7 +43,6 @@ final class RouteListCommand implements \Siro\Core\Commands\CommandInterface {
             if ($cacheTtl > 0) {
                 $meta .= ' [cache:' . $cacheTtl . 's]';
             }
-
             $rows[] = [$route['method'], $route['path'], $route['handler'], $meta];
         }
 

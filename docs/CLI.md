@@ -1,6 +1,6 @@
 # CLI Reference
 
-All 72 SiroPHP CLI commands, grouped by category.
+All 80+ SiroPHP CLI commands, grouped by category.
 
 > Run `php siro list` to see all commands or `php siro <command> --help` for details.
 
@@ -83,7 +83,7 @@ class ServiceProvider
 
 ```bash
 php siro                    # Core workflow overview
-php siro list               # List all 72 commands grouped by category
+php siro list               # List all 80+ commands grouped by category
 php siro <command> --help   # Detailed help for a specific command
 php siro -h                 # Shorthand help overview
 php siro --version          # Show version (0.28.1)
@@ -108,7 +108,7 @@ php siro --version          # Show version (0.28.1)
 | `make:event` | Generate event class | `php siro make:event <name>` |
 | `make:job` | Generate queue job class | `php siro make:job <name>` |
 | `make:mail` | Generate mail class | `php siro make:mail <name>` |
-| `make:test` | Generate PHPUnit test file | `php siro make:test <name>` |
+| `make:test` | Generate PHPUnit test file (--from-trace, --unit) | `php siro make:test <name> [--unit]` / `php siro make:test --from-trace=<id>` |
 | `make:factory` | Generate model factory | `php siro make:factory <name>` |
 | `make:openapi` | Generate OpenAPI 3.0 spec from route annotations | `php siro make:openapi [--with-swagger] [--tag=TAG] [--flow=auth\|crud]` |
 | `make:postman` | Generate Postman collection JSON | `php siro make:postman [--flow=crud]` |
@@ -169,19 +169,25 @@ php siro db:show users --schema           # Show table columns & types
 
 ---
 
-## log:* — Logs & Debugging (9 commands)
+## log:* — Logs & Debugging (11 commands)
 
 | Command | Description | Usage |
 |---|---|---|
 | `log:tail` | Tail log files in real-time | `php siro log:tail [--type=request\|error\|slow] [--lines=N] [--follow\|-f]` |
 | `log:trace` | View detailed request trace | `php siro log:trace [<id>] [--status=500] [--limit=N] [--full]` |
-| `log:replay` | Replay a previous request from trace | `php siro log:replay <trace_id> [--force] [--set key=val]` |
+| `api:why` | Trace a specific request — middleware, SQL, timing, exception | `php siro api:why <METHOD> <path>` |
+| `fix` | Watch code changes & auto-replay last test | `php siro fix [trace_id]` |
+| `log:replay` | Replay a previous request from trace | `php siro log:replay <trace_id> [--force] [--edit] [--diff] [--test] [--set key=val]` |
 | `log:export` | Export trace in JSON, CSV, or Postman format | `php siro log:export <trace_id> --postman` |
 | `log:cleanup` | Clean old trace files | `php siro log:cleanup [--days=N] [--dry-run]` |
 | `log:slow` | Show slow requests | `php siro log:slow [--limit=N] [--min=MS]` |
 | `log:stats` | Request statistics with ASCII charts | `php siro log:stats [--days=N]` |
 | `log:top` | Top slowest APIs by total cumulative time | `php siro log:top [--limit=N] [--min=MS]` |
-| `debug:last` | Show why the last request failed | `php siro debug:last` |
+| `debug:last` | Show why the last request failed (alias: why) | `php siro debug:last` |
+| `debug:health` | Debug system health check | `php siro debug:health` |
+| `db:why` | Analyze slow query — EXPLAIN, index suggestion | `php siro db:why <query_hash>` / `php siro db:why --slow` |
+| `migrate:reset` | Rollback all migrations | `php siro migrate:reset` |
+| `migrate:refresh` | Rollback all and re-run migrations | `php siro migrate:refresh [--seed]` |
 
 ### Examples
 
@@ -387,6 +393,7 @@ Prefix matching also triggers suggestions (e.g. `migrat` → `migrate`, `migrate
 | 68 | `new` | system:* |
 | 69 | `api:test` | system:* |
 | 70 | `test:run` | system:* |
+| 71 | `test:regression` | system:* |
 
 ---
 

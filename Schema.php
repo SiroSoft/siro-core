@@ -30,8 +30,20 @@ final class Schema
     {
         $blueprint = new Blueprint($table, self::driver());
         $callback($blueprint);
+        $driver = self::driver();
         foreach ($blueprint->compileAlter() as $sql) {
-            self::execute($sql);
+            try {
+                self::execute($sql);
+            } catch (\Throwable $e) {
+                // SQLite: skip "duplicate column" and unsupported FK errors gracefully
+                if ($driver === 'sqlite') {
+                    $msg = strtolower($e->getMessage());
+                    if (str_contains($msg, 'duplicate column name') || str_contains($msg, 'foreign')) {
+                        continue;
+                    }
+                }
+                throw $e;
+            }
         }
     }
 
@@ -58,6 +70,20 @@ final class Schema
             } catch (\Throwable) {
             }
         }
+    }
+
+    public static function renameColumn(string $table, string $from, string $to): void
+    {
+        $driver = self::driver();
+        $qt = self::quoteIdentifier($table);
+        $qf = self::quoteIdentifier($from);
+        $qto = self::quoteIdentifier($to);
+        $sql = match ($driver) {
+            'pgsql' => "ALTER TABLE {$qt} RENAME COLUMN {$qf} TO {$qto}",
+            'sqlite' => "ALTER TABLE {$qt} RENAME COLUMN {$qf} TO {$qto}",
+            default => "ALTER TABLE {$qt} CHANGE {$qf} {$qto}",
+        };
+        self::execute($sql);
     }
 
     public static function rename(string $from, string $to): void

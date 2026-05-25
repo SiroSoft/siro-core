@@ -69,13 +69,13 @@ final class MigrateRollbackCommand implements \Siro\Core\Commands\CommandInterfa
                 $deleteStmt->execute(['migration' => $migration]);
                 $pdo->commit();
                 $rolledBack++;
-                $this->write('Rolled back: ' . $migration);
+                $this->success('Rolled back: ' . $migration);
             } catch (Throwable $e) {
                 if ($pdo->inTransaction()) {
                     $pdo->rollBack();
                 }
 
-                $this->write('Rollback failed: ' . $migration);
+                $this->error('Rollback failed: ' . $migration);
                 $this->write($e->getMessage());
                 return 1;
             }

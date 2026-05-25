@@ -92,9 +92,9 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('');
         if ($ok) {
             $this->write('');
-            $this->write('  ' . str_repeat('=', 54));
-            $this->write('  ' . $mode . ' CRUD — ' . $classBase . ' created successfully!');
-            $this->write('  ' . str_repeat('=', 54));
+            $this->success(str_repeat('═', 54));
+            $this->success($mode . ' CRUD — ' . $classBase . ' created successfully!');
+            $this->success(str_repeat('═', 54));
             $this->write('');
             $this->write('  Next steps:');
             $this->write('');
@@ -285,7 +285,7 @@ final class {$class}
     public function store(Request \$request): Response
     {
         \$data = \$request->validate([{$rules}]);
-        \$item = {$model}::create(\$data + ['created_at' => date('Y-m-d H:i:s')]);
+        \$item = {$model}::create(\$data);
         return Response::created({$resource}::make(\$item), '{$model} created');
     }
 
@@ -388,7 +388,6 @@ PHP;
         } elseif (str_contains($name, 'product') || str_contains($name, 'item')) {
             $rules[] = "'name' => 'required|min:2|max:200'";
             $rules[] = "'price' => 'required|numeric|min:0'";
-            $rules[] = "'sku' => 'required|min:2|max:50'";
         } elseif (str_contains($name, 'category') || str_contains($name, 'tag')) {
             $rules[] = "'name' => 'required|min:2|max:100'";
             $rules[] = "'slug' => 'required|min:2|max:100'";
