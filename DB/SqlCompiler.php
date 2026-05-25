@@ -126,15 +126,15 @@ final class SqlCompiler
 
     /**
      * @param array<int, string|RawExpression> $columns
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
- * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
- * @param array<int, string|RawExpression> $groups
- * @param array<int, array{column:string, direction:string}> $orders
- * @param array<string, mixed> $bindings
- * @return array{0: string, 1: array<int|string, mixed>}
- */
-public function buildSelectQuery(
+     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+     * @param array<int, string|RawExpression> $groups
+     * @param array<int, array{column:string, direction:string}> $orders
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
+    public function buildSelectQuery(
         array $columns,
         string $table,
         array $wheres,
@@ -188,14 +188,14 @@ public function buildSelectQuery(
     }
 
     /**
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
- * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
- * @param array<int, string|RawExpression> $groups
- * @param array<string, mixed> $bindings
- * @return array{0: string, 1: array<int|string, mixed>}
- */
-public function buildCountQuery(
+     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+     * @param array<int, string|RawExpression> $groups
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
+    public function buildCountQuery(
         string $table,
         array $wheres,
         array $havings,
@@ -222,14 +222,14 @@ public function buildCountQuery(
     }
 
     /**
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
- * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
- * @param array<int, string|RawExpression> $groups
- * @param array<string, mixed> $bindings
- * @return array{0: string, 1: array<int|string, mixed>}
- */
-public function buildAggregateQuery(
+     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+     * @param array<int, string|RawExpression> $groups
+     * @param array<string, mixed> $bindings
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
+    public function buildAggregateQuery(
         string $function,
         string $column,
         string $table,
@@ -336,7 +336,7 @@ public function buildAggregateQuery(
     }
 
     /**
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}> $wheres
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
      */
@@ -523,7 +523,7 @@ public function buildAggregateQuery(
 
     /**
      * @param array<string, mixed> $data
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}> $wheres
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
      */
@@ -545,7 +545,7 @@ public function buildAggregateQuery(
     }
 
     /**
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}> $wheres
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
      */

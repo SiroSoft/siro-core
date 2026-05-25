@@ -531,6 +531,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
 
     /**
      * @param array<string, string> $headers
+     * @phpstan-ignore-next-line method.unused
      */
     private function outputHttpie(string $method, string $url, string $body, array $headers, string $auth): void
     {
@@ -540,7 +541,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
             if ($lk === 'host' || $lk === 'content-length') continue;
-            $parts[] = (string) $k . ':' . (string) $v;
+            $parts[] = $k . ':' . $v;
         }
         if ($auth !== '') {
             $parts[] = 'Authorization:' . $auth;

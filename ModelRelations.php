@@ -110,6 +110,7 @@ trait ModelRelations
     private function getForeignKeyName(string $modelClass): string
     {
         $shortName = basename(str_replace('\\', '/', $modelClass));
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $shortName)) . '_id';
+        $replaced = preg_replace('/(?<!^)[A-Z]/', '_$0', $shortName);
+        return strtolower($replaced ?? $shortName) . '_id';
     }
 }

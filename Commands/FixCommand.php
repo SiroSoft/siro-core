@@ -57,18 +57,17 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $ct = $this->safeStr($data['content_type'] ?? '');
             /** @var array<string, string>|null $rawHeaders */
             $rawHeaders = $data['request_headers'] ?? null;
-            $headers = is_array($rawHeaders) ? $rawHeaders : [];
+            /** @var array<string, string> $rawHeaders */
+            $headers = $rawHeaders;
 
             $curlHeaders = ['Content-Type: ' . ($ct !== '' ? $ct : 'application/json')];
             if ($auth !== '') {
                 $curlHeaders[] = 'Authorization: ' . $auth;
             }
-            if (is_array($headers)) {
-                foreach ($headers as $k => $v) {
-                    $lk = strtolower((string) $k);
-                    if (in_array($lk, ['host', 'content-length', 'content-type', 'authorization'], true)) continue;
-                    $curlHeaders[] = (string) $k . ': ' . (is_string($v) ? $v : (string) $v);
-                }
+            foreach ($headers as $k => $v) {
+                $lk = strtolower((string) $k);
+                if (in_array($lk, ['host', 'content-length', 'content-type', 'authorization'], true)) continue;
+                $curlHeaders[] = (string) $k . ': ' . $v;
             }
 
             $ch = curl_init('http://' . $host . $path);
@@ -90,7 +89,7 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  🔄 Fix replay: ' . $method . ' ' . $path);
             $statusColor = $status >= 500 ? '❌' : ($status >= 400 ? '⚠️' : '✅');
             $this->write('  Status: ' . $status . ' ' . $statusColor);
-            if ($response !== false && $response !== '') {
+            if (is_string($response) && $response !== '') {
                 $decoded = json_decode($response, true);
                 if (is_array($decoded)) {
                     $this->write('  Response: ' . (string) json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));

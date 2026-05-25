@@ -131,15 +131,19 @@ trait ModelSerialization
         }
 
         return match ($this->casts[$key]) {
-            'int', 'integer' => (int) $value,
-            'float', 'double', 'real' => (float) $value,
-            'string' => (string) $value,
+            'int', 'integer' => is_numeric($value) ? (int) $value : 0,
+            'float', 'double', 'real' => is_numeric($value) ? (float) $value : 0.0,
+            'string' => match (true) {
+                is_bool($value) => $value ? '1' : '',
+                is_scalar($value) => (string) $value,
+                default => '',
+            },
             'bool', 'boolean' => (bool) $value,
-            'array' => is_array($value) ? $value : json_decode((string) $value, true),
-            'object' => is_object($value) ? $value : json_decode((string) $value),
+            'array' => is_array($value) ? $value : json_decode(is_string($value) ? $value : throw new \RuntimeException('Invalid cast to array'), true),
+            'object' => is_object($value) ? $value : json_decode(is_string($value) ? $value : throw new \RuntimeException('Invalid cast to object')),
             'datetime', 'date' => $value instanceof \DateTimeInterface
                 ? $value->format('Y-m-d H:i:s')
-                : new \DateTime((string) $value),
+                : new \DateTime(is_string($value) ? $value : throw new \RuntimeException('Invalid cast to datetime')),
             default => $value,
         };
     }

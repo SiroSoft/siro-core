@@ -80,7 +80,9 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         /** @var array<string, mixed> $matchedQuery */
-        $this->analyzeQuery($matchedQuery, $matchedTrace ?? []);
+        /** @var array<string, mixed> $matchedTrace */
+        $this->analyzeQuery($matchedQuery, $matchedTrace);
+
         return 0;
     }
 
@@ -133,6 +135,7 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('  ' . self::GRAY . str_repeat('─', 56) . self::RESET);
 
         foreach ($slowQueries as $q) {
+            /** @var array{hash: string, time_ms: float|int, sql: string, trace_id: string, method: string, path: string} $q */
             $timeColor = $q['time_ms'] > 500 ? self::RED : self::YELLOW;
             $sqlShort = strlen($q['sql']) > 60 ? substr($q['sql'], 0, 57) . '...' : $q['sql'];
             $this->write('  ' . self::CYAN . $q['hash'] . self::RESET . ' ' . $timeColor . sprintf('%5.0fms', $q['time_ms']) . self::RESET . ' ' . self::GRAY . $sqlShort . self::RESET);
@@ -144,7 +147,8 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         return 0;
     }
 
-    /** @param array<string, mixed> $query */
+    /** @param array<string, mixed> $query
+     * @param array<string, mixed> $trace */
     private function analyzeQuery(array $query, array $trace): void
     {
         $sql = $this->safeStr($query['sql'] ?? '');
@@ -251,14 +255,16 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
             $explainSql = (is_string($driver) && $driver === 'sqlite') ? 'EXPLAIN QUERY PLAN ' . $normalized : 'EXPLAIN ' . $normalized;
             $stmt = $pdo->query($explainSql);
             if ($stmt === false) return null;
+            /** @var array<int, array<string, mixed>> $rows */
             $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            return is_array($rows) ? $rows : null;
+            return $rows;
         } catch (\Throwable) {
             return null;
         }
     }
 
-    /** @param array<int, array<string, mixed>>|null $explain */
+    /** @param array<int, array<string, mixed>>|null $explain
+     * @return list<string> */
     private function suggestIndexes(string $sql, ?array $explain): array
     {
         $suggestions = [];

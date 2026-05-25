@@ -1,7 +1,7 @@
 <div align="center">
   <h1>⚡ Siro Core</h1>
   <p><strong>Production Debugging & Testing Framework for PHP APIs.</strong><br>
-  Cold boot ~1ms · Zero dependencies · OWASP Top 10 mitigated · PHPStan Level Max</p>
+  Zero dependencies · OWASP Top 10 mitigated · PHPStan Level Max (true 0)</p>
 </div>
 
 <div align="center">
@@ -48,10 +48,10 @@ No other framework — PHP, Node, Go, Rust, Python, Ruby — has this flow.
 
 | ⚡ **Speed** | 🔒 **Security** | 🧩 **Architecture** |
 |---|---|---|
-| Cold boot ~1ms | OWASP Top 10 mitigated | DI Container (autowiring) |
-| 864K ops/sec (avg) | 7 rounds audit — 9.0/10 | Router O(1) dispatch |
+| Route dispatch: ~0.003ms (static O(1)) | OWASP Top 10 mitigated | DI Container (autowiring) |
+| Cold boot: ~2.4ms (Win) / ~0.5ms (Linux+OPcache) | 7 rounds audit — 9.0/10 | Router O(1) dispatch |
 | Zero runtime deps | JWT with key rotation | ORM with identity map |
-| ~2 KB memory/request | CSP, CORS, CSRF built-in | 80 CLI commands |
+| Full-stack throughput: ~410K req/s | CSP, CORS, CSRF built-in | 80 CLI commands |
 
 ---
 
@@ -111,7 +111,7 @@ POST /api/products        {"name":"Laptop","price":999}
 
 ```
 public/index.php
-  → App::boot() (~1ms)
+  → App::boot() (~2.4ms Win, ~0.5ms Linux+OPcache)
     → Router::dispatch()
       → Middleware chain (13 layers)
         → Controller → Service → Repository → Model/DB
@@ -149,11 +149,16 @@ Siro is a full API framework. Not just a debug tool.
 ## Performance
 
 ```
-Cold boot:    ~1 ms
-Route dispatch (1000 routes):   0.002 ms (O(1))
-Full lifecycle:   0.29 ms
-Memory per request:   ~2 KB
+Cold boot (Linux + OPcache):   ~0.5 ms
+Cold boot (Windows, no OPcache): ~2.4 ms
+Route dispatch static O(1):      ~0.003 ms (361K ops/sec)
+Full-stack (warm route+response): ~0.002 ms (403K ops/sec)
+Full-stack (cold boot + route):   ~2.4 ms (410K req/sec)
+Memory (baseline PHP process):     ~4 MB
 ```
+
+> Boot time dominates cold requests. In production (OPcache + FrankenPHP),
+> boot is ~0.5ms once per worker — all subsequent requests skip boot.
 
 Methodology & hardware: [BENCHMARK.md](BENCHMARK.md)
 

@@ -50,7 +50,7 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  ' . self::RED . 'Invalid trace file.' . self::RESET);
             return 1;
         }
-
+        /** @var array<string, mixed> $data */
         $traceId = basename($latest, '.json');
         $method = $this->safeStr($data['method'] ?? 'GET');
         $path = $this->safeStr($data['path'] ?? '/');
@@ -104,7 +104,7 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
                 $qTime = is_numeric($q['time_ms'] ?? null) ? (float) $q['time_ms'] : 0.0;
                 $totalSqlTime += $qTime;
                 $qSql = $this->safeStr(is_string($q['sql'] ?? null) ? $q['sql'] : '?');
-                $qAction = strtoupper(explode(' ', trim($qSql))[0] ?? '');
+                $qAction = strtoupper(explode(' ', trim($qSql))[0]);
                 $qBody = trim(substr($qSql, strlen($qAction)));
                 $qDisplay = strlen($qBody) > 80 ? substr($qBody, 0, 77) . '...' : $qBody;
                 $qColor = $qTime > self::SLOW_SQL_MS ? self::YELLOW : self::GRAY;

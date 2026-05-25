@@ -112,6 +112,28 @@ $results[] = bench('Request::fromGlobals simulation', 5000, function () {
     new Request('POST', '/api/users', ['page' => '1', 'per_page' => '10'], ['content-type' => 'application/json', 'authorization' => 'Bearer test'], ['name' => 'Test'], '127.0.0.1');
 });
 
+// === System-level: PHP array + loop baseline ===
+$results[] = bench('PHP baseline: empty loop', 10000, function () {
+    $s = 0;
+    for ($i = 0; $i < 10; $i++) {
+        $s += $i;
+    }
+});
+
+// === Full-stack throughput: App::boot + route + middleware + controller + response ===
+// Pre-build router once for the full-stack benchmark
+$fullStackRouter = new Router();
+$fullStackRouter->get('/api/products', fn(Request $req) => Response::success([
+    'id' => 1, 'name' => 'Test Product',
+]));
+
+$results[] = bench('Full-stack (route+middleware+response)', 500, function () use ($fullStackRouter): void {
+    $req = new Request('GET', '/api/products', [], [
+        'accept' => 'application/json',
+    ]);
+    $fullStackRouter->dispatch($req);
+});
+
 // === OUTPUT ===
 $isJson = in_array('--json', $argv ?? []);
 $totalAvg = 0; $totalOps = 0; $n = 0;

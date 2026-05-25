@@ -58,8 +58,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         }
 
         $className = basename(str_replace('\\', '/', static::class));
-        $replaced = preg_replace('/(?<!^)[A-Z]/', '_$0', $className);
-        return strtolower($replaced ?? $className) . 's';
+        $replaced = preg_replace('/(?<!^)[A-Z]/', '_$0', $className) ?? $className;
+        return strtolower($replaced) . 's';
     }
 
     public function getKeyName(): string
@@ -210,6 +210,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         /** @phpstan-ignore new.static (safe because Model is abstract) */
         $instance = new static();
         $key = $instance->getKeyName();
+        /** @var ?static $result */
         $result = $instance->query()->where($key, '=', $id)->first();
 
         if ($result === null) {
@@ -364,14 +365,11 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             return null;
         }
 
-        return static::query()->where($key, '=', $id)->first();
+        /** @var ?static $result */
+        $result = static::query()->where($key, '=', $id)->first();
+        return $result;
     }
 
-    /**
-     * Eager load relations only if they haven't been loaded yet.
-     *
-     * @param string|array<string, array<int, string>> ...$relations
-     */
     public function loadMissing(mixed ...$relations): self
     {
         $toLoad = [];
@@ -396,12 +394,23 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     }
 
     /**
-     * Update the model's updated_at timestamp.
+     * @param string|array<int, string> ...$attributes
      */
-    public function touch(): bool
+    public function append(string|array ...$attributes): self
     {
-        $this->setAttribute('updated_at', date('Y-m-d H:i:s'));
-        return $this->save();
+        foreach ($attributes as $attr) {
+            if (is_string($attr) && !in_array($attr, $this->appends, true)) {
+                $this->appends[] = $attr;
+            } elseif (is_array($attr)) {
+                foreach ($attr as $a) {
+                    if (!in_array($a, $this->appends, true)) {
+                        $this->appends[] = $a;
+                    }
+                }
+            }
+        }
+
+        return $this;
     }
 
     /**
@@ -417,28 +426,6 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             $result[$key] = $this->getAttribute($key);
         }
         return $result;
-    }
-
-    /**
-     * Dynamically append attributes to the model's array output.
-     *
-     * @param string|array<int, string> ...$attributes
-     */
-    public function append(string|array ...$attributes): self
-    {
-        foreach ($attributes as $attr) {
-            if (is_string($attr) && !in_array($attr, $this->appends, true)) {
-                $this->appends[] = $attr;
-            } elseif (is_array($attr)) {
-                foreach ($attr as $a) {
-                    if (is_string($a) && !in_array($a, $this->appends, true)) {
-                        $this->appends[] = $a;
-                    }
-                }
-            }
-        }
-
-        return $this;
     }
 
     /**
@@ -662,37 +649,31 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     public static function with(mixed ...$relations): ModelQueryBuilder
     {
         $query = self::query();
-        /** @var array<string, array<int, string>> $eagerLoads */
-        $eagerLoads = [];
 
         foreach ($relations as $key => $value) {
             if (is_string($value)) {
                 if (is_string($key)) {
-                    $eagerLoads[$key] = ['*'];
+                    $query->eagerLoad($key, ['*']);
                 } else {
-                    $eagerLoads[$value] = ['*'];
+                    $query->eagerLoad($value, ['*']);
                 }
             } elseif (is_array($value)) {
-                $eagerLoads[(string) $key] = $value;
+                /** @var array<int, string> $value */
+                $query->eagerLoad((string) $key, $value);
             }
-        }
-
-        foreach ($eagerLoads as $relation => $columns) {
-            $query->eagerLoad($relation, $columns);
         }
 
         return $query;
     }
 
     /**
-     * @param string|array<string, array<int, string>> ...$relations
-     */
-    /**
      * Load relation counts into the model.
      *
      * Usage:
      *   $user->loadCount('posts');
      *   $user->loadCount(['posts', 'comments']);
+     *
+     * @param string|array<int|string, (callable(\Siro\Core\DB\ModelQueryBuilder): void)|string> ...$relations
      */
     public function loadCount(string|array ...$relations): self
     {
@@ -720,22 +701,19 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function load(mixed ...$relations): self
     {
-        /** @var array<string, array<int, string>> $eagerLoads */
-        $eagerLoads = [];
+        $eager = new \Siro\Core\DB\EagerLoader(static::class);
         foreach ($relations as $key => $value) {
             if (is_string($value)) {
                 if (is_string($key)) {
-                    $eagerLoads[$key] = ['*'];
+                    $eager->load($this, [$key => ['*']]);
                 } else {
-                    $eagerLoads[$value] = ['*'];
+                    $eager->load($this, [$value => ['*']]);
                 }
             } elseif (is_array($value)) {
-                $eagerLoads[(string) $key] = $value;
+                /** @var array<int, string> $value */
+                $eager->load($this, [(string) $key => $value]);
             }
         }
-
-        $eager = new \Siro\Core\DB\EagerLoader(static::class);
-        $eager->load($this, $eagerLoads);
 
         return $this;
     }

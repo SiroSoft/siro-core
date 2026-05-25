@@ -24,7 +24,7 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $method = strtoupper(trim((string) ($args[0] ?? '')));
+        $method = strtoupper(trim($args[0]));
         $path = trim((string) ($args[1] ?? ''));
 
         if ($method === '' || $path === '') {
@@ -59,8 +59,8 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
                 continue;
             }
 
-            $traceMethod = strtoupper((string) ($data['method'] ?? ''));
-            $tracePath = (string) ($data['path'] ?? '');
+            $traceMethod = strtoupper($this->safeStr($data['method'] ?? ''));
+            $tracePath = $this->safeStr($data['path'] ?? '');
 
             if ($traceMethod === $method && $tracePath === $normalizedPath) {
                 $matchedTrace = basename($file, '.json');
@@ -76,7 +76,7 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         /** @var array<string, mixed> $matchedData */
-        $this->displayTrace($method, $normalizedPath, $matchedData, $matchedTrace ?? '');
+        $this->displayTrace($method, $normalizedPath, $matchedData, $matchedTrace);
 
         return 0;
     }
@@ -136,7 +136,7 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
                 $qTime = is_numeric($q['time_ms'] ?? null) ? (float) $q['time_ms'] : 0.0;
                 $totalSqlTime += $qTime;
                 $qSql = $this->safeStr(is_string($q['sql'] ?? null) ? $q['sql'] : '?');
-                $qAction = strtoupper(explode(' ', trim($qSql))[0] ?? '');
+                $qAction = strtoupper(explode(' ', trim($qSql))[0]);
                 // Show only first 80 chars of SQL body (after action word)
                 $qBody = trim(substr($qSql, strlen($qAction)));
                 $qDisplay = strlen($qBody) > 80 ? substr($qBody, 0, 77) . '...' : $qBody;

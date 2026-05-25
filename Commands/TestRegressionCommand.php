@@ -97,7 +97,7 @@ final class TestRegressionCommand implements \Siro\Core\Commands\CommandInterfac
 
             $ch = curl_init($url);
             curl_setopt_array($ch, [
-                CURLOPT_CUSTOMREQUEST => $method,
+                CURLOPT_CUSTOMREQUEST => $method !== '' ? $method : null,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 10,
                 CURLOPT_CONNECTTIMEOUT => 5,
@@ -122,9 +122,9 @@ final class TestRegressionCommand implements \Siro\Core\Commands\CommandInterfac
                 if ($newStatus !== $origStatus) {
                     $issues[] = 'status_changed: ' . $origStatus . ' -> ' . $newStatus;
                 }
-                if ($response !== false && $response !== '') {
-                    $newBody = json_decode($response, true);
-                    $origBody = json_decode($this->safeStr($data['response_body'] ?? '{}'), true);
+            if (is_string($response) && $response !== '') {
+                $newBody = json_decode($response, true);
+                $origBody = json_decode($this->safeStr($data['response_body'] ?? '{}'), true);
                     if (is_array($newBody) && is_array($origBody)) {
                         $origSuccess = $origBody['success'] ?? null;
                         $newSuccess = $newBody['success'] ?? null;

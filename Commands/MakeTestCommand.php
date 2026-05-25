@@ -114,12 +114,13 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface {
         if ($responseRaw !== '' && $responseRaw !== '{}') {
             $responseDecoded = json_decode($responseRaw, true);
             if (is_array($responseDecoded)) {
+                /** @var array<string, mixed> $responseDecoded */
                 $responseKeys = $this->extractKeys($responseDecoded, $ignoreFields);
             }
         }
 
         // Generate test method name from path
-        $testName = 'test_' . strtolower($method) . '_' . trim(preg_replace('/[^a-zA-Z0-9]+/', '_', $apiPath), '_');
+        $testName = 'test_' . strtolower($method) . '_' . trim(preg_replace('/[^a-zA-Z0-9]+/', '_', $apiPath) ?? '', '_');
         $testName = substr($testName, 0, 80);
 
         // Status assertion method
@@ -222,6 +223,7 @@ PHP;
                 continue;
             }
             if (is_array($value)) {
+                /** @var array<string, mixed> $value */
                 $sub = $this->extractKeys($value, $ignore);
                 if ($sub !== []) {
                     $keys[$key] = $sub;
