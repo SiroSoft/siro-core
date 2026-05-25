@@ -1,6 +1,6 @@
 {
     "name": "sirosoft/core",
-    "description": "Siro API Framework Core - Ultra-fast PHP micro-framework with built-in JWT auth, RBAC, rate limiting, migrations, ORM, and CRUD generator. Zero PHPStan errors.",
+    "description": "Core engine powering the Siro API Framework — zero external deps.",
     "type": "library",
     "license": "MIT",
     "keywords": [
