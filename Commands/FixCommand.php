@@ -187,10 +187,10 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
     private function getLastTraceId(): ?string
     {
         $tracesDir = $this->getTracesDir($this->basePath);
-        $files = $this->findTraceFiles($tracesDir);
-        if ($files === []) return null;
-        rsort($files);
-        return basename($files[0], '.json');
+        $rawFiles = $this->findTraceFiles($tracesDir);
+        if ($rawFiles === []) return null;
+        usort($rawFiles, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
+        return basename($rawFiles[0], '.json');
     }
 
     private function getLastApiTest(): ?string

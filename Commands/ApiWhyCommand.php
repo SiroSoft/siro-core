@@ -42,13 +42,14 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
         $normalizedPath = '/' . ltrim($path, '/');
 
         $tracesDir = $this->getTracesDir($this->basePath);
-        $files = $this->findTraceFiles($tracesDir);
-        if ($files === []) {
+        $rawFiles = $this->findTraceFiles($tracesDir);
+        if ($rawFiles === []) {
             $this->write('  ' . self::YELLOW . 'No traces found. Enable APP_DEBUG=true to capture traces.' . self::RESET);
             return 1;
         }
 
-        rsort($files);
+        usort($rawFiles, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
+        $files = $rawFiles;
 
         $matchedData = null;
         $matchedTrace = '';

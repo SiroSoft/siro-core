@@ -37,13 +37,14 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
     public function run(array $args): int
     {
         $tracesDir = $this->getTracesDir($this->basePath);
-        $files = $this->findTraceFiles($tracesDir);
-        if ($files === []) {
+        $rawFiles = $this->findTraceFiles($tracesDir);
+        if ($rawFiles === []) {
             $this->write('  ' . self::YELLOW . 'No traces found. Enable APP_DEBUG=true to capture traces.' . self::RESET);
             return 1;
         }
 
-        rsort($files);
+        usort($rawFiles, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
+        $files = $rawFiles;
         $latest = $files[0];
         $data = json_decode((string) file_get_contents($latest), true);
         if (!is_array($data)) {

@@ -8,6 +8,8 @@ use Siro\Core\DB\Relations\BelongsTo;
 use Siro\Core\DB\Relations\BelongsToMany;
 use Siro\Core\DB\Relations\HasMany;
 use Siro\Core\DB\Relations\HasOne;
+use Siro\Core\DB\Relations\MorphMany;
+use Siro\Core\DB\Relations\MorphTo;
 
 trait ModelRelations
 {
@@ -83,6 +85,38 @@ trait ModelRelations
             $relatedKey,
             'id',
             is_int($idValue) || is_string($idValue) ? $idValue : 0,
+        );
+    }
+
+    /**
+     * Define a polymorphic one-to-many relationship.
+     * e.g. Post::comments() → Comment with commentable_type + commentable_id
+     *
+     * @param class-string $relatedClass
+     */
+    protected function morphMany(string $relatedClass, string $morphName, string $localKey = 'id'): MorphMany
+    {
+        $localValue = $this->getAttribute($localKey);
+        return new MorphMany(
+            $relatedClass,
+            static::class,
+            $morphName,
+            is_int($localValue) || is_string($localValue) ? $localValue : 0,
+        );
+    }
+
+    /**
+     * Define the inverse polymorphic relationship.
+     * e.g. Comment::commentable() → Post | Product | Article
+     */
+    protected function morphTo(string $morphName = 'commentable'): MorphTo
+    {
+        $typeValue = $this->getAttribute($morphName . '_type');
+        $idValue = $this->getAttribute($morphName . '_id');
+        return new MorphTo(
+            $morphName,
+            is_int($idValue) || is_string($idValue) ? $idValue : 0,
+            is_string($typeValue) ? $typeValue : '',
         );
     }
 

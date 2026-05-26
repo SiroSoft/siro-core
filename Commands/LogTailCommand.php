@@ -35,7 +35,7 @@ final class LogTailCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write("No {$type} log files found in {$dailyDir}");
             return 1;
         }
-        rsort($files);
+        usort($files, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
         $logFile = $files[0];
 
         $this->write("  \033[1;33mTail: " . basename($logFile) . "\033[0m");

@@ -6,6 +6,8 @@ namespace Siro\Core\DB;
 
 use Siro\Core\Database;
 use Siro\Core\Model;
+use Siro\Core\DB\Relations\MorphMany;
+use Siro\Core\DB\Relations\MorphTo;
 
 /**
  * Eager loads relations for model instances (N+1 prevention).
@@ -67,6 +69,10 @@ final class EagerLoader
             $this->loadHasOne($models, $rel, $relation, $columns);
         } elseif ($rel instanceof Relations\BelongsToMany) {
             $this->loadBelongsToMany($models, $rel, $relation, $columns);
+        } elseif ($rel instanceof MorphMany) {
+            $this->loadMorphMany($models, $rel, $relation, $columns);
+        } elseif ($rel instanceof MorphTo) {
+            $this->loadMorphTo($models, $rel, $relation, $columns);
         }
     }
 
@@ -76,6 +82,7 @@ final class EagerLoader
      */
     private function loadHasOne(array $models, Relations\HasOne $rel, string $relation, array $columns): void
     {
+        /** @var class-string<Model> $relatedClass */
         $relatedClass = $rel->getRelatedClass();
         $foreignKey = $rel->getForeignKey();
         $localKey = $rel->getLocalKey();
@@ -231,6 +238,108 @@ final class EagerLoader
             $id = $m->{$localKey} ?? '0';
             if (!is_scalar($id)) { $id = '0'; }
             $m->setRelation($relation, $grouped[strval($id)] ?? []);
+        }
+    }
+
+    /**
+     * @param array<int, Model> $models
+     * @param array<int, string> $columns
+     */
+    private function loadMorphMany(array $models, MorphMany $rel, string $relation, array $columns): void
+    {
+        $relatedClass = $rel->getRelatedClass();
+        $morphName = $rel->getMorphName();
+        $typeCol = $morphName . '_type';
+        $idCol = $morphName . '_id';
+
+        $localIds = [];
+        $ownerClass = '';
+        foreach ($models as $m) {
+            $id = $m->getAttribute('id');
+            if (is_numeric($id) || is_string($id)) {
+                $localIds[] = $id;
+            }
+            if ($ownerClass === '') {
+                $ownerClass = $m::class;
+            }
+        }
+
+        if ($localIds === []) {
+            return;
+        }
+
+        $localIds = array_unique($localIds);
+        /** @var Model $relatedInstance */
+        $relatedInstance = new $relatedClass();
+        $query = $relatedInstance->query();
+        $query->where($typeCol, '=', $ownerClass);
+        if ($columns !== ['*']) {
+            $selectCols = array_merge([$idCol], array_diff($columns, [$idCol]));
+            $query->select(...$selectCols);
+        }
+        $rows = $query->whereIn($idCol, $localIds)->get();
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $fkVal = $row->{$idCol} ?? '0';
+            if (!is_scalar($fkVal)) { $fkVal = '0'; }
+            $grouped[strval($fkVal)][] = $row;
+        }
+
+        foreach ($models as $m) {
+            $id = $m->getAttribute('id');
+            $idStr = is_scalar($id) ? (string) $id : '0';
+            $m->setRelation($relation, $grouped[$idStr] ?? []);
+        }
+    }
+
+    /**
+     * @param array<int, Model> $models
+     * @param array<int, string> $columns
+     */
+    private function loadMorphTo(array $models, MorphTo $rel, string $relation, array $columns): void
+    {
+        $morphName = $rel->getMorphName();
+        $typeCol = $morphName . '_type';
+        $idCol = $morphName . '_id';
+
+        $groupedByType = [];
+        foreach ($models as $m) {
+            $type = $m->getAttribute($typeCol);
+            $id = $m->getAttribute($idCol);
+            if (is_string($type) && $type !== '' && (is_numeric($id) || is_string($id))) {
+                $groupedByType[$type][] = $id;
+            }
+        }
+
+        if ($groupedByType === []) {
+            return;
+        }
+
+        $resolved = [];
+        foreach ($groupedByType as $type => $ids) {
+            if (!class_exists($type)) { continue; }
+            /** @var Model $instance */
+            $instance = new $type();
+            $query = $instance->query();
+            if ($columns !== ['*']) {
+                $query->select(...$columns);
+            }
+            /** @var array<int, Model> $ownerRows */
+            $ownerRows = $query->whereIn('id', $ids)->get();
+            foreach ($ownerRows as $row) {
+                $rowId = $row->getAttribute('id');
+                if (is_numeric($rowId) || is_string($rowId)) {
+                    $resolved[strval($rowId)] = $row;
+                }
+            }
+        }
+
+        foreach ($models as $m) {
+            $type = $m->getAttribute($typeCol);
+            $id = $m->getAttribute($idCol);
+            $key = is_scalar($id) ? (string) $id : '0';
+            $m->setRelation($relation, $resolved[$key] ?? null);
         }
     }
 
