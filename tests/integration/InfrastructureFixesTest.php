@@ -35,8 +35,8 @@ final class InfrastructureFixesTest extends TestCase
     {
         $content = file_get_contents($this->siroPhpPath . '/Dockerfile');
         $this->assertIsString($content);
-        $this->assertStringContainsString('FROM php:8.2-cli-alpine', $content);
-        $this->assertStringContainsString('EXPOSE 8080', $content);
+        $this->assertStringContainsString('FROM dunglas/frankenphp:', $content);
+        $this->assertStringContainsString('EXPOSE 80', $content);
         $this->assertStringContainsString('CMD', $content);
     }
 
