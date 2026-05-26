@@ -55,7 +55,7 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $files = $this->findTraceFiles($traceDir);
-        rsort($files);
+        usort($files, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
 
         $cutoff = $days !== null ? time() - ($days * 86400) : 0;
         $traces = [];

@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.31.0 (2026-05-26) — Workflow Continuity, Auto-Auth Replay
+
+### 🔥 Killer Feature: Auto-Auth Replay
+- `replay <trace_id>` now auto-refreshes expired tokens → **workflow continuity**
+- Auto-discovery auth config từ Model, Routes, Migrations (không cần .env)
+- `.env` override support: `AUTH_ENDPOINT`, `AUTH_EMAIL_FIELD`, `AUTH_PASSWORD_FIELD`, `AUTH_TOKEN_PATH`
+- 4-layer auth strategy: stored refresh → admin creds → seeder → register new user
+- Interactive login fallback khi auto-auth fail
+- **Security:** production auto-auth disabled, password never stored in .siro_auth.json
+
+### 🔧 Fixed: Trace Sorting Bug
+- `rsort($files)` → `usort(fn($a,$b) => filemtime($b) <=> filemtime($a))` ở **10 command files**
+- Affected: `why`, `api:why`, `replay`, `fix`, `test:regression`, `log:trace`, `log:export`, `trace:list`, `log:slow`, `log:tail`
+
+### 🔧 Fixed: Replay Header Deduplication
+- Authorization header from trace (`[REDACTED]`) không còn override token mới
+- Content-Type không còn bị duplicate
+
+### 📝 Docs
+- `WORKFLOW_TEST_REPORT.md` — full test report with all modes verified
+- `DEMO_REPLAY_500.md` — real-world 500 error → why → replay → fix → verify
+
+---
+
 ## v0.30.1 (2026-05-25) — README UI, description
 
 ### 🧹 Chore

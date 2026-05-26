@@ -38,14 +38,14 @@ final class TestRegressionCommand implements \Siro\Core\Commands\CommandInterfac
         }
 
         $tracesDir = $this->getTracesDir($this->basePath);
-        $files = $this->findTraceFiles($tracesDir);
-        if ($files === []) {
+        $rawFiles = $this->findTraceFiles($tracesDir);
+        if ($rawFiles === []) {
             $this->warn('No traces found.');
             return 1;
         }
 
-        rsort($files);
-        $files = array_slice($files, 0, $limit);
+        usort($rawFiles, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
+        $files = array_slice($rawFiles, 0, $limit);
 
         $this->write('');
         $this->info('Replaying ' . count($files) . ' traces, comparing responses...');

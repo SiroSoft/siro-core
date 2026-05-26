@@ -216,7 +216,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             $files = array_values(array_filter($files, fn(string $f): bool => filemtime($f) >= $cutoff));
         }
 
-        rsort($files);
+        usort($files, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
 
         $count = 0;
         $this->write(str_pad('Trace ID', 20) . ' ' . str_pad('Method', 8) . ' ' . str_pad('Status', 7) . ' ' . str_pad('Time', 8) . ' Path');

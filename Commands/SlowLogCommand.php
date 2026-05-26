@@ -33,7 +33,7 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
         // Method 1: Parse trace files
         $entries = [];
         $files = $this->findTraceFiles($tracesDir);
-        rsort($files);
+        usort($files, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
         foreach ($files as $file) {
             $data = json_decode((string) file_get_contents($file), true);
             if (!is_array($data)) {

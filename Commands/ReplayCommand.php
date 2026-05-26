@@ -36,13 +36,13 @@ final class ReplayCommand implements \Siro\Core\Commands\CommandInterface {
 
         if ($traceId === '') {
             $traceDir = $this->getTracesDir($this->basePath);
-            $files = $this->findTraceFiles($traceDir);
-            if ($files === []) {
+            $rawFiles = $this->findTraceFiles($traceDir);
+            if ($rawFiles === []) {
                 $this->write('No traces found. Run an API request first.');
                 return 1;
             }
-            rsort($files);
-            $traceId = basename($files[0], '.json');
+            usort($rawFiles, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
+            $traceId = basename($rawFiles[0], '.json');
             $this->write('Replaying last trace: ' . $traceId);
         }
 

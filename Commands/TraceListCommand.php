@@ -50,7 +50,7 @@ final class TraceListCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        rsort($files);
+        usort($files, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
         $files = array_slice($files, 0, $limit);
 
         $this->write('');

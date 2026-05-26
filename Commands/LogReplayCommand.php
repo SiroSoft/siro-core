@@ -30,6 +30,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $editMode = false;
         $diffMode = false;
         $dryRun = false;
+        $authMode = false;
+        $asUser = '';
         $overrides = [];
 
         // Production safety: detect environment
@@ -77,6 +79,10 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 $_SERVER['argc'] = count($testArgs);
                 $console = new \Siro\Core\Console($this->basePath);
                 return $console->run($testArgs);
+            } elseif ($arg === '--auth') {
+                $authMode = true;
+            } elseif (str_starts_with($arg, '--as=')) {
+                $asUser = substr($arg, 5);
             }
         }
 
@@ -92,6 +98,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  --seed            Seed database from request data');
             $this->write('  --edit            Interactive edit request before replay');
             $this->write('  --diff            Compare before/after responses');
+            $this->write('  --auth            Auto-refresh auth before replay');
+            $this->write('  --as=email        Login as user before replay');
             $this->write('  --https           Use https:// instead of http://');
             $this->write('  --http            Force http:// (default)');
             $this->write('  --insecure        Skip SSL verification (self-signed certs)');
@@ -149,6 +157,54 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         // Default Content-Type for JSON body if missing
         if ($ct === '' && $body !== '' && $body !== '{}' && $body !== '[]') {
             $ct = 'application/json';
+        }
+
+        // Auto-auth: refresh token or login
+        $authFile = $this->basePath . DIRECTORY_SEPARATOR . '.siro_auth.json';
+        if ($authMode || $asUser !== '') {
+            if (!function_exists('curl_init')) {
+                $this->write('  ❌ PHP curl extension required for --auth/--as=' . $asUser);
+                return 1;
+            }
+            $this->write('');
+            $authed = false;
+            if ($authMode && file_exists($authFile)) {
+                $stored = json_decode((string) file_get_contents($authFile), true);
+                if (is_array($stored)) {
+                    $rt = $this->safeStr($stored['refresh_token'] ?? '');
+                    if ($rt !== '') {
+                        $newToken = $this->refreshToken($host, $rt);
+                        if ($newToken !== null) {
+                            $auth = 'Bearer ' . $newToken;
+                            $stored['access_token'] = $newToken;
+                            @file_put_contents($authFile, json_encode($stored, JSON_PRETTY_PRINT));
+                            $this->write('  🔑 Auth: Bearer [refreshed]');
+                            $authed = true;
+                        } else {
+                            $this->write('  ⚠ Auth refresh failed — token may be expired');
+                        }
+                    }
+                }
+            }
+            if ($asUser !== '') {
+                if (!$authed) {
+                    $password = $this->ask('  Password for ' . $asUser . ': ');
+                    if ($password === '') {
+                        $this->write('  ❌ Password required.');
+                        return 1;
+                    }
+                    $newToken = $this->login($host, $asUser, $password);
+                    if ($newToken === null) {
+                        $this->write('  ❌ Login failed for ' . $asUser);
+                        return 1;
+                    }
+                    $auth = 'Bearer ' . $newToken;
+                    $this->write('  🔑 Auth: logged in as ' . $asUser);
+                } else {
+                    $this->write('  🔑 Auth: already refreshed for ' . $asUser);
+                }
+            }
+            $this->write('');
         }
 
         // --edit: interactive edit
@@ -393,6 +449,61 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
             $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
             $responseBody = $this->safeStr($result['body'] ?? '{}');
+
+            // Auto-auth: if 401 and trace originally had auth, try to refresh
+            // Bỏ qua nếu --safe: auto-auth tạo side effects (login request)
+            if ($status === 401 && $auth !== '' && !$authMode && $asUser === '' && !in_array('--safe', $args, true)) {
+                if ($isProduction) {
+                    $this->write('  ⛔ Production mode: auto-auth disabled for safety.');
+                    $this->write('  Run manually: php siro replay ' . $traceId . ' --as=email');
+                } else {
+                    $this->write('  ⚠ Original token expired — attempting auto-refresh...');
+                    $newAuth = $this->autoReauthenticate($host, $data);
+                    if ($newAuth !== null) {
+                        $auth = 'Bearer ' . $newAuth;
+                        $this->write('  🔑 New token acquired → retrying...');
+                        $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
+                        $status = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
+                        $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
+                        $responseBody = $this->safeStr($result['body'] ?? '{}');
+                        $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
+                    if ($status >= 200 && $status < 300) {
+                        $this->write('  ✅ Replay succeeded with refreshed token.');
+                    } elseif ($status >= 400 && $status < 500) {
+                        $this->write('  ℹ️ Auth OK — server returned ' . $status . ' (client error, likely bad request data).');
+                    } else {
+                        $this->write('  ⚠ Replay returned ' . $status . ' even after auth refresh.');
+                    }
+                    } else {
+                        $this->write('  ⚠ Could not auto-refresh. Try manual login:');
+                        $manualEmail = $this->ask('  Email/username: ');
+                        if ($manualEmail !== '') {
+                            $this->write('  Password (input hidden): ');
+                            $manualPass = $this->readPassword();
+                            if ($manualPass !== '') {
+                                $manualToken = $this->loginDevOnly($host, $manualEmail, $manualPass);
+                                if ($manualToken !== null) {
+                                    $auth = 'Bearer ' . $manualToken;
+                                    $this->write('  🔑 Logged in as ' . $manualEmail . ' → retrying...');
+                                    $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
+                                    $status = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
+                                    $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
+                                    $responseBody = $this->safeStr($result['body'] ?? '{}');
+                                    $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
+                                if ($status >= 200 && $status < 300) {
+                                    $this->write('  ✅ Replay succeeded.');
+                                } elseif ($status >= 400 && $status < 500) {
+                                    $this->write('  ℹ️ Auth OK — server returned ' . $status . ' (client error).');
+                                }
+                                } else {
+                                    $this->write('  ❌ Login failed. Try: php siro replay ' . $traceId . ' --as=email');
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             $decoded = json_decode($responseBody, true);
             if (is_array($decoded)) {
                 $pretty = (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -447,13 +558,16 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $ch = curl_init($url);
         $curlHeaders = [];
+        $hasContentType = false;
         foreach ($headers as $k => $v) {
-            if (strtolower((string) $k) !== 'host' && strtolower((string) $k) !== 'content-length') {
-                $curlHeaders[] = (string) $k . ': ' . (string) $v;
-            }
+            $lk = strtolower((string) $k);
+            if ($lk === 'host' || $lk === 'content-length') continue;
+            if ($lk === 'authorization') continue;
+            if ($lk === 'content-type') $hasContentType = true;
+            $curlHeaders[] = (string) $k . ': ' . (string) $v;
         }
         if ($auth !== '') $curlHeaders[] = 'Authorization: ' . $auth;
-        if ($ct !== '') $curlHeaders[] = 'Content-Type: ' . $ct;
+        if ($ct !== '' && !$hasContentType) $curlHeaders[] = 'Content-Type: ' . $ct;
 
         /** @var array<int, mixed> $curlOpts */
         $curlOpts = [
@@ -559,5 +673,458 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
         return $json;
+    }
+
+    /**
+     * Auto-discover auth config từ model + routes + migrations.
+     *
+     * Đọc:
+     *   1. Model User → table, fillable (email_field, pass_field)
+     *   2. Routes file → login endpoint
+     *   3. Migration → auth identifier columns
+     *
+     * Không cần .env — tự động phát hiện cấu trúc project.
+     *
+     * @return array{endpoint:string,email_field:string,pass_field:string,token_path:string,refresh_endpoint:string}
+     */
+    private function discoverAuthConfig(): array
+    {
+        $endpoint = '/api/auth/login';
+        $emailField = 'email';
+        $passField = 'password';
+        $tokenPath = 'data.token';
+        $refreshEndpoint = '/api/auth/refresh';
+
+        // 1) Discover từ User model
+        $userModelClass = 'App\\Models\\User';
+        if (class_exists($userModelClass)) {
+            try {
+                /** @phpstan-ignore-next-line ReflectionClass accepts class-string */
+                $ref = new \ReflectionClass($userModelClass);
+                $instance = $ref->newInstanceWithoutConstructor();
+                // Đọc table name
+                $tableProp = $ref->getProperty('table');
+                $tableProp->setAccessible(true);
+                $table = $tableProp->getValue($instance);
+                if (is_string($table) && $table !== '' && $table !== 'users') {
+                    // Nếu table khác users, suy ra endpoint tương ứng
+                    $singular = rtrim($table, 's');
+                    $endpoint = '/api/' . $singular . '/auth/login';
+                    $refreshEndpoint = '/api/' . $singular . '/auth/refresh';
+                }
+                // Đọc fillable để biết field login
+                $fillableProp = $ref->getProperty('fillable');
+                $fillableProp->setAccessible(true);
+                $fillable = $fillableProp->getValue($instance);
+                if (is_array($fillable)) {
+                    // Tìm field dạng email/username/login
+                    $loginCandidates = ['email', 'username', 'login', 'phone', 'mobile'];
+                    foreach ($loginCandidates as $candidate) {
+                        if (in_array($candidate, $fillable, true)) {
+                            $emailField = $candidate;
+                            break;
+                        }
+                    }
+                    // Tìm field dạng password/passwd/pass
+                    $passCandidates = ['password', 'passwd', 'pass', 'secret'];
+                    foreach ($passCandidates as $candidate) {
+                        if (in_array($candidate, $fillable, true)) {
+                            $passField = $candidate;
+                            break;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Silent fallback
+            }
+        }
+
+        // 2) Discover từ routes file
+        $routesFile = $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php';
+        if (file_exists($routesFile)) {
+            $routesContent = (string) file_get_contents($routesFile);
+            // Tìm pattern: $router->post('...', [AuthController::class, 'login'])
+            if (preg_match('/\$router->post\((["\'])([^"\']+login[^"\']*)\1/', $routesContent, $m)) {
+                $found = $m[2];
+                // Kiểm tra nếu endpoint khác default
+                if ($found !== '/auth/login') {
+                    $endpoint = $found;
+                    // Suy ra refresh endpoint từ login endpoint
+                    $refreshEndpoint = str_replace('/login', '/refresh', $found);
+                    $refreshEndpoint = str_replace('/signin', '/refresh', $refreshEndpoint);
+                }
+            }
+            // Tìm field names từ validate() trong AuthController
+            $authControllerFile = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AuthController.php';
+            if (file_exists($authControllerFile)) {
+                $authContent = (string) file_get_contents($authControllerFile);
+                if (preg_match('/\'(email|username|login)\'\s*=>\s*\'required\|email/', $authContent, $m)) {
+                    $emailField = $m[1];
+                }
+            }
+        }
+
+        // 3) Discover từ migration files — đọc schema của users table
+        $migrationsDir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
+        if (is_dir($migrationsDir)) {
+            $migrationFiles = glob($migrationsDir . '/*.php') ?: [];
+            foreach ($migrationFiles as $mf) {
+                $content = (string) file_get_contents($mf);
+                if (str_contains($content, 'users')) {
+                    // Tìm các cột email/username/phone trong migration
+                    if (preg_match('/\$t->string\((["\'])(email|username|login|phone|mobile)\1\)/', $content, $m)) {
+                        $emailField = $m[2];
+                    }
+                }
+            }
+        }
+
+        // 4) Kiểm tra response token path từ AuthController
+        $authControllerFile = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AuthController.php';
+        if (file_exists($authControllerFile)) {
+            $authContent = (string) file_get_contents($authControllerFile);
+            // Tìm pattern: return Response::created(['token' => ..., ...])
+            if (preg_match('/\[\s*[\'"]token[\'"]\s*=>/', $authContent)) {
+                $tokenPath = 'data.token';
+            } elseif (preg_match('/\[\s*[\'"]api_token[\'"]\s*=>/', $authContent)) {
+                $tokenPath = 'data.api_token';
+            } elseif (preg_match('/\[\s*[\'"]access_token[\'"]\s*=>/', $authContent)) {
+                $tokenPath = 'data.access_token';
+            }
+        }
+
+        return [
+            'endpoint' => $endpoint,
+            'email_field' => $emailField,
+            'pass_field' => $passField,
+            'token_path' => $tokenPath,
+            'refresh_endpoint' => $refreshEndpoint,
+        ];
+    }
+
+    /**
+     * Đọc auth config ưu tiên: .env > auto-discover > defaults.
+     * @return array{endpoint:string,email_field:string,pass_field:string,token_path:string,refresh_endpoint:string}
+     */
+    private function authConfig(): array
+    {
+        // Bước 1: auto-discover từ code
+        $cfg = $this->discoverAuthConfig();
+
+        // Bước 2: .env ghi đè (explicit config luôn thắng)
+        $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';
+        if (file_exists($envFile)) {
+            $c = (string) file_get_contents($envFile);
+            $m = null;
+            if (preg_match('/^AUTH_ENDPOINT\s*=\s*(.+)$/m', $c, $m)) $cfg['endpoint'] = trim($m[1]);
+            if (preg_match('/^AUTH_EMAIL_FIELD\s*=\s*(.+)$/m', $c, $m)) $cfg['email_field'] = trim($m[1]);
+            if (preg_match('/^AUTH_PASSWORD_FIELD\s*=\s*(.+)$/m', $c, $m)) $cfg['pass_field'] = trim($m[1]);
+            if (preg_match('/^AUTH_TOKEN_PATH\s*=\s*(.+)$/m', $c, $m)) $cfg['token_path'] = trim($m[1]);
+            if (preg_match('/^AUTH_REFRESH_ENDPOINT\s*=\s*(.+)$/m', $c, $m)) $cfg['refresh_endpoint'] = trim($m[1]);
+        }
+
+        return $cfg;
+    }
+
+    /**
+     * Extract token from response using configured token_path.
+     * Supports dot-notation: "data.token", "access_token", etc.
+     *
+     * @param array<string, mixed> $response
+     */
+    private function extractToken(array $response, string $tokenPath): ?string
+    {
+        $keys = explode('.', $tokenPath);
+        $current = $response;
+        foreach ($keys as $key) {
+            if (!is_array($current) || !isset($current[$key])) return null;
+            $current = $current[$key];
+        }
+        return is_string($current) && $current !== '' ? $current : null;
+    }
+
+    /**
+     * Refresh auth token using stored refresh token.
+     */
+    private function refreshToken(string $host, string $refreshToken): ?string
+    {
+        $cfg = $this->authConfig();
+        $url = 'http://' . $host . $cfg['refresh_endpoint'];
+        $ch = curl_init($url);
+        if ($ch === false) return null;
+        $body = json_encode(['refresh_token' => $refreshToken]);
+        if ($body === false) return null;
+        curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => $body,
+        ]);
+        $response = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($status >= 200 && $status < 300) {
+            /** @var array<string, mixed>|null $result */
+            $result = json_decode((string) $response, true);
+            if (is_array($result)) {
+                $token = $this->extractToken($result, $cfg['token_path']);
+                if ($token !== null) return $token;
+                foreach (['access_token', 'token', 'data.access_token'] as $p) {
+                    $t = $this->extractToken($result, $p);
+                    if ($t !== null) return $t;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Login in dev mode only — stores token but NEVER raw password.
+     */
+    private function loginDevOnly(string $host, string $email, string $password): ?string
+    {
+        $token = $this->login($host, $email, $password);
+        if ($token !== null) {
+            $authFile = $this->basePath . DIRECTORY_SEPARATOR . '.siro_auth.json';
+            /** @var array<string, mixed> $stored */
+            $stored = [];
+            if (file_exists($authFile)) {
+                $decoded = json_decode((string) file_get_contents($authFile), true);
+                if (is_array($decoded)) {
+                    $stored = $decoded;
+                }
+            }
+            $stored['email'] = $email;
+            $stored['access_token'] = $token;
+            if (empty($stored['refresh_token'])) {
+                $stored['refresh_token'] = '';
+            }
+            @file_put_contents($authFile, json_encode($stored, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        }
+        return $token;
+    }
+
+    /**
+     * Read password from stdin without echoing to terminal.
+     * Falls back to plain ask() if no hidden-input method available.
+     */
+    private function readPassword(): string
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            // Windows: use inline script to read hidden input
+            $psCmd = 'powershell -Command "$p=Read-Host -AsSecureString; $r=[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p)); Write-Output $r"';
+            $output = shell_exec($psCmd);
+            return is_string($output) ? trim($output) : '';
+        }
+        // Linux/Mac: use stty -echo
+        $orig = shell_exec('stty -g 2>/dev/null');
+        if ($orig !== null) {
+            shell_exec('stty -echo 2>/dev/null');
+        }
+        $pass = trim(fgets(STDIN) ?: '');
+        if ($orig !== null) {
+            shell_exec('stty ' . $orig . ' 2>/dev/null');
+        }
+        echo PHP_EOL;
+        return $pass;
+    }
+
+    /**
+     * Login and store tokens. Uses configurable endpoint + field names.
+     * Never stores raw password in .siro_auth.json — chỉ lưu refresh_token.
+     */
+    private function login(string $host, string $email, string $password): ?string
+    {
+        $cfg = $this->authConfig();
+        $url = 'http://' . $host . $cfg['endpoint'];
+        $ch = curl_init($url);
+        if ($ch === false) return null;
+        $body = json_encode([$cfg['email_field'] => $email, $cfg['pass_field'] => $password]);
+        if ($body === false) return null;
+        curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => $body,
+        ]);
+        $response = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($status >= 200 && $status < 300) {
+            /** @var array<string, mixed>|null $result */
+            $result = json_decode((string) $response, true);
+            if (is_array($result)) {
+                $token = $this->extractToken($result, $cfg['token_path']);
+                if ($token === null) {
+                    foreach (['data.token', 'access_token', 'token', 'data.access_token'] as $p) {
+                        $t = $this->extractToken($result, $p);
+                        if ($t !== null) { $token = $t; break; }
+                    }
+                }
+                if ($token !== null) {
+                    $authFile = $this->basePath . DIRECTORY_SEPARATOR . '.siro_auth.json';
+                    /** @var array<string, mixed> $stored */
+                    $stored = [];
+                    if (file_exists($authFile)) {
+                        /** @var array<string, mixed>|null $existing */
+                        $existing = json_decode((string) file_get_contents($authFile), true);
+                        if (is_array($existing)) $stored = $existing;
+                    }
+                    $stored['email'] = $email;
+                    $stored['access_token'] = $token;
+                    $stored['refresh_token'] = $this->safeStr(is_array($result['data'] ?? null) ? ($result['data']['refresh_token'] ?? '') : ($result['refresh_token'] ?? ''));
+                    // Xoá password cũ nếu có
+                    unset($stored['password']);
+                    @file_put_contents($authFile, json_encode($stored, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                    return $token;
+                }
+            }
+        }
+        // fallback: try with stream_context (different curl backend)
+        $fallbackBody = json_encode([$cfg['email_field'] => $email, $cfg['pass_field'] => $password]);
+        if ($fallbackBody === false) return null;
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/json\r\n",
+                'content' => $fallbackBody,
+                'timeout' => 10,
+            ],
+        ]);
+        $fbResponse = @file_get_contents($url, false, $context);
+        if ($fbResponse === false) return null;
+        /** @var array<string, mixed>|null $fbResult */
+        $fbResult = json_decode($fbResponse, true);
+        if (!is_array($fbResult)) return null;
+        $token = $this->extractToken($fbResult, $cfg['token_path']);
+        if ($token === null) {
+            foreach (['data.token', 'access_token', 'token'] as $p) {
+                $t = $this->extractToken($fbResult, $p);
+                if ($t !== null) { $token = $t; break; }
+            }
+        }
+        return $token;
+    }
+
+    /**
+     * Auto-reauthenticate when replay gets 401.
+     *
+     * Strategy:
+     *   1. Stored .siro_auth.json (refresh token or full creds)
+     *   2. ADMIN_EMAIL / ADMIN_PASSWORD from .env
+     *   3. Auth config from .env (AUTH_ENDPOINT, AUTH_EMAIL_FIELD, etc.)
+     *   4. Default seeder credentials (admin@siro.dev / admin1234)
+     *   5. Register a new test user via API (last resort)
+     *
+     * Cấu hình được qua .env:
+     *   AUTH_ENDPOINT=/api/auth/login       (đường dẫn login)
+     *   AUTH_EMAIL_FIELD=email               (tên field email)
+     *   AUTH_PASSWORD_FIELD=password         (tên field password)
+     *   AUTH_TOKEN_PATH=data.token           (đường dẫn token trong JSON response)
+     *   AUTH_REFRESH_ENDPOINT=/api/auth/refresh
+     *   ADMIN_EMAIL=admin@shop.com
+     *   ADMIN_PASSWORD=secret123
+     *
+     * @param array<string, mixed> $data
+     */
+    private function autoReauthenticate(string $host, array $data): ?string
+    {
+        $authFile = $this->basePath . DIRECTORY_SEPARATOR . '.siro_auth.json';
+        $cfg = $this->authConfig();
+
+        // Load .env for admin credentials
+        $adminEmail = '';
+        $adminPassword = '';
+        $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';
+        if (file_exists($envFile)) {
+            $c = (string) file_get_contents($envFile);
+            $m = null;
+            if (preg_match('/^ADMIN_EMAIL\s*=\s*(.+)$/m', $c, $m)) $adminEmail = trim($m[1]);
+            if (preg_match('/^ADMIN_PASSWORD\s*=\s*(.+)$/m', $c, $m)) $adminPassword = trim($m[1]);
+        }
+
+        // 1) Try stored credentials
+        if (file_exists($authFile)) {
+            $stored = json_decode((string) file_get_contents($authFile), true);
+            if (is_array($stored)) {
+                $email = $this->safeStr($stored['email'] ?? '');
+                $rt = $this->safeStr($stored['refresh_token'] ?? '');
+                $pw = $this->safeStr($stored['password'] ?? '');
+                // Try refresh token first
+                if ($rt !== '') {
+                    $newToken = $this->refreshToken($host, $rt);
+                    if ($newToken !== null) {
+                        $stored['access_token'] = $newToken;
+                        @file_put_contents($authFile, json_encode($stored, JSON_PRETTY_PRINT));
+                        return $newToken;
+                    }
+                }
+                // Try full login (password từ .siro_auth.json cũ — sẽ bị xoá sau khi dùng)
+                if ($email !== '' && $pw !== '') {
+                    $newToken = $this->login($host, $email, $pw);
+                    if ($newToken !== null) {
+                        /** @var array<string, mixed> $cleanStored */
+                        $cleanStored = [];
+                        $csDecoded = json_decode((string) file_get_contents($authFile), true);
+                        if (is_array($csDecoded)) {
+                            $cleanStored = $csDecoded;
+                        }
+                        unset($cleanStored['password']);
+                        @file_put_contents($authFile, json_encode($cleanStored, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                        return $newToken;
+                    }
+                }
+            }
+        }
+
+        // 2) Try ADMIN_EMAIL / ADMIN_PASSWORD from .env
+        if ($adminEmail !== '' && $adminPassword !== '') {
+            $newToken = $this->login($host, $adminEmail, $adminPassword);
+            if ($newToken !== null) return $newToken;
+        }
+
+        // 3) Try default seeder credentials
+        $defaultCreds = [
+            ['email' => 'admin@siro.dev', 'password' => 'admin1234'],
+            ['email' => 'admin@shop.com', 'password' => 'secret123'],
+        ];
+        foreach ($defaultCreds as $creds) {
+            $newToken = $this->login($host, $creds['email'], $creds['password']);
+            if ($newToken !== null) return $newToken;
+        }
+
+        // 4) Register a new user via API (last resort — dev only)
+        $isLocal = !in_array((string) getenv('APP_ENV'), ['production', 'prod', 'staging'], true);
+        if ($isLocal) {
+            $email = 'replay-' . bin2hex(random_bytes(4)) . '@siro.local';
+            $password = 'siro-replay-123';
+            $regBody = json_encode([
+                'name' => 'Replay User',
+                $cfg['email_field'] => $email,
+                $cfg['pass_field'] => $password,
+                $cfg['pass_field'] . '_confirmation' => $password,
+            ]);
+            if ($regBody === false) return null;
+            $regEndpoint = str_replace('/login', '/register', $cfg['endpoint']);
+            $regEndpoint = str_replace('/signin', '/signup', $regEndpoint);
+            $ch = curl_init('http://' . $host . $regEndpoint);
+            if ($ch === false) return null;
+            curl_setopt_array($ch, [
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_POSTFIELDS => $regBody,
+            ]);
+            curl_exec($ch);
+            $regStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($regStatus >= 200 && $regStatus < 300) {
+                return $this->login($host, $email, $password);
+            }
+        }
+        return null;
     }
 }
