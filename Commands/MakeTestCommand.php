@@ -158,6 +158,9 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface {
         $bodyArg = $bodyArray !== [] ? var_export($bodyArray, true) : '[]';
         $bodyArg = str_replace("\n", "\n        ", (string) $bodyArg);
 
+        $safeTraceClass = preg_replace('/[^a-zA-Z0-9_]/', '_', $traceId) ?? $traceId;
+        $safeTraceClass = trim($safeTraceClass, '_');
+
         $content = <<<PHP
 <?php
 
@@ -167,7 +170,7 @@ namespace App\Tests\Feature;
 
 use App\Tests\TestCase;
 
-final class FromTrace{$traceId}Test extends TestCase
+final class FromTrace{$safeTraceClass}Test extends TestCase
 {
     public function {$testName}(): void
     {{$authHeaderVar}
@@ -188,12 +191,12 @@ PHP;
         if (!is_dir($dir)) {
             mkdir($dir, 0775, true);
         }
-        $filename = 'FromTrace' . $traceId . 'Test.php';
+        $filename = 'FromTrace' . $safeTraceClass . 'Test.php';
         $path = $dir . DIRECTORY_SEPARATOR . $filename;
 
         file_put_contents($path, $content);
         $this->write('Generated: tests/Feature/' . $filename);
-        $this->write('  Run: vendor/bin/phpunit --testsuite=Feature --filter=FromTrace' . $traceId);
+        $this->write('  Run: vendor/bin/phpunit --testsuite=Feature --filter=FromTrace' . $safeTraceClass);
         $this->write('');
         $this->write('  This test reproduces the exact request from trace: ' . $traceId);
         $this->write('  Request: ' . $method . ' ' . $apiPath . ' → ' . $status);

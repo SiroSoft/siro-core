@@ -122,19 +122,46 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
-        $data = json_decode((string) file_get_contents($traceFile), true);
+        // Guard: verify file readability before reading
+        if (!is_file($traceFile) || !is_readable($traceFile)) {
+            $this->write('Trace file is not readable: ' . $traceFile);
+            return 1;
+        }
+
+        $rawContent = file_get_contents($traceFile);
+        if ($rawContent === false) {
+            $this->write('Failed to read trace file.');
+            return 1;
+        }
+
+        /** @var array<string, mixed>|null $data */
+        $data = json_decode($rawContent, true);
         if (!is_array($data)) {
             $this->write('Invalid trace file.');
             return 1;
         }
-        /** @var array<string, mixed> $data */
 
-        $method = strtoupper($this->safeStr($data['method'] ?? 'GET'));
+        // Validate required trace fields
+        $method = strtoupper($this->safeStr($data['method'] ?? ''));
+        if ($method === '') {
+            $this->write('Trace file missing required field: method');
+            return 1;
+        }
+        $validMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
+        if (!in_array($method, $validMethods, true)) {
+            $this->write('Trace file has invalid method: ' . $method);
+            return 1;
+        }
+
         $host = $this->safeStr($data['host'] ?? '');
         if ($host === '') {
             $host = 'localhost:8080';
         }
         $path = $this->safeStr($data['path'] ?? '/');
+        if ($path === '') {
+            $this->write('Trace file missing required field: path');
+            return 1;
+        }
 
         // Detect HTTPS and insecure flags
         $useHttps = false;
@@ -212,28 +239,31 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('');
             $this->write('  ✏️  Edit request body:');
             $this->write('  ' . str_repeat('-', 40));
+            /** @var array<string, mixed>|null $decoded */
             $decoded = json_decode($body, true);
             if (is_array($decoded) && $decoded !== []) {
-                foreach ($decoded as $key => $value) {
-                    $this->write('  ' . $this->safeStr($key) . ': \033[33m' . $this->safeStr($value) . '\033[0m');
-                    $input = $this->ask("  New value (Enter to keep): ");
-                    if ($input !== '') {
-                        $decoded[$key] = $input;
-                    }
-                }
+                $this->editRecursive($decoded, '');
             } elseif ($body !== '' && $body !== '{}') {
-                $this->write('  (non-JSON body — cannot edit)');
+                // Non-JSON body: show raw text for editing
+                $this->write('  (raw body — edit as text)');
+                $this->write('  \033[33m' . $body . '\033[0m');
+                $input = $this->ask("  New value (Enter to keep): ");
+                if ($input !== '') {
+                    $body = $input;
+                }
             } else {
                 $this->write('  (empty body — no fields to edit)');
                 $this->write('  Use --set key=value to add fields');
             }
-            $body = json_encode($decoded ?? [], JSON_UNESCAPED_UNICODE);
-            $body = is_string($body) ? $body : '';
+            if (is_array($decoded)) {
+                $body = json_encode($decoded, JSON_UNESCAPED_UNICODE);
+                $body = is_string($body) ? $body : '';
+            }
             $this->write('  ' . str_repeat('-', 40));
             $this->write('  Updated body: ' . $this->prettyPrint($body));
         }
 
-        // Apply overrides
+        // Apply overrides (support dot-notation: items.0.name)
         $seedMode = false;
         foreach ($overrides as $key => $value) {
             if ($key === '_seed') {
@@ -242,7 +272,24 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             }
             $decoded = json_decode($body, true);
             if (is_array($decoded)) {
-                $decoded[$key] = $value;
+                if (str_contains($key, '.')) {
+                    // Dot-notation: items.0.name
+                    $keys = explode('.', $key);
+                    $ref = &$decoded;
+                    foreach ($keys as $k) {
+                        if (is_numeric($k)) {
+                            $k = (int) $k;
+                        }
+                        if (!isset($ref[$k]) || !is_array($ref[$k])) {
+                            $ref[$k] = [];
+                        }
+                        $ref = &$ref[$k];
+                    }
+                    $ref = $value;
+                    unset($ref);
+                } else {
+                    $decoded[$key] = $value;
+                }
                 $encoded = json_encode($decoded);
                 $body = is_string($encoded) ? $encoded : $body;
             }
@@ -337,46 +384,69 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 return 1;
             }
 
-            $this->write('');
-            $this->write('  === BEFORE ===');
-            $this->write('  Status: ' . $beforeStatus);
-            $this->write('  Body:   ' . ($beforeBody !== '' ? $beforeBody : '(empty)'));
-            $decodedBefore = json_decode((string) $beforeBody, true);
-            if (is_array($decodedBefore)) {
-                $beforeErrors = $decodedBefore['errors'] ?? [];
-                if ($beforeErrors === [] && isset($decodedBefore['data']) && is_array($decodedBefore['data'])) {
-                    $beforeErrors = $decodedBefore['data']['errors'] ?? [];
+            // Normalize response bodies for deterministic comparison
+            $stripMeta = function (array $payload): array {
+                unset($payload['debug'], $payload['meta']);
+                if (isset($payload['data']) && is_array($payload['data'])) {
+                    unset($payload['data']['debug'], $payload['data']['meta']);
                 }
-                if (is_array($beforeErrors) && $beforeErrors !== []) {
-                    foreach ($beforeErrors as $f => $m) {
-                        $msgs = is_array($m) ? implode(', ', array_map(fn($v): string => $this->safeStr($v), (array) $m)) : $this->safeStr($m);
-                        $this->write('  ❌ ' . $this->safeStr($f) . ': ' . $msgs);
-                    }
-                }
-            }
+                ksort($payload);
+                return $payload;
+            };
+
+            $beforeStatus = is_numeric($data['status'] ?? null) ? (int) $data['status'] : 0;
+            $beforeDecoded = json_decode((string) $beforeBody, true);
+            $beforeNorm = is_array($beforeDecoded) ? $stripMeta($beforeDecoded) : null;
+
+            $statusAfter = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
+            $afterBody = $this->safeStr($result['body'] ?? '{}');
+            $afterDecoded = json_decode($afterBody, true);
+            $afterNorm = is_array($afterDecoded) ? $stripMeta($afterDecoded) : null;
+
+            // Detect changes
+            $statusChanged = $statusAfter !== $beforeStatus;
+            $bodyChanged = $beforeNorm !== null && $afterNorm !== null && json_encode($beforeNorm) !== json_encode($afterNorm);
 
             $this->write('');
-            $this->write('  === AFTER ===');
-            $statusAfter = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
-            $statusColor = $statusAfter >= 500 ? 31 : ($statusAfter >= 400 ? 33 : ($statusAfter >= 200 && $statusAfter < 300 ? 32 : 0));
-            $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$statusAfter}\033[0m" : $statusAfter));
-            $afterBody = $this->safeStr($result['body'] ?? '{}');
-            $decodedAfter = json_decode($afterBody, true);
-            if (is_array($decodedAfter)) {
-                $pretty = (string) json_encode($decodedAfter, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $this->write('  === BEFORE ===');
+            $statusColorBefore = $beforeStatus >= 500 ? 31 : ($beforeStatus >= 400 ? 33 : 32);
+            $this->write('  Status: ' . "\033[{$statusColorBefore}m{$beforeStatus}\033[0m");
+            if ($beforeNorm !== null) {
+                $pretty = (string) json_encode($beforeNorm, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 $this->write('  Body:');
                 foreach (explode("\n", $pretty) as $line) {
                     $this->write('    ' . $line);
                 }
-                $afterErrors = $decodedAfter['errors'] ?? [];
-                if ($afterErrors === [] && isset($decodedAfter['data']) && is_array($decodedAfter['data'])) {
-                    $afterErrors = $decodedAfter['data']['errors'] ?? [];
-                }
-                if (is_array($afterErrors) && $afterErrors === [] && $statusAfter >= 200 && $statusAfter < 300) {
-                    $this->write('  ✅ Fixed!');
+            } else {
+                $this->write('  Body:   ' . ($beforeBody !== '' ? $beforeBody : '(empty)'));
+            }
+
+            $this->write('');
+            $this->write('  === AFTER ===');
+            $statusColorAfter = $statusAfter >= 500 ? 31 : ($statusAfter >= 400 ? 33 : ($statusAfter >= 200 && $statusAfter < 300 ? 32 : 0));
+            $this->write('  Status: ' . ($statusColorAfter ? "\033[{$statusColorAfter}m{$statusAfter}\033[0m" : $statusAfter));
+            if ($afterNorm !== null) {
+                $pretty = (string) json_encode($afterNorm, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $this->write('  Body:');
+                foreach (explode("\n", $pretty) as $line) {
+                    $this->write('    ' . $line);
                 }
             } else {
-                $this->write('  Body:   ' . $afterBody);
+                $this->write('  Body:   ' . ($afterBody !== '' ? $afterBody : '(empty)'));
+            }
+
+            // Diff verdict
+            if (!$statusChanged && !$bodyChanged) {
+                $this->write('  ✅ No changes detected — responses match.');
+            } elseif ($statusChanged && $statusAfter >= 200 && $statusAfter < 300) {
+                $this->write('  ✅ Status changed from ' . $beforeStatus . ' → ' . $statusAfter . ' — likely fixed.');
+            } elseif ($statusAfter >= 200 && $statusAfter < 300 && $afterNorm !== null && ($afterNorm['success'] ?? false) === true) {
+                $this->write('  ✅ Fixed!');
+            } else {
+                $changes = [];
+                if ($statusChanged) $changes[] = "status: {$beforeStatus} → {$statusAfter}";
+                if ($bodyChanged) $changes[] = 'response body changed';
+                $this->write('  ⚠ ' . implode(', ', $changes));
             }
 
             return 0;
@@ -458,10 +528,12 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                     $this->write('  Run manually: php siro replay ' . $traceId . ' --as=email');
                 } else {
                     $this->write('  ⚠ Original token expired — attempting auto-refresh...');
-                    $newAuth = $this->autoReauthenticate($host, $data);
+                    /** @var array{token:?string,strategy:string} $authResult */
+                    $authResult = $this->autoReauthenticate($host, $data);
+                    $newAuth = $authResult['token'];
                     if ($newAuth !== null) {
                         $auth = 'Bearer ' . $newAuth;
-                        $this->write('  🔑 New token acquired → retrying...');
+                        $this->write('  🔑 New token acquired [' . $authResult['strategy'] . '] → retrying...');
                         $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
                         $status = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
                         $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
@@ -557,6 +629,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     private function executeReplay(string $method, string $url, string $body, array $headers, string $auth, string $ct, array $data, bool $insecure = false): array
     {
         $ch = curl_init($url);
+        if ($ch === false) {
+            return ['status' => 0, 'body' => '', 'error' => 'Failed to initialize curl'];
+        }
         $curlHeaders = [];
         $hasContentType = false;
         foreach ($headers as $k => $v) {
@@ -587,9 +662,21 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         curl_setopt_array($ch, $curlOpts);
         $response = curl_exec($ch);
         $error = curl_error($ch);
+        $errno = curl_errno($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        return ['status' => $status, 'body' => $response, 'error' => $error];
+
+        // Phân loại lỗi curl
+        if ($response === false || $error !== '') {
+            $errorType = match (true) {
+                $errno === CURLE_OPERATION_TIMEDOUT || $errno === CURLE_COULDNT_CONNECT => 'timeout',
+                $errno === CURLE_COULDNT_RESOLVE_HOST => 'dns',
+                $errno === CURLE_GOT_NOTHING => 'connection_reset',
+                default => 'network',
+            };
+            $error = "[{$errorType}] " . $error;
+        }
+        return ['status' => $status, 'body' => $response, 'error' => $error, 'errno' => $errno];
     }
 
     /**
@@ -673,6 +760,37 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
         return $json;
+    }
+
+    /**
+     * Recursively flatten nested arrays for --edit mode.
+     * Flattens: {"user":{"name":"A","addr":{"city":"B"}}} → user.name, user.addr.city
+     */
+    /**
+     * @param array<mixed> $data
+     */
+    private function editRecursive(array &$data, string $prefix): void
+    {
+        foreach ($data as $key => $value) {
+            $fullKey = $prefix !== '' ? $prefix . '.' . $key : (string) $key;
+            if (is_array($value) && $value !== []) {
+                $this->write('  ' . $fullKey . ': (object)');
+                $this->editRecursive($value, $fullKey);
+                $data[$key] = $value;
+            } else {
+                $display = is_bool($value) ? ($value ? 'true' : 'false') : (is_scalar($value) ? (string) $value : json_encode($value));
+                $this->write('  ' . $fullKey . ': \033[33m' . $display . '\033[0m');
+                $input = $this->ask("  New value (Enter to keep): ");
+                if ($input !== '') {
+                    // Try to preserve types: numeric, bool, null
+                    if ($input === 'true') { $data[$key] = true; }
+                    elseif ($input === 'false') { $data[$key] = false; }
+                    elseif ($input === 'null') { $data[$key] = null; }
+                    elseif (is_numeric($input)) { $data[$key] = str_contains($input, '.') ? (float) $input : (int) $input; }
+                    else { $data[$key] = $input; }
+                }
+            }
+        }
     }
 
     /**
@@ -829,18 +947,40 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     /**
      * Extract token from response using configured token_path.
      * Supports dot-notation: "data.token", "access_token", etc.
+     * Tá»± Ä'á»™ng fallback qua cÃ¡c path phá»• biáº¿n náº¿u path chÃ­nh khÃ´ng tÃ¬m tháº¥y.
      *
      * @param array<string, mixed> $response
      */
     private function extractToken(array $response, string $tokenPath): ?string
     {
+        // Thá» path chÃ­nh trÆ°á»›c
         $keys = explode('.', $tokenPath);
         $current = $response;
         foreach ($keys as $key) {
-            if (!is_array($current) || !isset($current[$key])) return null;
+            if (!is_array($current) || !isset($current[$key])) { $current = null; break; }
             $current = $current[$key];
         }
-        return is_string($current) && $current !== '' ? $current : null;
+        if (is_string($current) && $current !== '') return $current;
+
+        // Fallback: thá» táº¥t cáº£ cÃ¡c path phá»• biáº¿n
+        $fallbackPaths = [
+            'data.token', 'token', 'access_token', 'data.access_token',
+            'data.jwt', 'jwt', 'data.api_token', 'api_token',
+            'data.accessToken', 'accessToken',
+        ];
+        foreach ($fallbackPaths as $fb) {
+            if ($fb === $tokenPath) continue;
+            $keys = explode('.', $fb);
+            $current = $response;
+            $ok = true;
+            foreach ($keys as $key) {
+                if (!is_array($current) || !isset($current[$key])) { $ok = false; break; }
+                $current = $current[$key];
+            }
+            if ($ok && is_string($current) && $current !== '') return $current;
+        }
+
+        return null;
     }
 
     /**
@@ -890,6 +1030,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             /** @var array<string, mixed> $stored */
             $stored = [];
             if (file_exists($authFile)) {
+                /** @var array<string, mixed>|null $decoded */
                 $decoded = json_decode((string) file_get_contents($authFile), true);
                 if (is_array($decoded)) {
                     $stored = $decoded;
@@ -900,7 +1041,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             if (empty($stored['refresh_token'])) {
                 $stored['refresh_token'] = '';
             }
-            @file_put_contents($authFile, json_encode($stored, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            $this->writeAuthFile($authFile, $stored);
         }
         return $token;
     }
@@ -1011,25 +1152,12 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     /**
      * Auto-reauthenticate when replay gets 401.
      *
-     * Strategy:
-     *   1. Stored .siro_auth.json (refresh token or full creds)
-     *   2. ADMIN_EMAIL / ADMIN_PASSWORD from .env
-     *   3. Auth config from .env (AUTH_ENDPOINT, AUTH_EMAIL_FIELD, etc.)
-     *   4. Default seeder credentials (admin@siro.dev / admin1234)
-     *   5. Register a new test user via API (last resort)
-     *
-     * Cấu hình được qua .env:
-     *   AUTH_ENDPOINT=/api/auth/login       (đường dẫn login)
-     *   AUTH_EMAIL_FIELD=email               (tên field email)
-     *   AUTH_PASSWORD_FIELD=password         (tên field password)
-     *   AUTH_TOKEN_PATH=data.token           (đường dẫn token trong JSON response)
-     *   AUTH_REFRESH_ENDPOINT=/api/auth/refresh
-     *   ADMIN_EMAIL=admin@shop.com
-     *   ADMIN_PASSWORD=secret123
+     * 6-step fallback chain. LuÃ´n cÃ³ strategy cuá»‘i cÃ¹ng (interactive prompt).
      *
      * @param array<string, mixed> $data
+     * @return array{token:?string,strategy:string}
      */
-    private function autoReauthenticate(string $host, array $data): ?string
+    private function autoReauthenticate(string $host, array $data): array
     {
         $authFile = $this->basePath . DIRECTORY_SEPARATOR . '.siro_auth.json';
         $cfg = $this->authConfig();
@@ -1047,6 +1175,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
 
         // 1) Try stored credentials
         if (file_exists($authFile)) {
+            /** @var array<string, mixed>|null $stored */
             $stored = json_decode((string) file_get_contents($authFile), true);
             if (is_array($stored)) {
                 $email = $this->safeStr($stored['email'] ?? '');
@@ -1057,24 +1186,24 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                     $newToken = $this->refreshToken($host, $rt);
                     if ($newToken !== null) {
                         $stored['access_token'] = $newToken;
-                        @file_put_contents($authFile, json_encode($stored, JSON_PRETTY_PRINT));
-                        return $newToken;
+                        $this->writeAuthFile($authFile, $stored);
+                        return ['token' => $newToken, 'strategy' => 'refresh_token'];
                     }
+                    $strategy = 'refresh_token_failed';
                 }
                 // Try full login (password từ .siro_auth.json cũ — sẽ bị xoá sau khi dùng)
                 if ($email !== '' && $pw !== '') {
                     $newToken = $this->login($host, $email, $pw);
                     if ($newToken !== null) {
-                        /** @var array<string, mixed> $cleanStored */
-                        $cleanStored = [];
+                        /** @var array<string, mixed>|null $csDecoded */
                         $csDecoded = json_decode((string) file_get_contents($authFile), true);
                         if (is_array($csDecoded)) {
-                            $cleanStored = $csDecoded;
+                            unset($csDecoded['password']);
+                            $this->writeAuthFile($authFile, $csDecoded);
                         }
-                        unset($cleanStored['password']);
-                        @file_put_contents($authFile, json_encode($cleanStored, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-                        return $newToken;
+                        return ['token' => $newToken, 'strategy' => 'stored_credentials'];
                     }
+                    $strategy = 'stored_credentials_failed';
                 }
             }
         }
@@ -1082,18 +1211,20 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         // 2) Try ADMIN_EMAIL / ADMIN_PASSWORD from .env
         if ($adminEmail !== '' && $adminPassword !== '') {
             $newToken = $this->login($host, $adminEmail, $adminPassword);
-            if ($newToken !== null) return $newToken;
+            if ($newToken !== null) return ['token' => $newToken, 'strategy' => 'env_admin'];
+            $strategy = 'env_admin_failed';
         }
 
         // 3) Try default seeder credentials
         $defaultCreds = [
-            ['email' => 'admin@siro.dev', 'password' => 'admin1234'],
-            ['email' => 'admin@shop.com', 'password' => 'secret123'],
+            ['email' => 'admin@siro.dev', 'password' => 'admin1234', 'label' => 'seeder_default'],
+            ['email' => 'admin@shop.com', 'password' => 'secret123', 'label' => 'seeder_shop'],
         ];
         foreach ($defaultCreds as $creds) {
             $newToken = $this->login($host, $creds['email'], $creds['password']);
-            if ($newToken !== null) return $newToken;
+            if ($newToken !== null) return ['token' => $newToken, 'strategy' => $creds['label']];
         }
+        $strategy = 'seeder_failed';
 
         // 4) Register a new user via API (last resort — dev only)
         $isLocal = !in_array((string) getenv('APP_ENV'), ['production', 'prod', 'staging'], true);
@@ -1106,25 +1237,42 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 $cfg['pass_field'] => $password,
                 $cfg['pass_field'] . '_confirmation' => $password,
             ]);
-            if ($regBody === false) return null;
-            $regEndpoint = str_replace('/login', '/register', $cfg['endpoint']);
-            $regEndpoint = str_replace('/signin', '/signup', $regEndpoint);
-            $ch = curl_init('http://' . $host . $regEndpoint);
-            if ($ch === false) return null;
-            curl_setopt_array($ch, [
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 10,
-                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-                CURLOPT_POSTFIELDS => $regBody,
-            ]);
-            curl_exec($ch);
-            $regStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            if ($regStatus >= 200 && $regStatus < 300) {
-                return $this->login($host, $email, $password);
+            if ($regBody !== false) {
+                $regEndpoint = str_replace('/login', '/register', $cfg['endpoint']);
+                $regEndpoint = str_replace('/signin', '/signup', $regEndpoint);
+                $ch = curl_init('http://' . $host . $regEndpoint);
+                if ($ch !== false) {
+                    curl_setopt_array($ch, [
+                        CURLOPT_CUSTOMREQUEST => 'POST',
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_TIMEOUT => 10,
+                        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                        CURLOPT_POSTFIELDS => $regBody,
+                    ]);
+                    curl_exec($ch);
+                    $regStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+                    if ($regStatus >= 200 && $regStatus < 300) {
+                        $newToken = $this->login($host, $email, $password);
+                        if ($newToken !== null) return ['token' => $newToken, 'strategy' => 'register_new'];
+                    }
+                }
             }
+            $strategy = 'register_failed';
         }
-        return null;
+
+        return ['token' => null, 'strategy' => $strategy];
+    }
+
+    /**
+     * Write auth file with LOCK_EX to prevent race conditions.
+     * @param array<string, mixed> $data
+     */
+    private function writeAuthFile(string $path, array $data): void
+    {
+        $encoded = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        if ($encoded !== false) {
+            @file_put_contents($path, $encoded, LOCK_EX);
+        }
     }
 }
