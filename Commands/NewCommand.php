@@ -131,7 +131,15 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
     private function copySkeleton(string $src, string $dst, string $projectName): int
     {
         $count = 0;
-        $exclude = ['vendor', '.git', 'storage/logs/traces', 'storage/benchmark', 'storage/sbom', 'node_modules'];
+        $ds = DIRECTORY_SEPARATOR;
+        $exclude = ['vendor', '.git',
+            "storage{$ds}logs", "storage{$ds}benchmark", "storage{$ds}sbom",
+            "storage{$ds}test.db", "storage{$ds}api-test-history.json",
+            "storage{$ds}app{$ds}database.sqlite",
+            '.phpunit.cache', 'node_modules', '.github',
+            "public{$ds}openapi.json", "public{$ds}postman_collection.json",
+            "docs{$ds}openapi.json", "docs{$ds}postman",
+        ];
 
         $dirIterator = new \RecursiveDirectoryIterator($src, \RecursiveDirectoryIterator::SKIP_DOTS);
         $recursiveIterator = new \RecursiveIteratorIterator($dirIterator, \RecursiveIteratorIterator::SELF_FIRST);
