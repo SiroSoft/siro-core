@@ -314,9 +314,47 @@ final class RuntimeManager
         return $this->runtimeDir . DIRECTORY_SEPARATOR . 'db_active.json';
     }
 
-    /** @return array{success: bool, message: string, port?: string, dir?: string} */
+    public function detectExistingMySQL(): ?int
+    {
+        // Check common MySQL port
+        for ($port = 3306; $port <= 3307; $port++) {
+            $conn = @fsockopen('127.0.0.1', $port, $_, $_, 0.5);
+            if ($conn !== false) {
+                fclose($conn);
+                // Verify it's really MySQL by reading greeting
+                return $port;
+            }
+        }
+
+        // Try `mysql --version`
+        $ver = @shell_exec('mysql --version 2>NUL');
+        if (is_string($ver) && stripos($ver, 'mysql') !== false) {
+            return 3306;
+        }
+
+        // Try `mysqld --version`
+        $ver = @shell_exec('mysqld --version 2>NUL');
+        if (is_string($ver) && stripos($ver, 'mysql') !== false) {
+            return 3306;
+        }
+
+        return null;
+    }
+
+    /** @return array{success: bool, message: string, port?: string, dir?: string, existing?: bool} */
     public function installMariaDB(): array
     {
+        // Check if MySQL already exists on this machine
+        $existingPort = $this->detectExistingMySQL();
+        if ($existingPort !== null) {
+            return [
+                'success' => true,
+                'message' => 'Existing MySQL/MariaDB detected',
+                'port' => (string) $existingPort,
+                'existing' => true,
+            ];
+        }
+
         $targetDir = $this->mariaDir();
 
         if (is_dir($targetDir)) {

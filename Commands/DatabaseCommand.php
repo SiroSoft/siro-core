@@ -100,11 +100,17 @@ final class DatabaseCommand implements CommandInterface
 
         file_put_contents($envPath, $env);
 
-        $this->success($result['message']);
-        $this->write("  Database: siro_dev");
-        $this->write("  Port: {$port}");
-        $this->write("  Username: root");
-        $this->write("  Password: (none)");
+        $detected = isset($result['existing']) && $result['existing'];
+        if ($detected) {
+            $this->success("Existing MySQL/MariaDB found on port {$port}");
+            $this->write("  Using system database — no download needed");
+        } else {
+            $this->success($result['message']);
+            $this->write("  Database: siro_dev");
+            $this->write("  Port: {$port}");
+            $this->write("  Username: root");
+            $this->write("  Password: (none)");
+        }
         return 0;
     }
 
