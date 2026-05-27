@@ -15,6 +15,7 @@ final class RouteMatcher
 
     /** @var array<string, array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null> */
     private array $matchCache = [];
+    private const MATCH_CACHE_MAX_SIZE = 1000;
 
     /** @var array{}|array{static:array<string,array<string,array{path:string,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>,dynamic:array<string,array<int,array{path:string,segments:array<int,string>,handler:string,handler_raw:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>} */
     private array $exportCache = [];
@@ -55,13 +56,26 @@ final class RouteMatcher
 
         $route = $this->staticRoutes[$method][$path] ?? null;
         if ($route !== null) {
-            $this->matchCache[$cacheKey] = $route;
+            $this->setMatchCache($cacheKey, $route);
             return $route;
         }
 
         $result = $this->linearMatch($method, $this->splitSegments($path));
-        $this->matchCache[$cacheKey] = $result;
+        $this->setMatchCache($cacheKey, $result);
         return $result;
+    }
+
+    /**
+     * @param array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null $value
+     */
+    private function setMatchCache(string $key, ?array $value): void
+    {
+        if (count($this->matchCache) >= self::MATCH_CACHE_MAX_SIZE) {
+            reset($this->matchCache);
+            $firstKey = key($this->matchCache);
+            unset($this->matchCache[$firstKey]);
+        }
+        $this->matchCache[$key] = $value;
     }
 
     /**

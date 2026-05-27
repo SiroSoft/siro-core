@@ -111,6 +111,22 @@ final class App
             }
         }
 
+        // Set default middleware priority (lower runs first)
+        Router::setMiddlewarePriorities([
+            'cors' => 10,
+            'version' => 20,
+            'json' => 30,
+            'csp' => 40,
+            'etag' => 50,
+            'auth' => 60,
+            'api_key' => 65,
+            'throttle' => 70,
+            'audit' => 80,
+            'metrics' => 90,
+            'idempotency' => 100,
+            'csrf' => 110,
+        ]);
+
         $userModelClass = (string) \Siro\Core\Env::get('USER_MODEL_CLASS', 'App\\Models\\User');
         if (class_exists($userModelClass)) {
             $container->bind('auth.provider', function () use ($userModelClass) {
@@ -224,14 +240,16 @@ final class App
         $request = null;
         // W3C Trace Context: accept incoming, propagate outgoing
         $incomingTraceparent = isset($_SERVER['HTTP_TRACEPARENT']) && is_string($_SERVER['HTTP_TRACEPARENT']) ? $_SERVER['HTTP_TRACEPARENT'] : '';
-        $traceId = bin2hex(random_bytes(16));
+        $traceIdRaw = bin2hex(random_bytes(16));
+        $traceId = 'siro_' . $traceIdRaw;
         $spanId = bin2hex(random_bytes(8));
 
         if (preg_match('/^[0-9a-f]{2}-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/', $incomingTraceparent, $m) === 1) {
-            $traceId = $m[1];
-            $traceparent = sprintf('00-%s-%s-01', $traceId, $spanId);
+            $traceIdRaw = $m[1];
+            $traceId = 'siro_' . $traceIdRaw;
+            $traceparent = sprintf('00-%s-%s-01', $traceIdRaw, $spanId);
         } else {
-            $traceparent = sprintf('00-%s-%s-01', $traceId, $spanId);
+            $traceparent = sprintf('00-%s-%s-01', $traceIdRaw, $spanId);
         }
 
         Response::setRequestMeta($traceId, $requestStartedAt);

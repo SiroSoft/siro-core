@@ -1,3 +1,10 @@
+---
+title: L OG GE R
+description: SiroPHP L OG GE R reference
+sidebar_position: 7
+sidebar_label: L OG GE R
+---
+
 # Logger
 
 The siro-core Logger provides structured, secure logging with automatic sanitization, daily rotation (month-partitioned), SIEM-ready security audit trails, trace logging (hash-prefix partitioned), and slow query detection.

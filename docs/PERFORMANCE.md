@@ -1,3 +1,10 @@
+---
+title: P ER FO RM AN CE
+description: SiroPHP P ER FO RM AN CE reference
+sidebar_position: 9
+sidebar_label: P ER FO RM AN CE
+---
+
 # Performance Optimization Guide
 
 ## Overview

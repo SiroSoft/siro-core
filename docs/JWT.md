@@ -1,3 +1,10 @@
+---
+title: J WT
+description: SiroPHP J WT reference
+sidebar_position: 6
+sidebar_label: J WT
+---
+
 # JWT
 
 The JWT utility provides encode, decode, key rotation, per-token revocation via JTI blacklist, and audience validation. Supports HS256 and RS256 algorithms.

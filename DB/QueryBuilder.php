@@ -163,7 +163,8 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
-        return $this->whereRaw("DATE({$column}) {$operator} ?", [':date_val' => $value]);
+        $safeColumn = $this->compiler->quoteIdentifier($column);
+        return $this->whereRaw("DATE({$safeColumn}) {$operator} ?", [':date_val' => $value]);
     }
 
     public function whereMonth(string $column, string $operator, ?string $value = null): self
@@ -172,7 +173,8 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
-        return $this->whereRaw("MONTH({$column}) {$operator} ?", [':month_val' => $value]);
+        $safeColumn = $this->compiler->quoteIdentifier($column);
+        return $this->whereRaw("MONTH({$safeColumn}) {$operator} ?", [':month_val' => $value]);
     }
 
     public function whereDay(string $column, string $operator, ?string $value = null): self
@@ -181,7 +183,8 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
-        return $this->whereRaw("DAY({$column}) {$operator} ?", [':day_val' => $value]);
+        $safeColumn = $this->compiler->quoteIdentifier($column);
+        return $this->whereRaw("DAY({$safeColumn}) {$operator} ?", [':day_val' => $value]);
     }
 
     public function whereYear(string $column, string $operator, ?string $value = null): self
@@ -190,7 +193,8 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
-        return $this->whereRaw("YEAR({$column}) {$operator} ?", [':year_val' => $value]);
+        $safeColumn = $this->compiler->quoteIdentifier($column);
+        return $this->whereRaw("YEAR({$safeColumn}) {$operator} ?", [':year_val' => $value]);
     }
 
     public function whereTime(string $column, string $operator, ?string $value = null): self
@@ -199,7 +203,8 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
-        return $this->whereRaw("TIME({$column}) {$operator} ?", [':time_val' => $value]);
+        $safeColumn = $this->compiler->quoteIdentifier($column);
+        return $this->whereRaw("TIME({$safeColumn}) {$operator} ?", [':time_val' => $value]);
     }
 
     /**

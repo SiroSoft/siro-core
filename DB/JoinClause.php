@@ -19,7 +19,7 @@ final class JoinClause
     public string $type;
     /** @var string */
     public string $table;
-    /** @var list<array{first:string, operator:string, second:string, boolean:string}> */
+    /** @var list<array{first:string, operator:string, second:string, boolean:string, bindings?:array<int, string>}> */
     public array $conditions = [];
 
     private SqlCompiler $compiler;
@@ -70,7 +70,9 @@ final class JoinClause
         $parts = [];
         foreach ($this->conditions as $i => $c) {
             $prefix = $i === 0 ? '' : ' ' . $c['boolean'] . ' ';
-            $parts[] = $prefix . $c['first'] . ' ' . $c['operator'] . ' ' . $c['second'];
+            $first = isset($c['bindings']) ? $c['first'] : $this->compiler->quoteIdentifier($c['first']);
+            $second = isset($c['bindings']) ? $c['second'] : $this->compiler->quoteIdentifier($c['second']);
+            $parts[] = $prefix . $first . ' ' . $c['operator'] . ' ' . $second;
         }
         return implode('', $parts);
     }

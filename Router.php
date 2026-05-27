@@ -447,29 +447,29 @@ final class Router
     }
 
     /**
-     * Resolve method arguments using reflection.
-     * Auto-resolves Request and FormRequest type-hints.
-     *
      * @return array<int, mixed>
      */
     private function resolveMethodArgs(object $controller, string $method, Request $request): array
     {
         $cacheKey = $controller::class . '@' . $method;
-        if (isset(self::$methodParamCache[$cacheKey])) {
-            $params = self::$methodParamCache[$cacheKey];
-        } else {
+        if (!isset(self::$methodParamCache[$cacheKey])) {
             try {
                 $ref = new \ReflectionMethod($controller, $method);
             } catch (\ReflectionException) {
                 return [$request];
             }
-            $params = $ref->getParameters();
-            self::$methodParamCache[$cacheKey] = $params;
+            self::$methodParamCache[$cacheKey] = $ref->getParameters();
         }
-        if ($params === []) {
-            return [];
-        }
+        $params = self::$methodParamCache[$cacheKey];
+        return $params === [] ? [] : $this->resolveArgsFromParams($params, $request);
+    }
 
+    /**
+     * @param \ReflectionParameter[] $params
+     * @return array<int, mixed>
+     */
+    private function resolveArgsFromParams(array $params, Request $request): array
+    {
         $args = [];
         foreach ($params as $param) {
             $type = $param->getType();
@@ -503,7 +503,6 @@ final class Router
                 $args[] = null;
             }
         }
-
         return $args;
     }
 
@@ -521,40 +520,7 @@ final class Router
         }
 
         $params = $ref->getParameters();
-        if ($params === []) {
-            return [];
-        }
-
-        $args = [];
-        foreach ($params as $param) {
-            $type = $param->getType();
-
-            if ($type instanceof \ReflectionNamedType) {
-                $typeName = $type->getName();
-
-                if ($typeName === Request::class) {
-                    $args[] = $request;
-                    continue;
-                }
-
-                if ($typeName === FormRequest::class || is_subclass_of($typeName, FormRequest::class)) {
-                    $instance = new $typeName($request);
-                    if ($instance->fails()) {
-                        throw new ValidationException($instance->errors());
-                    }
-                    $args[] = $instance;
-                    continue;
-                }
-            }
-
-            if ($param->isDefaultValueAvailable()) {
-                $args[] = $param->getDefaultValue();
-            } elseif ($param->allowsNull()) {
-                $args[] = null;
-            }
-        }
-
-        return $args;
+        return $params === [] ? [] : $this->resolveArgsFromParams($params, $request);
     }
 
     /** @var array<string, object> */
@@ -608,6 +574,7 @@ final class Router
      */
     private function dispatchWithMiddleware(array $middleware, mixed $handler, Request $request): Response
     {
+        $middleware = $this->sortMiddlewareByPriority($middleware);
         $pos = 0;
         $next = function (Request $req) use ($middleware, $handler, &$pos, &$next): Response {
             if ($pos >= count($middleware)) {
@@ -633,6 +600,38 @@ final class Router
             return $response;
         };
         return $next($request);
+    }
+
+    /**
+     * @param array<int, callable|string> $middleware
+     * @return array<int, callable|string>
+     */
+    private function sortMiddlewareByPriority(array $middleware): array
+    {
+        if (self::$middlewarePriority === []) {
+            return $middleware;
+        }
+
+        $prioritized = [];
+        $normal = [];
+
+        foreach ($middleware as $mw) {
+            $name = is_string($mw) ? strtolower(trim(explode(':', $mw)[0])) : '';
+            if ($name !== '' && isset(self::$middlewarePriority[$name])) {
+                $prioritized[$name] = ['priority' => self::$middlewarePriority[$name], 'mw' => $mw];
+            } else {
+                $normal[] = $mw;
+            }
+        }
+
+        if ($prioritized === []) {
+            return $middleware;
+        }
+
+        usort($prioritized, fn(array $a, array $b): int => $a['priority'] <=> $b['priority']);
+
+        $sorted = array_map(fn(array $item): mixed => $item['mw'], $prioritized);
+        return [...$sorted, ...$normal];
     }
 
     private function runMiddleware(callable|string $middleware, Request $request, Closure $next): Response
@@ -681,6 +680,9 @@ final class Router
     /** @var array<string, string> */
     private static array $middlewareAliases = [];
 
+    /** @var array<string, int> */
+    private static array $middlewarePriority = [];
+
     /** @var array<string, array<int, \ReflectionParameter>> */
     private static array $methodParamCache = [];
 
@@ -697,6 +699,25 @@ final class Router
     public static function registerMiddlewareAlias(string $name, string $class): void
     {
         self::$middlewareAliases[strtolower(trim($name))] = $class;
+    }
+
+    public static function setMiddlewarePriority(string $name, int $priority): void
+    {
+        self::$middlewarePriority[strtolower(trim($name))] = $priority;
+    }
+
+    /** @param array<string, int> $priorities */
+    public static function setMiddlewarePriorities(array $priorities): void
+    {
+        foreach ($priorities as $name => $priority) {
+            self::$middlewarePriority[strtolower(trim($name))] = $priority;
+        }
+    }
+
+    /** @return array<string, int> */
+    public static function getMiddlewarePriorities(): array
+    {
+        return self::$middlewarePriority;
     }
 
     /** @return array<string, string> */

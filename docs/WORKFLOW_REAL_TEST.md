@@ -1,3 +1,10 @@
+---
+title: W OR KF LO W R EA L T ES T
+description: SiroPHP W OR KF LO W R EA L T ES T reference
+sidebar_position: 14
+sidebar_label: W OR KF LO W R EA L T ES T
+---
+
 # Workflow Real Test — Kết quả thực tế
 
 > Ngày: 2026-05-24 | Môi trường: Windows 10, PHP 8.2.30, SQLite

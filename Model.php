@@ -311,11 +311,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     public static function paginate(int $perPage = 15, int $page = 1): array
     {
         $query = self::query();
-
-        $total = $query->count();
         $perPage = max(1, $perPage);
         $page = max(1, $page);
         $offset = ($page - 1) * $perPage;
+
+        // Clone query for count to avoid state mutation
+        $countQuery = clone $query;
+        $total = $countQuery->count();
         $lastPage = $total > 0 ? (int) ceil($total / $perPage) : 1;
 
         /** @var array<int, self> $data */

@@ -1,3 +1,10 @@
+---
+title: S EC UR IT Y
+description: SiroPHP S EC UR IT Y reference
+sidebar_position: 11
+sidebar_label: S EC UR IT Y
+---
+
 # Security Guide
 
 SiroPHP is designed with defense-in-depth. Every layer — from JWT authentication to output encoding, rate limiting, and audit logging — is built to be secure by default.

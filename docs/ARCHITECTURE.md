@@ -1,3 +1,10 @@
+---
+title: A RC HI TE CT UR E
+description: SiroPHP A RC HI TE CT UR E reference
+sidebar_position: 1
+sidebar_label: A RC HI TE CT UR E
+---
+
 # Architecture Decision Records (ADR)
 
 ## Overview
