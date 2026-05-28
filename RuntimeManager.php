@@ -232,24 +232,34 @@ final class RuntimeManager
 
     private static function download(string $url, string $dest): bool
     {
-        $fp = fopen($dest, 'w+');
-        if ($fp === false) return false;
+        $maxAttempts = 3;
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $fp = fopen($dest, 'w+');
+            if ($fp === false) return false;
 
-        $ch = curl_init($url);
-        if ($ch === false) { fclose($fp); return false; }
+            $ch = curl_init($url);
+            if ($ch === false) { fclose($fp); return false; }
 
-        curl_setopt_array($ch, [
-            CURLOPT_FILE => $fp,
-            CURLOPT_TIMEOUT => 180,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_SSL_VERIFYPEER => true,
-        ]);
-        curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        fclose($fp);
+            curl_setopt_array($ch, [
+                CURLOPT_FILE => $fp,
+                CURLOPT_TIMEOUT => 180,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+            curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            fclose($fp);
 
-        return $httpCode === 200;
+            if ($httpCode === 200) return true;
+
+            if ($attempt < $maxAttempts) {
+                echo " retry {$attempt}/{$maxAttempts}...";
+                sleep(2);
+            }
+            @unlink($dest);
+        }
+        return false;
     }
 
     private static function extract(string $zipFile, string $targetDir): bool
