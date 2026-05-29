@@ -123,9 +123,11 @@ final class Response
             if ($parsed === false || !isset($parsed['host'])) {
                 $url = '/';
             } else {
-                $allowedHost = (string) \Siro\Core\Env::get('APP_URL', '');
+                $allowedUrl = (string) \Siro\Core\Env::get('APP_URL', '');
+                $parsedAllowed = parse_url($allowedUrl);
+                $actualHost = is_string($parsedAllowed['host'] ?? null) ? $parsedAllowed['host'] : '';
                 $parsedHost = $parsed['host'];
-                if ($allowedHost !== '' && !str_contains($allowedHost, $parsedHost)) {
+                if ($actualHost !== '' && $actualHost !== $parsedHost) {
                     $url = '/';
                 }
             }
