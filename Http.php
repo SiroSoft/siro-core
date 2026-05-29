@@ -21,6 +21,28 @@ final class Http
     private static bool $verifySsl = true;
     private static bool $sslConfigured = false;
     /** @var array<string, string> */ private static array $defaultHeaders = [];
+    private static bool $ssrfProtectionEnabled = true;
+
+    /** @var array<string> */
+    private const BLOCKED_HOSTS = [
+        '169.254.169.254',  // AWS/GCP/Azure metadata
+        '100.100.100.200',  // Alicloud metadata
+    ];
+
+    /** @var array<string> */
+    private const PRIVATE_CIDR = [
+        '127.0.0.0/8',
+        '10.0.0.0/8',
+        '172.16.0.0/12',
+        '192.168.0.0/16',
+        '::1/128',
+        'fc00::/7',
+    ];
+
+    public static function disableSsrfProtection(): void
+    {
+        self::$ssrfProtectionEnabled = false;
+    }
 
     public static function timeout(int $seconds): void
     {
@@ -34,6 +56,86 @@ final class Http
         }
         self::$verifySsl = $verify;
         self::$sslConfigured = true;
+    }
+
+    private static function validateUrl(string $url): string
+    {
+        if (!self::$ssrfProtectionEnabled) {
+            return $url;
+        }
+
+        $parsed = parse_url($url);
+        if ($parsed === false || !isset($parsed['host'])) {
+            throw new \RuntimeException('Invalid URL: unable to parse host');
+        }
+
+        $host = $parsed['host'];
+
+        // Block known sensitive hosts
+        if (in_array(strtolower($host), self::BLOCKED_HOSTS, true)) {
+            throw new \RuntimeException('SSRF blocked: target host is blocked');
+        }
+
+        // Resolve hostname to IP(s) for private range check
+        $ips = gethostbynamel($host);
+        if ($ips === false) {
+            if (filter_var($host, FILTER_VALIDATE_IP)) {
+                $ips = [$host];
+            } else {
+                throw new \RuntimeException('SSRF blocked: unable to resolve host');
+            }
+        }
+
+        foreach ($ips as $ip) {
+            if (self::isPrivateIp($ip)) {
+                throw new \RuntimeException('SSRF blocked: target resolves to private IP range');
+            }
+        }
+
+        return $url;
+    }
+
+    private static function isPrivateIp(string $ip): bool
+    {
+        // Check for IPv4-mapped IPv6 (::ffff:0:0/96)
+        $binary = inet_pton($ip);
+        if ($binary !== false && strlen($binary) === 16 && str_starts_with($binary, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff")) {
+            $ipv4 = inet_ntop(substr($binary, 12));
+            if ($ipv4 !== false) {
+                return self::isPrivateIp($ipv4);
+            }
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            foreach (self::PRIVATE_CIDR as $cidr) {
+                if (str_contains($cidr, ':')) {
+                    [$subnet, $mask] = explode('/', $cidr) + [1 => '128'];
+                    $mask = (int) $mask;
+                    $ipBin = inet_pton($ip);
+                    $subnetBin = inet_pton($subnet);
+                    if ($ipBin !== false && $subnetBin !== false) {
+                        $fullMask = str_repeat("\xff", (int) ($mask / 8));
+                        if ($mask % 8 !== 0) {
+                            $fullMask .= chr((0xff << (8 - ($mask % 8))) & 0xff);
+                        }
+                        $fullMask = str_pad($fullMask, 16, "\x00");
+                        if (($ipBin & $fullMask) === ($subnetBin & $fullMask)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // IPv4: use filter_var
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            return false;
+        }
+        if (filter_var($ip, FILTER_VALIDATE_IP)) {
+            return true;
+        }
+        return false;
     }
 
     /** @param array<string, string> $headers */ public static function withHeaders(array $headers): void
@@ -79,6 +181,8 @@ final class Http
             throw new RuntimeException('curl extension is required for HTTP client.');
         }
 
+        $url = self::validateUrl($url);
+
         $ch = curl_init();
         /** @var array<int, mixed> $curlOpts */
         $curlOpts = [
@@ -87,7 +191,7 @@ final class Http
             CURLOPT_TIMEOUT => self::$timeout,
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_MAXREDIRS => 5,
             CURLOPT_HEADER => true,
             CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
             CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,

@@ -61,6 +61,8 @@ final class Storage
     /** @var array<string, mixed> */
     private static array $config = [];
     private static string $driver = self::LOCAL;
+    /** @var array<string, string> */
+    private static array $resolvedPaths = [];
 
     /**
      * Initialize storage configuration.
@@ -204,22 +206,29 @@ final class Storage
 
     public static function localPath(string $path): string
     {
+        if (isset(self::$resolvedPaths[$path])) {
+            return self::$resolvedPaths[$path];
+        }
+
         $base = defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : (string) getcwd();
         $base = rtrim($base, DIRECTORY_SEPARATOR);
         $storagePath = str_replace('/', DIRECTORY_SEPARATOR, is_string(self::$config['path'] ?? null) ? self::$config['path'] : '');
         $allowedDir = $base . DIRECTORY_SEPARATOR . $storagePath;
 
-        // Clean path and prevent traversal - recursive sanitization
+        // Clean path and prevent traversal - proper canonicalization
         $cleanPath = ltrim($path, DIRECTORY_SEPARATOR);
-        do {
-            $previous = $cleanPath;
-            $cleanPath = str_replace(['../', '..\\', './', '.\\', '\\', '/'], DIRECTORY_SEPARATOR, $cleanPath);
-        } while ($cleanPath !== $previous);
-        // Remove any remaining parent dir references
+        $cleanPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $cleanPath);
         $segments = explode(DIRECTORY_SEPARATOR, $cleanPath);
         $filtered = [];
         foreach ($segments as $segment) {
-            if ($segment === '..' || $segment === '.' || $segment === '') {
+            if ($segment === '.' || $segment === '') {
+                continue;
+            }
+            if ($segment === '..') {
+                if (count($filtered) === 0) {
+                    throw new RuntimeException('Path traversal detected: ' . $path);
+                }
+                array_pop($filtered);
                 continue;
             }
             $filtered[] = $segment;
@@ -235,7 +244,8 @@ final class Storage
             if ($realAllowed === false || !str_starts_with($realPath, $realAllowed)) {
                 throw new RuntimeException('Path traversal detected: ' . $path);
             }
-            return $fullPath;
+            self::$resolvedPaths[$path] = $realPath;
+            return $realPath;
         }
 
         // For new files, validate path structure is safe without requiring realpath
@@ -253,6 +263,7 @@ final class Storage
             throw new RuntimeException('Path traversal detected: ' . $path);
         }
 
+        self::$resolvedPaths[$path] = $fullPath;
         return $fullPath;
     }
 

@@ -10,6 +10,7 @@ use Siro\Core\Logger;
 use Siro\Core\Model;
 use Siro\Core\Request;
 use Siro\Core\Response;
+use Siro\Core\Session;
 use Throwable;
 
 final class AuthMiddleware implements MiddlewareInterface
@@ -105,6 +106,19 @@ final class AuthMiddleware implements MiddlewareInterface
             return Response::error('Unauthorized', 401, [
                 'token' => ['Invalid or expired token'],
             ]);
+        }
+
+        try {
+            $session = Session::instance();
+            if ($session->isStarted()) {
+                $regenVal = $session->get('_auth_regen_at', 0);
+                $lastRegen = is_numeric($regenVal) ? (int) $regenVal : 0;
+                if (time() - $lastRegen > 300) {
+                    $session->regenerate();
+                    $session->set('_auth_regen_at', time());
+                }
+            }
+        } catch (Throwable) {
         }
 
         return $next($request);

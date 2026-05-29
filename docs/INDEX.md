@@ -1,3 +1,10 @@
+---
+title: I ND EX
+description: SiroPHP I ND EX reference
+sidebar_position: 0
+sidebar_label: Overview
+---
+
 # Siro Core Documentation Index
 
 Welcome to the Siro Core documentation! This index helps you find the right guide for your needs.

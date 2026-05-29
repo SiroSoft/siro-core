@@ -158,7 +158,7 @@ final class EagerLoader
         }
 
         $selectCols = $columns !== ['*']
-            ? implode(', ', array_map(fn (string $c) => 'r.' . $rel->quoteIdentifier(strval(preg_replace('/^r\./', '', $c))), $columns))
+            ? implode(', ', array_map(fn (string $c) => 'r.' . $rel->quoteIdentifier(trim(strval(preg_replace('/^r\./', '', $c)))), $columns))
             : 'r.*';
         $pivotCols = 'p.' . $relatedKey . ' AS pivot_related_id, p.' . $foreignKey . ' AS pivot_foreign_id';
 

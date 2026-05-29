@@ -13,7 +13,7 @@ namespace Siro\Core;
  *
  * @package Siro\Core
  */
-final class SendMailJob
+final class SendMailJob implements QueueInterface
 {
     /**
      * Execute the queued email send.

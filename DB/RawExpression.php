@@ -6,7 +6,11 @@ namespace Siro\Core\DB;
 
 final class RawExpression
 {
-    public function __construct(private readonly string $value) {}
+    /** @deprecated Using raw SQL expressions can lead to SQL injection. Ensure the value is properly sanitized. */
+    public function __construct(private readonly string $value)
+    {
+        trigger_error('RawExpression is deprecated and poses SQL injection risk. Use parameterized queries instead.', E_USER_DEPRECATED);
+    }
 
     public function getValue(): string
     {

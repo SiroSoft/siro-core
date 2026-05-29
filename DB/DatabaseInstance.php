@@ -108,10 +108,12 @@ final class DatabaseInstance implements DatabaseInterface
             $this->pdoInstances = [];
             $this->configs = [];
             $this->capturedQueries = [];
+            $this->preparedStatements = [];
             $this->transactionDepth = 0;
             return;
         }
         unset($this->pdoInstances[$name], $this->configs[$name]);
+        $this->preparedStatements = [];
     }
 
     public function purgeAll(): void
@@ -367,12 +369,18 @@ final class DatabaseInstance implements DatabaseInterface
         }
 
         if ($elapsed > $this->slowQueryThreshold) {
+            $redactedParams = array_map(function (mixed $value, string|int $key): mixed {
+                if (is_string($key) && preg_match('/^(password|token|secret|key|otp|code)$/i', $key)) {
+                    return '***REDACTED***';
+                }
+                return $value;
+            }, $params, array_keys($params));
             Logger::error(new \RuntimeException(sprintf(
                 'Slow query (%.2fms) [%s]: %s | Bindings: %s',
                 $elapsed,
                 $connName,
                 $sql,
-                json_encode($params, JSON_UNESCAPED_UNICODE)
+                json_encode($redactedParams, JSON_UNESCAPED_UNICODE)
             )));
         }
 

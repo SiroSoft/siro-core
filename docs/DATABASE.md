@@ -1,3 +1,10 @@
+---
+title: D AT AB AS E
+description: SiroPHP D AT AB AS E reference
+sidebar_position: 4
+sidebar_label: D AT AB AS E
+---
+
 # Database — Query Builder, Model ORM & Connection Manager
 
 The `Database` class provides a static facade over a `DatabaseInterface` instance resolved through Siro's service container. At boot, `App::boot()` registers a `DatabaseInstance` singleton under `DatabaseInterface::class`. You can override it by binding your own implementation to the container.
@@ -1006,4 +1013,4 @@ $rankings = DB::select(
 - **ModelQueryBuilder**: Complex JOINs, GROUP BY, HAVING
 - **DB::select()**: SQL functions (P95, GROUP_CONCAT), window functions, CTEs
 
-For more details, see the complete [Model API Documentation](../api/Model.md).
+For more details, see the complete Model API Documentation in the SiroPHP API Reference (`docs/api/Model.md`).

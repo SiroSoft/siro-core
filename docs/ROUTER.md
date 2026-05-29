@@ -1,3 +1,10 @@
+---
+title: R OU TE R
+description: SiroPHP R OU TE R reference
+sidebar_position: 10
+sidebar_label: R OU TE R
+---
+
 # Router
 
 The Siro Router supports static and dynamic routes, middleware pipelines with onion model, route groups, PHP 8 route attributes, named routes with URL generation, and route caching.

@@ -26,6 +26,11 @@ final class ApiKey
     /**
      * Generate a new API key.
      *
+     * Stores both SHA-256 (for fast lookup) and bcrypt (for verification).
+     * SHA-256 is used for database indexing and lookup only — verification always
+     * uses bcrypt. Future migration: consider replacing SHA-256 with a keyed hash
+     * or removing it entirely once the index on token_bcrypt is optimized.
+     *
      * @param string $name Human-readable name (e.g., "External Partner A")
      * @param string $scopes Comma-separated scopes: 'read', 'write', 'admin'
      * @param int|null $userId Associated user ID (0 for system-level)

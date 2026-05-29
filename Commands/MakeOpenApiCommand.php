@@ -462,6 +462,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                     'success' => ['type' => 'boolean'],
                     'message' => ['type' => 'string'],
                     'data' => ['$ref' => '#/components/schemas/User'],
+                    'meta' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'timestamp' => ['type' => 'string', 'format' => 'date-time'],
+                        ],
+                    ],
                 ],
             ];
             return $schemaName;
@@ -488,6 +494,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                     'success' => ['type' => 'boolean'],
                     'message' => ['type' => 'string'],
                     'data' => $dataSchema ?? ['type' => 'object'],
+                    'meta' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'timestamp' => ['type' => 'string', 'format' => 'date-time'],
+                        ],
+                    ],
                 ],
             ];
         }
@@ -909,6 +921,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                     'success' => ['type' => 'boolean', 'example' => true],
                     'message' => ['type' => 'string', 'example' => 'Operation successful'],
                     'data' => ['nullable' => true],
+                    'meta' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'timestamp' => ['type' => 'string', 'format' => 'date-time', 'example' => '2026-05-29T12:00:00+00:00'],
+                        ],
+                    ],
                 ],
             ],
             'ErrorResponse' => [
@@ -926,17 +944,18 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                     'errors' => [
                         'type' => 'object',
                         'additionalProperties' => ['type' => 'array', 'items' => ['type' => 'string']],
+                        'example' => ['email' => ['The email field is required.']],
                     ],
                 ],
             ],
             'PaginationMeta' => [
                 'type' => 'object',
                 'properties' => [
-                    'current_page' => ['type' => 'integer', 'example' => 1],
+                    'page' => ['type' => 'integer', 'example' => 1],
                     'per_page' => ['type' => 'integer', 'example' => 20],
                     'total' => ['type' => 'integer', 'example' => 100],
                     'last_page' => ['type' => 'integer', 'example' => 5],
-                    'has_more' => ['type' => 'boolean', 'example' => true],
+                    'timestamp' => ['type' => 'string', 'format' => 'date-time', 'example' => '2026-05-29T12:00:00+00:00'],
                 ],
             ],
             'AuthTokenResponse' => [
@@ -951,14 +970,24 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                             'refresh_token' => ['type' => 'string', 'example' => 'eyJ...'],
                             'token_type' => ['type' => 'string', 'example' => 'Bearer'],
                             'expires_in' => ['type' => 'integer', 'example' => 3600],
-                            'user' => [
-                                'type' => 'object',
-                                'properties' => [
-                                    'id' => ['type' => 'integer', 'example' => 1],
-                                    'name' => ['type' => 'string', 'example' => 'John Doe'],
-                                    'email' => ['type' => 'string', 'format' => 'email', 'example' => 'user@example.com'],
-                                ],
-                            ],
+                            'user' => ['$ref' => '#/components/schemas/User'],
+                        ],
+                    ],
+                ],
+            ],
+            'UploadResponse' => [
+                'type' => 'object',
+                'properties' => [
+                    'success' => ['type' => 'boolean', 'example' => true],
+                    'message' => ['type' => 'string', 'example' => 'File uploaded'],
+                    'data' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'path' => ['type' => 'string', 'example' => 'avatars/abc123.jpg'],
+                            'url' => ['type' => 'string', 'example' => 'avatars/abc123.jpg'],
+                            'original_name' => ['type' => 'string', 'example' => 'profile.jpg'],
+                            'size' => ['type' => 'integer', 'example' => 204800],
+                            'mime' => ['type' => 'string', 'example' => 'image/jpeg'],
                         ],
                     ],
                 ],
@@ -969,6 +998,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                     'id' => ['type' => 'integer', 'example' => 1],
                     'name' => ['type' => 'string', 'example' => 'John Doe'],
                     'email' => ['type' => 'string', 'format' => 'email', 'example' => 'user@example.com'],
+                    'role' => ['type' => 'string', 'example' => 'user'],
                     'status' => ['type' => 'integer', 'example' => 1],
                     'created_at' => ['type' => 'string', 'format' => 'date-time'],
                     'updated_at' => ['type' => 'string', 'format' => 'date-time'],
@@ -983,8 +1013,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                         'type' => 'object',
                         'properties' => [
                             'status' => ['type' => 'string', 'example' => 'healthy'],
-                            'version' => ['type' => 'string', 'example' => '0.15.0'],
-                            'php' => ['type' => 'string', 'example' => '8.2.0'],
+                            'version' => ['type' => 'string', 'example' => '0.31.0'],
                             'database' => ['type' => 'string', 'example' => 'connected'],
                             'time' => ['type' => 'string', 'format' => 'date-time'],
                         ],

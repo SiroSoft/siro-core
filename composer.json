@@ -36,7 +36,10 @@
         "php": ">=8.2",
         "ext-pdo": "*",
         "ext-json": "*",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "ext-curl": "*",
+        "ext-openssl": "*",
+        "ext-fileinfo": "*"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
@@ -93,9 +96,6 @@
         ]
     },
     "suggest": {
-        "ext-redis": "Required for Redis cache, session, and rate limiter drivers",
-        "ext-openssl": "Required for Encrypter (AES-256 encryption)",
-        "ext-curl": "Required for HTTP Client",
-        "ext-fileinfo": "Required for UploadedFile MIME type detection"
+        "ext-redis": "Required for Redis cache, session, and rate limiter drivers"
     }
 }

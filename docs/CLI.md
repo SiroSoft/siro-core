@@ -1,3 +1,10 @@
+---
+title: C LI
+description: SiroPHP C LI reference
+sidebar_position: 3
+sidebar_label: C LI
+---
+
 # CLI Reference
 
 All 80+ SiroPHP CLI commands, grouped by category.
@@ -86,7 +93,7 @@ php siro                    # Core workflow overview
 php siro list               # List all 80+ commands grouped by category
 php siro <command> --help   # Detailed help for a specific command
 php siro -h                 # Shorthand help overview
-php siro --version          # Show version (0.28.1)
+php siro --version          # Show version (0.31.0)
 ```
 
 ---

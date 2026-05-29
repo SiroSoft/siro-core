@@ -62,6 +62,11 @@ final class Config
         foreach ($files as $file) {
             $key = pathinfo($file, PATHINFO_FILENAME);
             $config = require $file;
+            if ($secret !== '') {
+                $fileContent = (string) file_get_contents($file);
+                $fileHash = hash_hmac('sha256', $fileContent, $secret);
+                self::$items['_integrity'][(string) $key] = $fileHash;
+            }
             if (is_array($config)) {
                 /** @var array<string, mixed> $config */
                 self::$items[(string) $key] = $config;
@@ -107,16 +112,11 @@ final class Config
         $segments = explode('.', $key);
         $value = self::$items;
 
-        $partial = '';
         foreach ($segments as $segment) {
             if (!is_array($value) || !array_key_exists($segment, $value)) {
                 return $default;
             }
             $value = $value[$segment];
-            $partial = $partial === '' ? $segment : $partial . '.' . $segment;
-            if ($partial !== $key) {
-                self::$cache[$partial] = $value;
-            }
         }
 
         self::$cache[$key] = $value;
@@ -178,6 +178,8 @@ final class Config
         }
 
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'config.php';
+        // Serialize config to a JSON + HMAC payload for tamper-proof caching.
+        // The HMAC is verified on load (see load() method) to ensure cache integrity.
         $json = json_encode(self::$items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false) { return null; }
         $hmac = hash_hmac('sha256', $json, $secret);

@@ -36,6 +36,35 @@ final class Env
         'REDIS_PASSWORD',
         'DB_PASSWORD',
         'DB_DATABASE',
+        'DB_USERNAME',
+        'STORAGE_S3_KEY',
+        'STORAGE_S3_SECRET',
+        'AWS_ACCESS_KEY_ID',
+        'AWS_SECRET_ACCESS_KEY',
+        'ENCRYPTION_KEY',
+        'HASH_KEY',
+        'API_KEY',
+        'API_SECRET',
+        'OAUTH_TOKEN',
+        'OAUTH_SECRET',
+        'STRIPE_KEY',
+        'STRIPE_SECRET',
+        'RECAPTCHA_SECRET',
+        'SENDGRID_API_KEY',
+        'MAILGUN_API_KEY',
+        'TWILIO_AUTH_TOKEN',
+        'PUSHER_APP_SECRET',
+        'NEXMO_API_SECRET',
+        'WEBHOOK_SECRET',
+        'DEPLOY_KEY',
+        'DEPLOY_SECRET',
+        'SSH_PRIVATE_KEY',
+        'SSH_PUBLIC_KEY',
+        'PASSWORD',
+        'SECRET',
+        'TOKEN',
+        'CREDENTIALS',
+        'PRIVATE_KEY',
     ];
 
     /** Priority-ordered env files (highest last) */
@@ -75,17 +104,19 @@ final class Env
             }
             if ($useCache && is_file(self::$cachedFile)) {
                 $raw = substr((string) file_get_contents(self::$cachedFile), strlen('<?php exit; ?>'));
-                $cached = json_decode($raw, true);
-                if (!is_array($cached) && class_exists(\Siro\Core\Encrypter::class)) {
+                $cached = null;
+                $appKey = (string) self::get('APP_KEY', '');
+                if ($appKey !== '' && strlen($appKey) >= 16 && class_exists(\Siro\Core\Encrypter::class)) {
                     try {
-                        $appKey = (string) self::get('APP_KEY', '');
-                        if ($appKey !== '') {
-                            $decrypted = \Siro\Core\Encrypter::decrypt($raw, $appKey);
-                            $cached = json_decode($decrypted, true);
-                        }
+                        $decrypted = \Siro\Core\Encrypter::decrypt($raw, $appKey);
+                        $cached = json_decode($decrypted, true);
                     } catch (\Throwable) {
                         $cached = null;
                     }
+                } elseif ($appKey === '' || strlen($appKey) < 16) {
+                    throw new \RuntimeException('APP_KEY is required (min 16 chars) for env cache integrity. Set a strong APP_KEY in .env.');
+                } else {
+                    $cached = null;
                 }
                 if (is_array($cached)) {
                     foreach ($cached as $key => $value) {
@@ -173,7 +204,8 @@ final class Env
                     '/\$\{([^}]+)\}|\$([a-zA-Z_][a-zA-Z0-9_]*)/',
                     function (array $m): string {
                         $name = $m[1] !== '' ? $m[1] : $m[2];
-                        return self::get($name) ?? '';
+                        $envVal = $_ENV[$name] ?? null;
+                        return is_scalar($envVal) ? (string) $envVal : '';
                     },
                     $value
                 );

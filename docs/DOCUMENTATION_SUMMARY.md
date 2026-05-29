@@ -1,3 +1,10 @@
+---
+title: D OC UM EN TA TI ON S UM MA RY
+description: SiroPHP D OC UM EN TA TI ON S UM MA RY reference
+sidebar_position: 5
+sidebar_label: D OC UM EN TA TI ON S UM MA RY
+---
+
 # Documentation Structure - Implementation Summary
 
 **Date:** May 11, 2026  
@@ -314,7 +321,7 @@ php siro config:cache
 
 ### Internal Links
 - [Main README](../README.md)
-- [Documentation Index](docs/INDEX.md)
+- [Documentation Index](INDEX.md)
 - [Changelog](../CHANGELOG.md)
 
 ### External References

@@ -49,6 +49,7 @@ final class Response
     /** @param array<string, mixed> $meta */
     public static function success(mixed $data = null, string $message = 'OK', int $statusCode = 200, array $meta = []): self
     {
+        $meta['timestamp'] = date('c');
         return new self([
             'success' => true,
             'message' => $message,
@@ -117,6 +118,21 @@ final class Response
      */
     public static function redirect(string $url, int $statusCode = 302): self
     {
+        // Only allow relative URLs or same-host URLs
+        if (str_starts_with($url, '/') === false) {
+            $parsed = parse_url($url);
+            if ($parsed === false || !isset($parsed['host'])) {
+                $url = '/';
+            } else {
+                $allowedUrl = (string) \Siro\Core\Env::get('APP_URL', '');
+                $parsedAllowed = parse_url($allowedUrl);
+                $actualHost = is_string($parsedAllowed['host'] ?? null) ? $parsedAllowed['host'] : '';
+                $parsedHost = $parsed['host'];
+                if ($actualHost !== '' && $actualHost !== $parsedHost) {
+                    $url = '/';
+                }
+            }
+        }
         $response = new self([], $statusCode);
         $response->extraHeaders['Location'] = $url;
         return $response;
@@ -158,6 +174,9 @@ final class Response
         }
 
         // XML
+        if (str_starts_with($content, '<?xml')) {
+            return 'application/xml';
+        }
         if (str_starts_with($content, '<')) {
             return 'text/html';
         }
@@ -298,6 +317,7 @@ final class Response
      */
     public static function paginated(array $data, array $meta, string $message = 'OK', int $statusCode = 200): self
     {
+        $meta['timestamp'] = date('c');
         return new self([
             'success' => true,
             'message' => $message,
@@ -381,6 +401,7 @@ final class Response
             header('Content-Type: application/json; charset=utf-8');
             header('X-Content-Type-Options: nosniff');
             header('X-Frame-Options: DENY');
+            header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
 
             if (self::$requestId !== '') {
                 header('X-Request-Id: ' . self::$requestId);
@@ -391,7 +412,9 @@ final class Response
             }
 
             foreach ($this->extraHeaders as $name => $value) {
-                header($name . ': ' . $value);
+                $safeName = str_replace(["\r", "\n", "\0"], '', $name);
+                $safeValue = str_replace(["\r", "\n", "\0"], '', $value);
+                header($safeName . ': ' . $safeValue);
             }
         }
 

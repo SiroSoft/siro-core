@@ -1,3 +1,10 @@
+---
+title: O WA SP A SV S C HE CK LI ST
+description: SiroPHP O WA SP A SV S C HE CK LI ST reference
+sidebar_position: 8
+sidebar_label: O WA SP A SV S C HE CK LI ST
+---
+
 # OWASP ASVS Level 2 Checklist — Siro Core
 
 ## V2: Authentication (14 checks)

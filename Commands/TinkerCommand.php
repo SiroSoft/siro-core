@@ -25,6 +25,11 @@ final class TinkerCommand implements CommandInterface
     /** @param array<int, string> $args */
     public function execute(array $args, Console $console): int
     {
+        if (php_sapi_name() !== 'cli') {
+            $this->write('Tinker can only be run in CLI mode.');
+            return 1;
+        }
+
         $historyFile = $this->getHistoryFile();
 
         if (function_exists('readline_read_history')) {
@@ -99,41 +104,23 @@ final class TinkerCommand implements CommandInterface
             throw new \ErrorException($message, 0, $severity, $file, $line);
         });
 
+        set_time_limit(30);
         try {
-            $result = eval("return $code;");
+            $result = @eval("return $code;");
         } catch (Throwable $e) {
             $caught = $e;
         }
-
-        if ($caught !== null) {
-            try {
-                ob_start();
-                eval("$code;");
-                $output = ob_get_clean();
-                $elapsed = (microtime(true) - $start) * 1000;
-                $queries = $this->queryCount();
-                $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
-                if ($output !== '' && $output !== false) {
-                    $this->write('  \e[32m✓\e[0m  ' . trim($output) . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
-                }
-                $caught = null;
-            } catch (Throwable $e2) {
-                $elapsed = (microtime(true) - $start) * 1000;
-                $queries = $this->queryCount();
-                $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
-                $this->write('  \e[31m✗\e[0m  ' . $e2->getMessage() . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
-            }
-        }
-
-        restore_error_handler();
 
         if ($caught !== null) {
             $elapsed = (microtime(true) - $start) * 1000;
             $queries = $this->queryCount();
             $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
             $this->write('  \e[31m✗\e[0m  ' . $caught->getMessage() . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
+            restore_error_handler();
             return;
         }
+
+        restore_error_handler();
 
         $elapsed = (microtime(true) - $start) * 1000;
         $queries = $this->queryCount();

@@ -1161,6 +1161,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $authFile = $this->basePath . DIRECTORY_SEPARATOR . '.siro_auth.json';
         $cfg = $this->authConfig();
+        $strategy = 'no_auth';
 
         // Load .env for admin credentials
         $adminEmail = '';
@@ -1208,25 +1209,15 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        // 2) Try ADMIN_EMAIL / ADMIN_PASSWORD from .env
+        // 2) Try ADMIN_EMAIL / ADMIN_PASSWORD from .env (must be explicitly configured)
         if ($adminEmail !== '' && $adminPassword !== '') {
             $newToken = $this->login($host, $adminEmail, $adminPassword);
             if ($newToken !== null) return ['token' => $newToken, 'strategy' => 'env_admin'];
-            $strategy = 'env_admin_failed';
+        } else {
+            $this->warn("ADMIN_EMAIL and ADMIN_PASSWORD not set in .env. Auto-auth requires explicit credentials.");
         }
 
-        // 3) Try default seeder credentials
-        $defaultCreds = [
-            ['email' => 'admin@siro.dev', 'password' => 'admin1234', 'label' => 'seeder_default'],
-            ['email' => 'admin@shop.com', 'password' => 'secret123', 'label' => 'seeder_shop'],
-        ];
-        foreach ($defaultCreds as $creds) {
-            $newToken = $this->login($host, $creds['email'], $creds['password']);
-            if ($newToken !== null) return ['token' => $newToken, 'strategy' => $creds['label']];
-        }
-        $strategy = 'seeder_failed';
-
-        // 4) Register a new user via API (last resort — dev only)
+        // 3) Register a new user via API (last resort — dev only)
         $isLocal = !in_array((string) getenv('APP_ENV'), ['production', 'prod', 'staging'], true);
         if ($isLocal) {
             $email = 'replay-' . bin2hex(random_bytes(4)) . '@siro.local';

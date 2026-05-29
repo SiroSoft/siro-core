@@ -22,9 +22,7 @@ final class UploadedFile
     private readonly int $size;
     private readonly int $error;
 
-    private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'pht', 'phar', 'phps', 'exe', 'sh', 'bat', 'cmd', 'pl', 'py', 'rb', 'cgi', 'asp', 'aspx', 'jsp', 'htaccess', 'user.ini', 'env', 'shtml', 'stm', 'shtm', 'inc', 'war', 'jar', 'svg', 'svgz'];
-
-    /** Whitelist of allowed extensions for upload. Use this instead of BLOCKED_EXTENSIONS for stricter security. */
+    /** Whitelist of allowed extensions for upload. */
     private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'csv', 'json', 'xml', 'doc', 'docx', 'zip'];
 
     /** @param array<string, string|int> $file */
@@ -117,9 +115,6 @@ final class UploadedFile
 
         $filename = $name ?? $this->generateFilename();
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        if (in_array($ext, self::BLOCKED_EXTENSIONS, true)) {
-            throw new \RuntimeException('File type not allowed: .' . $ext);
-        }
         if (!in_array($ext, self::ALLOWED_EXTENSIONS, true) && $ext !== '') {
             throw new \RuntimeException('File type not allowed: .' . $ext . ' (allowed: ' . implode(', ', self::ALLOWED_EXTENSIONS) . ')');
         }

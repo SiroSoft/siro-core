@@ -117,20 +117,20 @@ final class ThrottleMiddleware implements MiddlewareInterface
             }
         }
 
-        $file = $storeDir . DIRECTORY_SEPARATOR . sha1($key) . '.json';
+        $file = $storeDir . DIRECTORY_SEPARATOR . hash('sha256', $key) . '.json';
+        $tmpFile = $file . '.' . bin2hex(random_bytes(8)) . '.tmp';
         $now = time();
-
-        $fp = fopen($file, 'c+');
-        if ($fp === false) {
-            return Response::error('Too Many Requests', 429, [
-                'throttle' => ['Rate limiter fallback storage unavailable'],
-            ]);
-        }
-
         $count = 0;
         $expiresAt = $now + $ttl;
 
         try {
+            $fp = fopen($file, 'c+');
+            if ($fp === false) {
+                return Response::error('Too Many Requests', 429, [
+                    'throttle' => ['Rate limiter fallback storage unavailable'],
+                ]);
+            }
+
             if (!flock($fp, LOCK_EX)) {
                 fclose($fp);
                 return Response::error('Too Many Requests', 429, [
@@ -155,13 +155,19 @@ final class ThrottleMiddleware implements MiddlewareInterface
             $count++;
             $remainingTtl = max(0, $expiresAt - $now);
 
-            ftruncate($fp, 0);
-            rewind($fp);
-            fwrite($fp, (string) json_encode([
+            $encoded = (string) json_encode([
                 'count' => $count,
                 'expires_at' => $expiresAt,
-            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-            fflush($fp);
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if (file_put_contents($tmpFile, $encoded, LOCK_EX) === false) {
+                @unlink($tmpFile);
+                flock($fp, LOCK_UN);
+                fclose($fp);
+                return Response::error('Too Many Requests', 429, [
+                    'throttle' => ['Rate limiter fallback write failed'],
+                ]);
+            }
+            rename($tmpFile, $file);
             flock($fp, LOCK_UN);
             fclose($fp);
 
@@ -188,7 +194,8 @@ final class ThrottleMiddleware implements MiddlewareInterface
             }
             return $response;
         } catch (Throwable) {
-            if (is_resource($fp)) {
+            @unlink($tmpFile);
+            if (isset($fp) && is_resource($fp)) {
                 @flock($fp, LOCK_UN);
                 @fclose($fp);
             }

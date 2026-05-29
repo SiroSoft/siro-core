@@ -103,6 +103,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     private function isFillable(string $key): bool
     {
         if ($this->fillable === []) {
+            if ($key !== '' && !\Siro\Core\Env::bool('APP_DEBUG', false)) {
+                return false;
+            }
             if ($key !== '') {
                 trigger_error(
                     sprintf(
@@ -128,6 +131,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function setAttribute(string $key, mixed $value): void
     {
+        if ($this->fillable !== [] && !in_array($key, $this->fillable, true)) {
+            return;
+        }
         // Check for mutator method first
         $mutatorMethod = 'set' . Str::studly($key) . 'Attribute';
         if (method_exists($this, $mutatorMethod)) {
@@ -311,11 +317,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     public static function paginate(int $perPage = 15, int $page = 1): array
     {
         $query = self::query();
-
-        $total = $query->count();
         $perPage = max(1, $perPage);
         $page = max(1, $page);
         $offset = ($page - 1) * $perPage;
+
+        // Clone query for count to avoid state mutation
+        $countQuery = clone $query;
+        $total = $countQuery->count();
         $lastPage = $total > 0 ? (int) ceil($total / $perPage) : 1;
 
         /** @var array<int, self> $data */

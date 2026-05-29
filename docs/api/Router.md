@@ -1,3 +1,10 @@
+---
+title: R ou te r
+description: SiroPHP R ou te r reference
+sidebar_position: 1
+sidebar_label: R ou te r
+---
+
 # Router API Reference
 
 ## Overview
@@ -402,6 +409,5 @@ Route::post('/webhooks/github', [GithubWebhookController::class, 'handle']);
 
 ## See Also
 
-- [Middleware Guide](../MIDDLEWARE.md)
-- [Controller Best Practices](CONTROLLER.md)
-- [API Versioning Strategy](../ARCHITECTURE.md#adr-xxx-api-versioning)
+- [CLI Commands](../CLI.md) - Generator commands for middleware
+- [Architecture Guide](../ARCHITECTURE.md) - Design decisions

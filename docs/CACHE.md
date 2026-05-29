@@ -1,3 +1,10 @@
+---
+title: C AC HE
+description: SiroPHP C AC HE reference
+sidebar_position: 2
+sidebar_label: C AC HE
+---
+
 # Cache — Key-Value Store
 
 The `Cache` class provides a static facade over a `CacheInterface` instance resolved through Siro's service container. At boot, `App::boot()` calls `Cache::boot($basePath)`, which reads environment configuration and initializes the appropriate driver (File or Redis).

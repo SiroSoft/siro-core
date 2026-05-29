@@ -1,3 +1,10 @@
+---
+title: T HR EA T M OD EL
+description: SiroPHP T HR EA T M OD EL reference
+sidebar_position: 12
+sidebar_label: T HR EA T M OD EL
+---
+
 # Threat Model — Siro Core
 
 ## Methodology: STRIDE

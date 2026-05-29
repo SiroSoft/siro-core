@@ -22,3 +22,7 @@ Thumbs.db
 
 # Temporary verification files
 *.VERIFICATION.md
+
+# Private: runtime/installer
+/scripts/build-phar.php
+/dist/
