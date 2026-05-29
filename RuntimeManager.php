@@ -365,7 +365,8 @@ final class RuntimeManager
 
             // MySQL ZIP has a root folder like mysql-8.4.4-winx64
             $rootInZip = null;
-            for ($i = 0; $i < $zip->numEntries; $i++) {
+            $entryCount = $zip->count();
+            for ($i = 0; $i < $entryCount; $i++) {
                 $name = $zip->getNameIndex($i);
                 if ($name !== false && str_contains($name, '/')) {
                     $rootInZip = explode('/', $name)[0];
@@ -384,7 +385,8 @@ final class RuntimeManager
             }
 
             // Extract contents of root folder into target dir
-            for ($i = 0; $i < $zip->numEntries; $i++) {
+            $entryCount = $zip->count();
+            for ($i = 0; $i < $entryCount; $i++) {
                 $name = $zip->getNameIndex($i);
                 if ($name === false) continue;
                 $relative = substr($name, strlen($rootInZip) + 1);
