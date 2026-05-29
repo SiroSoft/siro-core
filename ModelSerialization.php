@@ -130,7 +130,9 @@ trait ModelSerialization
             return null;
         }
 
-        return match ($this->casts[$key]) {
+        $castType = $this->casts[$key] ?? '';
+
+        return match ($castType) {
             'int', 'integer' => is_numeric($value) ? (int) $value : 0,
             'float', 'double', 'real' => is_numeric($value) ? (float) $value : 0.0,
             'string' => match (true) {

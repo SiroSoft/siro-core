@@ -117,7 +117,7 @@ final class ThrottleMiddleware implements MiddlewareInterface
             }
         }
 
-        $file = $storeDir . DIRECTORY_SEPARATOR . sha1($key) . '.json';
+        $file = $storeDir . DIRECTORY_SEPARATOR . hash('sha256', $key) . '.json';
         $now = time();
 
         $fp = fopen($file, 'c+');

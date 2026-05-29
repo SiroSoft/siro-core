@@ -96,7 +96,7 @@ final class Session
                 'path' => '/',
                 'secure' => true,
                 'httponly' => true,
-                'samesite' => 'Lax',
+                'samesite' => 'Strict',
             ]);
         }
     }
@@ -170,7 +170,7 @@ final class Session
                 'path' => '/',
                 'secure' => true,
                 'httponly' => true,
-                'samesite' => 'Lax',
+                'samesite' => 'Strict',
             ]);
         }
     }
@@ -201,7 +201,7 @@ final class Session
                 'path' => '/',
                 'secure' => true,
                 'httponly' => true,
-                'samesite' => 'Lax',
+                'samesite' => 'Strict',
             ]);
         }
     }

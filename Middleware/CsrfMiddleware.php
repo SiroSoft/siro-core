@@ -69,10 +69,17 @@ final class CsrfMiddleware implements MiddlewareInterface
             ], 419);
         }
 
-        // Rotate token after successful validation to prevent reuse
-        $newToken = self::generateToken();
-        if ($session !== null) {
+        // Rotate token after successful validation with grace period
+        $rotatedAt = 0;
+        if ($session instanceof Session) {
+            $rotatedAt = $session->get('_csrf_rotated_at', 0);
+        }
+        if (is_numeric($rotatedAt) && (time() - (int) $rotatedAt) > 5) {
+            $newToken = self::generateToken();
+        if ($session instanceof Session) {
             $session->set('_csrf_token', $newToken);
+            $session->set('_csrf_rotated_at', time());
+        }
         }
 
         return $next($request);
@@ -114,6 +121,11 @@ final class CsrfMiddleware implements MiddlewareInterface
         $headerToken = $request->header('X-CSRF-TOKEN') ?? $request->header('X-XSRF-TOKEN');
         if (is_string($headerToken) && $headerToken !== '') {
             return $headerToken;
+        }
+
+        $contentType = $request->header('Content-Type', '');
+        if (is_string($contentType) && str_contains(strtolower($contentType), 'application/json')) {
+            return null;
         }
 
         $postToken = $request->input('_csrf_token') ?? $request->input('_token');

@@ -117,6 +117,12 @@ final class Response
      */
     public static function redirect(string $url, int $statusCode = 302): self
     {
+        $allowedSchemes = ['http', 'https'];
+        $parsedScheme = parse_url($url, PHP_URL_SCHEME);
+        $scheme = is_string($parsedScheme) ? $parsedScheme : '';
+        if ($scheme === '' || !in_array(strtolower($scheme), $allowedSchemes, true)) {
+            $url = '/';
+        }
         $response = new self([], $statusCode);
         $response->extraHeaders['Location'] = $url;
         return $response;
@@ -394,7 +400,9 @@ final class Response
             }
 
             foreach ($this->extraHeaders as $name => $value) {
-                header($name . ': ' . $value);
+                $safeName = str_replace(["\r", "\n"], '', $name);
+                $safeValue = str_replace(["\r", "\n"], '', $value);
+                header($safeName . ': ' . $safeValue);
             }
         }
 

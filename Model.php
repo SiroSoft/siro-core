@@ -103,6 +103,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     private function isFillable(string $key): bool
     {
         if ($this->fillable === []) {
+            if ($key !== '' && !\Siro\Core\Env::bool('APP_DEBUG', false)) {
+                return false;
+            }
             if ($key !== '') {
                 trigger_error(
                     sprintf(

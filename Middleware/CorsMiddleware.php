@@ -18,7 +18,7 @@ final class CorsMiddleware implements MiddlewareInterface
 
         $origin = (string) $request->header('origin', '');
         $allowOrigin = $allowedOrigins === '*' ? '*' : $this->resolveOrigin($origin, $allowedOrigins);
-        $allowCredentials = $allowedOrigins !== '*';
+        $allowCredentials = $allowedOrigins !== '*' && $allowOrigin !== '*';
 
         if ($request->method() === 'OPTIONS') {
             $response = Response::noContent();

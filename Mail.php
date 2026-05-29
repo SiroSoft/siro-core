@@ -326,7 +326,7 @@ final class Mail
         }
 
         try {
-            $result = mail($allRecipients, $this->subject, $body, implode("\r\n", $headers));
+            $result = mail($allRecipients, $this->subject, $body, implode("\r\n", $headers), '-f ' . $safeFromAddress);
         } catch (\Throwable $e) {
             \Siro\Core\Logger::error('mail() failed: ' . $e->getMessage());
             $result = false;
@@ -466,6 +466,7 @@ final class Mail
                 fwrite($socket, $header . "\r\n");
             }
             fwrite($socket, "\r\n");
+            $body = str_replace("\r\n.", "\r\n..", $body);
             fwrite($socket, $body . "\r\n.\r\n");
 
             $this->smtpReadResponse($socket);

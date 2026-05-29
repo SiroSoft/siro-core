@@ -209,17 +209,20 @@ final class Storage
         $storagePath = str_replace('/', DIRECTORY_SEPARATOR, is_string(self::$config['path'] ?? null) ? self::$config['path'] : '');
         $allowedDir = $base . DIRECTORY_SEPARATOR . $storagePath;
 
-        // Clean path and prevent traversal - recursive sanitization
+        // Clean path and prevent traversal - proper canonicalization
         $cleanPath = ltrim($path, DIRECTORY_SEPARATOR);
-        do {
-            $previous = $cleanPath;
-            $cleanPath = str_replace(['../', '..\\', './', '.\\', '\\', '/'], DIRECTORY_SEPARATOR, $cleanPath);
-        } while ($cleanPath !== $previous);
-        // Remove any remaining parent dir references
+        $cleanPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $cleanPath);
         $segments = explode(DIRECTORY_SEPARATOR, $cleanPath);
         $filtered = [];
         foreach ($segments as $segment) {
-            if ($segment === '..' || $segment === '.' || $segment === '') {
+            if ($segment === '.' || $segment === '') {
+                continue;
+            }
+            if ($segment === '..') {
+                if (count($filtered) === 0) {
+                    throw new RuntimeException('Path traversal detected: ' . $path);
+                }
+                array_pop($filtered);
                 continue;
             }
             $filtered[] = $segment;

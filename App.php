@@ -327,7 +327,7 @@ final class App
             if ($this->showDebugTrace) {
                 $errors = ['error_id' => $traceId];
             }
-            if ($request !== null && class_exists(\App\Exceptions\Handler::class)) {
+            if ($request !== null && class_exists(\App\Exceptions\Handler::class) && is_subclass_of(\App\Exceptions\Handler::class, \Siro\Core\ExceptionHandlerInterface::class)) {
                 /** @var Response $errorResponse */
                 $errorResponse = \App\Exceptions\Handler::handle($e, $request);
             } else {
@@ -365,6 +365,28 @@ final class App
                 // Merge enriched trace data (middleware, queries, body, exception)
                 foreach (TraceData::getAll() as $key => $value) {
                     $traceData[$key] = $value;
+                }
+
+                // Redact PII from trace data
+                if (isset($traceData['request_headers']) && is_array($traceData['request_headers']) && isset($traceData['request_headers']['authorization'])) {
+                    $traceData['request_headers']['authorization'] = '***REDACTED***';
+                }
+                if (isset($traceData['auth_header'])) {
+                    $traceData['auth_header'] = '***REDACTED***';
+                }
+                if (isset($traceData['request_body']) && is_string($traceData['request_body'])) {
+                    $body = json_decode($traceData['request_body'], true);
+                    if (is_array($body)) {
+                        $sensitiveKeys = ['password', 'token', 'secret', 'key', 'otp', 'code', 'authorization'];
+                        foreach ($sensitiveKeys as $sk) {
+                            if (isset($body[$sk])) {
+                                $body[$sk] = '***REDACTED***';
+                            }
+                        }
+                        $traceData['request_body'] = (string) json_encode($body, JSON_UNESCAPED_UNICODE);
+                    } else {
+                        $traceData['request_body'] = preg_replace('/(password|token|secret|key|otp|code)=([^&\s]+)/i', '$1=***REDACTED***', $traceData['request_body']);
+                    }
                 }
 
                 // Merge captured SQL queries from Database
@@ -430,7 +452,7 @@ final class App
 
         if ($jwtSecret === '' || strlen($jwtSecret) < 32 || $looksLikePlaceholder) {
             throw new RuntimeException(
-                'JWT_SECRET is missing or too weak (min 32 chars). Run: php siro key:generate'
+                'A configuration error occurred. Please check server setup.'
             );
         }
     }

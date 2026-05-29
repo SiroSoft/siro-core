@@ -249,7 +249,7 @@ final class Router
         if ($storedHmac === '') { return false; }
 
         $secret = (string) Env::get('APP_KEY', '');
-        $hmacCheck = hash_hmac('sha256', serialize($staticData) . serialize($dynamicData), $secret);
+        $hmacCheck = hash_hmac('sha256', json_encode($staticData) . json_encode($dynamicData), $secret);
         if ($secret !== '' && !hash_equals($hmacCheck, $storedHmac)) {
             return false;
         }
@@ -293,7 +293,7 @@ final class Router
         $secret = (string) Env::get('APP_KEY', '');
         $staticData = $data['static'] ?? [];
         $dynamicData = $data['dynamic'] ?? [];
-        $hmac = $secret !== '' ? hash_hmac('sha256', serialize($staticData) . serialize($dynamicData), $secret) : '';
+        $hmac = $secret !== '' ? hash_hmac('sha256', json_encode($staticData) . json_encode($dynamicData), $secret) : '';
         $data['hmac'] = $hmac;
         $exported = var_export($data, true);
         $content = '<?php return ' . $exported . ';' . PHP_EOL;

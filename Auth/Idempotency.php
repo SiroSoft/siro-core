@@ -64,11 +64,7 @@ final class Idempotency
 
         if (!empty($existing)) {
             $this->isDuplicate = true;
-            $data = Database::select(
-                "SELECT response_data FROM " . self::$table . " WHERE id = ?",
-                [isset($existing[0]['id']) ? $existing[0]['id'] : 0]
-            );
-            $storedRaw = isset($data[0]['response_data']) && is_string($data[0]['response_data']) ? $data[0]['response_data'] : '';
+            $storedRaw = isset($existing[0]['response_data']) && is_string($existing[0]['response_data']) ? $existing[0]['response_data'] : '';
             if ($storedRaw !== '') {
                 $decoded = json_decode($storedRaw, true);
                 if (is_array($decoded)) {
@@ -116,23 +112,12 @@ final class Idempotency
         $expiresAt = time() + $this->ttl;
         $responseJson = json_encode($responseData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        $existing = Database::select(
-            "SELECT id FROM " . self::$table . " WHERE hash = ? LIMIT 1",
-            [$this->hash]
+        Database::execute(
+            "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE response_data = VALUES(response_data), created_at = VALUES(created_at), expires_at = VALUES(expires_at)",
+            [$this->hash, $this->currentKey, $this->userId, $responseJson, time(), $expiresAt]
         );
-
-        if (!empty($existing)) {
-            Database::execute(
-                "UPDATE " . self::$table . " SET response_data = ?, created_at = ?, expires_at = ? WHERE hash = ?",
-                [$responseJson, time(), $expiresAt, $this->hash]
-            );
-        } else {
-            Database::execute(
-                "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
-                 VALUES (?, ?, ?, ?, ?, ?)",
-                [$this->hash, $this->currentKey, $this->userId, $responseJson, time(), $expiresAt]
-            );
-        }
     }
 
     /**

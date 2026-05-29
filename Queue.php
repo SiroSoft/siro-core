@@ -236,29 +236,32 @@ final class Queue
 
         try {
             $rowData = is_string($row['data'] ?? null) ? $row['data'] : '[]';
-            $jobData = json_decode($rowData, true);
-            if (!is_array($jobData)) {
-                $jobData = [];
-            }
+            $decodedData = json_decode($rowData, true);
+            /** @var array<string, mixed> $jobData */
+            $jobData = is_array($decodedData) ? $decodedData : [];
             $timeoutVal = isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] : self::DEFAULT_TIMEOUT;
             $timeout = $timeoutVal;
             $maxExecTime = time() + $timeout;
 
             $rowJob = $row['job'] ?? '';
-            if (is_string($rowJob) && class_exists($rowJob)) {
+            if (is_string($rowJob) && $rowJob !== '') {
                 if (!self::isJobAllowed($rowJob)) {
                     throw new \RuntimeException("Job class '{$rowJob}' is not registered in the allowed jobs whitelist. Use Queue::registerJob() to allow it.");
+                }
+                if (!class_exists($rowJob)) {
+                    throw new \RuntimeException("Job class '{$rowJob}' does not exist.");
                 }
 
                 $instance = new $rowJob();
 
-                if (method_exists($instance, 'handle')) {
-                    $handler = $instance->handle(...);
-                    self::executeWithTimeout(function () use ($handler, $jobData): void {
-                        $handler($jobData);
-                    }, $maxExecTime);
-                    $success = true;
+                if (!$instance instanceof QueueInterface) {
+                    throw new \RuntimeException("Job class '{$rowJob}' must implement QueueInterface.");
                 }
+
+                self::executeWithTimeout(function () use ($instance, $jobData): void {
+                    $instance->handle($jobData);
+                }, $maxExecTime);
+                $success = true;
             }
         } catch (Throwable $e) {
             $error = $e->getMessage();
@@ -516,6 +519,6 @@ final class Queue
      */
     public static function getFailedJobs(int $limit = 50): array
     {
-        return Database::select("SELECT * FROM failed_jobs ORDER BY id DESC LIMIT " . max(1, (int) $limit));
+        return Database::select("SELECT * FROM failed_jobs ORDER BY id DESC LIMIT :lim", ['lim' => max(1, (int) $limit)]);
     }
 }

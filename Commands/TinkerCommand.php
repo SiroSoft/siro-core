@@ -25,6 +25,11 @@ final class TinkerCommand implements CommandInterface
     /** @param array<int, string> $args */
     public function execute(array $args, Console $console): int
     {
+        if (php_sapi_name() !== 'cli') {
+            $this->write('Tinker can only be run in CLI mode.');
+            return 1;
+        }
+
         $historyFile = $this->getHistoryFile();
 
         if (function_exists('readline_read_history')) {
@@ -101,7 +106,7 @@ final class TinkerCommand implements CommandInterface
 
         set_time_limit(30);
         try {
-            $result = eval("return $code;");
+            $result = @eval("return $code;");
         } catch (Throwable $e) {
             $caught = $e;
         }

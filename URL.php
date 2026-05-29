@@ -20,7 +20,10 @@ final class URL
         $payload = base64_encode($encoded !== false ? $encoded : '{}');
         $signature = hash_hmac('sha256', $payload, $secret);
         $query = http_build_query(['payload' => $payload, 'signature' => $signature]);
-        $base = defined('APP_URL') && is_string(APP_URL) ? APP_URL : 'http://localhost:8080';
+        $base = defined('APP_URL') && is_string(APP_URL) && APP_URL !== '' ? APP_URL : (string) Env::get('APP_URL', 'http://localhost:8080');
+        if (filter_var($base, FILTER_VALIDATE_URL) === false) {
+            $base = 'http://localhost:8080';
+        }
         return rtrim($base, '/') . '/' . ltrim($route, '/') . '?' . $query;
     }
 
