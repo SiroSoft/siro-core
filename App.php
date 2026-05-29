@@ -47,6 +47,7 @@ final class App
         if ($this->booted) { return; }
         $this->booted = true;
 
+        \Siro\Core\Env::reset();
         Env::load($this->basePath . DIRECTORY_SEPARATOR . '.env');
         $this->validateSecurityConfig();
 
@@ -128,7 +129,7 @@ final class App
         ]);
 
         $userModelClass = (string) \Siro\Core\Env::get('USER_MODEL_CLASS', 'App\\Models\\User');
-        if (class_exists($userModelClass)) {
+        if (class_exists($userModelClass) && is_subclass_of($userModelClass, \Siro\Core\Model::class)) {
             $container->bind('auth.provider', function () use ($userModelClass) {
                 return new \Siro\Core\Auth\ModelUserProvider($userModelClass);
             });

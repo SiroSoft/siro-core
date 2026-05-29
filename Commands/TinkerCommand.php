@@ -99,6 +99,7 @@ final class TinkerCommand implements CommandInterface
             throw new \ErrorException($message, 0, $severity, $file, $line);
         });
 
+        set_time_limit(30);
         try {
             $result = eval("return $code;");
         } catch (Throwable $e) {

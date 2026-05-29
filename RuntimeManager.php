@@ -298,16 +298,23 @@ final class RuntimeManager
 
     private static function getPhpVersion(string $phpBin): string
     {
-        $output = @shell_exec("\"{$phpBin}\" -r \"echo PHP_VERSION;\" 2>&1");
+        $output = shell_exec("\"{$phpBin}\" -r \"echo PHP_VERSION;\" 2>&1");
         return is_string($output) ? trim($output) : '?';
     }
 
     private static function rmdirRecursive(string $dir): void
     {
-        $cmd = PHP_OS_FAMILY === 'Windows'
-            ? "rmdir /s /q " . escapeshellarg($dir) . " 2>NUL"
-            : "rm -rf " . escapeshellarg($dir) . " 2>/dev/null";
-        @shell_exec($cmd);
+        if (!is_dir($dir)) return;
+        /** @var \RecursiveDirectoryIterator $it */
+        $it = new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS);
+        /** @var \RecursiveIteratorIterator<\RecursiveDirectoryIterator> $files */
+        $files = new \RecursiveIteratorIterator($it, \RecursiveIteratorIterator::CHILD_FIRST);
+        foreach ($files as $file) {
+            if (!$file instanceof \SplFileInfo) continue;
+            if ($file->isDir()) { rmdir($file->getRealPath()); }
+            else { unlink($file->getRealPath()); }
+        }
+        rmdir($dir);
     }
 
     // ── MySQL Portable ───────────────────────────────
@@ -406,8 +413,8 @@ final class RuntimeManager
             $dataDir = $targetDir . DIRECTORY_SEPARATOR . 'data';
             $binDir = $targetDir . DIRECTORY_SEPARATOR . 'bin';
 
-            $initCmd = "\"{$binDir}\\mysqld.exe\" --initialize-insecure --datadir=" . escapeshellarg($dataDir) . " --console 2>&1";
-            @shell_exec($initCmd);
+            $initCmd = escapeshellarg($binDir . DIRECTORY_SEPARATOR . 'mysqld.exe') . ' --initialize-insecure --datadir=' . escapeshellarg($dataDir) . ' --console 2>&1';
+            shell_exec($initCmd);
 
             if (!is_dir($dataDir)) {
                 return ['success' => false, 'message' => 'MySQL initialization failed'];
@@ -435,15 +442,15 @@ final class RuntimeManager
         };
 
         echo "  Installing MySQL via package manager...";
-        @shell_exec($installCmd);
+        shell_exec($installCmd);
 
         if ($os === 'Darwin') {
-            @shell_exec('brew services start mysql 2>&1');
+            shell_exec('brew services start mysql 2>&1');
         } else {
-            @shell_exec('service mysql start 2>&1 || systemctl start mysql 2>&1');
+            shell_exec('service mysql start 2>&1 || systemctl start mysql 2>&1');
         }
 
-        @shell_exec('mysql -u root -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1');
+        shell_exec('mysql -u root -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1');
 
         return ['success' => true, 'message' => 'MySQL ready', 'port' => '3306'];
     }
@@ -491,14 +498,14 @@ final class RuntimeManager
         $pidFile = $dataDir . DIRECTORY_SEPARATOR . 'mysql.pid';
         $logFile = $dataDir . DIRECTORY_SEPARATOR . 'mysql.log';
 
-        $cmd = "\"{$mysqldPath}\" --port={$port} --datadir=\"{$dataDir}\" --pid-file=\"{$pidFile}\" --log-error=\"{$logFile}\" --skip-grant-tables";
+        $cmd = escapeshellarg($mysqldPath) . ' --port=' . escapeshellarg((string) $port) . ' --datadir=' . escapeshellarg($dataDir) . ' --pid-file=' . escapeshellarg($pidFile) . ' --log-error=' . escapeshellarg($logFile);
         if (PHP_OS_FAMILY === 'Windows') {
             $cmd = "start /B {$cmd}";
         } else {
             $cmd .= " > /dev/null 2>&1 &";
         }
 
-        @shell_exec($cmd);
+        shell_exec($cmd);
         sleep(2);
 
         if (!$this->isPortOpen($port)) {
@@ -519,8 +526,8 @@ final class RuntimeManager
         if (!is_file($mysqlCli)) {
             $mysqlCli = 'mysql';
         }
-        $cmd = "\"{$mysqlCli}\" -u root --port={$port} --protocol=tcp -e \"CREATE DATABASE IF NOT EXISTS siro_dev\" 2>&1";
-        @shell_exec($cmd);
+        $cmd = escapeshellarg($mysqlCli) . ' -u root --port=' . escapeshellarg((string) $port) . ' --protocol=tcp -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1';
+        shell_exec($cmd);
     }
 
     // ── MariaDB Portable ─────────────────────────────
@@ -551,13 +558,13 @@ final class RuntimeManager
         }
 
         // Try `mysql --version`
-        $ver = @shell_exec('mysql --version 2>NUL');
+        $ver = shell_exec('mysql --version 2>NUL');
         if (is_string($ver) && stripos($ver, 'mysql') !== false) {
             return 3306;
         }
 
         // Try `mysqld --version`
-        $ver = @shell_exec('mysqld --version 2>NUL');
+        $ver = shell_exec('mysqld --version 2>NUL');
         if (is_string($ver) && stripos($ver, 'mysql') !== false) {
             return 3306;
         }
@@ -614,9 +621,8 @@ final class RuntimeManager
             $dataDir = $targetDir . DIRECTORY_SEPARATOR . 'data';
             if (!is_dir($dataDir)) mkdir($dataDir, 0755, true);
 
-            $installCmd = "\"{$targetDir}\\" . self::findMariaBin($targetDir, 'mysql_install_db')
-                . "\" --datadir=" . escapeshellarg($dataDir) . " 2>&1";
-            @shell_exec($installCmd);
+            $installCmd = escapeshellarg((string) self::findMariaBin($targetDir, 'mysql_install_db')) . ' --datadir=' . escapeshellarg($dataDir) . ' 2>&1';
+            shell_exec($installCmd);
 
             echo " Starting...";
             $port = self::findFreePort();
@@ -640,16 +646,16 @@ final class RuntimeManager
         };
 
         echo "  Installing MariaDB via package manager...";
-        @shell_exec($installCmd);
+        shell_exec($installCmd);
 
         if ($os === 'Darwin') {
-            @shell_exec('brew services start mariadb 2>&1');
+            shell_exec('brew services start mariadb 2>&1');
         } else {
-            @shell_exec('service mariadb start 2>&1 || systemctl start mariadb 2>&1');
+            shell_exec('service mariadb start 2>&1 || systemctl start mariadb 2>&1');
         }
 
         // Create database
-        @shell_exec('mysql -u root -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1');
+        shell_exec('mysql -u root -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1');
 
         return ['success' => true, 'message' => 'MariaDB ready', 'port' => '3306'];
     }
@@ -692,8 +698,8 @@ final class RuntimeManager
 
         if ($active['pid'] > 0) {
             PHP_OS_FAMILY === 'Windows'
-                ? @shell_exec("taskkill /PID {$active['pid']} /F 2>NUL")
-                : @shell_exec("kill {$active['pid']} 2>/dev/null");
+                ? shell_exec("taskkill /PID {$active['pid']} /F 2>NUL")
+                : shell_exec("kill {$active['pid']} 2>/dev/null");
         }
 
         @unlink($this->dbActiveFile());
@@ -741,19 +747,19 @@ final class RuntimeManager
         }
 
         $iniPath = $targetDir . DIRECTORY_SEPARATOR . 'my.ini';
-        $iniContent = "[mysqld]\r\nport={$port}\r\ndatadir={$dataDir}\r\nskip-grant-tables\r\n";
+        $iniContent = "[mysqld]\r\nport={$port}\r\ndatadir={$dataDir}\r\n";
         file_put_contents($iniPath, $iniContent);
 
         $pidFile = $dataDir . DIRECTORY_SEPARATOR . 'siro.pid';
         $logFile = $dataDir . DIRECTORY_SEPARATOR . 'siro.log';
 
-        $cmd = "\"{$binPath}\" --defaults-file=\"{$iniPath}\" --pid-file=\"{$pidFile}\" --log-error=\"{$logFile}\"";
+        $cmd = escapeshellarg($binPath) . ' --defaults-file=' . escapeshellarg($iniPath) . ' --pid-file=' . escapeshellarg($pidFile) . ' --log-error=' . escapeshellarg($logFile);
         if (PHP_OS_FAMILY === 'Windows') {
             $cmd = "start /B {$cmd}";
         } else {
             $cmd .= " > /dev/null 2>&1 &";
         }
-        @shell_exec($cmd);
+        shell_exec($cmd);
 
         // Wait for port
         $maxWait = 15;
@@ -775,8 +781,8 @@ final class RuntimeManager
         $bin = self::findMariaBin($targetDir, 'mysql');
         if ($bin === null) return;
 
-        $cmd = "\"{$bin}\" -h 127.0.0.1 -P {$port} -u root -e \"CREATE DATABASE IF NOT EXISTS siro_dev\" 2>&1";
-        @shell_exec($cmd);
+        $cmd = escapeshellarg($bin) . ' -h 127.0.0.1 -P ' . escapeshellarg((string) $port) . ' -u root -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1';
+        shell_exec($cmd);
     }
 
     private function saveDbActive(int $port, string $datadir, string $type = 'mariadb'): void

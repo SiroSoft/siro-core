@@ -139,11 +139,11 @@ trait ModelSerialization
                 default => '',
             },
             'bool', 'boolean' => (bool) $value,
-            'array' => is_array($value) ? $value : json_decode(is_string($value) ? $value : throw new \RuntimeException('Invalid cast to array'), true),
-            'object' => is_object($value) ? $value : json_decode(is_string($value) ? $value : throw new \RuntimeException('Invalid cast to object')),
+            'array' => is_array($value) ? $value : (is_string($value) ? json_decode($value, true) ?? [] : []),
+            'object' => is_object($value) ? $value : (is_string($value) ? json_decode($value) : null),
             'datetime', 'date' => $value instanceof \DateTimeInterface
                 ? $value->format('Y-m-d H:i:s')
-                : new \DateTime(is_string($value) ? $value : throw new \RuntimeException('Invalid cast to datetime')),
+                : (is_string($value) ? new \DateTime($value) : $value),
             default => $value,
         };
     }

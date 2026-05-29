@@ -289,8 +289,9 @@ final class Mail
         $fromName = (string) Env::get('MAIL_FROM_NAME', 'Siro API');
 
         $safeFromName = self::sanitizeHeader($fromName);
+        $safeFromAddress = self::sanitizeAddress($fromAddress);
         $headers = [
-            'From: ' . $safeFromName . ' <' . $fromAddress . '>',
+            'From: ' . $safeFromName . ' <' . $safeFromAddress . '>',
             'MIME-Version: 1.0',
             'Content-Type: ' . $this->contentType . '; charset=' . $this->charset,
             'Content-Transfer-Encoding: base64',
@@ -298,17 +299,21 @@ final class Mail
         ];
 
         if ($this->replyTo !== '') {
-            $headers[] = 'Reply-To: ' . $this->replyTo;
+            $headers[] = 'Reply-To: ' . self::sanitizeAddress($this->replyTo);
         }
 
         foreach ($this->cc as $ccAddr) {
-            $headers[] = 'CC: ' . $ccAddr;
+            $headers[] = 'CC: ' . self::sanitizeAddress($ccAddr);
         }
 
         // BCC recipients set as proper Bcc header
-        $allRecipients = $this->to;
+        $allRecipients = self::sanitizeAddress($this->to);
         if ($this->bcc !== []) {
-            $headers[] = 'Bcc: ' . implode(', ', $this->bcc);
+            $bccSanitized = [];
+            foreach ($this->bcc as $bccAddr) {
+                $bccSanitized[] = self::sanitizeAddress($bccAddr);
+            }
+            $headers[] = 'Bcc: ' . implode(', ', $bccSanitized);
         }
 
         $body = chunk_split(base64_encode($this->body), 76, "\r\n");

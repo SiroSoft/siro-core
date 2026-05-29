@@ -235,7 +235,7 @@ final class Storage
             if ($realAllowed === false || !str_starts_with($realPath, $realAllowed)) {
                 throw new RuntimeException('Path traversal detected: ' . $path);
             }
-            return $fullPath;
+            return $realPath;
         }
 
         // For new files, validate path structure is safe without requiring realpath

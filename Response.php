@@ -158,6 +158,9 @@ final class Response
         }
 
         // XML
+        if (str_starts_with($content, '<?xml')) {
+            return 'application/xml';
+        }
         if (str_starts_with($content, '<')) {
             return 'text/html';
         }
