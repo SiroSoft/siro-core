@@ -49,6 +49,7 @@ final class Response
     /** @param array<string, mixed> $meta */
     public static function success(mixed $data = null, string $message = 'OK', int $statusCode = 200, array $meta = []): self
     {
+        $meta['timestamp'] = date('c');
         return new self([
             'success' => true,
             'message' => $message,
@@ -316,6 +317,7 @@ final class Response
      */
     public static function paginated(array $data, array $meta, string $message = 'OK', int $statusCode = 200): self
     {
+        $meta['timestamp'] = date('c');
         return new self([
             'success' => true,
             'message' => $message,
