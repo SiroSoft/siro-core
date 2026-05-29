@@ -211,10 +211,11 @@ final class RuntimeManager
     private static function resolveVersion(string $input): string
     {
         return match ($input) {
-            '8.1' => '8.1.29',
-            '8.2' => '8.2.30',
-            '8.3' => '8.3.10',
-            '8.4' => '8.4.0',
+            '8.0' => '8.0.30',
+            '8.1' => '8.1.31',
+            '8.2' => '8.2.31',
+            '8.3' => '8.3.17',
+            '8.4' => '8.4.5',
             default => $input,
         };
     }
@@ -306,6 +307,217 @@ final class RuntimeManager
         $cmd = PHP_OS_FAMILY === 'Windows'
             ? "rmdir /s /q " . escapeshellarg($dir) . " 2>NUL"
             : "rm -rf " . escapeshellarg($dir) . " 2>/dev/null";
+        @shell_exec($cmd);
+    }
+
+    // ── MySQL Portable ───────────────────────────────
+
+    private const MYSQL_VERSION = '8.4.4';
+    private const MYSQL_DIR = 'mysql-8.4';
+
+    private function mysqlDir(): string
+    {
+        return $this->runtimeDir . DIRECTORY_SEPARATOR . self::MYSQL_DIR;
+    }
+
+    /** @return array{success: bool, message: string, port?: string, dir?: string, existing?: bool} */
+    public function installMySQL(): array
+    {
+        $existingPort = $this->detectExistingMySQL();
+        if ($existingPort !== null) {
+            return [
+                'success' => true,
+                'message' => 'Existing MySQL/MariaDB detected',
+                'port' => (string) $existingPort,
+                'existing' => true,
+            ];
+        }
+
+        $targetDir = $this->mysqlDir();
+
+        if (is_dir($targetDir)) {
+            return $this->startMySQL();
+        }
+
+        $os = PHP_OS_FAMILY;
+
+        if ($os === 'Windows') {
+            $url = sprintf(
+                'https://dev.mysql.com/get/Downloads/MySQL-%s/mysql-%s-winx64.zip',
+                implode('.', array_slice(explode('.', self::MYSQL_VERSION), 0, 2)),
+                self::MYSQL_VERSION
+            );
+            $zipFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'mysql.zip';
+
+            echo "  Downloading MySQL...";
+            $success = self::download($url, $zipFile);
+            if (!$success) {
+                @unlink($zipFile);
+                return ['success' => false, 'message' => "Download failed. Install MySQL manually."];
+            }
+
+            echo " Extracting...";
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFile) !== true) {
+                @unlink($zipFile);
+                return ['success' => false, 'message' => 'Extraction failed'];
+            }
+
+            // MySQL ZIP has a root folder like mysql-8.4.4-winx64
+            $rootInZip = null;
+            for ($i = 0; $i < $zip->numEntries; $i++) {
+                $name = $zip->getNameIndex($i);
+                if ($name !== false && str_contains($name, '/')) {
+                    $rootInZip = explode('/', $name)[0];
+                    break;
+                }
+            }
+
+            if ($rootInZip === null) {
+                $zip->close();
+                @unlink($zipFile);
+                return ['success' => false, 'message' => 'Invalid MySQL archive'];
+            }
+
+            if (!is_dir($targetDir)) {
+                mkdir($targetDir, 0755, true);
+            }
+
+            // Extract contents of root folder into target dir
+            for ($i = 0; $i < $zip->numEntries; $i++) {
+                $name = $zip->getNameIndex($i);
+                if ($name === false) continue;
+                $relative = substr($name, strlen($rootInZip) + 1);
+                if ($relative === '') continue;
+                $dest = $targetDir . DIRECTORY_SEPARATOR . $relative;
+                if (str_ends_with($name, '/')) {
+                    if (!is_dir($dest)) mkdir($dest, 0755, true);
+                } else {
+                    copy("zip://{$zipFile}#{$name}", $dest);
+                }
+            }
+            $zip->close();
+            @unlink($zipFile);
+
+            // Initialize database
+            echo " Initializing...";
+            $dataDir = $targetDir . DIRECTORY_SEPARATOR . 'data';
+            $binDir = $targetDir . DIRECTORY_SEPARATOR . 'bin';
+
+            $initCmd = "\"{$binDir}\\mysqld.exe\" --initialize-insecure --datadir=" . escapeshellarg($dataDir) . " --console 2>&1";
+            @shell_exec($initCmd);
+
+            if (!is_dir($dataDir)) {
+                return ['success' => false, 'message' => 'MySQL initialization failed'];
+            }
+
+            echo " Starting...";
+            $port = self::findFreePort();
+            $result = $this->startMySQLProcess($targetDir, $dataDir, $port);
+            if (!$result['success']) {
+                return $result;
+            }
+
+            // Create database
+            $this->createMySQLDatabase($targetDir, $binDir, $port);
+
+            $this->saveDbActive($port, $dataDir, 'mysql');
+
+            return ['success' => true, 'message' => 'MySQL installed and started', 'port' => (string) $port];
+        }
+
+        // macOS / Linux: use package manager
+        $installCmd = match ($os) {
+            'Darwin' => 'brew list mysql 2>/dev/null || brew install mysql 2>&1',
+            default => 'dpkg -l mysql-server 2>/dev/null || apt-get install -y mysql-server 2>&1',
+        };
+
+        echo "  Installing MySQL via package manager...";
+        @shell_exec($installCmd);
+
+        if ($os === 'Darwin') {
+            @shell_exec('brew services start mysql 2>&1');
+        } else {
+            @shell_exec('service mysql start 2>&1 || systemctl start mysql 2>&1');
+        }
+
+        @shell_exec('mysql -u root -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1');
+
+        return ['success' => true, 'message' => 'MySQL ready', 'port' => '3306'];
+    }
+
+    /** @return array{success: bool, message: string} */
+    public function startMySQL(): array
+    {
+        $active = $this->readDbActive();
+        if ($active !== null && $active['type'] === 'mysql' && $this->isPortOpen($active['port'])) {
+            return ['success' => true, 'message' => "MySQL already running on port {$active['port']}"];
+        }
+
+        $targetDir = $this->mysqlDir();
+        if (!is_dir($targetDir)) {
+            return ['success' => false, 'message' => 'MySQL not installed. Run: siro db:init --mysql-official'];
+        }
+
+        $dataDir = $targetDir . DIRECTORY_SEPARATOR . 'data';
+        if (!is_dir($dataDir)) {
+            mkdir($dataDir, 0755, true);
+        }
+
+        $port = $active['port'] ?? self::findFreePort();
+        $result = $this->startMySQLProcess($targetDir, $dataDir, $port);
+        if (!$result['success']) {
+            return $result;
+        }
+
+        $this->saveDbActive($port, $dataDir, 'mysql');
+        return ['success' => true, 'message' => "MySQL started on port {$port}"];
+    }
+
+    /** @return array{success: bool, message: string} */
+    private function startMySQLProcess(string $targetDir, string $dataDir, int $port): array
+    {
+        $binDir = $targetDir . DIRECTORY_SEPARATOR . 'bin';
+        $mysqldPath = $binDir . DIRECTORY_SEPARATOR . 'mysqld.exe';
+        if (!is_file($mysqldPath)) {
+            $mysqldPath = $binDir . DIRECTORY_SEPARATOR . 'mysqld';
+        }
+        if (!is_file($mysqldPath)) {
+            return ['success' => false, 'message' => 'mysqld not found'];
+        }
+
+        $pidFile = $dataDir . DIRECTORY_SEPARATOR . 'mysql.pid';
+        $logFile = $dataDir . DIRECTORY_SEPARATOR . 'mysql.log';
+
+        $cmd = "\"{$mysqldPath}\" --port={$port} --datadir=\"{$dataDir}\" --pid-file=\"{$pidFile}\" --log-error=\"{$logFile}\" --skip-grant-tables";
+        if (PHP_OS_FAMILY === 'Windows') {
+            $cmd = "start /B {$cmd}";
+        } else {
+            $cmd .= " > /dev/null 2>&1 &";
+        }
+
+        @shell_exec($cmd);
+        sleep(2);
+
+        if (!$this->isPortOpen($port)) {
+            sleep(3);
+        }
+
+        if (!$this->isPortOpen($port)) {
+            $log = is_file($logFile) ? file_get_contents($logFile) : 'no log';
+            return ['success' => false, 'message' => "MySQL failed to start on port {$port}"];
+        }
+
+        return ['success' => true, 'message' => "MySQL running on port {$port}"];
+    }
+
+    private function createMySQLDatabase(string $targetDir, string $binDir, int $port): void
+    {
+        $mysqlCli = $binDir . DIRECTORY_SEPARATOR . 'mysql.exe';
+        if (!is_file($mysqlCli)) {
+            $mysqlCli = 'mysql';
+        }
+        $cmd = "\"{$mysqlCli}\" -u root --port={$port} --protocol=tcp -e \"CREATE DATABASE IF NOT EXISTS siro_dev\" 2>&1";
         @shell_exec($cmd);
     }
 
@@ -565,12 +777,13 @@ final class RuntimeManager
         @shell_exec($cmd);
     }
 
-    private function saveDbActive(int $port, string $datadir): void
+    private function saveDbActive(int $port, string $datadir, string $type = 'mariadb'): void
     {
         $data = json_encode([
             'port' => $port,
             'datadir' => $datadir,
             'pid' => getmypid(),
+            'type' => $type,
             'started_at' => date('c'),
         ]);
         if ($data !== false) {
@@ -578,7 +791,7 @@ final class RuntimeManager
         }
     }
 
-    /** @return array{port: int, datadir: string, pid: int}|null */
+    /** @return array{port: int, datadir: string, pid: int, type: string}|null */
     private function readDbActive(): ?array
     {
         $file = $this->dbActiveFile();
@@ -595,10 +808,12 @@ final class RuntimeManager
         $portVal = is_numeric($data['port'] ?? null) ? (int) $data['port'] : 3306;
         $dirVal = is_string($data['datadir'] ?? null) ? $data['datadir'] : '';
         $pidVal = is_numeric($data['pid'] ?? null) ? (int) $data['pid'] : 0;
+        $typeVal = is_string($data['type'] ?? null) ? $data['type'] : 'mariadb';
         return [
             'port' => $portVal,
             'datadir' => $dirVal,
             'pid' => $pidVal,
+            'type' => $typeVal,
         ];
     }
 

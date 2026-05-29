@@ -20,9 +20,11 @@ final class DatabaseCommand implements CommandInterface
     {
         $action = $args[0] ?? 'init';
         $isMysql = in_array('--mysql', $args, true);
+        $isMySQLOfficial = in_array('--mysql-official', $args, true);
 
         return match ($action) {
-            'init' => $isMysql ? $this->initMysql() : $this->initSqlite(),
+            'init' => $isMySQLOfficial ? $this->initMySQLOfficial()
+                   : ($isMysql ? $this->initMysql() : $this->initSqlite()),
             'start' => $this->startDb(),
             'stop' => $this->stopDb(),
             'status' => $this->status(),
@@ -67,6 +69,49 @@ final class DatabaseCommand implements CommandInterface
         }
 
         $this->success('SQLite configured');
+        return 0;
+    }
+
+    private function initMySQLOfficial(): int
+    {
+        $manager = new RuntimeManager();
+        $result = $manager->installMySQL();
+
+        if (!$result['success']) {
+            $this->error($result['message']);
+            return 1;
+        }
+
+        $envPath = getcwd() . DIRECTORY_SEPARATOR . '.env';
+        if (!is_file($envPath)) {
+            $this->write('No .env file found. Creating one...');
+            copy($envPath . '.example', $envPath);
+        }
+
+        $env = file_get_contents($envPath);
+        if ($env === false) {
+            $this->error('Failed to read .env');
+            return 1;
+        }
+
+        $port = $result['port'] ?? '3306';
+        $env = preg_replace('/^DB_CONNECTION=.*$/m', 'DB_CONNECTION=mysql', $env) ?? $env;
+        $env = preg_replace('/^DB_HOST=.*$/m', 'DB_HOST=127.0.0.1', $env) ?? $env;
+        $env = preg_replace('/^DB_PORT=.*$/m', "DB_PORT={$port}", $env) ?? $env;
+        $env = preg_replace('/^DB_DATABASE=.*$/m', 'DB_DATABASE=siro_dev', $env) ?? $env;
+
+        file_put_contents($envPath, $env);
+
+        $detected = isset($result['existing']) && $result['existing'];
+        if ($detected) {
+            $this->success("Existing MySQL found on port {$port}");
+        } else {
+            $this->success($result['message']);
+            $this->write("  Database: siro_dev");
+            $this->write("  Port: {$port}");
+            $this->write("  Username: root");
+            $this->write("  Password: (none)");
+        }
         return 0;
     }
 
@@ -186,6 +231,7 @@ final class DatabaseCommand implements CommandInterface
         $this->write('');
         $this->write('  db:init                Configure SQLite (default)');
         $this->write('  db:init --mysql        Install & start MariaDB portable');
+        $this->write('  db:init --mysql-official Install & start MySQL Community Server');
         $this->write('  db:start               Start database server');
         $this->write('  db:stop                Stop database server');
         $this->write('  db:status              Show database status');
