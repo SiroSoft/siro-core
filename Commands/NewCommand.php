@@ -141,7 +141,7 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
         $count = 0;
         $ds = DIRECTORY_SEPARATOR;
         $exclude = ['vendor', '.git',
-            "storage{$ds}logs", "storage{$ds}benchmark", "storage{$ds}sbom",
+            "storage{$ds}logs", "storage{$ds}benchmark", "storage{$ds}sbom", "storage{$ds}backups",
             "storage{$ds}test.db", "storage{$ds}api-test-history.json",
             "storage{$ds}app{$ds}database.sqlite",
             '.phpunit.cache', 'node_modules', '.github',
