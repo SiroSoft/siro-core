@@ -374,18 +374,19 @@ final class App
                 if (isset($traceData['auth_header'])) {
                     $traceData['auth_header'] = '***REDACTED***';
                 }
+                if (isset($traceData['cookie'])) {
+                    $traceData['cookie'] = '***REDACTED***';
+                }
                 if (isset($traceData['request_body']) && is_string($traceData['request_body'])) {
+                    $sensitiveKeys = ['password', 'token', 'secret', 'key', 'otp', 'code', 'authorization', 'access_token', 'refresh_token', 'api_key', 'session_id'];
                     $body = json_decode($traceData['request_body'], true);
                     if (is_array($body)) {
-                        $sensitiveKeys = ['password', 'token', 'secret', 'key', 'otp', 'code', 'authorization'];
-                        foreach ($sensitiveKeys as $sk) {
-                            if (isset($body[$sk])) {
-                                $body[$sk] = '***REDACTED***';
-                            }
-                        }
+                        $body = self::redactSensitiveKeys($body, $sensitiveKeys);
                         $traceData['request_body'] = (string) json_encode($body, JSON_UNESCAPED_UNICODE);
                     } else {
-                        $traceData['request_body'] = preg_replace('/(password|token|secret|key|otp|code)=([^&\s]+)/i', '$1=***REDACTED***', $traceData['request_body']);
+                        $redacted = preg_replace('/(password|token|secret|key|otp|code|access_token|refresh_token|api_key|session_id)=([^&\s]+)/i', '$1=***REDACTED***', $traceData['request_body']);
+                        // Also redact XML sensitive fields
+                        $traceData['request_body'] = (string) preg_replace('/<(\/?)(' . implode('|', $sensitiveKeys) . ')([^>]*)>(.*?)<\/\2>/i', '<$1$2$3>***REDACTED***</$2>', $redacted ?? $traceData['request_body']);
                     }
                 }
 
@@ -412,6 +413,23 @@ final class App
                 Logger::debug("Boot time exceeded threshold: " . round($bootTimeMs, 2) . "ms");
             }
         }
+    }
+
+    /**
+     * @param array<mixed, mixed> $data
+     * @param array<int, string> $sensitiveKeys
+     * @return array<mixed, mixed>
+     */
+    private static function redactSensitiveKeys(array $data, array $sensitiveKeys): array
+    {
+        foreach ($data as $key => $value) {
+            if (in_array(strtolower((string) $key), $sensitiveKeys, true)) {
+                $data[$key] = '***REDACTED***';
+            } elseif (is_array($value)) {
+                $data[$key] = self::redactSensitiveKeys($value, $sensitiveKeys);
+            }
+        }
+        return $data;
     }
 
     private function detectLocale(Request $request): void

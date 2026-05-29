@@ -97,6 +97,15 @@ final class Http
 
     private static function isPrivateIp(string $ip): bool
     {
+        // Check for IPv4-mapped IPv6 (::ffff:0:0/96)
+        $binary = inet_pton($ip);
+        if ($binary !== false && strlen($binary) === 16 && str_starts_with($binary, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff")) {
+            $ipv4 = inet_ntop(substr($binary, 12));
+            if ($ipv4 !== false) {
+                return self::isPrivateIp($ipv4);
+            }
+        }
+
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
             foreach (self::PRIVATE_CIDR as $cidr) {
                 if (str_contains($cidr, ':')) {
@@ -105,9 +114,12 @@ final class Http
                     $ipBin = inet_pton($ip);
                     $subnetBin = inet_pton($subnet);
                     if ($ipBin !== false && $subnetBin !== false) {
-                        $ipBin = substr($ipBin, 0, (int) ceil($mask / 8));
-                        $subnetBin = substr($subnetBin, 0, (int) ceil($mask / 8));
-                        if ($ipBin === $subnetBin) {
+                        $fullMask = str_repeat("\xff", (int) ($mask / 8));
+                        if ($mask % 8 !== 0) {
+                            $fullMask .= chr((0xff << (8 - ($mask % 8))) & 0xff);
+                        }
+                        $fullMask = str_pad($fullMask, 16, "\x00");
+                        if (($ipBin & $fullMask) === ($subnetBin & $fullMask)) {
                             return true;
                         }
                     }

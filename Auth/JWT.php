@@ -278,7 +278,7 @@ final class JWT
         $secret = (string) Env::get('JWT_SECRET', '');
         if ($secret === '') {
             if (self::algorithm() !== self::ALG_HS256) {
-                return '';
+                throw new RuntimeException('JWT_SECRET is required for HS256 algorithm.');
             }
             throw new RuntimeException('JWT_SECRET is not configured.');
         }
@@ -317,8 +317,19 @@ final class JWT
         self::$keyVersion = (string) $newVersion;
         if ($envPath !== '' && is_file($envPath) && is_writable($envPath)) {
             $content = (string) file_get_contents($envPath);
-            $content = (string) preg_replace('/^JWT_SECRET=.*$/m', 'JWT_SECRET=' . $newSecret, $content);
-            $content = (string) preg_replace('/^JWT_KEY_VERSION=.*$/m', 'JWT_KEY_VERSION=' . $newVersion, $content);
+            // Extract old values from file for str_replace
+            $oldSecret = preg_match('/^JWT_SECRET=(.*)$/m', $content, $m) === 1 ? $m[1] : '';
+            $oldVersion = preg_match('/^JWT_KEY_VERSION=(.*)$/m', $content, $m) === 1 ? $m[1] : '';
+            $content = (string) str_replace(
+                'JWT_SECRET=' . $oldSecret,
+                'JWT_SECRET=' . $newSecret,
+                $content
+            );
+            $content = (string) str_replace(
+                'JWT_KEY_VERSION=' . $oldVersion,
+                'JWT_KEY_VERSION=' . $newVersion,
+                $content
+            );
             file_put_contents($envPath, $content, LOCK_EX);
         }
     }

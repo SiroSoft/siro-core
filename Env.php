@@ -113,8 +113,10 @@ final class Env
                     } catch (\Throwable) {
                         $cached = null;
                     }
+                } elseif ($appKey === '' || strlen($appKey) < 16) {
+                    throw new \RuntimeException('APP_KEY is required (min 16 chars) for env cache integrity. Set a strong APP_KEY in .env.');
                 } else {
-                    $cached = json_decode($raw, true);
+                    $cached = null;
                 }
                 if (is_array($cached)) {
                     foreach ($cached as $key => $value) {
@@ -202,7 +204,8 @@ final class Env
                     '/\$\{([^}]+)\}|\$([a-zA-Z_][a-zA-Z0-9_]*)/',
                     function (array $m): string {
                         $name = $m[1] !== '' ? $m[1] : $m[2];
-                        return self::get($name) ?? '';
+                        $envVal = $_ENV[$name] ?? null;
+                        return is_scalar($envVal) ? (string) $envVal : '';
                     },
                     $value
                 );

@@ -112,16 +112,11 @@ final class Config
         $segments = explode('.', $key);
         $value = self::$items;
 
-        $partial = '';
         foreach ($segments as $segment) {
             if (!is_array($value) || !array_key_exists($segment, $value)) {
                 return $default;
             }
             $value = $value[$segment];
-            $partial = $partial === '' ? $segment : $partial . '.' . $segment;
-            if ($partial !== $key) {
-                self::$cache[$partial] = $value;
-            }
         }
 
         self::$cache[$key] = $value;

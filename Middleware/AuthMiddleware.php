@@ -111,7 +111,12 @@ final class AuthMiddleware implements MiddlewareInterface
         try {
             $session = Session::instance();
             if ($session->isStarted()) {
-                $session->regenerate();
+                $regenVal = $session->get('_auth_regen_at', 0);
+                $lastRegen = is_numeric($regenVal) ? (int) $regenVal : 0;
+                if (time() - $lastRegen > 300) {
+                    $session->regenerate();
+                    $session->set('_auth_regen_at', time());
+                }
             }
         } catch (Throwable) {
         }

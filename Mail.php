@@ -193,6 +193,12 @@ final class Mail
             throw new RuntimeException("Attachment file not found: {$path}");
         }
 
+        $base = defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : (string) getcwd();
+        $base = rtrim($base, DIRECTORY_SEPARATOR);
+        if (!str_starts_with($real, $base)) {
+            throw new RuntimeException('Access denied: attachment file is outside project directory');
+        }
+
         $mime = mime_content_type($real) ?: 'application/octet-stream';
         if ($name === '') {
             $name = basename($path);
@@ -326,6 +332,9 @@ final class Mail
         }
 
         try {
+            if (!filter_var($safeFromAddress, FILTER_VALIDATE_EMAIL)) {
+                throw new RuntimeException('Invalid sender email address for sendmail -f parameter');
+            }
             $result = mail($allRecipients, $this->subject, $body, implode("\r\n", $headers), '-f ' . $safeFromAddress);
         } catch (\Throwable $e) {
             \Siro\Core\Logger::error('mail() failed: ' . $e->getMessage());
@@ -346,7 +355,7 @@ final class Mail
         $safeReplyTo = self::sanitizeAddress($this->replyTo ?: $fromAddress);
         $body = chunk_split(base64_encode($this->body), 76, "\r\n");
         $headers = [
-            'From: ' . $safeFromName . ' <' . $fromAddress . '>',
+            'From: ' . $safeFromName . ' <' . self::sanitizeAddress($fromAddress) . '>',
             'Reply-To: ' . $safeReplyTo,
             'MIME-Version: 1.0',
             'X-Mailer: SiroPHP/' . self::sanitizeHeader((string) Env::get('APP_VERSION', '0.8.4')),

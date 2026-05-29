@@ -112,34 +112,15 @@ final class TinkerCommand implements CommandInterface
         }
 
         if ($caught !== null) {
-            try {
-                ob_start();
-                eval("$code;");
-                $output = ob_get_clean();
-                $elapsed = (microtime(true) - $start) * 1000;
-                $queries = $this->queryCount();
-                $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
-                if ($output !== '' && $output !== false) {
-                    $this->write('  \e[32m✓\e[0m  ' . trim($output) . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
-                }
-                $caught = null;
-            } catch (Throwable $e2) {
-                $elapsed = (microtime(true) - $start) * 1000;
-                $queries = $this->queryCount();
-                $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
-                $this->write('  \e[31m✗\e[0m  ' . $e2->getMessage() . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
-            }
-        }
-
-        restore_error_handler();
-
-        if ($caught !== null) {
             $elapsed = (microtime(true) - $start) * 1000;
             $queries = $this->queryCount();
             $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
             $this->write('  \e[31m✗\e[0m  ' . $caught->getMessage() . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
+            restore_error_handler();
             return;
         }
+
+        restore_error_handler();
 
         $elapsed = (microtime(true) - $start) * 1000;
         $queries = $this->queryCount();

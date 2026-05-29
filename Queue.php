@@ -252,11 +252,11 @@ final class Queue
                     throw new \RuntimeException("Job class '{$rowJob}' does not exist.");
                 }
 
-                $instance = new $rowJob();
-
-                if (!$instance instanceof QueueInterface) {
+                if (!is_subclass_of($rowJob, QueueInterface::class)) {
                     throw new \RuntimeException("Job class '{$rowJob}' must implement QueueInterface.");
                 }
+
+                $instance = new $rowJob();
 
                 self::executeWithTimeout(function () use ($instance, $jobData): void {
                     $instance->handle($jobData);

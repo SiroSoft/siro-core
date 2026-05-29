@@ -117,11 +117,18 @@ final class Response
      */
     public static function redirect(string $url, int $statusCode = 302): self
     {
-        $allowedSchemes = ['http', 'https'];
-        $parsedScheme = parse_url($url, PHP_URL_SCHEME);
-        $scheme = is_string($parsedScheme) ? $parsedScheme : '';
-        if ($scheme === '' || !in_array(strtolower($scheme), $allowedSchemes, true)) {
-            $url = '/';
+        // Only allow relative URLs or same-host URLs
+        if (str_starts_with($url, '/') === false) {
+            $parsed = parse_url($url);
+            if ($parsed === false || !isset($parsed['host'])) {
+                $url = '/';
+            } else {
+                $allowedHost = (string) \Siro\Core\Env::get('APP_URL', '');
+                $parsedHost = $parsed['host'];
+                if ($allowedHost !== '' && !str_contains($allowedHost, $parsedHost)) {
+                    $url = '/';
+                }
+            }
         }
         $response = new self([], $statusCode);
         $response->extraHeaders['Location'] = $url;
@@ -390,6 +397,7 @@ final class Response
             header('Content-Type: application/json; charset=utf-8');
             header('X-Content-Type-Options: nosniff');
             header('X-Frame-Options: DENY');
+            header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
 
             if (self::$requestId !== '') {
                 header('X-Request-Id: ' . self::$requestId);
@@ -400,8 +408,8 @@ final class Response
             }
 
             foreach ($this->extraHeaders as $name => $value) {
-                $safeName = str_replace(["\r", "\n"], '', $name);
-                $safeValue = str_replace(["\r", "\n"], '', $value);
+                $safeName = str_replace(["\r", "\n", "\0"], '', $name);
+                $safeValue = str_replace(["\r", "\n", "\0"], '', $value);
                 header($safeName . ': ' . $safeValue);
             }
         }

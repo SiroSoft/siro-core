@@ -318,13 +318,20 @@ final class Session
 
         $path = $this->filePath . DIRECTORY_SEPARATOR . $this->sessionId . '.json';
         if (is_file($path)) {
-            $content = file_get_contents($path);
-            if ($content !== false) {
-                /** @var array<string, mixed>|null $decoded */
-                $decoded = json_decode($content, true);
-                if (is_array($decoded)) {
-                    $this->data = $decoded;
+            $fp = fopen($path, 'r');
+            if ($fp !== false) {
+                if (flock($fp, LOCK_SH)) {
+                    $content = stream_get_contents($fp);
+                    flock($fp, LOCK_UN);
+                    if ($content !== false) {
+                        /** @var array<string, mixed>|null $decoded */
+                        $decoded = json_decode($content, true);
+                        if (is_array($decoded)) {
+                            $this->data = $decoded;
+                        }
+                    }
                 }
+                fclose($fp);
             }
         }
     }

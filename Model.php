@@ -131,6 +131,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function setAttribute(string $key, mixed $value): void
     {
+        if ($this->fillable !== [] && !in_array($key, $this->fillable, true)) {
+            return;
+        }
         // Check for mutator method first
         $mutatorMethod = 'set' . Str::studly($key) . 'Attribute';
         if (method_exists($this, $mutatorMethod)) {

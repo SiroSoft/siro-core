@@ -17,7 +17,7 @@ final class URL
             $data['expires'] = time() + $expires;
         }
         $encoded = json_encode($data, JSON_UNESCAPED_UNICODE);
-        $payload = base64_encode($encoded !== false ? $encoded : '{}');
+        $payload = self::base64UrlEncode($encoded !== false ? $encoded : '{}');
         $signature = hash_hmac('sha256', $payload, $secret);
         $query = http_build_query(['payload' => $payload, 'signature' => $signature]);
         $base = defined('APP_URL') && is_string(APP_URL) && APP_URL !== '' ? APP_URL : (string) Env::get('APP_URL', 'http://localhost:8080');
@@ -37,7 +37,7 @@ final class URL
             return null;
         }
         /** @var array<string, mixed>|null $data */
-        $data = json_decode(base64_decode($payload), true);
+        $data = json_decode(self::base64UrlDecode($payload), true);
         if (!is_array($data)) {
             if ($throw) throw new RuntimeException('Invalid payload.');
             return null;
@@ -59,6 +59,24 @@ final class URL
             return null;
         }
         return self::validate($payload, $signature, $throw);
+    }
+
+    private static function base64UrlEncode(string $value): string
+    {
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    }
+
+    private static function base64UrlDecode(string $value): string
+    {
+        $remainder = strlen($value) % 4;
+        if ($remainder > 0) {
+            $value .= str_repeat('=', 4 - $remainder);
+        }
+        $decoded = base64_decode(strtr($value, '-_', '+/'), true);
+        if ($decoded === false) {
+            throw new RuntimeException('Invalid base64 payload.');
+        }
+        return $decoded;
     }
 
     private static function secret(): string
