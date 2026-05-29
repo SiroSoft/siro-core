@@ -87,13 +87,18 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        // Recursively copy skeleton
+        // Recursively copy skeleton (replaces ../siro-core path repo)
         $copied = $this->copySkeleton($skeletonDir, $targetDir, $name);
 
-        // Generate .env from .env.example
-        if (!is_file($targetDir . DIRECTORY_SEPARATOR . '.env.example')) {
-            $envContent = "APP_NAME=\"{$name}\"\nAPP_ENV=local\nAPP_DEBUG=true\nJWT_SECRET=\n";
-            file_put_contents($targetDir . DIRECTORY_SEPARATOR . '.env', $envContent);
+        // Always create .env from .env.example
+        $envPath = $targetDir . DIRECTORY_SEPARATOR . '.env';
+        $envExample = $targetDir . DIRECTORY_SEPARATOR . '.env.example';
+        if (is_file($envExample) && !is_file($envPath)) {
+            copy($envExample, $envPath);
+        }
+        if (!is_file($envPath)) {
+            $envContent = "APP_NAME=\"{$name}\"\nAPP_ENV=local\nAPP_DEBUG=true\nDB_CONNECTION=sqlite\nDB_DATABASE=storage/app/database.sqlite\nJWT_SECRET=\n";
+            file_put_contents($envPath, $envContent);
         }
 
         // Create .gitkeep files for empty dirs
@@ -107,11 +112,14 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
 
         // Generate JWT key
         $jwtSecret = bin2hex(random_bytes(32));
-        $envPath = $targetDir . DIRECTORY_SEPARATOR . '.env';
         if (is_file($envPath)) {
             $env = file_get_contents($envPath);
             if ($env !== false) {
-                $env = str_replace('JWT_SECRET=', 'JWT_SECRET=' . $jwtSecret, $env);
+                if (str_contains($env, 'JWT_SECRET=')) {
+                    $env = preg_replace('/^JWT_SECRET=.*$/m', 'JWT_SECRET=' . $jwtSecret, $env);
+                } else {
+                    $env .= "\nJWT_SECRET=" . $jwtSecret . "\n";
+                }
                 file_put_contents($envPath, $env);
             }
         }
@@ -167,7 +175,11 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
             } elseif ($item->isFile()) {
                 $content = file_get_contents((string) $pathname);
                 if ($content === false) continue;
-                $content = str_replace(['Siro API Framework', 'sirosoft/api', 'SiroPHP'], $projectName, $content);
+                $content = str_replace(
+                    ['Siro API Framework', 'sirosoft/api', 'SiroPHP', '../siro-core'],
+                    [$projectName, $projectName, $projectName, ''],
+                    $content
+                );
                 $content = str_replace('my-api', $projectName, $content);
                 file_put_contents($target, $content);
                 $count++;
