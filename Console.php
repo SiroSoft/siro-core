@@ -91,7 +91,7 @@ use Siro\Core\Commands\TinkerCommand;
 
 final class Console
 {
-    public const VERSION = '0.31.0';
+    public const VERSION = '0.32.0';
 
     /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
     private static array $appCommands = [];
