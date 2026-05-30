@@ -15,9 +15,15 @@ use Throwable;
 final class MakeApiKeyCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
+    public function __construct(private readonly string $basePath)
+    {
+    }
+
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
+        $this->initDatabase();
+
         /** @var string $name */
         $name = $args[0] ?? '';
         /** @var string $scopes */
@@ -59,6 +65,17 @@ final class MakeApiKeyCommand implements \Siro\Core\Commands\CommandInterface {
         } catch (\Throwable $e) {
             $this->error('Failed to create API key: ' . $e->getMessage());
             return 1;
+        }
+    }
+
+    private function initDatabase(): void
+    {
+        $configPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+        if (is_file($configPath)) {
+            $config = require $configPath;
+            if (is_array($config)) {
+                Database::configure($config);
+            }
         }
     }
 
