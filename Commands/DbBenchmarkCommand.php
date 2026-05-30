@@ -167,7 +167,7 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
         $deleteStmt = null;
         $realSelect = null;
 
-        $pdo->exec('DROP TABLE IF EXISTS _bench_');
+        try { $pdo->exec('DROP TABLE IF EXISTS _bench_'); } catch (\Throwable) { /* ignore cleanup errors */ }
 
         $this->write('');
         $this->write('  ' . str_repeat('-', 50));
