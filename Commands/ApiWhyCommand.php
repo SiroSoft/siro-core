@@ -24,7 +24,7 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $method = strtoupper(trim($args[0]));
+        $method = strtoupper(trim((string) ($args[0] ?? '')));
         $path = trim((string) ($args[1] ?? ''));
 
         if ($method === '' || $path === '') {
