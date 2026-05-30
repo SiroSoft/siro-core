@@ -101,11 +101,11 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        // Check database version (MySQL 5.x không hỗ trợ JSON column)
-        $this->write('');
-        $this->write('Database:');
+        // Check database version
         $dbDriver = Env::get('DB_CONNECTION', '');
         if ($dbDriver === 'mysql') {
+            $this->write('');
+            $this->write('Database:');
             try {
                 $stmt = \Siro\Core\Database::connection()->query('SELECT VERSION() AS v');
                 if ($stmt === false) {
