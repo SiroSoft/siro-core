@@ -23,7 +23,7 @@ final class UploadedFile
     private readonly int $error;
 
     /** Whitelist of allowed extensions for upload. */
-    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'csv', 'json', 'xml', 'doc', 'docx', 'zip'];
+    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf', 'txt', 'csv', 'json', 'xml', 'doc', 'docx', 'zip'];
 
     /** @param array<string, string|int> $file */
     public function __construct(array $file)
