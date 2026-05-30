@@ -9,7 +9,7 @@ sidebar_label: D OC UM EN TA TI ON S UM MA RY
 
 **Date:** May 11, 2026  
 **Status:** ✅ Completed  
-**Version:** SiroPHP v0.28.1
+**Version:** SiroPHP v0.32.0
 
 ---
 
