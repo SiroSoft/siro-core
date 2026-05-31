@@ -72,10 +72,9 @@ final class MakeApiKeyCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $configPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
         if (is_file($configPath)) {
+            /** @var array<string, mixed> $config */
             $config = require $configPath;
-            if (is_array($config)) {
-                Database::configure($config);
-            }
+            Database::configure($config);
         }
     }
 

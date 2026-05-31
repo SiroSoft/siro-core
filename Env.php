@@ -127,9 +127,7 @@ final class Env
                         putenv($strKey . '=' . $strValue);
                     }
                     // Re-parse .env for sensitive keys excluded from cache
-                    if (is_file($mainFile)) {
-                        self::parseEnvFile($mainFile);
-                    }
+                    self::parseEnvFile($mainFile);
                     self::$loaded = true;
                     return;
                 }
