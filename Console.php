@@ -88,6 +88,14 @@ use Siro\Core\Commands\BenchmarkCommand;
 use Siro\Core\Commands\FrankenphpServeCommand;
 use Siro\Core\Commands\MigrateFreshCommand;
 use Siro\Core\Commands\TinkerCommand;
+use Siro\Core\Commands\DbHealthCommand;
+use Siro\Core\Commands\DbCheckCommand;
+use Siro\Core\Commands\DbStatsCommand;
+use Siro\Core\Commands\DbOptimizeCommand;
+use Siro\Core\Commands\DbBackupCommand;
+use Siro\Core\Commands\DbRestoreCommand;
+use Siro\Core\Commands\DbExplainCommand;
+use Siro\Core\Commands\DbBenchmarkCommand;
 
 final class Console
 {
@@ -227,6 +235,14 @@ final class Console
             'migrate:refresh'   => ['handler' => MigrateRefreshCommand::class, 'desc' => 'Rollback all and re-run migrations', 'usage' => 'php siro migrate:refresh [--seed]'],
             'db:seed'           => ['handler' => SeedCommand::class, 'desc' => 'Run seeders', 'usage' => 'php siro db:seed'],
             'db:show'           => ['handler' => DbShowCommand::class, 'desc' => 'Show table data/schema', 'usage' => 'php siro db:show <table> [--schema]'],
+            'db:health'    => ['handler' => DbHealthCommand::class, 'desc' => 'Database health check', 'usage' => 'php siro db:health'],
+            'db:check'     => ['handler' => DbCheckCommand::class, 'desc' => 'Database integrity check', 'usage' => 'php siro db:check'],
+            'db:stats'     => ['handler' => DbStatsCommand::class, 'desc' => 'Database statistics', 'usage' => 'php siro db:stats'],
+            'db:optimize'  => ['handler' => DbOptimizeCommand::class, 'desc' => 'Optimize database', 'usage' => 'php siro db:optimize'],
+            'db:backup'    => ['handler' => DbBackupCommand::class, 'desc' => 'Backup database', 'usage' => 'php siro db:backup [--compress]'],
+            'db:restore'   => ['handler' => DbRestoreCommand::class, 'desc' => 'Restore database from backup', 'usage' => 'php siro db:restore <file> [--force]'],
+            'db:explain'   => ['handler' => DbExplainCommand::class, 'desc' => 'EXPLAIN query', 'usage' => 'php siro db:explain --query="..."'],
+            'db:benchmark' => ['handler' => DbBenchmarkCommand::class, 'desc' => 'Database performance benchmark', 'usage' => 'php siro db:benchmark [--iterations=N]'],
 
             'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request (--set, --seed)', 'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val]'],
             'log:trace'   => ['handler' => LogTraceCommand::class, 'desc' => 'View trace details (--full for more)', 'usage' => 'php siro log:trace [<id>] [--status=500] [--limit=N] [--full]'],
@@ -463,7 +479,7 @@ final class Console
     $this->write('');
     $this->write('  Usage:');
     $this->write('    php siro <command> [options]');
-    $this->write('    php siro list                  All 72 commands');
+    $this->write('    php siro list                  All ' . count($this->commandRegistry()) . ' commands');
         $this->write('    php siro <command> --help      Command details');
         $this->write('    php siro --version             Version info');
         $this->write('');
@@ -491,11 +507,11 @@ final class Console
     private function printList(): void
     {
         $this->write('');
-        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — 72 Commands');
+        $registry = $this->commandRegistry();
+        $cmdCount = count($registry);
+        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — ' . $cmdCount . ' Commands');
         $this->write('  ' . str_repeat('=', 60));
         $this->write('');
-
-        $registry = $this->commandRegistry();
         $groups = $this->groupedCommands();
         foreach ($groups as $group => $commands) {
             $this->write('  ' . $group . ':');

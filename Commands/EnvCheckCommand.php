@@ -45,9 +45,12 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  [OK]   .env file exists');
         $passed++;
 
+        // Parse .env directly for sensitive keys that are excluded from cache
+        $envValues = self::parseEnvRaw($envPath);
+
         // Check required configs
         foreach ($this->requiredConfig as $key => $description) {
-            $value = Env::get($key, '');
+            $value = $envValues[$key] ?? Env::get($key, '');
             if ($value === '' || $value === null) {
                 $this->write('  [FAIL] ' . $key . ' is not set (' . $description . ')');
                 $failed++;
@@ -98,11 +101,11 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        // Check database version (MySQL 5.x không hỗ trợ JSON column)
-        $this->write('');
-        $this->write('Database:');
+        // Check database version
         $dbDriver = Env::get('DB_CONNECTION', '');
         if ($dbDriver === 'mysql') {
+            $this->write('');
+            $this->write('Database:');
             try {
                 $stmt = \Siro\Core\Database::connection()->query('SELECT VERSION() AS v');
                 if ($stmt === false) {
@@ -147,5 +150,23 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('Results: ' . $passed . ' passed, ' . $failed . ' warnings/issues');
 
         return $failed > 0 ? 1 : 0;
+    }
+
+    /** @return array<string, string> */
+    private static function parseEnvRaw(string $path): array
+    {
+        $values = [];
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines === false) return $values;
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) continue;
+            $pos = strpos($line, '=');
+            if ($pos === false) continue;
+            $key = trim(substr($line, 0, $pos));
+            $value = trim(substr($line, $pos + 1));
+            if ($key !== '') $values[$key] = $value;
+        }
+        return $values;
     }
 }

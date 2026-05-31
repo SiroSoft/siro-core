@@ -23,7 +23,7 @@ final class UploadedFile
     private readonly int $error;
 
     /** Whitelist of allowed extensions for upload. */
-    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'csv', 'json', 'xml', 'doc', 'docx', 'zip'];
+    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf', 'txt', 'csv', 'json', 'xml', 'doc', 'docx', 'zip'];
 
     /** @param array<string, string|int> $file */
     public function __construct(array $file)
@@ -129,10 +129,11 @@ final class UploadedFile
             return Storage::url($path);
         }
 
-        $storagePublicRoot = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public';
+        $basePath = defined('BASE_PATH') && is_string(BASE_PATH) ? BASE_PATH : (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : dirname(__DIR__, 2));
+        $storagePublicRoot = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public';
         $realStoragePublicRoot = realpath($storagePublicRoot);
         if ($realStoragePublicRoot === false) {
-            throw new RuntimeException('Storage public directory not found.');
+            throw new RuntimeException('Storage public directory not found at: ' . $storagePublicRoot);
         }
 
         $publicDir = $storagePublicRoot . DIRECTORY_SEPARATOR . $directory;

@@ -73,6 +73,7 @@ final class AuthMiddleware implements MiddlewareInterface
             $userStatusVal = isset($userData['status']) && is_numeric($userData['status']) ? (int) $userData['status'] : 0;
             $userTokenVerVal = isset($userData['token_version']) && is_numeric($userData['token_version']) ? (int) $userData['token_version'] : 1;
             $userCreatedAtVal = isset($userData['created_at']) && is_string($userData['created_at']) ? $userData['created_at'] : (isset($userData['created_at']) && is_scalar($userData['created_at']) ? (string) $userData['created_at'] : '');
+            $userAvatarVal = isset($userData['avatar']) && is_string($userData['avatar']) ? $userData['avatar'] : (isset($userData['avatar']) && is_scalar($userData['avatar']) ? (string) $userData['avatar'] : '');
 
             $request->setUser([
                 'id' => $userIdVal,
@@ -81,6 +82,7 @@ final class AuthMiddleware implements MiddlewareInterface
                 'role' => $userRoleVal,
                 'status' => $userStatusVal,
                 'token_version' => $userTokenVerVal,
+                'avatar' => $userAvatarVal,
                 'created_at' => $userCreatedAtVal,
                 'claims' => $claims,
             ]);

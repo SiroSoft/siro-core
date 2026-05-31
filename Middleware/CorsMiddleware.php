@@ -14,7 +14,7 @@ final class CorsMiddleware implements MiddlewareInterface
     {
         $allowedOrigins = (string) Env::get('CORS_ALLOWED_ORIGINS', '*');
         $allowedMethods = (string) Env::get('CORS_ALLOWED_METHODS', 'GET,POST,PUT,DELETE,OPTIONS');
-        $allowedHeaders = (string) Env::get('CORS_ALLOWED_HEADERS', 'Content-Type,Authorization,X-Requested-With');
+        $allowedHeaders = (string) Env::get('CORS_ALLOWED_HEADERS', 'Content-Type,Authorization,X-Requested-With,X-Request-Id');
 
         $origin = (string) $request->header('origin', '');
         $allowOrigin = $allowedOrigins === '*' ? '*' : $this->resolveOrigin($origin, $allowedOrigins);

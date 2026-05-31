@@ -21,6 +21,9 @@ final class MakeFactoryCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $name = $this->studly($name);
+        if (str_ends_with($name, 'Factory')) {
+            $name = substr($name, 0, -7);
+        }
         $dir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'factories';
 
         if (!is_dir($dir)) {

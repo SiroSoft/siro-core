@@ -8,7 +8,10 @@ use RuntimeException;
 use Siro\Core\DB\ModelQueryBuilder;
 use Siro\Core\ModelNotFoundException;
 
-/** @implements \ArrayAccess<string, mixed> */
+/**
+ * @implements \ArrayAccess<string, mixed>
+ * @property int $id
+ */
 abstract class Model implements \JsonSerializable, \ArrayAccess
 {
     use ModelSerialization;
