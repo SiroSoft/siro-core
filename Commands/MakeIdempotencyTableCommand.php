@@ -36,10 +36,9 @@ final class MakeIdempotencyTableCommand implements \Siro\Core\Commands\CommandIn
     {
         $configPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
         if (is_file($configPath)) {
+            /** @var array<string, mixed> $config */
             $config = require $configPath;
-            if (is_array($config)) {
-                \Siro\Core\Database::configure($config);
-            }
+            \Siro\Core\Database::configure($config);
         }
     }
 

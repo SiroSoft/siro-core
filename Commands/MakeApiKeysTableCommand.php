@@ -33,10 +33,9 @@ final class MakeApiKeysTableCommand implements \Siro\Core\Commands\CommandInterf
     {
         $configPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
         if (is_file($configPath)) {
+            /** @var array<string, mixed> $config */
             $config = require $configPath;
-            if (is_array($config)) {
-                \Siro\Core\Database::configure($config);
-            }
+            \Siro\Core\Database::configure($config);
         }
     }
 
