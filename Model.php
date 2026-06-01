@@ -20,6 +20,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     protected string $table = '';
     /** @var array<int, string> */
     protected array $hidden = [];
+    /** @var array<string, string> */
+    protected array $casts = [];
     /** @var array<int, string> */
     protected array $fillable = [];
     /** @var array<string, array<int, string>> */
@@ -28,15 +30,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /** @var array<int, string> Relations to auto-eager-load on every query */
     protected array $with = [];
 
-    /** @var array<string, string> */
-    protected array $casts = [
-        'id' => 'int',
-    ];
+    /** @var class-string<\Siro\Core\Observers\ModelObserver>[] */
+    protected static array $observers = [];
 
     /** @var array<string, mixed> */
-    private array $attributes = [];
-    /** @var array<string, mixed> */
     private array $relations = [];
+    /** @var array<string, mixed> */
+    private array $attributes = [];
     /** @var array<string, mixed> */
     private array $original = [];
     private bool $exists = false;
@@ -45,6 +45,307 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     /** @var array<string, array<int|string, static>> */
     protected static array $identityMap = [];
+
+    /** @var array<string, int> */
+    private static array $relationAccessCount = [];
+    private static bool $nPlusOneWarned = false;
+
+    private const N_PLUS_ONE_THRESHOLD = 2;
+
+    /** @param array<string, mixed> $attributes */
+    public function __construct(array $attributes = [])
+    {
+        $this->fill($attributes);
+    }
+
+    public function getTable(): string
+    {
+        if ($this->table !== '') {
+            return $this->table;
+        }
+
+        $className = basename(str_replace('\\', '/', static::class));
+        $replaced = preg_replace('/(?<!^)[A-Z]/', '_$0', $className) ?? $className;
+        return strtolower($replaced) . 's';
+    }
+
+    public function getKeyName(): string
+    {
+        return $this->primaryKey;
+    }
+
+    /** @param class-string<\Siro\Core\Observers\ModelObserver> $observerClass */
+    public static function observe(string $observerClass): void
+    {
+        if (!in_array($observerClass, static::$observers, true)) {
+            static::$observers[] = $observerClass;
+        }
+    }
+
+    private function notifyObservers(string $hook): void
+    {
+        if (static::$observers === []) {
+            return;
+        }
+        foreach (static::$observers as $class) {
+            if (class_exists($class) && method_exists($class, $hook)) {
+                $observer = new $class();
+                $observer->{$hook}($this);
+            }
+        }
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function fill(array $attributes): self
+    {
+        foreach ($attributes as $key => $value) {
+            if ($this->isFillable($key)) {
+                $this->setAttribute($key, $value);
+            }
+        }
+
+        return $this;
+    }
+
+    private function isFillable(string $key): bool
+    {
+        if ($this->fillable === []) {
+            if ($key !== '' && !\Siro\Core\Env::bool('APP_DEBUG', false)) {
+                return false;
+            }
+            if ($key !== '') {
+                trigger_error(
+                    sprintf(
+                        'Mass assignment attempt on unprotected model [%s]: "%s" was discarded because $fillable is empty.',
+                        static::class,
+                        $key
+                    ),
+                    E_USER_WARNING
+                );
+            }
+            return false;
+        }
+
+        return in_array($key, $this->fillable, true);
+    }
+
+    /** @param array<int, string> $fillable */
+    public function setFillable(array $fillable): self
+    {
+        $this->fillable = $fillable;
+        return $this;
+    }
+
+    public function setAttribute(string $key, mixed $value): void
+    {
+        if ($this->fillable !== [] && !in_array($key, $this->fillable, true)) {
+            return;
+        }
+        // Check for mutator method first
+        $mutatorMethod = 'set' . Str::studly($key) . 'Attribute';
+        if (method_exists($this, $mutatorMethod)) {
+            // Call mutator directly - it should handle setting the value
+            $this->{$mutatorMethod}($value);
+            return;
+        }
+
+        $this->attributes[$key] = $value;
+    }
+
+    public function getAttribute(string $key): mixed
+    {
+        // Check for accessor method first
+        $accessorMethod = 'get' . Str::studly($key) . 'Attribute';
+        if (method_exists($this, $accessorMethod)) {
+            return $this->{$accessorMethod}($this->attributes[$key] ?? null);
+        }
+
+        if (!array_key_exists($key, $this->attributes)) {
+            return null;
+        }
+
+        $value = $this->attributes[$key];
+
+        if (isset($this->casts[$key])) {
+            return $this->castAttribute($key, $value);
+        }
+
+        return $value;
+    }
+
+    public function offsetExists(mixed $offset): bool
+    {
+        return array_key_exists($offset, $this->attributes);
+    }
+
+    public function offsetGet(mixed $offset): mixed
+    {
+        return $this->getAttribute($offset);
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        $this->setAttribute(strval($offset), $value);
+    }
+
+    public function offsetUnset(mixed $offset): void
+    {
+        unset($this->attributes[$offset]);
+    }
+
+    public function __get(string $name): mixed
+    {
+        return $this->getAttribute($name);
+    }
+
+    public function __set(string $name, mixed $value): void
+    {
+        $this->setAttribute($name, $value);
+    }
+
+    public function __isset(string $name): bool
+    {
+        return $this->offsetExists($name);
+    }
+
+    /** @return static|null */
+    /** @phpstan-return static|null */
+    public static function find(int|string $id): ?static
+    {
+        if (!isset(static::$identityMap[static::class])) {
+            static::$identityMap[static::class] = [];
+        }
+        $map = &static::$identityMap[static::class];
+        if (isset($map[$id])) {
+            return $map[$id];
+        }
+
+        /** @phpstan-ignore new.static (safe because Model is abstract) */
+        $instance = new static();
+        $key = $instance->getKeyName();
+        /** @var ?static $result */
+        $result = $instance->query()->where($key, '=', $id)->first();
+
+        if ($result === null) {
+            return null;
+        }
+
+        if (count($map) > 1000) {
+            $map = array_slice($map, -800, null, true);
+        }
+        $map[$id] = $result;
+        return $result;
+    }
+
+    /** @return static */
+    private static function createInstance(): static
+    {
+        /** @phpstan-ignore new.static (safe because Model is abstract) */
+        return new static();
+    }
+
+    public static function query(): ModelQueryBuilder
+    {
+        $instance = self::createInstance();
+        return new ModelQueryBuilder($instance->getTable(), static::class);
+    }
+
+    public static function where(string $column, mixed $operatorOrValue, mixed $value = null): ModelQueryBuilder
+    {
+        $query = self::query();
+
+        if (func_num_args() === 2) {
+            return $query->where($column, $operatorOrValue);
+        }
+
+        return $query->where($column, $operatorOrValue, $value);
+    }
+
+    /** @return array<int, self> */
+    public static function all(): array
+    {
+        return self::query()->get();
+    }
+
+    public static function orderBy(string $column, string $direction = 'asc'): ModelQueryBuilder
+    {
+        return self::query()->orderBy($column, $direction);
+    }
+
+    public static function limit(int $value): ModelQueryBuilder
+    {
+        return self::query()->limit($value);
+    }
+
+    public static function offset(int $value): ModelQueryBuilder
+    {
+        return self::query()->offset($value);
+    }
+
+    /** @param string ...$columns */
+    public static function select(string ...$columns): ModelQueryBuilder
+    {
+        return self::query()->select(...$columns);
+    }
+
+    public static function count(string $column = '*'): int
+    {
+        return self::query()->count($column);
+    }
+
+    /** @return self|null */
+    public static function first(): ?self
+    {
+        return self::query()->first();
+    }
+
+    /** @return array<int, self> */
+    public static function get(): array
+    {
+        return self::query()->get();
+    }
+
+    /**
+     * Memory-efficient iteration over all matching records.
+     *
+     * Yields one Model at a time without loading all into memory.
+     * Usage: foreach (User::where('active', 1)->cursor() as $user) { ... }
+     *
+     * @return \Generator<int, self>
+     */
+    public static function cursor(): \Generator
+    {
+        return self::query()->cursor();
+    }
+
+    /**
+     * @return array{data: array<int, self>, meta: array{page: int, per_page: int, total: int, last_page: int}}
+     */
+    public static function paginate(int $perPage = 15, int $page = 1): array
+    {
+        $query = self::query();
+        $perPage = max(1, $perPage);
+        $page = max(1, $page);
+        $offset = ($page - 1) * $perPage;
+
+        // Clone query for count to avoid state mutation
+        $countQuery = clone $query;
+        $total = $countQuery->count();
+        $lastPage = $total > 0 ? (int) ceil($total / $perPage) : 1;
+
+        /** @var array<int, self> $data */
+        $data = $query->limit($perPage)->offset($offset)->get();
+
+        return [
+            'data' => $data,
+            'meta' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => $lastPage,
+            ],
+        ];
+    }
 
     /**
      * Reload the model from the database.
@@ -162,12 +463,6 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         return $instance;
     }
 
-    /** @return static|null */
-    public static function find(int|string $id): ?static
-    {
-        return static::query()->where('id', '=', $id)->first();
-    }
-
     /** @return static */
     public static function findOrFail(int|string $id): static
     {
@@ -178,51 +473,6 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         }
 
         return $model;
-    }
-
-    /**
-     * @param array<string, mixed> $conditions
-     * @return \Siro\Core\DB\ModelQueryBuilder
-     */
-    public static function where(...$conditions): \Siro\Core\DB\ModelQueryBuilder
-    {
-        return static::query()->where(...$conditions);
-    }
-
-    public static function query(): \Siro\Core\DB\ModelQueryBuilder
-    {
-        $instance = new static();
-        return new \Siro\Core\DB\ModelQueryBuilder($instance->getTable(), static::class);
-    }
-
-    public function getAttribute(string $key): mixed
-    {
-        return $this->attributes[$key] ?? null;
-    }
-
-    public function getTable(): string
-    {
-        return $this->table;
-    }
-
-    public function offsetExists(mixed $offset): bool
-    {
-        return isset($this->attributes[$offset]);
-    }
-
-    public function offsetGet(mixed $offset): mixed
-    {
-        return $this->getAttribute((string) $offset);
-    }
-
-    public function offsetSet(mixed $offset, mixed $value): void
-    {
-        $this->attributes[$offset] = $value;
-    }
-
-    public function offsetUnset(mixed $offset): void
-    {
-        unset($this->attributes[$offset]);
     }
 
     /**
