@@ -689,7 +689,8 @@ class QueryBuilder
             }
 
             $callback($rows);
-            $lastValue = (int) end($rows)[$column];
+            $lastRow = end($rows);
+            $lastValue = isset($lastRow[$column]) && is_numeric($lastRow[$column]) ? (int) $lastRow[$column] : 0;
         } while (count($rows) === $size);
 
         return true;

@@ -487,18 +487,25 @@ final class ModelQueryBuilder extends QueryBuilder
 
         // Merge model's $with property into query eager loads
         $allEagerLoads = $this->eagerLoads;
-        $withRelations = $this->modelClass !== '' && property_exists($this->modelClass, 'with')
-            ? (array) (new $this->modelClass())->with
-            : [];
-        foreach ($withRelations as $relation) {
-            $relName = is_string($relation) ? $relation : (is_array($relation) ? key($relation) : '');
-            if ($relName !== '' && !isset($allEagerLoads[$relName])) {
-                $allEagerLoads[$relName] = ['*'];
+        $withRelations = [];
+        if ($this->modelClass !== '') {
+            /** @phpstan-ignore argument.type */
+            $ref = new \ReflectionClass($this->modelClass);
+            if ($ref->hasProperty('with')) {
+                $prop = $ref->getProperty('with');
+                $withValues = (array) $prop->getValue($ref->newInstanceWithoutConstructor());
+                foreach ($withValues as $relation) {
+                    $relName = is_string($relation) ? $relation : (is_array($relation) ? key($relation) : '');
+                    if ($relName !== '' && !isset($allEagerLoads[$relName])) {
+                        $allEagerLoads[$relName] = ['*'];
+                    }
+                }
             }
         }
 
         if ($allEagerLoads !== []) {
             $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
+            /** @var array<string, array<int, string>> $allEagerLoads */
             $loader->loadBatch($models, $allEagerLoads);
         }
 

@@ -420,10 +420,10 @@ final class Router
         }
 
         if (is_array($handler)) {
-            [$class, $method] = $handler;
-            if (!is_string($class) || !is_string($method)) {
-                throw new RuntimeException('Invalid route handler format. Expected [className, methodName].');
-            }
+            /** @var string $class */
+            $class = $handler[0];
+            /** @var string $method */
+            $method = $handler[1];
 
             $controller = $this->resolveController($class);
             if (!method_exists($controller, $method)) {
