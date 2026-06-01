@@ -20,8 +20,6 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     protected string $table = '';
     /** @var array<int, string> */
     protected array $hidden = [];
-    /** @var array<string, string> */
-    protected array $casts = [];
     /** @var array<int, string> */
     protected array $fillable = [];
     /** @var array<string, array<int, string>> */
