@@ -33,6 +33,19 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         'id' => 'int',
     ];
 
+    /** @var array<string, mixed> */
+    private array $attributes = [];
+    /** @var array<string, mixed> */
+    private array $relations = [];
+    /** @var array<string, mixed> */
+    private array $original = [];
+    private bool $exists = false;
+    protected string $primaryKey = 'id';
+    protected bool $timestamps = true;
+
+    /** @var array<string, array<int|string, static>> */
+    protected static array $identityMap = [];
+
     /**
      * Reload the model from the database.
      */
@@ -149,6 +162,12 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         return $instance;
     }
 
+    /** @return static|null */
+    public static function find(int|string $id): ?static
+    {
+        return static::query()->where('id', '=', $id)->first();
+    }
+
     /** @return static */
     public static function findOrFail(int|string $id): static
     {
@@ -159,6 +178,51 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         }
 
         return $model;
+    }
+
+    /**
+     * @param array<string, mixed> $conditions
+     * @return \Siro\Core\DB\ModelQueryBuilder
+     */
+    public static function where(...$conditions): \Siro\Core\DB\ModelQueryBuilder
+    {
+        return static::query()->where(...$conditions);
+    }
+
+    public static function query(): \Siro\Core\DB\ModelQueryBuilder
+    {
+        $instance = new static();
+        return new \Siro\Core\DB\ModelQueryBuilder($instance->getTable(), static::class);
+    }
+
+    public function getAttribute(string $key): mixed
+    {
+        return $this->attributes[$key] ?? null;
+    }
+
+    public function getTable(): string
+    {
+        return $this->table;
+    }
+
+    public function offsetExists(mixed $offset): bool
+    {
+        return isset($this->attributes[$offset]);
+    }
+
+    public function offsetGet(mixed $offset): mixed
+    {
+        return $this->getAttribute((string) $offset);
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        $this->attributes[$offset] = $value;
+    }
+
+    public function offsetUnset(mixed $offset): void
+    {
+        unset($this->attributes[$offset]);
     }
 
     /**
