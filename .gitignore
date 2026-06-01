@@ -26,3 +26,8 @@ Thumbs.db
 # Private: runtime/installer
 /scripts/build-phar.php
 /dist/
+
+# Local-only docs
+MODEL_ENHANCEMENTS.md
+WORKFLOW_REAL_TEST.md
+DOCUMENTATION_SUMMARY.md
