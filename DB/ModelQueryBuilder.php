@@ -477,11 +477,29 @@ final class ModelQueryBuilder extends QueryBuilder
     {
         $this->applySoftDeleteFilter();
         $rows = parent::get();
+
+        if ($rows === []) {
+            return [];
+        }
+
+        /** @var array<int, Model> $models */
         $models = $this->hydrateModels($rows);
 
-        if ($this->eagerLoads !== []) {
+        // Merge model's $with property into query eager loads
+        $allEagerLoads = $this->eagerLoads;
+        $withRelations = $this->modelClass !== '' && property_exists($this->modelClass, 'with')
+            ? (array) (new $this->modelClass())->with
+            : [];
+        foreach ($withRelations as $relation) {
+            $relName = is_string($relation) ? $relation : (is_array($relation) ? key($relation) : '');
+            if ($relName !== '' && !isset($allEagerLoads[$relName])) {
+                $allEagerLoads[$relName] = ['*'];
+            }
+        }
+
+        if ($allEagerLoads !== []) {
             $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
-            $loader->loadBatch($models, $this->eagerLoads);
+            $loader->loadBatch($models, $allEagerLoads);
         }
 
         if ($this->withCounts !== []) {
