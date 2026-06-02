@@ -843,7 +843,10 @@ class QueryBuilder
     /** @param array<string, mixed> $data */
     public function insertGetId(array $data): int
     {
-        return $this->insert($data);
+        $this->insert($data);
+        $pdo = Database::connection($this->connectionName);
+        $lastId = $pdo->lastInsertId();
+        return $lastId !== false && $lastId !== '0' ? (int) $lastId : 0;
     }
 
     /** @param array<string, mixed> $data */
