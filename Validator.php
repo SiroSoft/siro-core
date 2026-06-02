@@ -24,6 +24,9 @@ final class Validator
 
     /** @var array<string, string> */
     private static array $customMessages = [];
+
+    /** @var array<string, array{parsed:array<int,string>,nullable:bool,required:bool,requiredIf:?string}> */
+    private static array $parsedRuleCache = [];
     /**
      * Register a custom validation rule.
      *
@@ -216,18 +219,31 @@ final class Validator
                 }
             }
 
-            $fieldRules = explode('|', $ruleLine);
-            $isNullable = in_array('nullable', $fieldRules, true);
-            $isRequired = in_array('required', $fieldRules, true);
-
-            // Handle required_if
-            $requiredIf = null;
-            foreach ($fieldRules as $rule) {
-                if (str_starts_with($rule, 'required_if:')) {
-                    $requiredIf = substr($rule, 12);
-                    break;
+            // Use cached parsed rules if available
+            if (!isset(self::$parsedRuleCache[$ruleLine])) {
+                $fieldRules = explode('|', $ruleLine);
+                $isNullable = in_array('nullable', $fieldRules, true);
+                $isRequired = in_array('required', $fieldRules, true);
+                $requiredIf = null;
+                foreach ($fieldRules as $rule) {
+                    if (str_starts_with($rule, 'required_if:')) {
+                        $requiredIf = substr($rule, 12);
+                        break;
+                    }
                 }
+                self::$parsedRuleCache[$ruleLine] = [
+                    'parsed' => $fieldRules,
+                    'nullable' => $isNullable,
+                    'required' => $isRequired,
+                    'requiredIf' => $requiredIf,
+                ];
             }
+            $cached = self::$parsedRuleCache[$ruleLine];
+            $fieldRules = $cached['parsed'];
+            $isNullable = $cached['nullable'];
+            $isRequired = $cached['required'];
+            $requiredIf = $cached['requiredIf'];
+
             if ($requiredIf !== null) {
                 $parts = explode(',', $requiredIf, 2);
                 $otherField = trim($parts[0]);
