@@ -662,6 +662,40 @@ class QueryBuilder
         return true;
     }
 
+    /**
+     * Keyset-based chunking — efficient for large datasets, no OFFSET degradation.
+     * Requires an ordered column (default: 'id').
+     *
+     * @param int $size Chunk size
+     * @param callable $callback Receives each chunk's rows
+     * @param string $column Column used for keyset pagination (must be unique, indexed)
+     */
+    public function chunkById(int $size, callable $callback, string $column = 'id'): bool
+    {
+        $lastValue = null;
+
+        do {
+            $clone = clone $this;
+            $clone->orderBy($column, 'ASC');
+
+            if ($lastValue !== null) {
+                $clone->where($column, '>', $lastValue);
+            }
+
+            $rows = $clone->limit($size)->get();
+
+            if ($rows === []) {
+                return true;
+            }
+
+            $callback($rows);
+            $lastRow = end($rows);
+            $lastValue = isset($lastRow[$column]) && is_numeric($lastRow[$column]) ? (int) $lastRow[$column] : 0;
+        } while (count($rows) === $size);
+
+        return true;
+    }
+
     public function exists(): bool
     {
         return $this->count() > 0;
@@ -823,6 +857,45 @@ class QueryBuilder
 
         $stmt = Database::connection($this->connectionName)->prepare($sql);
         $stmt->execute($allBindings);
+        Cache::flushQueryBuilderTable($this->cacheTable);
+
+        return $stmt->rowCount();
+    }
+
+    /**
+     * INSERT ... ON DUPLICATE KEY UPDATE (MySQL) / UPSERT.
+     * $data is the insert data, $update is the update-on-duplicate columns.
+     *
+     * @param array<string, mixed> $data
+     * @param array<int, string> $update Column names to update on duplicate key
+     */
+    public function upsert(array $data, array $update): int
+    {
+        if ($data === [] || $update === []) {
+            return 0;
+        }
+
+        $columns = array_keys($data);
+        $placeholders = [];
+        $values = [];
+        foreach ($columns as $col) {
+            $placeholders[] = '?';
+            $values[] = $data[$col];
+        }
+
+        $updateSet = implode(', ', array_map(fn(string $c): string => "{$c} = VALUES({$c})", $update));
+
+        $sql = sprintf(
+            'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s',
+            $this->table,
+            implode(', ', $columns),
+            implode(', ', $placeholders),
+            $updateSet,
+        );
+
+        $pdo = Database::connection($this->connectionName);
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($values);
         Cache::flushQueryBuilderTable($this->cacheTable);
 
         return $stmt->rowCount();

@@ -26,6 +26,10 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     protected array $fillable = [];
     /** @var array<string, array<int, string>> */
     protected static array $eagerLoads = [];
+
+    /** @var array<int, string> Relations to auto-eager-load on every query */
+    protected array $with = [];
+
     /** @var class-string<\Siro\Core\Observers\ModelObserver>[] */
     protected static array $observers = [];
 
