@@ -16,6 +16,7 @@ final class TestCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $filter = '';
         $suite = '';
+        $coverage = false;
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--filter=')) {
@@ -23,7 +24,7 @@ final class TestCommand implements \Siro\Core\Commands\CommandInterface {
             } elseif (str_starts_with($arg, '--suite=')) {
                 $suite = substr($arg, 8);
             } elseif ($arg === '--coverage') {
-                $filter = '--coverage';
+                $coverage = true;
             }
         }
 
@@ -36,7 +37,7 @@ final class TestCommand implements \Siro\Core\Commands\CommandInterface {
 
         $cmd = 'php ' . escapeshellarg($phpunit) . ' --no-coverage --no-progress --colors=always';
 
-        if ($filter !== '' && $filter !== '--coverage') {
+        if ($filter !== '') {
             $cmd .= ' --filter=' . escapeshellarg($filter);
         }
 
@@ -44,7 +45,7 @@ final class TestCommand implements \Siro\Core\Commands\CommandInterface {
             $cmd .= ' --testsuite=' . escapeshellarg($suite);
         }
 
-        if ($filter === '--coverage' || in_array('--coverage', $args, true)) {
+        if ($coverage) {
             $cmd .= ' --coverage-html=' . escapeshellarg($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'coverage');
             $this->write('Running tests with coverage report...');
             $this->write('Report will be available at: storage/coverage/index.html');

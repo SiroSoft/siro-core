@@ -113,10 +113,12 @@ final class DatabaseInstance implements DatabaseInterface
         $this->pdoInstances = [];
         $this->configs = [];
         $this->capturedQueries = [];
+        $this->preparedStatements = [];
         $this->transactionDepth = 0;
         $this->defaultConnection = 'default';
         $this->queryCacheTtl = 0;
         QueryBuilder::resetDriverNames();
+        \Siro\Core\Schema::resetPdo();
     }
 
     /** @return array<int, string> */

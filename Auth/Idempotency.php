@@ -112,12 +112,20 @@ final class Idempotency
         $expiresAt = time() + $this->ttl;
         $responseJson = json_encode($responseData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        Database::execute(
-            "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
-             VALUES (?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE response_data = VALUES(response_data), created_at = VALUES(created_at), expires_at = VALUES(expires_at)",
-            [$this->hash, $this->currentKey, $this->userId, $responseJson, time(), $expiresAt]
-        );
+        $driver = Database::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        $sql = match ($driver) {
+            'mysql', 'mariadb' => "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
+                 VALUES (?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE response_data = VALUES(response_data), created_at = VALUES(created_at), expires_at = VALUES(expires_at)",
+            'pgsql', 'postgres', 'postgresql' => "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
+                 VALUES (?, ?, ?, ?, ?, ?)
+                 ON CONFLICT (hash) DO UPDATE SET response_data = EXCLUDED.response_data, created_at = EXCLUDED.created_at, expires_at = EXCLUDED.expires_at",
+            default => "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
+                 VALUES (?, ?, ?, ?, ?, ?)
+                 ON CONFLICT(hash) DO UPDATE SET response_data = excluded.response_data, created_at = excluded.created_at, expires_at = excluded.expires_at",
+        };
+
+        Database::execute($sql, [$this->hash, $this->currentKey, $this->userId, $responseJson, time(), $expiresAt]);
     }
 
     /**

@@ -17,6 +17,11 @@ final class Schema
         self::$pdo = $pdo;
     }
 
+    public static function resetPdo(): void
+    {
+        self::$pdo = null;
+    }
+
     public static function create(string $table, callable $callback): void
     {
         $blueprint = new Blueprint($table, self::driver());

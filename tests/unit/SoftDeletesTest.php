@@ -17,6 +17,8 @@ final class SoftDeletesTest extends TestCase
         Database::connection()->exec('CREATE TABLE soft_delete_models (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL DEFAULT \'\',
+            created_at TEXT,
+            updated_at TEXT,
             deleted_at TEXT NULL
         )');
     }

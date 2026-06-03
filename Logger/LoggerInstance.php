@@ -35,7 +35,11 @@ final class LoggerInstance implements LoggerInterface
         $this->dailyDir = $this->logDir . DIRECTORY_SEPARATOR . 'daily';
         $this->mainDir = $this->logDir . DIRECTORY_SEPARATOR . 'main';
         $this->traceDir = $this->logDir . DIRECTORY_SEPARATOR . 'traces';
-        // Directories created lazily on first write for cold boot performance
+        if (!is_dir($this->logDir)) { mkdir($this->logDir, 0775, true); }
+        if (!is_dir($this->dailyDir)) { mkdir($this->dailyDir, 0775, true); }
+        if (!is_dir($this->mainDir)) { mkdir($this->mainDir, 0775, true); }
+        if (!is_dir($this->traceDir)) { mkdir($this->traceDir, 0775, true); }
+        $this->protectLogDir();
 
         $this->retentionDays = max(1, (int) Env::get('LOG_RETENTION_DAYS', '30'));
         $this->slowThreshold = max(0, (int) Env::get('DB_SLOW_QUERY_THRESHOLD', '100'));

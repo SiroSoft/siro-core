@@ -8,7 +8,7 @@ use PDO;
 use Siro\Core\Database;
 
 /**
- * Benchmark SQLite database performance — inserts, selects, updates, deletes per second.
+ * Benchmark SQLite database performance — inserts, selects, updates, deletes per second (SQLite only).
  *
  * Usage: php siro db:benchmark [--iterations=1000]
  */

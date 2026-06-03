@@ -67,15 +67,20 @@ final class TraceData
     /** @param array<string, string> $headers */
     public static function setRequestHeaders(array $headers): void
     {
-        self::$requestHeaders = $headers;
+        $sanitized = [];
         foreach ($headers as $key => $value) {
             $lk = strtolower($key);
             if ($lk === 'authorization') {
-                self::$authHeader = $value;
+                self::$authHeader = substr($value, 0, 15) . '...[REDACTED]';
+                $sanitized[$key] = '[REDACTED]';
             } elseif ($lk === 'content-type') {
                 self::$contentType = $value;
+                $sanitized[$key] = $value;
+            } else {
+                $sanitized[$key] = $value;
             }
         }
+        self::$requestHeaders = $sanitized;
     }
 
     public static function setException(string $class, string $message): void

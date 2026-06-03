@@ -34,12 +34,12 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     protected static array $observers = [];
 
     /** @var array<string, mixed> */
-    private array $relations = [];
+    protected array $relations = [];
     /** @var array<string, mixed> */
-    private array $attributes = [];
+    protected array $attributes = [];
     /** @var array<string, mixed> */
-    private array $original = [];
-    private bool $exists = false;
+    protected array $original = [];
+    protected bool $exists = false;
     protected string $primaryKey = 'id';
     protected bool $timestamps = true;
 

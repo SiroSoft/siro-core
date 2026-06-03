@@ -240,8 +240,14 @@ final class Router
             return false;
         }
 
+        $content = (string) file_get_contents($cacheFile);
+        $prefix = '<?php exit; ?>';
+        if (!str_starts_with($content, $prefix)) {
+            return false;
+        }
+        $json = ltrim(substr($content, strlen($prefix)));
         /** @var mixed $data */
-        $data = require $cacheFile;
+        $data = json_decode($json, true);
         if (!is_array($data)) { return false; }
         $staticData = is_array($data['static'] ?? null) ? $data['static'] : [];
         $dynamicData = is_array($data['dynamic'] ?? null) ? $data['dynamic'] : [];
@@ -295,8 +301,7 @@ final class Router
         $dynamicData = $data['dynamic'] ?? [];
         $hmac = $secret !== '' ? hash_hmac('sha256', json_encode($staticData) . json_encode($dynamicData), $secret) : '';
         $data['hmac'] = $hmac;
-        $exported = var_export($data, true);
-        $content = '<?php return ' . $exported . ';' . PHP_EOL;
+        $content = '<?php exit; ?>' . PHP_EOL . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         return file_put_contents($cacheFile, $content) !== false;
     }
