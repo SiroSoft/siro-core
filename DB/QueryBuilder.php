@@ -910,7 +910,6 @@ class QueryBuilder
                 implode(', ', array_map(fn(string $c): string => "{$c} = excluded.{$c}", $update))
             ),
         };
-
         $stmt = $pdo->prepare($sql);
         $stmt->execute($values);
         Cache::flushQueryBuilderTable($this->cacheTable);
