@@ -134,6 +134,8 @@ final class Router
 
     public function dispatch(Request $request): Response
     {
+        $this->detectLocale($request);
+
         if ($this->matcherDirty) {
             $this->rebuildMatcher();
         }
@@ -571,6 +573,26 @@ final class Router
     private function isDynamicPath(string $path): bool
     {
         return str_contains($path, '{') && str_contains($path, '}');
+    }
+
+    private function detectLocale(Request $request): void
+    {
+        $locale = $request->header('x-locale', '');
+        if ($locale === '') {
+            $acceptLang = $request->header('accept-language', '');
+            if ($acceptLang !== '') {
+                $parts = explode(',', $acceptLang);
+                $first = explode(';', $parts[0])[0] ?? '';
+                $locale = strtolower(substr(trim($first), 0, 2));
+            }
+        }
+        if ($locale === '') {
+            $locale = Env::get('APP_LOCALE', 'en');
+        }
+        $validLocales = ['en', 'vi', 'de', 'zh', 'ja'];
+        if (in_array($locale, $validLocales, true)) {
+            Lang::setLocale($locale);
+        }
     }
 
     /**
