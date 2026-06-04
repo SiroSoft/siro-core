@@ -88,6 +88,7 @@ use Siro\Core\Commands\BenchmarkCommand;
 use Siro\Core\Commands\FrankenphpServeCommand;
 use Siro\Core\Commands\MigrateFreshCommand;
 use Siro\Core\Commands\TinkerCommand;
+use Siro\Core\Commands\DemoCommand;
 use Siro\Core\Commands\DbHealthCommand;
 use Siro\Core\Commands\DbCheckCommand;
 use Siro\Core\Commands\DbStatsCommand;
@@ -293,6 +294,7 @@ final class Console
             'replay'        => ['handler' => ReplayCommand::class, 'desc' => 'Replay last trace (or by id)', 'usage' => 'php siro replay [trace_id] [--edit] [--diff]'],
             'runtime'       => ['handler' => RuntimeCommand::class, 'desc' => 'Siro Runtime manager (install, switch, list)', 'usage' => 'php siro runtime [install|switch|list|remove|current|path]'],
             'db'            => ['handler' => DatabaseCommand::class, 'desc' => 'Database manager (init, start, stop)', 'usage' => 'php siro db [init|start|stop|status|remove]'],
+            'demo'          => ['handler' => DemoCommand::class, 'desc' => '30s debug workflow demo — test, fail, why, fix, trace', 'usage' => 'php siro demo'],
             'tinker'        => ['handler' => TinkerCommand::class, 'desc' => 'Interactive PHP playground in app context', 'usage' => 'php siro tinker'],
             'test'          => ['handler' => TestCommand::class, 'desc' => 'Run tests (--filter=, --suite=, --coverage)', 'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
@@ -485,7 +487,7 @@ final class Console
         $this->write('');
 
         $layers = [
-            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'api:why', 'db:why', 'why', 'fix', 'replay', 'trace:list'],
+            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'api:why', 'db:why', 'why', 'fix', 'replay', 'trace:list', 'demo'],
             '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
                                     'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
             '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:observer', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
