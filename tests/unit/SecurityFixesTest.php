@@ -294,12 +294,11 @@ final class SecurityFixesTest extends TestCase
             'dynamic' => [],
         ];
 
-        $json = json_encode($exported, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $secret = 'test_app_key_for_unit_tests_router_cache_32chars!';
         putenv('APP_KEY=' . $secret);
         $_ENV['APP_KEY'] = $secret;
-        $hmac = hash_hmac('sha256', $json, $secret);
-        $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
+        $exported['hmac'] = hash_hmac('sha256', json_encode($exported['static']) . json_encode($exported['dynamic']), $secret);
+        $content = '<?php exit; ?>' . PHP_EOL . json_encode($exported, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         file_put_contents($cacheFile, $content);
 
         $router = new Router();

@@ -12,7 +12,6 @@ namespace Siro\Core\Commands;
  *
  * Usage:
  *   php siro make:job SendWelcomeEmail
- *   php siro make:job ProcessVideo --delay=60
  *
  * @package Siro\Core\Commands
  */

@@ -8,7 +8,7 @@ use Siro\Core\Database;
 use Siro\Core\Lite\BackupManager;
 
 /**
- * Backup SQLite database to storage/backups/.
+ * Backup SQLite database to storage/backups/ (SQLite only).
  *
  * Usage: php siro db:backup [--compress]
  */

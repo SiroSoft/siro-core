@@ -10,7 +10,7 @@ use Siro\Core\Lite\HealthAnalyzer;
 use Siro\Core\Lite\LiteConfig;
 
 /**
- * Show SQLite database health — size, fragmentation, tables, indexes, WAL status.
+ * Show SQLite database health — size, fragmentation, tables, indexes, WAL status (SQLite only).
  *
  * Usage: php siro db:health
  */

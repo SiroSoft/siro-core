@@ -6,6 +6,9 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\Env;
 
+/**
+ * Check environment configuration — shows MySQL connection info when DB_CONNECTION=mysql.
+ */
 final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 

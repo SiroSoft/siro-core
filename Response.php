@@ -61,11 +61,15 @@ final class Response
     /** @param array<string, mixed> $errors */
     public static function error(string $message, int $statusCode = 400, array $errors = []): self
     {
-        $payload = ['success' => false, 'message' => $message];
+        $meta = ['timestamp' => date('c')];
         if ($errors !== []) {
-            $payload['errors'] = $errors;
+            $meta['errors'] = $errors;
         }
-        return new self($payload, $statusCode);
+        return new self([
+            'success' => false,
+            'message' => $message,
+            'meta' => $meta,
+        ], $statusCode);
     }
 
     /**

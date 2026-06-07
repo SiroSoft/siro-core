@@ -8,7 +8,7 @@ use PDO;
 use Siro\Core\Database;
 
 /**
- * Show SQLite database statistics — table sizes, index sizes, row estimates.
+ * Show SQLite database statistics — table sizes, index sizes, row estimates (SQLite only).
  *
  * Usage: php siro db:stats
  */

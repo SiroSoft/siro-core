@@ -7,7 +7,7 @@ namespace Siro\Core\Commands;
 use Siro\Core\Database;
 
 /**
- * Run SQLite integrity check — PRAGMA integrity_check + foreign_key_check.
+ * Run SQLite integrity check — PRAGMA integrity_check + foreign_key_check (SQLite only).
  *
  * Usage: php siro db:check
  */

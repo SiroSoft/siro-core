@@ -8,7 +8,7 @@ use Siro\Core\Database;
 use Siro\Core\Lite\LiteConfig;
 
 /**
- * Optimize SQLite database — ANALYZE, VACUUM, PRAGMA optimize.
+ * Optimize SQLite database — ANALYZE, VACUUM, PRAGMA optimize (SQLite only).
  *
  * Usage: php siro db:optimize
  */

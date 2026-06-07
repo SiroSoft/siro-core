@@ -24,7 +24,7 @@ final class ServeCommand implements \Siro\Core\Commands\CommandInterface {
     public function run(array $args): int
     {
         $host = 'localhost';
-        $port = '8000';
+        $port = '8080';
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--port=')) {

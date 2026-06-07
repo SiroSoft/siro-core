@@ -23,7 +23,7 @@ trait SoftDeletes
         if (!\Siro\Core\Event::emit("{$table}.deleting", $this)) {
             return false;
         }
-        $this->setAttribute('deleted_at', $timestamp);
+        $this->attributes['deleted_at'] = $timestamp;
         $result = $this->save();
         if ($result) {
             \Siro\Core\Event::emit("{$table}.deleted", $this);
@@ -52,7 +52,7 @@ trait SoftDeletes
 
     public function restore(): bool
     {
-        $this->setAttribute('deleted_at', null);
+        $this->attributes['deleted_at'] = null;
         return $this->save();
     }
 

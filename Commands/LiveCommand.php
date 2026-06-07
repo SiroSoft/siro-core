@@ -26,7 +26,7 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $port = 8080;
+        $port = 9090;
         $host = 'localhost';
 
         foreach ($args as $arg) {

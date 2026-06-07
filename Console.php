@@ -88,6 +88,7 @@ use Siro\Core\Commands\BenchmarkCommand;
 use Siro\Core\Commands\FrankenphpServeCommand;
 use Siro\Core\Commands\MigrateFreshCommand;
 use Siro\Core\Commands\TinkerCommand;
+use Siro\Core\Commands\DemoCommand;
 use Siro\Core\Commands\DbHealthCommand;
 use Siro\Core\Commands\DbCheckCommand;
 use Siro\Core\Commands\DbStatsCommand;
@@ -99,7 +100,7 @@ use Siro\Core\Commands\DbBenchmarkCommand;
 
 final class Console
 {
-    public const VERSION = '0.33.1';
+    public const VERSION = '0.34.0';
 
     /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
     private static array $appCommands = [];
@@ -213,7 +214,7 @@ final class Console
             'make:event'      => ['handler' => MakeEventCommand::class, 'desc' => 'Generate event class', 'usage' => 'php siro make:event <name>'],
             'make:lang'       => ['handler' => MakeLangCommand::class, 'desc' => 'Generate language file', 'usage' => 'php siro make:lang <locale> <file>'],
             'make:factory'    => ['handler' => MakeFactoryCommand::class, 'desc' => 'Generate factory', 'usage' => 'php siro make:factory <name>'],
-            'make:openapi'    => ['handler' => MakeOpenApiCommand::class, 'desc' => 'Generate OpenAPI spec', 'usage' => 'php siro make:openapi [--with-swagger] [--tag=TAG] [--flow=auth|crud]'],
+            'make:openapi'    => ['handler' => MakeOpenApiCommand::class, 'desc' => 'Generate OpenAPI spec', 'usage' => 'php siro make:openapi [--with-swagger] [--tag=TAG] [--flow=auth|crud] [--output=] [--force] [--title=]'],
             'make:postman'    => ['handler' => MakePostmanCommand::class, 'desc' => 'Generate Postman collection', 'usage' => 'php siro make:postman [--flow=crud]'],
             'make:service'    => ['handler' => MakeServiceCommand::class, 'desc' => 'Generate service class', 'usage' => 'php siro make:service <name>'],
             'make:repository' => ['handler' => MakeRepositoryCommand::class, 'desc' => 'Generate repository class', 'usage' => 'php siro make:repository <name>'],
@@ -234,7 +235,7 @@ final class Console
             'migrate:reset'     => ['handler' => MigrateResetCommand::class, 'desc' => 'Rollback all migrations', 'usage' => 'php siro migrate:reset'],
             'migrate:refresh'   => ['handler' => MigrateRefreshCommand::class, 'desc' => 'Rollback all and re-run migrations', 'usage' => 'php siro migrate:refresh [--seed]'],
             'db:seed'           => ['handler' => SeedCommand::class, 'desc' => 'Run seeders', 'usage' => 'php siro db:seed'],
-            'db:show'           => ['handler' => DbShowCommand::class, 'desc' => 'Show table data/schema', 'usage' => 'php siro db:show <table> [--schema]'],
+            'db:show'           => ['handler' => DbShowCommand::class, 'desc' => 'Show table data/schema', 'usage' => 'php siro db:show <table> [--schema] [--limit=N]'],
             'db:health'    => ['handler' => DbHealthCommand::class, 'desc' => 'Database health check', 'usage' => 'php siro db:health'],
             'db:check'     => ['handler' => DbCheckCommand::class, 'desc' => 'Database integrity check', 'usage' => 'php siro db:check'],
             'db:stats'     => ['handler' => DbStatsCommand::class, 'desc' => 'Database statistics', 'usage' => 'php siro db:stats'],
@@ -244,9 +245,9 @@ final class Console
             'db:explain'   => ['handler' => DbExplainCommand::class, 'desc' => 'EXPLAIN query', 'usage' => 'php siro db:explain --query="..."'],
             'db:benchmark' => ['handler' => DbBenchmarkCommand::class, 'desc' => 'Database performance benchmark', 'usage' => 'php siro db:benchmark [--iterations=N]'],
 
-            'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request (--set, --seed)', 'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val]'],
+            'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request (--set, --seed)', 'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val] [--format=] [--safe] [--dry-run]'],
             'log:trace'   => ['handler' => LogTraceCommand::class, 'desc' => 'View trace details (--full for more)', 'usage' => 'php siro log:trace [<id>] [--status=500] [--limit=N] [--full]'],
-            'log:export'  => ['handler' => LogExportCommand::class, 'desc' => 'Export trace (JSON/CSV/Postman)', 'usage' => 'php siro log:export <trace_id> --postman'],
+            'log:export'  => ['handler' => LogExportCommand::class, 'desc' => 'Export trace (JSON/CSV/Postman)', 'usage' => 'php siro log:export <trace_id> [--format=] [--output=] [--days=] [--curl]'],
             'log:cleanup' => ['handler' => LogCleanupCommand::class, 'desc' => 'Clean old trace files', 'usage' => 'php siro log:cleanup [--days=N] [--dry-run]'],
             'log:slow'    => ['handler' => SlowLogCommand::class, 'desc' => 'Show slow requests', 'usage' => 'php siro log:slow [--limit=N] [--min=MS]'],
             'api:why'     => ['handler' => ApiWhyCommand::class, 'desc' => 'Trace a specific request — middleware, SQL, timing, exception', 'usage' => 'php siro api:why <METHOD> <path>'],
@@ -271,7 +272,7 @@ final class Console
             'serve'             => ['handler' => ServeCommand::class, 'desc' => 'Start dev server (php -S)', 'usage' => 'php siro serve [--port=8080]'],
             'frankenphp:serve'  => ['handler' => FrankenphpServeCommand::class, 'desc' => 'Start FrankenPHP production server (--docker)', 'usage' => 'php siro frankenphp:serve [--docker] [--port=80]'],
             'live'         => ['handler' => LiveCommand::class, 'desc' => 'Live reload dev server', 'usage' => 'php siro live [--port=9090]'],
-            'deploy'       => ['handler' => DeployCommand::class, 'desc' => 'Deploy application', 'usage' => 'php siro deploy [--init]'],
+            'deploy'       => ['handler' => DeployCommand::class, 'desc' => 'Deploy application', 'usage' => 'php siro deploy [--init] [--list]'],
             'storage:link' => ['handler' => StorageLinkCommand::class, 'desc' => 'Create storage symlink', 'usage' => 'php siro storage:link'],
 
             'key:generate'  => ['handler' => KeyGenerateCommand::class, 'desc' => 'Generate JWT secret', 'usage' => 'php siro key:generate'],
@@ -293,6 +294,7 @@ final class Console
             'replay'        => ['handler' => ReplayCommand::class, 'desc' => 'Replay last trace (or by id)', 'usage' => 'php siro replay [trace_id] [--edit] [--diff]'],
             'runtime'       => ['handler' => RuntimeCommand::class, 'desc' => 'Siro Runtime manager (install, switch, list)', 'usage' => 'php siro runtime [install|switch|list|remove|current|path]'],
             'db'            => ['handler' => DatabaseCommand::class, 'desc' => 'Database manager (init, start, stop)', 'usage' => 'php siro db [init|start|stop|status|remove]'],
+            'demo'          => ['handler' => DemoCommand::class, 'desc' => '30s debug workflow demo — test, fail, why, fix, trace', 'usage' => 'php siro demo'],
             'tinker'        => ['handler' => TinkerCommand::class, 'desc' => 'Interactive PHP playground in app context', 'usage' => 'php siro tinker'],
             'test'          => ['handler' => TestCommand::class, 'desc' => 'Run tests (--filter=, --suite=, --coverage)', 'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
@@ -485,7 +487,7 @@ final class Console
         $this->write('');
 
         $layers = [
-            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'api:why', 'db:why', 'why', 'fix', 'replay', 'trace:list'],
+            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'api:why', 'db:why', 'why', 'fix', 'replay', 'trace:list', 'demo'],
             '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
                                     'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
             '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:observer', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',

@@ -46,8 +46,6 @@ final class Mail
     private static bool $faked = false;
     /** @var array<int, array{to:string,subject:string,body:string}> */
     private static array $fakeMails = [];
-    private const DRIVER_SMTP = 'smtp';
-
     /** Strip SMTP-injection characters (\r\n) from header values */
     private static function sanitizeHeader(string $value): string
     {
@@ -112,7 +110,6 @@ final class Mail
     private array $attachments = [];
     private string $replyTo = '';
     private string $charset = 'UTF-8';
-    private string $mailerDriver = 'mail';
 
     /**
      * Set recipient.
@@ -238,13 +235,8 @@ final class Mail
             return true;
         }
 
-        $this->mailerDriver = strtolower((string) Env::get('MAIL_DRIVER', 'sendmail'));
-
         try {
-            $result = match ($this->mailerDriver) {
-                self::DRIVER_SMTP => $this->sendSmtpWithHeaders(),
-                default => $this->sendSendmail(),
-            };
+            $result = $this->sendMail();
 
             Logger::request('MAIL', $this->to, $result ? 200 : 500, 0, '', '');
             return $result;
@@ -289,7 +281,7 @@ final class Mail
     /**
      * Send via PHP's built-in mail() function.
      */
-    private function sendSendmail(): bool
+    private function sendMail(): bool
     {
         $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost');
         $fromName = (string) Env::get('MAIL_FROM_NAME', 'Siro API');
@@ -301,64 +293,7 @@ final class Mail
             'MIME-Version: 1.0',
             'Content-Type: ' . $this->contentType . '; charset=' . $this->charset,
             'Content-Transfer-Encoding: base64',
-            'X-Mailer: SiroPHP/' . self::sanitizeHeader((string) Env::get('APP_VERSION', '0.8.4')),
-        ];
-
-        if ($this->replyTo !== '') {
-            $headers[] = 'Reply-To: ' . self::sanitizeAddress($this->replyTo);
-        }
-
-        foreach ($this->cc as $ccAddr) {
-            $headers[] = 'CC: ' . self::sanitizeAddress($ccAddr);
-        }
-
-        // BCC recipients set as proper Bcc header
-        $allRecipients = self::sanitizeAddress($this->to);
-        if ($this->bcc !== []) {
-            $bccSanitized = [];
-            foreach ($this->bcc as $bccAddr) {
-                $bccSanitized[] = self::sanitizeAddress($bccAddr);
-            }
-            $headers[] = 'Bcc: ' . implode(', ', $bccSanitized);
-        }
-
-        $body = chunk_split(base64_encode($this->body), 76, "\r\n");
-
-        if ($this->attachments !== []) {
-            $boundary = 'siro_boundary_' . bin2hex(random_bytes(8));
-            $headers[2] = 'Content-Type: multipart/mixed; boundary="' . $boundary . '"';
-
-            $body = $this->buildMultipartBody($boundary);
-        }
-
-        try {
-            if (!filter_var($safeFromAddress, FILTER_VALIDATE_EMAIL)) {
-                throw new RuntimeException('Invalid sender email address for sendmail -f parameter');
-            }
-            $result = mail($allRecipients, $this->subject, $body, implode("\r\n", $headers), '-f ' . $safeFromAddress);
-        } catch (\Throwable $e) {
-            \Siro\Core\Logger::error('mail() failed: ' . $e->getMessage());
-            $result = false;
-        }
-        return $result;
-    }
-
-    /**
-     * Build headers and body then send via SMTP.
-     */
-    private function sendSmtpWithHeaders(): bool
-    {
-        $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost');
-        $fromName = (string) Env::get('MAIL_FROM_NAME', 'Siro API');
-
-        $safeFromName = self::sanitizeHeader($fromName);
-        $safeReplyTo = self::sanitizeAddress($this->replyTo ?: $fromAddress);
-        $body = chunk_split(base64_encode($this->body), 76, "\r\n");
-        $headers = [
-            'From: ' . $safeFromName . ' <' . self::sanitizeAddress($fromAddress) . '>',
-            'Reply-To: ' . $safeReplyTo,
-            'MIME-Version: 1.0',
-            'X-Mailer: SiroPHP/' . self::sanitizeHeader((string) Env::get('APP_VERSION', '0.8.4')),
+            'X-Mailer: SiroPHP/' . self::sanitizeHeader((string) Env::get('APP_VERSION', Console::VERSION)),
         ];
 
         if ($this->attachments !== []) {
@@ -366,8 +301,7 @@ final class Mail
             $headers[] = 'Content-Type: multipart/mixed; boundary="' . $boundary . '"';
             $body = $this->buildMultipartBody($boundary);
         } else {
-            $headers[] = 'Content-Type: ' . $this->contentType . '; charset=' . $this->charset;
-            $headers[] = 'Content-Transfer-Encoding: base64';
+            $body = $this->body;
         }
 
         return $this->sendSmtp($this->to, $this->subject, $body, $headers);
