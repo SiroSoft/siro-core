@@ -100,7 +100,7 @@ use Siro\Core\Commands\DbBenchmarkCommand;
 
 final class Console
 {
-    public const VERSION = '0.34.0';
+    public const VERSION = '0.35.0';
 
     /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
     private static array $appCommands = [];

@@ -33,6 +33,19 @@ $checks['framework_writable'] = ['label' => 'Framework Cache Dir', 'pass' => is_
 $logDir = $storageDir . DIRECTORY_SEPARATOR . 'logs';
 $checks['logs_writable'] = ['label' => 'Logs Dir Writable', 'pass' => is_dir($logDir) && is_writable($logDir), 'detail' => ''];
 
+if (extension_loaded('redis')) {
+    try {
+        $redis = new \Redis();
+        $redis->connect('127.0.0.1', 6379, 0.5);
+        $checks['redis'] = ['label' => 'Redis Connection', 'pass' => true, 'detail' => 'connected'];
+        $redis->close();
+    } catch (\Throwable) {
+        $checks['redis'] = ['label' => 'Redis Connection', 'pass' => false, 'detail' => 'connection failed'];
+    }
+} else {
+    $checks['redis'] = ['label' => 'Redis Extension', 'pass' => false, 'detail' => 'not installed'];
+}
+
 $dbConfig = $basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
 if (is_file($dbConfig)) {
     try {

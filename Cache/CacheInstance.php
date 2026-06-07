@@ -137,8 +137,12 @@ final class CacheInstance implements CacheInterface
         return $this->driver;
     }
 
-    private function createRedisDriver(): ?RedisDriver
+    public static function getRedisConnection(): ?\Redis
     {
+        if (self::$sharedRedis !== null) {
+            return self::$sharedRedis;
+        }
+
         if (!class_exists(\Redis::class)) {
             return null;
         }
@@ -165,9 +169,22 @@ final class CacheInstance implements CacheInterface
                 $redis->select($database);
             }
 
-            return new RedisDriver($redis);
+            self::$sharedRedis = $redis;
+            return self::$sharedRedis;
         } catch (\Throwable) {
             return null;
         }
     }
+
+    private function createRedisDriver(): ?RedisDriver
+    {
+        $redis = self::getRedisConnection();
+        if ($redis === null) {
+            return null;
+        }
+
+        return new RedisDriver($redis);
+    }
+
+    private static ?\Redis $sharedRedis = null;
 }
