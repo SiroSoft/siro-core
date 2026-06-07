@@ -86,6 +86,7 @@ use Siro\Core\Commands\MakeObserverCommand;
 use Siro\Core\Commands\TestCommand;
 use Siro\Core\Commands\BenchmarkCommand;
 use Siro\Core\Commands\FrankenphpServeCommand;
+use Siro\Core\Commands\MercureSubscribeCommand;
 use Siro\Core\Commands\MigrateFreshCommand;
 use Siro\Core\Commands\TinkerCommand;
 use Siro\Core\Commands\DemoCommand;
@@ -296,6 +297,7 @@ final class Console
             'db'            => ['handler' => DatabaseCommand::class, 'desc' => 'Database manager (init, start, stop)', 'usage' => 'php siro db [init|start|stop|status|remove]'],
             'demo'          => ['handler' => DemoCommand::class, 'desc' => '30s debug workflow demo — test, fail, why, fix, trace', 'usage' => 'php siro demo'],
             'tinker'        => ['handler' => TinkerCommand::class, 'desc' => 'Interactive PHP playground in app context', 'usage' => 'php siro tinker'],
+            'mercure:subscribe' => ['handler' => MercureSubscribeCommand::class, 'desc' => 'Subscribe to Mercure topics and print events', 'usage' => 'php siro mercure:subscribe <topic>'],
             'test'          => ['handler' => TestCommand::class, 'desc' => 'Run tests (--filter=, --suite=, --coverage)', 'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
             'new:project'   => ['handler' => NewProjectCommand::class, 'desc' => 'Create project via composer', 'usage' => 'php siro new:project <name>'],
@@ -492,7 +494,7 @@ final class Console
                                     'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
             '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:observer', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
                                     'queue:work', 'queue:status', 'schedule:run', 'deploy', 'optimize', 'config:cache',
-                                    'down', 'up', 'log:trace', 'log:replay', 'log:slow', 'debug:last'],
+                                    'down', 'up', 'log:trace', 'log:replay', 'log:slow', 'debug:last', 'mercure:subscribe'],
             '⚙️ System'        => ['key:generate', 'doctor', 'env:check', 'env:switch', 'route:search', 'route:rules',
                                     'rate:status', 'db:show', 'migrate:rollback', 'migrate:status', 'log:export',
                                     'log:cleanup', 'log:tail', 'log:stats', 'log:top', 'storage:link', 'live', 'new',

@@ -51,7 +51,8 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface {
         $app = new App($this->basePath);
         $app->boot();
 
-        $this->write('Queue worker started.');
+        $driver = \Siro\Core\Queue::driverName();
+        $this->write("Queue worker started. Driver: {$driver}");
         $startTime = date('Y-m-d H:i:s');
         $this->write("Started at: {$startTime}");
         if ($maxAttempts !== null) {
