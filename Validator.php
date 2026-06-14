@@ -239,6 +239,9 @@ final class Validator
             }
 
             $dotStarDotPos = strpos($field, '.*.');
+            if ($dotStarDotPos === false) {
+                continue;
+            }
             $baseKey = substr($field, 0, $dotStarDotPos);
             $nestedField = substr($field, $dotStarDotPos + 3);
 
@@ -278,6 +281,7 @@ final class Validator
      */
     private static function validateValue(mixed $value, string $field, string $ruleLine, array $input): array
     {
+        /** @var array<string, array<int, string>> $errors */
         $errors = [];
 
         // Use cached parsed rules if available
