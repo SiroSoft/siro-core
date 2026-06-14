@@ -296,14 +296,13 @@ final class Validator
                     break;
                 }
             }
-                }
-                self::$parsedRuleCache[$ruleLine] = [
-                    'parsed' => $fieldRules,
-                    'nullable' => $isNullable,
-                    'required' => $isRequired,
-                    'requiredIf' => $requiredIf,
-                ];
-            }
+            self::$parsedRuleCache[$ruleLine] = [
+                'parsed' => $fieldRules,
+                'nullable' => $isNullable,
+                'required' => $isRequired,
+                'requiredIf' => $requiredIf,
+            ];
+        }
         $cached = self::$parsedRuleCache[$ruleLine];
         $fieldRules = $cached['parsed'];
         $isNullable = $cached['nullable'];
