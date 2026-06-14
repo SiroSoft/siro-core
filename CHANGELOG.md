@@ -18,7 +18,6 @@
 ### 🧪 Testing
 - 19,200+ tests, 0 errors, 0 failures
 - PHPStan level max: 0 errors
-
 ## v0.34.0 (2026-06-03)
 
 ### 🚀 Performance
