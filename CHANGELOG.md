@@ -1,5 +1,23 @@
 # Changelog — siro-core
 
+## v0.35.0 (2026-06-07)
+
+### 🚀 Features
+- Redis queue driver: `Queue::driver('redis')` and `QUEUE_DRIVER=redis` for high-throughput background jobs
+- Mercure/WebSocket integration: `Mercure::publish()` for Server-Sent Events, auto-publish on Model create/update
+- Mercure CLI: `php siro mercure:subscribe <topic>` for subscribing to topics from the terminal
+- Redis rate limiter driver: `ThrottleMiddleware` now supports `redis` driver for high-traffic production
+- Email verification flow: built-in token generation, confirmation endpoint, and resend support
+- Demo workflow mode: `php siro demo` scaffolds a sample API for client presentations
+
+### 🔧 Debug & Observability
+- Enhanced trace filtering: `log:trace --query`, `--error-type`, `--duration` filters added
+- Replay diff highlighting: color-coded before/after comparison in terminal
+- Structured error output: `--json` flag on error commands for CI integration
+
+### 🧪 Testing
+- 19,200+ tests, 0 errors, 0 failures
+- PHPStan level max: 0 errors
 ## v0.34.0 (2026-06-03)
 
 ### 🚀 Performance

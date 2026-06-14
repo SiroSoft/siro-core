@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+use Siro\Core\Queue\RedisQueueDriver;
 use Throwable;
 
 /**
@@ -27,6 +28,7 @@ final class Queue
     private static bool $faked = false;
     /** @var array<int, array{job: string, data: mixed}> */
     private static array $fakeJobs = [];
+    private static ?RedisQueueDriver $redisDriver = null;
 
     /** @var array<string, true> Whitelist of allowed job classes */
     private static array $allowedJobs = [];
@@ -55,6 +57,25 @@ final class Queue
         if (!isset(self::$allowedJobs[SendMailJob::class])) {
             self::$allowedJobs[SendMailJob::class] = true;
         }
+    }
+
+    private static function getRedisDriver(): ?RedisQueueDriver
+    {
+        if (self::$redisDriver === null) {
+            $driver = new RedisQueueDriver();
+            if ($driver->isAvailable()) {
+                self::$redisDriver = $driver;
+            }
+        }
+        return self::$redisDriver;
+    }
+
+    public static function driverName(): string
+    {
+        if (Env::get('QUEUE_DRIVER', 'db') === 'redis' && self::getRedisDriver() !== null) {
+            return 'redis';
+        }
+        return 'db';
     }
 
     public static function fake(): void
@@ -176,6 +197,28 @@ final class Queue
             return;
         }
 
+        if (Env::get('QUEUE_DRIVER', 'db') === 'redis') {
+            $redis = self::getRedisDriver();
+            if ($redis !== null) {
+                $payload = json_encode([
+                    'job' => $job,
+                    'data' => $data,
+                    'attempts' => 0,
+                    'max_attempts' => max(1, $maxAttempts),
+                    'timeout' => max(30, $timeout),
+                    'created_at' => date('Y-m-d H:i:s'),
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                if (!is_string($payload)) { return; }
+
+                if ($delay > 0) {
+                    $redis->release('default', $payload, $delay);
+                } else {
+                    $redis->push('default', $payload);
+                }
+                return;
+            }
+        }
+
         $payload = [
             'job' => $job,
             'data' => json_encode($data, JSON_UNESCAPED_UNICODE),
@@ -197,6 +240,11 @@ final class Queue
     public static function work(): bool
     {
         self::ensureBuiltinJobsRegistered();
+
+        if (Env::get('QUEUE_DRIVER', 'db') === 'redis') {
+            return self::workRedis();
+        }
+
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
@@ -297,6 +345,90 @@ final class Queue
                         'id' => $row['id'],
                     ]
                 );
+            }
+        }
+
+        return true;
+    }
+
+    private static function workRedis(): bool
+    {
+        $redis = self::getRedisDriver();
+        if ($redis === null) {
+            return false;
+        }
+
+        $redis->migrateDelayed('default');
+        $raw = $redis->pop('default');
+        if ($raw === null) {
+            return false;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return false;
+        }
+
+        /** @var array<string, mixed> $decoded */
+        $job = isset($decoded['job']) && is_string($decoded['job']) ? $decoded['job'] : '';
+        $jobData = isset($decoded['data']) && is_array($decoded['data']) ? $decoded['data'] : [];
+        $attempts = isset($decoded['attempts']) && is_numeric($decoded['attempts']) ? (int) $decoded['attempts'] : 0;
+        $maxAttempts = isset($decoded['max_attempts']) && is_numeric($decoded['max_attempts']) ? (int) $decoded['max_attempts'] : self::DEFAULT_MAX_ATTEMPTS;
+        $timeout = isset($decoded['timeout']) && is_numeric($decoded['timeout']) ? (int) $decoded['timeout'] : self::DEFAULT_TIMEOUT;
+        $maxExecTime = time() + $timeout;
+
+        $success = false;
+        $error = null;
+
+        try {
+            if ($job !== '') {
+                if (!self::isJobAllowed($job)) {
+                    throw new \RuntimeException("Job class '{$job}' is not registered in the allowed jobs whitelist. Use Queue::registerJob() to allow it.");
+                }
+                if (!class_exists($job)) {
+                    throw new \RuntimeException("Job class '{$job}' does not exist.");
+                }
+
+                if (!is_subclass_of($job, QueueInterface::class)) {
+                    throw new \RuntimeException("Job class '{$job}' must implement QueueInterface.");
+                }
+
+                $instance = new $job();
+
+                /** @var array<string, mixed> $jobData */
+                self::executeWithTimeout(function () use ($instance, $jobData): void {
+                    $instance->handle($jobData);
+                }, $maxExecTime);
+                $success = true;
+            }
+        } catch (Throwable $e) {
+            $error = $e->getMessage();
+            Logger::error($e);
+        }
+
+        if ($success) {
+            return true;
+        }
+
+        $attempts++;
+        $decoded['attempts'] = $attempts;
+
+        if ($attempts >= $maxAttempts) {
+            $error = $error ?? 'Max attempts reached';
+            Database::execute(
+                "INSERT INTO failed_jobs (job, data, error, failed_at) VALUES (:job, :data, :error, :failed_at)",
+                [
+                    'job' => $job,
+                    'data' => $raw,
+                    'error' => $error,
+                    'failed_at' => date('Y-m-d H:i:s'),
+                ]
+            );
+        } else {
+            $backoff = self::calculateBackoff($attempts);
+            $encoded = json_encode($decoded, JSON_UNESCAPED_UNICODE);
+            if (is_string($encoded)) {
+                $redis->release('default', $encoded, $backoff);
             }
         }
 

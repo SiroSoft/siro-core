@@ -591,6 +591,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                 $this->notifyObservers('created');
             }
             Event::emit("{$table}.created", $this);
+            if (class_exists(Mercure::class)) {
+                $pk = $this->getAttribute($key);
+                Mercure::publish(Mercure::topic($table, is_numeric($pk) ? (int) $pk : (is_string($pk) ? $pk : null)), [
+                    'action' => 'created',
+                    'id' => $pk,
+                ]);
+            }
         } else {
             if ($hasObservers) {
                 $this->notifyObservers('updating');
@@ -608,6 +615,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                     $this->notifyObservers('updated');
                 }
                 Event::emit("{$table}.updated", $this);
+                if (class_exists(Mercure::class)) {
+                    $pk = $this->getAttribute($key);
+                    Mercure::publish(Mercure::topic($table, is_numeric($pk) ? (int) $pk : (is_string($pk) ? $pk : null)), [
+                        'action' => 'updated',
+                        'id' => $pk,
+                    ]);
+                }
             }
         }
 

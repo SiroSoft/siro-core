@@ -93,7 +93,7 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
         // Check PHP extensions
         $this->write('');
         $this->write('PHP Extensions:');
-        $extensions = ['pdo', 'json', 'mbstring', 'pdo_mysql', 'pdo_sqlite'];
+        $extensions = ['pdo', 'json', 'mbstring', 'pdo_mysql', 'pdo_sqlite', 'redis'];
         foreach ($extensions as $ext) {
             if (extension_loaded($ext)) {
                 $this->write('  [OK]   ' . $ext);

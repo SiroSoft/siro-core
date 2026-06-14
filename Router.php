@@ -579,10 +579,10 @@ final class Router
     {
         $locale = $request->header('x-locale', '');
         if ($locale === '') {
-            $acceptLang = $request->header('accept-language', '');
+            $acceptLang = (string) $request->header('accept-language', '');
             if ($acceptLang !== '') {
                 $parts = explode(',', $acceptLang);
-                $first = explode(';', $parts[0])[0] ?? '';
+                $first = explode(';', $parts[0])[0];
                 $locale = strtolower(substr(trim($first), 0, 2));
             }
         }
