@@ -1,6 +1,7 @@
 {
     "name": "sirosoft/core",
     "description": "Core engine powering the Siro API Framework with zero external dependencies.",
+    "version": "0.35.0",
     "type": "library",
     "license": "MIT",
     "keywords": [

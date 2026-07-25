@@ -138,10 +138,12 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function setAttribute(string $key, mixed $value): void
     {
-        // Always allow setting the primary key (auto-increment ID from DB)
+        // Always allow setting the primary key
         if ($key === $this->primaryKey) {
             $this->attributes[$key] = $value;
-            $this->original[$key] = $value;
+            if ($this->exists) {
+                $this->original[$key] = $value;
+            }
             return;
         }
         if ($this->fillable !== [] && !in_array($key, $this->fillable, true)) {
