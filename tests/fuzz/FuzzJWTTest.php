@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Siro\Core\Tests\Fuzz;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 use Siro\Core\Auth\JWT;
 
 final class FuzzJWTTest extends TestCase
@@ -17,7 +19,7 @@ final class FuzzJWTTest extends TestCase
         JWT::reset();
     }
 
-    /** @dataProvider provideValidPayloads */
+    #[DataProvider('provideValidPayloads')]
     public function testEncodeNeverThrows(array $payload): void
     {
         $token = JWT::encode($payload);
@@ -41,7 +43,7 @@ final class FuzzJWTTest extends TestCase
         yield 'mixed types' => [['sub' => 1, 'ver' => 1, 'str' => 'hello', 'int' => 42, 'float' => 3.14, 'null' => null]];
     }
 
-    /** @dataProvider provideRoundtripPayloads */
+    #[DataProvider('provideRoundtripPayloads')]
     public function testEncodeDecodeRoundtrip(array $payload): void
     {
         try {
@@ -76,7 +78,7 @@ final class FuzzJWTTest extends TestCase
         yield 'mixed types' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'str' => 'hello', 'int' => 42, 'float' => 3.14, 'null' => null]];
     }
 
-    /** @dataProvider provideEncodeAccessParams */
+    #[DataProvider('provideEncodeAccessParams')]
     public function testEncodeAccessNeverThrows(int $userId, int $tokenVersion, int $ttl): void
     {
         $token = JWT::encodeAccess(max(1, $userId), max(1, $tokenVersion), max(1, $ttl));
@@ -96,7 +98,7 @@ final class FuzzJWTTest extends TestCase
         yield 'negative version' => [1, -5, 3600];
     }
 
-    /** @dataProvider provideEncodeRefreshParams */
+    #[DataProvider('provideEncodeRefreshParams')]
     public function testEncodeRefreshNeverThrows(int $userId, int $tokenVersion, int $ttl): void
     {
         $token = JWT::encodeRefresh(max(1, $userId), max(1, $tokenVersion), max(1, $ttl));
@@ -112,7 +114,7 @@ final class FuzzJWTTest extends TestCase
         yield 'minimal' => [1, 1, 1];
     }
 
-    /** @dataProvider provideInvalidTokens */
+    #[DataProvider('provideInvalidTokens')]
     public function testDecodeThrowsForInvalidTokens(string $token): void
     {
         $this->expectException(\Throwable::class);
@@ -135,7 +137,7 @@ final class FuzzJWTTest extends TestCase
         yield 'unicode in token' => ['ABC.DEF.GHI'];
     }
 
-    /** @dataProvider provideTamperedTokens */
+    #[DataProvider('provideTamperedTokens')]
     public function testDecodeRejectsTamperedToken(string $token): void
     {
         $this->expectException(\Throwable::class);

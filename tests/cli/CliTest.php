@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core\Tests\Cli;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Siro\Core\Console;
 
 final class CliTest extends TestCase
@@ -144,9 +145,7 @@ final class CliTest extends TestCase
         $this->assertCount(72, $this->getRegistry());
     }
 
-    /**
-     * @dataProvider commandRegistryProvider
-     */
+    #[DataProvider('commandRegistryProvider')]
     public function testSpecificCommandExists(string $name, string $descPrefix, string $usagePrefix): void
     {
         $this->assertArrayHasKey($name, $this->getRegistry(), "Command '{$name}' not found in registry");

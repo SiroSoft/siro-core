@@ -19,6 +19,9 @@ namespace Siro\Core\Commands;
 final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
+    private int $port = 9090;
+    private string $host = 'localhost';
+
     public function __construct(private readonly string $basePath)
     {
     }
@@ -26,15 +29,15 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $port = 9090;
-        $host = 'localhost';
+        $this->port = 9090;
+        $this->host = 'localhost';
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--port=')) {
-                $port = max(1, (int) substr($arg, 7));
+                $this->port = max(1, (int) substr($arg, 7));
             }
             if (str_starts_with($arg, '--host=')) {
-                $host = substr($arg, 7);
+                $this->host = substr($arg, 7);
             }
         }
 
@@ -52,14 +55,14 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $this->write(" \033[1;33mSiro Live Dev Server\033[0m");
-        $this->write("   Host: http://{$host}:{$port}");
+        $this->write("   Host: http://{$this->host}:{$this->port}");
         $this->write("   Root: {$publicDir}");
         $this->write("   Watch: app/, routes/, config/");
         $this->write("   Press Ctrl+C to stop");
         $this->write('');
 
         $lastRestart = 0;
-        $serverCmd = "php -S {$host}:{$port} -t \"{$publicDir}\"";
+        $serverCmd = "php -S {$this->host}:{$this->port} -t \"{$publicDir}\"";
 
         if (is_file($routerFile)) {
             $serverCmd .= " \"{$routerFile}\"";
@@ -133,16 +136,21 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
         $pidFile = $signalFile . '.pid';
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            // Windows: use start /B
-            $wrapped = "start /B \"SiroLive\" {$cmd}";
-            $proc = popen($wrapped, 'r');
+            // Windows: launch a detached php -S process using the full server
+            // command, then find its PID by the listening port via netstat.
+            $proc = popen("cmd /c start /B \"SiroLive\" /D \"{$this->basePath}\" {$cmd} >NUL 2>&1", 'r');
             if ($proc !== false) {
                 pclose($proc);
             }
-            // Get PID via WMIC
-            $pid = trim((string) shell_exec('WMIC PROCESS WHERE "Name=\'php.exe\' AND CommandLine LIKE \'%SiroLive%\'" GET ProcessId /VALUE 2>NUL'));
-            if (preg_match('/=(\d+)/', $pid, $m)) {
-                file_put_contents($pidFile, $m[1]);
+            // Give the process a moment to bind the port, then capture its PID.
+            usleep(600000);
+            $netstat = (string) shell_exec("netstat -ano | findstr :{$this->port} | findstr LISTENING 2>NUL");
+            $lines = explode("\n", $netstat);
+            foreach ($lines as $line) {
+                if (preg_match('/\s+(\d+)\s*$/', trim($line), $m)) {
+                    file_put_contents($pidFile, $m[1]);
+                    break;
+                }
             }
         } else {
             $wrapped = "{$cmd} > /dev/null 2>&1 & echo $!";
@@ -172,9 +180,7 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
             @unlink($pidFile);
         }
 
-        // Force kill any remaining php server on this port
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            exec('taskkill /F /IM php.exe 2>NUL');
-        }
+        // Do NOT kill all php.exe — that would terminate the watcher itself
+        // (and any other PHP processes on the machine).
     }
 }

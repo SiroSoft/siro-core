@@ -3,13 +3,15 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Model;
 
 final class FuzzModelTest extends TestCase
 {
-    /** @dataProvider provideFillData */
+    #[DataProvider('provideFillData')]
     public function testFillNeverThrows(array $data): void
     {
         $model = new class extends Model {
@@ -47,7 +49,7 @@ final class FuzzModelTest extends TestCase
         }
     }
 
-    /** @dataProvider provideHydrateData */
+    #[DataProvider('provideHydrateData')]
     public function testHydrateNeverThrows(array $rows): void
     {
         $model = new class extends Model {
@@ -73,7 +75,7 @@ final class FuzzModelTest extends TestCase
         yield 'large values' => [[['id' => 1, 'name' => str_repeat('x', 10000)]]];
     }
 
-    /** @dataProvider provideAttributeAccess */
+    #[DataProvider('provideAttributeAccess')]
     public function testAttributeAccessNeverThrows(mixed $value): void
     {
         $model = new class extends Model {
@@ -106,7 +108,7 @@ final class FuzzModelTest extends TestCase
         ];
     }
 
-    /** @dataProvider provideHiddenSerialization */
+    #[DataProvider('provideHiddenSerialization')]
     public function testHiddenAttributesNeverThrow(array $hidden, array $data): void
     {
         $model = new class($hidden) extends Model {

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Model;
@@ -12,7 +14,7 @@ use Siro\Core\DB\Relations\MorphTo;
 
 final class FuzzOrmRelationsTest extends TestCase
 {
-    /** @dataProvider providePivotColumns */
+    #[DataProvider('providePivotColumns')]
     public function testWithPivotNeverThrows(array $columns): void
     {
         $model = new class extends Model {
@@ -41,7 +43,7 @@ final class FuzzOrmRelationsTest extends TestCase
         yield 'duplicates' => [['qty', 'qty']];
     }
 
-    /** @dataProvider provideBelongsToManyConstruction */
+    #[DataProvider('provideBelongsToManyConstruction')]
     public function testBelongsToManyConstructionNeverThrows(
         string $relatedClass, string $pivotTable, string $foreignKey, string $relatedKey, string $localKey, int|string $localValue
     ): void {
@@ -63,7 +65,7 @@ final class FuzzOrmRelationsTest extends TestCase
         yield 'special chars table' => ['App\\Models\\Item', 'order-item', 'order_id', 'item_id', 'id', 42];
     }
 
-    /** @dataProvider provideMorphManyOwners */
+    #[DataProvider('provideMorphManyOwners')]
     public function testMorphManyConstructionNeverThrows(string $ownerClass, string $morphName, int|string $id): void
     {
         try {
@@ -86,7 +88,7 @@ final class FuzzOrmRelationsTest extends TestCase
         yield 'special chars' => ['App\\Models\\Post', "morph-name_123", 1];
     }
 
-    /** @dataProvider provideMorphToTypes */
+    #[DataProvider('provideMorphToTypes')]
     public function testMorphToConstructionNeverThrows(string $morphName, int|string $id, string $type): void
     {
         try {

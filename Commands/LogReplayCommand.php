@@ -521,7 +521,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $responseBody = $this->safeStr($result['body'] ?? '{}');
 
             // Auto-auth: if 401 and trace originally had auth, try to refresh
-            // Bỏ qua nếu --safe: auto-auth tạo side effects (login request)
+            // Skip if --safe: auto-auth creates side effects (login request)
             if ($status === 401 && $auth !== '' && !$authMode && $asUser === '' && !in_array('--safe', $args, true)) {
                 if ($isProduction) {
                     $this->write('  ⛔ Production mode: auto-auth disabled for safety.');
@@ -666,7 +666,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        // Phân loại lỗi curl
+        // Classify curl errors
         if ($response === false || $error !== '') {
             $errorType = match (true) {
                 $errno === CURLE_OPERATION_TIMEDOUT || $errno === CURLE_COULDNT_CONNECT => 'timeout',
@@ -794,14 +794,14 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * Auto-discover auth config từ model + routes + migrations.
+     * Auto-discover auth config from model + routes + migrations.
      *
-     * Đọc:
-     *   1. Model User → table, fillable (email_field, pass_field)
-     *   2. Routes file → login endpoint
-     *   3. Migration → auth identifier columns
+     * Reads:
+     *   1. Model User -> table, fillable (email_field, pass_field)
+     *   2. Routes file -> login endpoint
+     *   3. Migration -> auth identifier columns
      *
-     * Không cần .env — tự động phát hiện cấu trúc project.
+     * No .env needed - auto-detects the project structure.
      *
      * @return array{endpoint:string,email_field:string,pass_field:string,token_path:string,refresh_endpoint:string}
      */
@@ -813,29 +813,29 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $tokenPath = 'data.token';
         $refreshEndpoint = '/api/auth/refresh';
 
-        // 1) Discover từ User model
+        // 1) Discover from User model
         $userModelClass = 'App\\Models\\User';
         if (class_exists($userModelClass)) {
             try {
                 /** @phpstan-ignore-next-line ReflectionClass accepts class-string */
                 $ref = new \ReflectionClass($userModelClass);
                 $instance = $ref->newInstanceWithoutConstructor();
-                // Đọc table name
+                // Read table name
                 $tableProp = $ref->getProperty('table');
                 $tableProp->setAccessible(true);
                 $table = $tableProp->getValue($instance);
                 if (is_string($table) && $table !== '' && $table !== 'users') {
-                    // Nếu table khác users, suy ra endpoint tương ứng
+                    // If table differs from users, derive the matching endpoint
                     $singular = rtrim($table, 's');
                     $endpoint = '/api/' . $singular . '/auth/login';
                     $refreshEndpoint = '/api/' . $singular . '/auth/refresh';
                 }
-                // Đọc fillable để biết field login
+                // Read fillable to determine the login field
                 $fillableProp = $ref->getProperty('fillable');
                 $fillableProp->setAccessible(true);
                 $fillable = $fillableProp->getValue($instance);
                 if (is_array($fillable)) {
-                    // Tìm field dạng email/username/login
+                    // Find a field like email/username/login
                     $loginCandidates = ['email', 'username', 'login', 'phone', 'mobile'];
                     foreach ($loginCandidates as $candidate) {
                         if (in_array($candidate, $fillable, true)) {
@@ -843,7 +843,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                             break;
                         }
                     }
-                    // Tìm field dạng password/passwd/pass
+                    // Find a field like password/passwd/pass
                     $passCandidates = ['password', 'passwd', 'pass', 'secret'];
                     foreach ($passCandidates as $candidate) {
                         if (in_array($candidate, $fillable, true)) {
@@ -857,22 +857,22 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        // 2) Discover từ routes file
+        // 2) Discover from routes file
         $routesFile = $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php';
         if (file_exists($routesFile)) {
             $routesContent = (string) file_get_contents($routesFile);
-            // Tìm pattern: $router->post('...', [AuthController::class, 'login'])
+            // Find pattern: $router->post('...', [AuthController::class, 'login'])
             if (preg_match('/\$router->post\((["\'])([^"\']+login[^"\']*)\1/', $routesContent, $m)) {
                 $found = $m[2];
-                // Kiểm tra nếu endpoint khác default
+                // Check if endpoint differs from default
                 if ($found !== '/auth/login') {
                     $endpoint = $found;
-                    // Suy ra refresh endpoint từ login endpoint
+                    // Derive refresh endpoint from login endpoint
                     $refreshEndpoint = str_replace('/login', '/refresh', $found);
                     $refreshEndpoint = str_replace('/signin', '/refresh', $refreshEndpoint);
                 }
             }
-            // Tìm field names từ validate() trong AuthController
+            // Find field names from validate() in AuthController
             $authControllerFile = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AuthController.php';
             if (file_exists($authControllerFile)) {
                 $authContent = (string) file_get_contents($authControllerFile);
@@ -882,14 +882,14 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        // 3) Discover từ migration files — đọc schema của users table
+        // 3) Discover from migration files - read users table schema
         $migrationsDir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
         if (is_dir($migrationsDir)) {
             $migrationFiles = glob($migrationsDir . '/*.php') ?: [];
             foreach ($migrationFiles as $mf) {
                 $content = (string) file_get_contents($mf);
                 if (str_contains($content, 'users')) {
-                    // Tìm các cột email/username/phone trong migration
+                    // Find email/username/phone columns in migration
                     if (preg_match('/\$t->string\((["\'])(email|username|login|phone|mobile)\1\)/', $content, $m)) {
                         $emailField = $m[2];
                     }
@@ -897,11 +897,11 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        // 4) Kiểm tra response token path từ AuthController
+        // 4) Check response token path from AuthController
         $authControllerFile = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AuthController.php';
         if (file_exists($authControllerFile)) {
             $authContent = (string) file_get_contents($authControllerFile);
-            // Tìm pattern: return Response::created(['token' => ..., ...])
+            // Find pattern: return Response::created(['token' => ..., ...])
             if (preg_match('/\[\s*[\'"]token[\'"]\s*=>/', $authContent)) {
                 $tokenPath = 'data.token';
             } elseif (preg_match('/\[\s*[\'"]api_token[\'"]\s*=>/', $authContent)) {
@@ -921,15 +921,15 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * Đọc auth config ưu tiên: .env > auto-discover > defaults.
+     * Read auth config in priority order: .env > auto-discover > defaults.
      * @return array{endpoint:string,email_field:string,pass_field:string,token_path:string,refresh_endpoint:string}
      */
     private function authConfig(): array
     {
-        // Bước 1: auto-discover từ code
+        // Step 1: auto-discover from code
         $cfg = $this->discoverAuthConfig();
 
-        // Bước 2: .env ghi đè (explicit config luôn thắng)
+        // Step 2: .env overrides (explicit config always wins)
         $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';
         if (file_exists($envFile)) {
             $c = (string) file_get_contents($envFile);
@@ -947,13 +947,13 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     /**
      * Extract token from response using configured token_path.
      * Supports dot-notation: "data.token", "access_token", etc.
-     * Tá»± Ä'á»™ng fallback qua cÃ¡c path phá»• biáº¿n náº¿u path chÃ­nh khÃ´ng tÃ¬m tháº¥y.
+     * Auto-fallback through common paths if the main path is not found.
      *
      * @param array<string, mixed> $response
      */
     private function extractToken(array $response, string $tokenPath): ?string
     {
-        // Thá» path chÃ­nh trÆ°á»›c
+        // Try the main path first
         $keys = explode('.', $tokenPath);
         $current = $response;
         foreach ($keys as $key) {
@@ -962,7 +962,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         }
         if (is_string($current) && $current !== '') return $current;
 
-        // Fallback: thá» táº¥t cáº£ cÃ¡c path phá»• biáº¿n
+        // Fallback: try all common paths
         $fallbackPaths = [
             'data.token', 'token', 'access_token', 'data.access_token',
             'data.jwt', 'jwt', 'data.api_token', 'api_token',
@@ -1073,7 +1073,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
 
     /**
      * Login and store tokens. Uses configurable endpoint + field names.
-     * Never stores raw password in .siro_auth.json — chỉ lưu refresh_token.
+     * Never stores raw password in .siro_auth.json - only stores refresh_token.
      */
     private function login(string $host, string $email, string $password): ?string
     {
@@ -1116,7 +1116,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                     $stored['email'] = $email;
                     $stored['access_token'] = $token;
                     $stored['refresh_token'] = $this->safeStr(is_array($result['data'] ?? null) ? ($result['data']['refresh_token'] ?? '') : ($result['refresh_token'] ?? ''));
-                    // Xoá password cũ nếu có
+                    // Remove old password if present
                     unset($stored['password']);
                     @file_put_contents($authFile, json_encode($stored, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
                     return $token;
@@ -1152,7 +1152,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     /**
      * Auto-reauthenticate when replay gets 401.
      *
-     * 6-step fallback chain. LuÃ´n cÃ³ strategy cuá»‘i cÃ¹ng (interactive prompt).
+     * 6-step fallback chain. Always has a final strategy (interactive prompt).
      *
      * @param array<string, mixed> $data
      * @return array{token:?string,strategy:string}
@@ -1192,7 +1192,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                     }
                     $strategy = 'refresh_token_failed';
                 }
-                // Try full login (password từ .siro_auth.json cũ — sẽ bị xoá sau khi dùng)
+                // Try full login (password from old .siro_auth.json - removed after use)
                 if ($email !== '' && $pw !== '') {
                     $newToken = $this->login($host, $email, $pw);
                     if ($newToken !== null) {

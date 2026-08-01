@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Router;
@@ -23,7 +25,7 @@ final class FuzzRouterTest extends TestCase
         Route::clearRoutes();
     }
 
-    /** @dataProvider provideRoutePaths */
+    #[DataProvider('provideRoutePaths')]
     public function testRegisterRouteNeverThrows(string $method, string $path): void
     {
         $methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
@@ -36,7 +38,7 @@ final class FuzzRouterTest extends TestCase
         $this->assertIsArray($routes);
     }
 
-    /** @dataProvider provideRoutePaths */
+    #[DataProvider('provideRoutePaths')]
     public function testGetRoutesNeverThrows(string $method, string $path): void
     {
         $this->router->get($path, function () {
@@ -52,7 +54,7 @@ final class FuzzRouterTest extends TestCase
         $this->assertIsArray($routes);
     }
 
-    /** @dataProvider provideRoutePaths */
+    #[DataProvider('provideRoutePaths')]
     public function testClearRoutesNeverThrows(string $method, string $path): void
     {
         $this->router->get($path, function () {
@@ -85,7 +87,7 @@ final class FuzzRouterTest extends TestCase
         }
     }
 
-    /** @dataProvider provideRouterGroupFuzz */
+    #[DataProvider('provideRouterGroupFuzz')]
     public function testGroupingNeverThrows(string $prefix, array $methods, array $paths): void
     {
         $this->router->group($prefix, function (Router $router) use ($methods, $paths): void {
@@ -109,7 +111,7 @@ final class FuzzRouterTest extends TestCase
         yield 'nested group' => ['/admin', ['GET'], ['/dashboard', '/settings']];
     }
 
-    /** @dataProvider provideMatcherInputs */
+    #[DataProvider('provideMatcherInputs')]
     public function testRouteMatcherNeverThrows(string $method, string $path): void
     {
         $matcher = new RouteMatcher([], [], []);
@@ -117,7 +119,7 @@ final class FuzzRouterTest extends TestCase
         $this->assertTrue($result === null || is_array($result));
     }
 
-    /** @dataProvider provideMatcherInputs */
+    #[DataProvider('provideMatcherInputs')]
     public function testPathExistsNeverThrows(string $method, string $path): void
     {
         $matcher = new RouteMatcher([], [], []);
@@ -147,7 +149,7 @@ final class FuzzRouterTest extends TestCase
         }
     }
 
-    /** @dataProvider provideHandlerTypes */
+    #[DataProvider('provideHandlerTypes')]
     public function testRouteWithVariousHandlerTypes(mixed $handler): void
     {
         try {
