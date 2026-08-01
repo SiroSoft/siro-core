@@ -98,6 +98,8 @@ use Siro\Core\Commands\DbBackupCommand;
 use Siro\Core\Commands\DbRestoreCommand;
 use Siro\Core\Commands\DbExplainCommand;
 use Siro\Core\Commands\DbBenchmarkCommand;
+use Siro\Core\Commands\AuditVerifyCommand;
+use Siro\Core\Commands\AuditLogCommand;
 
 final class Console
 {
@@ -301,6 +303,8 @@ final class Console
             'test'          => ['handler' => TestCommand::class, 'desc' => 'Run tests (--filter=, --suite=, --coverage)', 'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
             'new:project'   => ['handler' => NewProjectCommand::class, 'desc' => 'Create project via composer', 'usage' => 'php siro new:project <name>'],
+            'audit:verify'  => ['handler' => AuditVerifyCommand::class, 'desc' => 'Verify immutable audit trail integrity', 'usage' => 'php siro audit:verify [--all]'],
+            'audit:log'     => ['handler' => AuditLogCommand::class, 'desc' => 'Append a manual audit entry', 'usage' => 'php siro audit:log <action> [--context=key=value]'],
         ];
     }
 
