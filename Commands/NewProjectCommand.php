@@ -9,14 +9,13 @@ final class NewProjectCommand implements \Siro\Core\Commands\CommandInterface {
 
     public function __construct(string $basePath)
     {
-        $execPath = rtrim($basePath, DIRECTORY_SEPARATOR);
-        $this->write('SiroPHP root: ' . $execPath);
+        unset($basePath);
     }
 
     /** @param array<int, string> $args */
     public function run(array $args): int {
         $name = trim((string)($args[0] ?? ''));
-        if ($name === '') { $this->write('Usage: php siro new <project-name>'); return 1; }
+        if ($name === '') { $this->write('Usage: php siro new:project <project-name>'); return 1; }
 
         $this->write("Creating new SiroPHP project: {$name}");
 
