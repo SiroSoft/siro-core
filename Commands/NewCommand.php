@@ -182,12 +182,23 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
             } elseif ($item->isFile()) {
                 $content = file_get_contents((string) $pathname);
                 if ($content === false) continue;
-                $content = str_replace(
-                    ['Siro API Framework', 'sirosoft/api', 'SiroPHP', '../siro-core'],
-                    [$projectName, $projectName, $projectName, ''],
-                    $content
-                );
-                $content = str_replace('my-api', $projectName, $content);
+                $relativeLower = strtolower($relative);
+                if ($relativeLower === 'composer.json') {
+                    // Keep the composer package name valid (vendor/name). Only
+                    // rewrite description references, never the "name" field.
+                    $content = str_replace(
+                        ['Siro API Framework', '../siro-core', 'my-api'],
+                        [$projectName, '', $projectName],
+                        $content
+                    );
+                } else {
+                    $content = str_replace(
+                        ['Siro API Framework', 'sirosoft/api', 'SiroPHP', '../siro-core'],
+                        [$projectName, $projectName, $projectName, ''],
+                        $content
+                    );
+                    $content = str_replace('my-api', $projectName, $content);
+                }
                 file_put_contents($target, $content);
                 $count++;
             }
