@@ -59,11 +59,14 @@ final class Response
     }
 
     /** @param array<string, mixed> $errors */
-    public static function error(string $message, int $statusCode = 400, array $errors = []): self
+    public static function error(string $message, int $statusCode = 400, array $errors = [], string $errorCode = ''): self
     {
         $meta = ['timestamp' => date('c')];
         if ($errors !== []) {
             $meta['errors'] = $errors;
+        }
+        if ($errorCode !== '') {
+            $meta['error_code'] = $errorCode;
         }
         return new self([
             'success' => false,

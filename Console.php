@@ -101,7 +101,7 @@ use Siro\Core\Commands\DbBenchmarkCommand;
 
 final class Console
 {
-    public const VERSION = '0.35.0';
+    public const VERSION = '0.35.1';
 
     /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
     private static array $appCommands = [];
@@ -478,34 +478,27 @@ final class Console
     private function printHelp(): void
     {
         $this->write('');
-  $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — PHP Micro-Framework');
-    $this->write('  --------------------------------------------------');
-    $this->write('');
-    $this->write('  Usage:');
-    $this->write('    php siro <command> [options]');
-    $this->write('    php siro list                  All ' . count($this->commandRegistry()) . ' commands');
+        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — PHP Micro-Framework');
+        $this->write('  --------------------------------------------------');
+        $this->write('');
+        $this->write('  Usage:');
+        $this->write('    php siro <command> [options]');
+        $this->write('    php siro list                  All ' . count($this->commandRegistry()) . ' commands');
         $this->write('    php siro <command> --help      Command details');
         $this->write('    php siro --version             Version info');
         $this->write('');
 
-        $layers = [
-            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'api:why', 'db:why', 'why', 'fix', 'replay', 'trace:list', 'demo'],
-            '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
-                                    'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
-            '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:observer', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
-                                    'queue:work', 'queue:status', 'schedule:run', 'deploy', 'optimize', 'config:cache',
-                                    'down', 'up', 'log:trace', 'log:replay', 'log:slow', 'debug:last', 'mercure:subscribe'],
-            '⚙️ System'        => ['key:generate', 'doctor', 'env:check', 'env:switch', 'route:search', 'route:rules',
-                                    'rate:status', 'db:show', 'migrate:rollback', 'migrate:status', 'log:export',
-                                    'log:cleanup', 'log:tail', 'log:stats', 'log:top', 'storage:link', 'live', 'new',
-                                    'benchmark'],
-        ];
-
-        foreach ($layers as $layer => $cmds) {
-            $this->write('  ' . $layer . ':');
-            $this->write('    ' . implode(', ', $cmds));
+        $registry = $this->commandRegistry();
+        foreach ($this->groupedCommands() as $group => $commands) {
+            $this->write('  ' . $group . ':');
+            foreach ($commands as $cmd => $desc) {
+                $usage = $registry[$cmd]['usage'] ?? 'php siro ' . $cmd;
+                $this->write('    ' . str_pad($cmd, 22, ' ') . $desc . '  ' . $usage);
+            }
             $this->write('');
         }
+
+        $this->write('  Run "php siro <command> --help" for command details.');
     }
 
     private function printList(): void

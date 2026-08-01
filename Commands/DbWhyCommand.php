@@ -31,15 +31,36 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         $queryHash = trim((string) ($args[0] ?? ''));
         $listSlow = in_array('--slow', $args, true);
 
+        // Support: db:why --query="SELECT ..."  and  db:why --explain --query="..."
+        $queryArg = null;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--query=')) {
+                $queryArg = substr($arg, 8);
+            }
+        }
+        if ($queryHash === '' && $queryArg !== null && $queryArg !== '') {
+            $queryHash = substr(sha1($queryArg), 0, 8);
+        }
+
         if ($queryHash === '' && !$listSlow) {
             $this->write('  Usage: php siro db:why <query_hash>');
             $this->write('  ' . self::GRAY . '  php siro db:why a1b2c3d4' . self::RESET);
             $this->write('  ' . self::GRAY . '  php siro db:why --slow        (list slow queries)' . self::RESET);
+            $this->write('  ' . self::GRAY . '  php siro db:why --query="SELECT * FROM users"   (analyze a query directly)' . self::RESET);
             return 1;
         }
 
         if ($listSlow) {
             return $this->listSlowQueries();
+        }
+
+        // Analyze a query directly from --query= (no trace lookup needed)
+        if ($queryArg !== null && $queryArg !== '') {
+            $this->analyzeQuery(
+                ['sql' => $queryArg, 'time_ms' => 0.0, 'rows' => 0],
+                ['trace_id' => '', 'method' => '', 'path' => ''],
+            );
+            return 0;
         }
 
         // Find query by hash from trace files

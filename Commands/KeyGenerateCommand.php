@@ -22,7 +22,7 @@ final class KeyGenerateCommand implements \Siro\Core\Commands\CommandInterface {
  */
     public function run(array $args): int
     {
-        unset($args);
+        $force = in_array('--force', $args, true);
 
         $envPath = $this->basePath . DIRECTORY_SEPARATOR . '.env';
         if (!is_file($envPath)) {
@@ -36,6 +36,16 @@ final class KeyGenerateCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
+        $appEnv = strtolower(trim((string) \Siro\Core\Env::get('APP_ENV', 'production')));
+        $hasSecret = is_string(getenv('JWT_SECRET')) && getenv('JWT_SECRET') !== '';
+
+        if (($appEnv === 'production' || $hasSecret) && !$force) {
+            $this->write('  Refusing to rotate JWT_SECRET on an existing/production environment.');
+            $this->write('  This would invalidate all signed tokens.');
+            $this->write('  Run with --force to overwrite anyway: php siro key:generate --force');
+            return 1;
+        }
+
         $secret = bin2hex(random_bytes(32));
         $content = (string) file_get_contents($envPath);
 
@@ -45,7 +55,11 @@ final class KeyGenerateCommand implements \Siro\Core\Commands\CommandInterface {
             $content = rtrim($content) . PHP_EOL . 'JWT_SECRET=' . $secret . PHP_EOL;
         }
 
-        file_put_contents($envPath, $content);
+        $written = @file_put_contents($envPath, $content);
+        if ($written === false) {
+            $this->write('  Error: could not write JWT_SECRET to ' . $envPath);
+            return 1;
+        }
         $this->write('JWT_SECRET generated successfully.');
 
         return 0;

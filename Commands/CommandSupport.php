@@ -150,6 +150,9 @@ trait CommandSupport
 
     protected function studly(string $value): string
     {
+        // Strip characters that are invalid in PHP identifiers (keeps ASCII letters,
+        // digits, - and _ as word separators; removes everything else incl. Unicode).
+        $value = preg_replace('/[^A-Za-z0-9\-_ ]+/', '', $value) ?? '';
         $value = str_replace(['-', '_'], ' ', trim($value));
         $words = explode(' ', $value);
         $words = array_map(fn(string $w): string => $w === '' ? '' : ucfirst($w), $words);

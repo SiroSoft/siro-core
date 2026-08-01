@@ -90,10 +90,13 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
         // Recursively copy skeleton (replaces ../siro-core path repo)
         $copied = $this->copySkeleton($skeletonDir, $targetDir, $name);
 
-        // Always create .env from .env.example
+        // Always create .env from .env.example (never copy a real .env with secrets)
         $envPath = $targetDir . DIRECTORY_SEPARATOR . '.env';
         $envExample = $targetDir . DIRECTORY_SEPARATOR . '.env.example';
-        if (is_file($envExample) && !is_file($envPath)) {
+        if (is_file($envExample)) {
+            if (is_file($envPath)) {
+                @unlink($envPath);
+            }
             copy($envExample, $envPath);
         }
         if (!is_file($envPath)) {
@@ -140,11 +143,15 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $count = 0;
         $ds = DIRECTORY_SEPARATOR;
-        $exclude = ['vendor', '.git',
+        $exclude = ['vendor', '.git', '.env', '.env.',
+            '.next', '.phpunit.cache', 'node_modules', '.github',
+            'debug_trace.php', 'debug_upload.php', 'phpunit_debug.log',
+            '_ide_helper.php', 'siro-completion.bash', 'siro-completion.zsh',
+            '.env.testing',
             "storage{$ds}logs", "storage{$ds}benchmark", "storage{$ds}sbom", "storage{$ds}backups",
-            "storage{$ds}test.db", "storage{$ds}api-test-history.json",
+            "storage{$ds}test.db", "storage{$ds}test_siro.db", "storage{$ds}api-test-history.json",
             "storage{$ds}app{$ds}database.sqlite",
-            '.phpunit.cache', 'node_modules', '.github',
+            "storage{$ds}tests",
             "public{$ds}openapi.json", "public{$ds}postman_collection.json",
             "docs{$ds}openapi.json", "docs{$ds}postman",
         ];

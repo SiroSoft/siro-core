@@ -56,6 +56,8 @@ final class MakeMigrationCommand implements \Siro\Core\Commands\CommandInterface
 
     private function template(string $name): string
     {
+        $table = $this->deriveTableName($name);
+
         return <<<PHP
 <?php
 
@@ -67,7 +69,7 @@ use Siro\Core\DB\Blueprint;
 return new class {
     public function up(): void
     {
-        Schema::create('table_name', function (Blueprint \$t) {
+        Schema::create('{$table}', function (Blueprint \$t) {
             \$t->id();
             \$t->string('name');
             \$t->timestamps();
@@ -76,10 +78,37 @@ return new class {
 
     public function down(): void
     {
-        Schema::drop('table_name');
+        Schema::drop('{$table}');
     }
 };
 
 PHP;
+    }
+
+    /**
+     * Derive a table name from the migration name using common Laravel-style
+     * conventions (create_users_table -> users, add_role_to_users -> users).
+     */
+    private function deriveTableName(string $name): string
+    {
+        $lower = strtolower($name);
+
+        if (preg_match('/^create_(\w+)_table$/', $lower, $m)) {
+            return $m[1];
+        }
+        if (preg_match('/^create_(\w+)$/', $lower, $m)) {
+            return $m[1];
+        }
+        if (preg_match('/^(?:add|drop|remove|change|update|rename)_\w+_to_(\w+)_table$/', $lower, $m)) {
+            return $m[1];
+        }
+        if (preg_match('/^(?:add|drop|remove|change|update|rename)_\w+_to_(\w+)$/', $lower, $m)) {
+            return $m[1];
+        }
+        if (preg_match('/^add_\w+_to_(\w+)_table$/', $lower, $m)) {
+            return $m[1];
+        }
+
+        return 'table_name';
     }
 }
