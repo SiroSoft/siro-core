@@ -25,8 +25,8 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface {
         $config = $this->loadConfig();
         $driver = is_string($config['driver'] ?? null) ? $config['driver'] : '';
 
-        if ($driver !== 'sqlite' && $driver !== 'siro_lite') {
-            $this->write('  ❌ db:stats only supports SQLite databases.');
+        if ($driver !== 'sqlite' && $driver !== 'siro_lite' && $driver !== 'mysql' && $driver !== 'mariadb') {
+            $this->write('  ❌ db:stats supports SQLite and MySQL databases.');
             return 1;
         }
 
@@ -36,6 +36,10 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface {
         } catch (\Throwable $e) {
             $this->write('  ❌ Cannot connect to database: ' . $e->getMessage());
             return 1;
+        }
+
+        if ($driver === 'mysql' || $driver === 'mariadb') {
+            return $this->runMysql($pdo);
         }
 
         $this->write('');
@@ -155,6 +159,61 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface {
         }
         /** @var array<string, mixed> $config */
         return $config;
+    }
+
+    private function runMysql(PDO $pdo): int
+    {
+        $this->write('');
+        $this->write('  ⚡ MySQL Statistics');
+        $this->write('  ' . str_repeat('=', 50));
+        $this->write('');
+
+        // Database size
+        $sizeStmt = $pdo->query("SELECT ROUND(SUM(data_length + index_length) / 1048576, 1) AS mb FROM information_schema.TABLES WHERE table_schema = DATABASE()");
+        $sizeRow = $sizeStmt !== false ? $sizeStmt->fetch(PDO::FETCH_ASSOC) : false;
+        $totalMb = is_array($sizeRow) && is_scalar($sizeRow['mb'] ?? null) ? (float) $sizeRow['mb'] : 0;
+        $dataStmt = $pdo->query("SELECT ROUND(SUM(data_length) / 1048576, 1) AS mb FROM information_schema.TABLES WHERE table_schema = DATABASE()");
+        $dataRow = $dataStmt !== false ? $dataStmt->fetch(PDO::FETCH_ASSOC) : false;
+        $dataMb = is_array($dataRow) && is_scalar($dataRow['mb'] ?? null) ? (float) $dataRow['mb'] : 0;
+        $idxStmt = $pdo->query("SELECT ROUND(SUM(index_length) / 1048576, 1) AS mb FROM information_schema.TABLES WHERE table_schema = DATABASE()");
+        $idxRow = $idxStmt !== false ? $idxStmt->fetch(PDO::FETCH_ASSOC) : false;
+        $idxMb = is_array($idxRow) && is_scalar($idxRow['mb'] ?? null) ? (float) $idxRow['mb'] : 0;
+
+        $this->write('  Database Size');
+        $this->write('    Total: ' . number_format($totalMb, 1) . ' MB');
+        $this->write('    Data:  ' . number_format($dataMb, 1) . ' MB');
+        $this->write('    Index: ' . number_format($idxMb, 1) . ' MB');
+        $this->write('');
+
+        // Tables with row counts
+        $tblStmt = $pdo->query("SELECT table_name AS t, table_rows AS r, ROUND((data_length + index_length) / 1048576, 2) AS mb FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' ORDER BY table_name");
+        $rows = [];
+        if ($tblStmt !== false) {
+            foreach ($tblStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                if (!is_array($row)) continue;
+                $name = is_scalar($row['t'] ?? null) ? (string) $row['t'] : '';
+                $count = is_scalar($row['r'] ?? null) ? (string) $row['r'] : '0';
+                $mb = is_scalar($row['mb'] ?? null) ? (float) $row['mb'] : 0;
+                if ($name !== '') {
+                    $rows[] = [$name, number_format((int) $count), number_format($mb, 2) . ' MB', 'est'];
+                }
+            }
+        }
+        $this->write('  Tables (' . count($rows) . ')');
+        $this->write('');
+        if ($rows !== []) {
+            $this->table(['Table', 'Rows (est)', 'Size', 'Type'], $rows);
+        }
+
+        // Indexes
+        $idxCountStmt = $pdo->query("SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE table_schema = DATABASE()");
+        $idxCountRow = $idxCountStmt !== false ? $idxCountStmt->fetch(PDO::FETCH_ASSOC) : false;
+        $indexes = is_array($idxCountRow) && is_scalar($idxCountRow['c'] ?? null) ? (int) $idxCountRow['c'] : 0;
+        $this->write('');
+        $this->write('  Indexes (' . $indexes . ')');
+        $this->write('');
+
+        return 0;
     }
 
     private function safeQuery(PDO $pdo, string $sql): mixed
