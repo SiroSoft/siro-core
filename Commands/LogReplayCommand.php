@@ -224,15 +224,15 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('');
             $authed = false;
             if ($authMode && file_exists($authFile)) {
-                $stored = json_decode((string) file_get_contents($authFile), true);
-                if (is_array($stored)) {
+                $stored = $this->readAuthFile($authFile);
+                if ($stored !== []) {
                     $rt = $this->safeStr($stored['refresh_token'] ?? '');
                     if ($rt !== '') {
                         $newToken = $this->refreshToken($host, $rt);
                         if ($newToken !== null) {
                             $auth = 'Bearer ' . $newToken;
                             $stored['access_token'] = $newToken;
-                            @file_put_contents($authFile, json_encode($stored, JSON_PRETTY_PRINT));
+                            $this->writeAuthFile($authFile, $stored);
                             $this->write('  🔑 Auth: Bearer [refreshed]');
                             $authed = true;
                         } else {
@@ -1058,11 +1058,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             /** @var array<string, mixed> $stored */
             $stored = [];
             if (file_exists($authFile)) {
-                /** @var array<string, mixed>|null $decoded */
-                $decoded = json_decode((string) file_get_contents($authFile), true);
-                if (is_array($decoded)) {
-                    $stored = $decoded;
-                }
+                $stored = $this->readAuthFile($authFile);
             }
             $stored['email'] = $email;
             $stored['access_token'] = $token;
@@ -1137,16 +1133,14 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                     /** @var array<string, mixed> $stored */
                     $stored = [];
                     if (file_exists($authFile)) {
-                        /** @var array<string, mixed>|null $existing */
-                        $existing = json_decode((string) file_get_contents($authFile), true);
-                        if (is_array($existing)) $stored = $existing;
+                        $stored = $this->readAuthFile($authFile);
                     }
                     $stored['email'] = $email;
                     $stored['access_token'] = $token;
                     $stored['refresh_token'] = $this->safeStr(is_array($result['data'] ?? null) ? ($result['data']['refresh_token'] ?? '') : ($result['refresh_token'] ?? ''));
                     // Remove old password if present
                     unset($stored['password']);
-                    @file_put_contents($authFile, json_encode($stored, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                    $this->writeAuthFile($authFile, $stored);
                     return $token;
                 }
             }
@@ -1204,9 +1198,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
 
         // 1) Try stored credentials
         if (file_exists($authFile)) {
-            /** @var array<string, mixed>|null $stored */
-            $stored = json_decode((string) file_get_contents($authFile), true);
-            if (is_array($stored)) {
+            /** @var array<string, mixed> $stored */
+            $stored = $this->readAuthFile($authFile);
+            if ($stored !== []) {
                 $email = $this->safeStr($stored['email'] ?? '');
                 $rt = $this->safeStr($stored['refresh_token'] ?? '');
                 $pw = $this->safeStr($stored['password'] ?? '');
@@ -1224,9 +1218,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 if ($email !== '' && $pw !== '') {
                     $newToken = $this->login($host, $email, $pw);
                     if ($newToken !== null) {
-                        /** @var array<string, mixed>|null $csDecoded */
-                        $csDecoded = json_decode((string) file_get_contents($authFile), true);
-                        if (is_array($csDecoded)) {
+                        $csDecoded = $this->readAuthFile($authFile);
+                        if ($csDecoded !== []) {
                             unset($csDecoded['password']);
                             $this->writeAuthFile($authFile, $csDecoded);
                         }
@@ -1289,10 +1282,55 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
      */
     private function writeAuthFile(string $path, array $data): void
     {
+        // Encrypt sensitive tokens so .siro_auth.json isn't a plaintext
+        // credential dump on disk (enterprise hardening).
+        $key = (string) \Siro\Core\Env::get('APP_KEY', '');
+        if ($key !== '') {
+            try {
+                if (isset($data['refresh_token']) && is_string($data['refresh_token']) && $data['refresh_token'] !== '') {
+                    $data['refresh_token'] = 'enc:' . \Siro\Core\Encrypter::encrypt($data['refresh_token']);
+                }
+                if (isset($data['access_token']) && is_string($data['access_token']) && $data['access_token'] !== '') {
+                    $data['access_token'] = 'enc:' . \Siro\Core\Encrypter::encrypt($data['access_token']);
+                }
+            } catch (\Throwable $e) {
+                // Fall back to plaintext if encryption fails (dev without key)
+            }
+        }
         $encoded = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         if ($encoded !== false) {
             @file_put_contents($path, $encoded, LOCK_EX);
         }
+    }
+
+    /**
+     * Read and decrypt the auth file (handles both encrypted and legacy plaintext).
+     *
+     * @return array<string, mixed>
+     */
+    private function readAuthFile(string $path): array
+    {
+        if (!file_exists($path)) {
+            return [];
+        }
+        $stored = json_decode((string) file_get_contents($path), true);
+        if (!is_array($stored)) {
+            return [];
+        }
+        /** @var array<string, mixed> $stored */
+        $key = (string) \Siro\Core\Env::get('APP_KEY', '');
+        if ($key !== '') {
+            try {
+                foreach (['refresh_token', 'access_token'] as $field) {
+                    if (isset($stored[$field]) && is_string($stored[$field]) && str_starts_with($stored[$field], 'enc:')) {
+                        $stored[$field] = \Siro\Core\Encrypter::decrypt(substr($stored[$field], 4));
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Leave as-is if decryption fails (e.g. key changed)
+            }
+        }
+        return $stored;
     }
 
     /**

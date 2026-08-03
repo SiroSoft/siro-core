@@ -586,7 +586,7 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
 
                     if (is_string($t) && strlen($t) >= 10) {
                         $tokens = $this->loadTokens();
-                        $tokens[$as] = $t;
+                        $tokens[$as] = 'enc:' . $this->encryptToken($t);
                         $dir = dirname($this->authFile);
                         if (!is_dir($dir)) {
                             mkdir($dir, 0755, true);
@@ -641,7 +641,41 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             return [];
         }
         /** @var array<string, mixed> $raw */
+        foreach ($raw as $k => $v) {
+            if (is_string($v) && str_starts_with($v, 'enc:')) {
+                $decrypted = $this->decryptToken(substr($v, 4));
+                if ($decrypted !== null) {
+                    $raw[$k] = $decrypted;
+                }
+            }
+        }
         return $raw;
+    }
+
+    private function encryptToken(string $token): string
+    {
+        $key = (string) \Siro\Core\Env::get('APP_KEY', '');
+        if ($key === '') {
+            return $token;
+        }
+        try {
+            return \Siro\Core\Encrypter::encrypt($token);
+        } catch (\Throwable $e) {
+            return $token;
+        }
+    }
+
+    private function decryptToken(string $token): ?string
+    {
+        $key = (string) \Siro\Core\Env::get('APP_KEY', '');
+        if ($key === '') {
+            return $token;
+        }
+        try {
+            return \Siro\Core\Encrypter::decrypt($token);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
