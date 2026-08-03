@@ -11,11 +11,15 @@ use Siro\Core\Env;
 final class ConfigTest extends TestCase
 {
     private string $configDir;
+    private string $savedAppKeyEnv = '';
+    private string $savedAppKeyGetenv = '';
 
     protected function setUp(): void
     {
         parent::setUp();
         Config::reset();
+        $this->savedAppKeyEnv = (string) ($_ENV['APP_KEY'] ?? '');
+        $this->savedAppKeyGetenv = (string) getenv('APP_KEY');
         $_ENV['APP_KEY'] = 'test_key_for_config_cache_32chars_long!!';
         putenv('APP_KEY=test_key_for_config_cache_32chars_long!!');
         $this->configDir = sys_get_temp_dir() . '/siro_config_test_' . uniqid();
@@ -27,6 +31,12 @@ final class ConfigTest extends TestCase
         parent::tearDown();
         $this->removeDir($this->configDir);
         Config::reset();
+        if ($this->savedAppKeyEnv === '') {
+            unset($_ENV['APP_KEY']);
+        } else {
+            $_ENV['APP_KEY'] = $this->savedAppKeyEnv;
+        }
+        putenv('APP_KEY=' . $this->savedAppKeyGetenv);
     }
 
     public function testLoadFromDirectory(): void

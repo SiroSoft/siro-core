@@ -19,10 +19,14 @@ final class SecurityFixesTest extends TestCase
     }
 
     private string $tempDir;
+    private string $savedAppKeyEnv;
+    private string $savedAppKeyGetenv;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->savedAppKeyEnv = (string) ($_ENV['APP_KEY'] ?? '');
+        $this->savedAppKeyGetenv = (string) getenv('APP_KEY');
         $this->tempDir = sys_get_temp_dir() . '/siro_security_fixes_' . uniqid();
         Config::reset();
         Storage::fake();
@@ -38,6 +42,14 @@ final class SecurityFixesTest extends TestCase
         if (is_dir($siblingStorage)) {
             $this->removeDir($siblingStorage);
         }
+        // Restore APP_KEY exactly, so tests that read it via Env::get (which
+        // prefers $_ENV) are not affected by keys set here.
+        if ($this->savedAppKeyEnv === '') {
+            unset($_ENV['APP_KEY']);
+        } else {
+            $_ENV['APP_KEY'] = $this->savedAppKeyEnv;
+        }
+        putenv('APP_KEY=' . $this->savedAppKeyGetenv);
     }
 
     // ----- 1. XSS Fix in Queue::dashboardHtml() -----
