@@ -1,5 +1,38 @@
 # Release Notes
 
+## v0.35.1 — Enterprise Hardening + Killer Feature Complete (2026-08-01)
+
+SiroPHP v0.35.1 is the **release-candidate-quality** baseline: the debug
+workflow (Why → Replay → Fix → Test → Regression) works end-to-end, security is
+hardened for production, and the test suite is fully clean.
+
+### Killer Feature — Debug Workflow
+- `api:test` writes request traces → `debug:last`/`why` can analyze failures immediately
+- `fix --last` / `fix` watcher auto-replay the last test on code change
+- `replay --test` generates a PHPUnit regression test from any trace
+- `db:why` suggests indexes for SQLite full table scans
+- `log:replay --set key=val` and `--set=key=val` both supported
+
+### Security
+- Immutable HMAC-chained audit trail (`audit:verify` / `audit:log`)
+- Encrypted credentials in `.siro_auth.json` / `api-test-auth.json`
+- Replay SSRF hardening (host/path validation)
+- `key:generate` requires `--force` in production
+- `siro new` never leaks secrets or debug artifacts
+
+### Reliability
+- `db:backup`/`db:restore` real implementation (was a stub)
+- MySQL support for `db:backup/health/check/stats/optimize`
+- `make:crud --simple`, `make:migration`, `make:*` fixes
+- `benchmark` no longer crashes; `--json` clean
+- `config:cache` no false success; `db:seed` friendly errors
+
+### Quality
+- 19197 tests / 31895 assertions — 0 failures, 0 notices, 0 deprecations
+- PHPStan level=max — 0 errors
+- PHPUnit 12 attributes, test isolation fixed
+# Release Notes
+
 ## v0.29.6 — ORM Enhancements + Debug Workflow Overhaul (2026-05-24)
 
 ### 🔥 New CLI Commands

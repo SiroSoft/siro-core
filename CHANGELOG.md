@@ -1,5 +1,50 @@
 # Changelog — siro-core
 
+## v0.35.1 (2026-08-01)
+
+### Security (enterprise hardening)
+- Immutable audit trail: `Audit` HMAC-SHA256 chained JSONL log; `audit:verify` detects modification/deletion, `audit:log` appends manual entries
+- AuditMiddleware now writes 401/403/429/sensitive events to the tamper-evident trail
+- Encrypted credentials: `.siro_auth.json` and `api-test-auth.json` tokens encrypted with APP_KEY (`enc:` prefix, legacy plaintext readable)
+- Replay SSRF hardening: `log:replay`/`fix` validate host (host[:port]/[ipv6]) and reject path control chars
+- `key:generate` refuses to rotate existing/production JWT_SECRET without `--force`
+- `siro new` no longer leaks `.env` secrets / debug artifacts into new projects; regenerates `.env` from `.env.example`
+- `.gitignore`: `.siro_auth.json`, audit/trace logs, `deploy.json`
+
+### Killer feature — Debug workflow (Why → Replay → Fix → Test → Regression)
+- `api:test` now writes request traces (in-process dispatch previously bypassed the trace hook) so `debug:last`/`why` can analyze failures
+- `fix --last` reconstructs the last test from history schema (was expecting a nonexistent `command` key)
+- `fix` watcher runs the last test via the Siro CLI (was executing a bare command)
+- `log:replay --set key=val` (space syntax) now works alongside `--set=key=val`
+- `db:why` suggests indexes for SQLite `EXPLAIN QUERY PLAN` (`SCAN <table>`, `USE TEMP B-TREE FOR ORDER BY`)
+- `replay --test` generates a PHPUnit regression test from any trace
+
+### Reliability
+- `benchmark` validates `--iterations`/`--warmup` (no DivisionByZero); `--json` output is clean (no banner pollution)
+- `config:cache` reports write failures instead of false success
+- `db:backup`/`db:restore` no longer stubs: real `VACUUM INTO` snapshot + integrity-validated restore (`.gz` supported)
+- `db:seed` wraps seeder execution (friendly errors, no stack trace); ProductSeeder idempotent
+- `db:backup`/`db:health`/`db:check`/`db:stats`/`db:optimize` now support MySQL in addition to SQLite
+- `make:crud --simple` generates the Resource file (was referencing a non-existent class)
+- `make:migration` derives the table name from the migration name
+- `siro new` keeps a valid composer `name` (`sirosoft/api`)
+- `make:*` sanitize non-ASCII class names; reject empty-after-sanitize
+- `env:switch` restores `.env` from `.env.backup` when the profile is missing
+- `new:project` no longer emits output from its constructor
+- `live` watcher no longer kills all `php.exe` on Windows (targeted PID kill via netstat)
+- `help` lists all 93 commands (was a hardcoded subset of ~60)
+- English messages replace hardcoded Vietnamese in `env:check` and comments
+
+### Performance
+- `trace:list` uses a bounded scan (O(limit) memory) — 505ms → ~161ms at 1000 traces
+
+### PHPUnit 12 readiness
+- 76 doc-comment metadata (`@dataProvider`, `@test`) migrated to PHP 8 attributes (`#[DataProvider]`, `#[Test]`)
+- Fixed test-isolation leaks: ConfigTest/SecurityFixesTest/PenetrationTest now restore `$_ENV['APP_KEY']`/`getenv`
+- EnvTest captures the intentional SIRO_ENV notice
+- Result: **19197 tests / 31895 assertions, 0 failures, 0 notices, 0 deprecations** (4/4 consecutive clean runs)
+# Changelog — siro-core
+
 ## v0.35.0 (2026-06-07)
 
 ### 🚀 Features
