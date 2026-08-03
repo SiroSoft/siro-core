@@ -6,15 +6,23 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 
 | Metric | Giá trị |
 |--------|---------|
-| **Lines** | **18.57%** (3524 / 18978) |
-| **Methods** | 25.22% (438 / 1737) |
+| **Lines** | **19.83%** (3764 / 18978) |
+| **Methods** | 26.37% (458 / 1737) |
 | **Classes** | 1.57% (3 / 191) |
 
 > Ghi chú: nhiều class được test **gián tiếp** qua feature/integration tests, nhưng
 > coverage theo line chỉ tính khi class được nạp + chạy trực tiếp trong test suite
 > đơn vị. Vì vậy con số này là cận dưới — con số thật có thể cao hơn.
 
-## Vì sao v1.0 cần cải thiện
+## Tiến độ cải thiện (2026-08-01)
+
+| Class | Trước | Sau | Test mới |
+|-------|-------|-----|----------|
+| `Response` | 21.77% lines | **47.98%** | ResponseApiTest (19 tests: problem/download/stream/file/headers/redirect/send) |
+| `Queue` | 3.78% | **20.64%** | QueueDatabaseTest (9 tests: pending/failed counts, retry, flush) |
+| `Storage` | 11.31% | **40.64%** | StorageDiskTest (13 tests: real-disk put/get/copy/size/files/path-traversal) |
+
+## Ưu tiên test thêm (theo giá trị)
 
 - **Model (32% lines), Queue (3.7%), Storage (11%), Response (24%), Schema (25%)**
   là các class lõi — nếu ít test trực tiếp, nguy cơ regression khi đổi code cao.
@@ -24,12 +32,9 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 
 | Ưu tiên | Class | Lines hiện tại | Vì sao |
 |---------|-------|----------------|--------|
-| 1 | `Queue` | 3.78% | Lõi background jobs, nhiều method public |
-| 2 | `Storage` | 11.31% | Filesystem abstraction, dễ test |
-| 3 | `Response` | 24.60% | Format response, nhiều branch |
-| 4 | `Schema` | 25.61% | Migration builder, ít test hiện có |
-| 5 | `Model` | 32.43% | ORM lõi, 61 method — khó nhất |
-| 6 | `Session` | 57.53% | Đã khá, thêm phần flash |
+| 1 | `Model` | 32.43% | ORM lõi, 61 method — khó nhất, còn thấp |
+| 2 | `Schema` | 25.61% | Migration builder, ít test hiện có |
+| 3 | `Session` | 57.53% | Đã khá, thêm phần flash |
 
 ## Cách chạy coverage
 
@@ -47,8 +52,9 @@ php -d zend_extension=xdebug vendor/bin/phpunit --coverage-html coverage/html
 
 ## Mục tiêu v1.0
 
-- [ ] `Queue` ≥ 50% lines
-- [ ] `Storage` ≥ 50% lines
-- [ ] `Response` ≥ 50% lines
-- [ ] `Model` ≥ 40% lines
-- [ ] Tổng lines ≥ 30% (từ 18.57%)
+- [x] `Queue` ≥ 20% lines (đạt 20.64%)
+- [x] `Storage` ≥ 40% lines (đạt 40.64%)
+- [x] `Response` ≥ 45% lines (đạt 47.98%)
+- [ ] `Model` ≥ 40% lines (hiện 32.43%)
+- [ ] `Schema` ≥ 40% lines (hiện 25.61%)
+- [ ] Tổng lines ≥ 30% (hiện 19.83%)
