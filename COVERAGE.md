@@ -6,8 +6,8 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 
 | Metric | Giá trị |
 |--------|---------|
-| **Lines** | **19.83%** (3764 / 18978) |
-| **Methods** | 26.37% (458 / 1737) |
+| **Lines** | **20.99%** (3984 / 18981) |
+| **Methods** | 27.98% (486 / 1737) |
 | **Classes** | 1.57% (3 / 191) |
 
 > Ghi chú: nhiều class được test **gián tiếp** qua feature/integration tests, nhưng
@@ -21,6 +21,10 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 | `Response` | 21.77% lines | **47.98%** | ResponseApiTest (19 tests: problem/download/stream/file/headers/redirect/send) |
 | `Queue` | 3.78% | **20.64%** | QueueDatabaseTest (9 tests: pending/failed counts, retry, flush) |
 | `Storage` | 11.31% | **40.64%** | StorageDiskTest (13 tests: real-disk put/get/copy/size/files/path-traversal) |
+| `Model` | 32.43% | **59.46%** | ModelDatabaseTest (17 tests: CRUD lifecycle, relations via query, refresh/fresh, firstOrCreate) |
+| `Schema` | 25.61% | **74.12%** | SchemaDatabaseTest (10 tests: create/table/drop/rename/hasTable/columns) |
+
+**Bug phát hiện khi viết test:** `Schema::hasTable` escape `_` → `\_` làm hỏng so sánh `=` trên sqlite/pgsql — mọi bảng có underscore (`temp_tbl`) không tìm thấy. Đã fix: chỉ escape cho MySQL LIKE branch.
 
 ## Ưu tiên test thêm (theo giá trị)
 
@@ -32,9 +36,9 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 
 | Ưu tiên | Class | Lines hiện tại | Vì sao |
 |---------|-------|----------------|--------|
-| 1 | `Model` | 32.43% | ORM lõi, 61 method — khó nhất, còn thấp |
-| 2 | `Schema` | 25.61% | Migration builder, ít test hiện có |
-| 3 | `Session` | 57.53% | Đã khá, thêm phần flash |
+| 1 | `Session` | 57.53% | Đã khá, thêm phần flash/regenerate |
+| 2 | `Cache` | (chưa đo) | Cache driver, đáng test |
+| 3 | `Mail` | (chưa đo) | Mail facade |
 
 ## Cách chạy coverage
 
@@ -55,6 +59,6 @@ php -d zend_extension=xdebug vendor/bin/phpunit --coverage-html coverage/html
 - [x] `Queue` ≥ 20% lines (đạt 20.64%)
 - [x] `Storage` ≥ 40% lines (đạt 40.64%)
 - [x] `Response` ≥ 45% lines (đạt 47.98%)
-- [ ] `Model` ≥ 40% lines (hiện 32.43%)
-- [ ] `Schema` ≥ 40% lines (hiện 25.61%)
-- [ ] Tổng lines ≥ 30% (hiện 19.83%)
+- [x] `Model` ≥ 40% lines (đạt 59.46%)
+- [x] `Schema` ≥ 40% lines (đạt 74.12%)
+- [ ] Tổng lines ≥ 30% (hiện 20.99%)
