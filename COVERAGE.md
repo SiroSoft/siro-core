@@ -6,8 +6,8 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 
 | Metric | Giá trị |
 |--------|---------|
-| **Lines** | **21.75%** (4131 / 18989) |
-| **Methods** | 29.48% (512 / 1737) |
+| **Lines** | **22.64%** (4299 / 18989) |
+| **Methods** | 29.65% (515 / 1737) |
 | **Classes** | 1.57% (3 / 191) |
 
 > Ghi chú: nhiều class được test **gián tiếp** qua feature/integration tests, nhưng
@@ -27,6 +27,7 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 | `Mail` | (chưa đo) | **35.96%** | MailTest (chain, sanitize, queue, sendLater) |
 | `Session` | 57.53% | **69.35%** | SessionFlashTest (flash lifecycle, persistence, destroy, gc) |
 | `QueryBuilder` | 17.84% | **32.76%** | QueryBuilderExecuteTest (22 tests: CRUD, joins, aggregates, paginate) |
+| `LogReplayCommand` | 2.33% | **19.25%** | LogReplayTest (13 tests: error paths, dry-run, seed, auth file encryption) |
 
 **Bug phát hiện khi viết test:**
 - `Schema::hasTable` escape `_` làm hỏng so sánh `=` trên sqlite/pgsql (đã fix)
@@ -45,7 +46,7 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 |---------|-------|----------------|--------|
 | 1 | `ModelQueryBuilder` | 12.57% | Query builder cho Model — chạy được, ít test |
 | 2 | `EagerLoader` | 1.48% | Eager loading relations |
-| 3 | `LogReplayCommand` | 2.33% | Replay logic (857 lines) |
+| 3 | `DB\Relations\*` | 5-14% | BelongsToMany/MorphMany/MorphTo |
 
 ## Cách chạy coverage
 
