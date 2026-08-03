@@ -136,7 +136,9 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
                 $traceId = $this->getLastTraceId();
                 $this->write('');
                 $this->write('  🔄 Code changed → replaying ' . ($traceId ?? 'last request') . '...');
-                $output = shell_exec($lastTest . ' 2>&1');
+                // Run the last api:test through the Siro CLI
+                $cmd = 'php ' . escapeshellarg($this->basePath . DIRECTORY_SEPARATOR . 'siro') . ' ' . $lastTest . ' 2>&1';
+                $output = shell_exec($cmd);
                 if ($output !== null) {
                     $lines = explode("\n", (string) $output);
                     $statusLine = '';
@@ -200,8 +202,26 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $history = json_decode((string) file_get_contents($historyFile), true);
             if (is_array($history) && $history !== []) {
                 $last = end($history);
-                if (is_array($last) && isset($last['command']) && is_string($last['command'])) {
-                    return $last['command'];
+                if (is_array($last)) {
+                    // Command string stored verbatim (newer versions)
+                    if (isset($last['command']) && is_string($last['command']) && $last['command'] !== '') {
+                        return $last['command'];
+                    }
+                    // Reconstruct from method + path + fields (schema written by api:test)
+                    $method = is_string($last['method'] ?? null) ? strtoupper($last['method']) : '';
+                    $path = is_string($last['path'] ?? null) ? $last['path'] : '';
+                    if ($method !== '' && $path !== '') {
+                        $cmd = "api:test {$method} {$path}";
+                        $fields = $last['fields'] ?? null;
+                        if (is_array($fields) && $fields !== []) {
+                            foreach ($fields as $k => $v) {
+                                if (is_scalar($v)) {
+                                    $cmd .= " {$k}=" . (string) $v;
+                                }
+                            }
+                        }
+                        return $cmd;
+                    }
                 }
             }
         }

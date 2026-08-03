@@ -47,7 +47,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         }
         $isProduction = in_array($env, ['production', 'prod', 'staging'], true);
 
-        foreach ($args as $arg) {
+        $argsCount = count($args);
+        for ($i = 0; $i < $argsCount; $i++) {
+            $arg = $args[$i];
             if (str_starts_with($arg, '--format=')) {
                 $format = substr($arg, 9);
             } elseif ($arg === '--force') {
@@ -69,6 +71,20 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 $parts = explode('=', $setArg, 2);
                 if (isset($parts[1])) {
                     $overrides[$parts[0]] = $parts[1];
+                }
+            } elseif ($arg === '--set') {
+                // Support the documented " --set key=val " (space-separated) form.
+                // The key=value pair is the following argument.
+                if (isset($args[$i + 1])) {
+                    $setArg = $args[$i + 1];
+                    $i++;
+                    if (str_starts_with($setArg, 'body.')) {
+                        $setArg = substr($setArg, 5);
+                    }
+                    $parts = explode('=', $setArg, 2);
+                    if (isset($parts[1])) {
+                        $overrides[$parts[0]] = $parts[1];
+                    }
                 }
             } elseif (str_starts_with($arg, '--seed')) {
                 $overrides['_seed'] = '1';
