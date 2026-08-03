@@ -549,6 +549,11 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             $duration = (microtime(true) - $start) * 1000;
             $memory = memory_get_peak_usage(true) / 1024 / 1024;
 
+            // Write a trace so the Why/Replay/Fix loop can pick this request up.
+            // api:test dispatches in-process (not via the HTTP server), so the
+            // normal App::run() trace hook is bypassed — write it here instead.
+            $this->writeInternalTrace($method, $pathOnly, $statusCode, $duration, $request, $response);
+
             $response->send();
             $body = ob_get_clean() ?: '';
 
@@ -868,5 +873,38 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  php siro api:test POST /users name=John --collection-save=myapi');
         $this->write('  php siro api:test --collection=myapi');
         $this->write('  php siro api:test GET /users --watch');
+    }
+
+    /**
+     * Write a request trace so the Why/Replay/Fix workflow can consume api:test
+     * requests even though they are dispatched in-process (not via HTTP server).
+     */
+    private function writeInternalTrace(string $method, string $path, int $status, float $durationMs, \Siro\Core\Request $request, \Siro\Core\Response $response): void
+    {
+        try {
+            if (!\Siro\Core\Env::bool('APP_DEBUG', false)) {
+                return;
+            }
+            $traceId = 'siro_' . bin2hex(random_bytes(16));
+            $traceData = [
+                'method' => strtoupper($method),
+                'path' => $path,
+                'status' => $status,
+                'time_ms' => round($durationMs, 2),
+                'trace_id' => $traceId,
+                'ip' => '127.0.0.1',
+                'user_agent' => 'siro-api-test',
+                'host' => 'localhost:8080',
+                'timestamp' => date('c'),
+            ];
+            $rawBody = \Siro\Core\Request::getRawBodyCache();
+            if (is_string($rawBody) && $rawBody !== '') {
+                $traceData['request_body'] = $rawBody;
+            }
+            $traceData['response_body'] = (string) json_encode($response->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            \Siro\Core\Logger::trace($traceId, $traceData);
+        } catch (\Throwable $e) {
+            // Tracing must never break the api:test command itself.
+        }
     }
 }
