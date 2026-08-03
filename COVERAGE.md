@@ -6,8 +6,8 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 
 | Metric | Giá trị |
 |--------|---------|
-| **Lines** | **20.99%** (3984 / 18981) |
-| **Methods** | 27.98% (486 / 1737) |
+| **Lines** | **21.75%** (4131 / 18989) |
+| **Methods** | 29.48% (512 / 1737) |
 | **Classes** | 1.57% (3 / 191) |
 
 > Ghi chú: nhiều class được test **gián tiếp** qua feature/integration tests, nhưng
@@ -18,13 +18,20 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 
 | Class | Trước | Sau | Test mới |
 |-------|-------|-----|----------|
-| `Response` | 21.77% lines | **47.98%** | ResponseApiTest (19 tests: problem/download/stream/file/headers/redirect/send) |
-| `Queue` | 3.78% | **20.64%** | QueueDatabaseTest (9 tests: pending/failed counts, retry, flush) |
-| `Storage` | 11.31% | **40.64%** | StorageDiskTest (13 tests: real-disk put/get/copy/size/files/path-traversal) |
-| `Model` | 32.43% | **59.46%** | ModelDatabaseTest (17 tests: CRUD lifecycle, relations via query, refresh/fresh, firstOrCreate) |
-| `Schema` | 25.61% | **74.12%** | SchemaDatabaseTest (10 tests: create/table/drop/rename/hasTable/columns) |
+| `Response` | 21.77% lines | **56.05%** | ResponseApiTest |
+| `Queue` | 3.78% | **20.64%** | QueueDatabaseTest |
+| `Storage` | 11.31% | **40.64%** | StorageDiskTest |
+| `Model` | 32.43% | **61.56%** | ModelDatabaseTest |
+| `Schema` | 25.61% | **74.12%** | SchemaDatabaseTest |
+| `Cache` | (chưa đo) | **78.95%** | CacheExtendedTest (remember/requestStatus/flush prefix) |
+| `Mail` | (chưa đo) | **35.96%** | MailTest (chain, sanitize, queue, sendLater) |
+| `Session` | 57.53% | **69.35%** | SessionFlashTest (flash lifecycle, persistence, destroy, gc) |
+| `QueryBuilder` | 17.84% | **32.76%** | QueryBuilderExecuteTest (22 tests: CRUD, joins, aggregates, paginate) |
 
-**Bug phát hiện khi viết test:** `Schema::hasTable` escape `_` → `\_` làm hỏng so sánh `=` trên sqlite/pgsql — mọi bảng có underscore (`temp_tbl`) không tìm thấy. Đã fix: chỉ escape cho MySQL LIKE branch.
+**Bug phát hiện khi viết test:**
+- `Schema::hasTable` escape `_` làm hỏng so sánh `=` trên sqlite/pgsql (đã fix)
+- `QueryBuilder::distinct()` SQL sai — `SELECT DISTINCT, \`col\`` thiếu từ khóa DISTINCT đúng chỗ; `select()` sau `distinct()` xóa marker (đã fix)
+- Fix test-isolation EncrypterTest (đồng bộ `$_ENV['APP_KEY']` + putenv) — hết flake
 
 ## Ưu tiên test thêm (theo giá trị)
 
@@ -36,9 +43,9 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 
 | Ưu tiên | Class | Lines hiện tại | Vì sao |
 |---------|-------|----------------|--------|
-| 1 | `Session` | 57.53% | Đã khá, thêm phần flash/regenerate |
-| 2 | `Cache` | (chưa đo) | Cache driver, đáng test |
-| 3 | `Mail` | (chưa đo) | Mail facade |
+| 1 | `ModelQueryBuilder` | 12.57% | Query builder cho Model — chạy được, ít test |
+| 2 | `EagerLoader` | 1.48% | Eager loading relations |
+| 3 | `LogReplayCommand` | 2.33% | Replay logic (857 lines) |
 
 ## Cách chạy coverage
 
@@ -58,7 +65,10 @@ php -d zend_extension=xdebug vendor/bin/phpunit --coverage-html coverage/html
 
 - [x] `Queue` ≥ 20% lines (đạt 20.64%)
 - [x] `Storage` ≥ 40% lines (đạt 40.64%)
-- [x] `Response` ≥ 45% lines (đạt 47.98%)
-- [x] `Model` ≥ 40% lines (đạt 59.46%)
+- [x] `Response` ≥ 45% lines (đạt 56.05%)
+- [x] `Model` ≥ 40% lines (đạt 61.56%)
 - [x] `Schema` ≥ 40% lines (đạt 74.12%)
-- [ ] Tổng lines ≥ 30% (hiện 20.99%)
+- [x] `Cache` ≥ 50% lines (đạt 78.95%)
+- [x] `Session` ≥ 50% lines (đạt 69.35%)
+- [ ] `QueryBuilder` ≥ 50% lines (hiện 32.76%)
+- [ ] Tổng lines ≥ 30% (hiện 21.75%)

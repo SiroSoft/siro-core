@@ -166,7 +166,13 @@ final class SqlCompiler
                 $quotedColumns[] = $this->quoteIdentifier($column);
             }
         }
-        $sql = sprintf('SELECT %s FROM %s', implode(', ', $quotedColumns), $this->quoteIdentifier($table));
+        $distinct = false;
+        if (($quotedColumns[0] ?? '') === 'DISTINCT') {
+            $distinct = true;
+            array_shift($quotedColumns);
+        }
+        $prefix = $distinct ? 'SELECT DISTINCT ' : 'SELECT ';
+        $sql = sprintf('%s%s FROM %s', $prefix, implode(', ', $quotedColumns), $this->quoteIdentifier($table));
         $sql .= $this->compileJoins($joins);
         $sql .= $whereSql;
         $sql .= $this->compileGroupBy($groups);

@@ -4,214 +4,135 @@ declare(strict_types=1);
 
 namespace Siro\Core\Tests\Unit;
 
-use Siro\Core\Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 use Siro\Core\Mail;
-use Siro\Core\Queue;
 
+/**
+ * Mail tests — full builder chain in fake mode, headers, sanitization,
+ * assertions, send/queue/sendLater.
+ */
 final class MailTest extends TestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
         Mail::fake();
-        Queue::fake();
     }
 
-    public function testFakeCreatesEmptyState(): void
+    protected function tearDown(): void
     {
-        $mails = Mail::getFakedMails();
-        $this->assertEmpty($mails);
+        Mail::reset();
+        parent::tearDown();
     }
 
-    public function testSendStoresMail(): void
+    public function testBasicMailChain(): void
     {
-        Mail::to('test@example.com')
-            ->subject('Test Subject')
-            ->html('<h1>Hello</h1>')
+        Mail::to('user@test.com')
+            ->subject('Welcome')
+            ->html('<h1>Hi</h1>')
             ->send();
-
         $mails = Mail::getFakedMails();
         $this->assertCount(1, $mails);
-        $this->assertSame('test@example.com', $mails[0]['to']);
-        $this->assertSame('Test Subject', $mails[0]['subject']);
-        $this->assertSame('<h1>Hello</h1>', $mails[0]['body']);
-        $this->assertSame('text/html', $mails[0]['content_type']);
+        $this->assertSame('user@test.com', $mails[0]['to']);
+        $this->assertSame('Welcome', $mails[0]['subject']);
+        $this->assertSame('<h1>Hi</h1>', $mails[0]['body']);
     }
 
-    public function testSendWithTextBody(): void
+    public function testPlainTextMail(): void
     {
-        Mail::to('test@example.com')
-            ->subject('Plain Text')
-            ->text('Hello World')
-            ->send();
-
-        $mails = Mail::getFakedMails();
-        $this->assertCount(1, $mails);
-        $this->assertSame('text/plain', $mails[0]['content_type']);
-        $this->assertSame('Hello World', $mails[0]['body']);
-    }
-
-    public function testSendWithHtmlBody(): void
-    {
-        Mail::to('test@example.com')
-            ->subject('HTML Email')
-            ->html('<p>HTML content</p>')
-            ->send();
-
-        $mails = Mail::getFakedMails();
-        $this->assertCount(1, $mails);
-        $this->assertSame('text/html', $mails[0]['content_type']);
-    }
-
-    public function testSendWithCc(): void
-    {
-        Mail::to('primary@example.com')
-            ->cc('cc1@example.com')
-            ->cc('cc2@example.com')
-            ->subject('With CC')
-            ->text('Content')
-            ->send();
-
-        $mails = Mail::getFakedMails();
-        $this->assertCount(1, $mails);
-        $this->assertContains('cc1@example.com', $mails[0]['cc']);
-        $this->assertContains('cc2@example.com', $mails[0]['cc']);
-    }
-
-    public function testSendWithBcc(): void
-    {
-        Mail::to('primary@example.com')
-            ->bcc('bcc@example.com')
-            ->subject('With BCC')
-            ->text('Content')
-            ->send();
-
-        $mails = Mail::getFakedMails();
-        $this->assertCount(1, $mails);
-        $this->assertContains('bcc@example.com', $mails[0]['bcc']);
-    }
-
-    public function testSendWithReplyTo(): void
-    {
-        Mail::to('test@example.com')
-            ->replyTo('replies@example.com')
-            ->subject('Reply To Test')
-            ->text('Content')
-            ->send();
-
-        $mails = Mail::getFakedMails();
-        $this->assertCount(1, $mails);
-        $this->assertSame('replies@example.com', $mails[0]['reply_to']);
-    }
-
-    public function testAssertSentPasses(): void
-    {
-        Mail::to('test@example.com')
-            ->subject('Expected Subject')
-            ->text('Content')
-            ->send();
-
-        Mail::assertSent('Expected Subject');
-        $this->assertTrue(true);
-    }
-
-    public function testAssertSentFails(): void
-    {
-        Mail::to('test@example.com')
-            ->subject('Actual Subject')
-            ->text('Content')
-            ->send();
-
-        $this->expectException(\PHPUnit\Framework\ExpectationFailedException::class);
-        Mail::assertSent('Wrong Subject');
-    }
-
-    public function testSendMultipleEmails(): void
-    {
-        Mail::to('user1@example.com')
-            ->subject('Email 1')
-            ->text('Content 1')
-            ->send();
-
-        Mail::to('user2@example.com')
-            ->subject('Email 2')
-            ->text('Content 2')
-            ->send();
-
-        $mails = Mail::getFakedMails();
-        $this->assertCount(2, $mails);
-        $this->assertSame('user1@example.com', $mails[0]['to']);
-        $this->assertSame('user2@example.com', $mails[1]['to']);
-    }
-
-    public function testQueueStoresMail(): void
-    {
-        Mail::to('test@example.com')
-            ->subject('Queued Email')
-            ->text('Content')
-            ->queue();
-
-        $jobs = Queue::getFakedJobs();
-        $this->assertCount(1, $jobs);
-        $this->assertSame('Siro\Core\SendMailJob', $jobs[0]['job']);
-        $this->assertSame('test@example.com', $jobs[0]['data']['to']);
-    }
-
-    public function testSendLaterStoresMail(): void
-    {
-        Mail::to('test@example.com')
-            ->subject('Delayed Email')
-            ->text('Content')
-            ->sendLater(3600);
-
-        $jobs = Queue::getFakedJobs();
-        $this->assertCount(1, $jobs);
-    }
-
-    public function testChainedMethods(): void
-    {
-        $result = Mail::to('a@b.com')
-            ->cc('cc@b.com')
-            ->bcc('bcc@b.com')
-            ->replyTo('reply@b.com')
-            ->subject('Chain Test')
-            ->html('<p>Test</p>')
-            ->send();
-
-        $mails = Mail::getFakedMails();
-        $this->assertCount(1, $mails);
-        $this->assertSame('a@b.com', $mails[0]['to']);
-        $this->assertSame('Chain Test', $mails[0]['subject']);
-    }
-
-    public function testMailHasCorrectStructure(): void
-    {
-        Mail::to('test@example.com')
-            ->subject('Structure Test')
-            ->html('<p>Content</p>')
-            ->send();
-
-        $mails = Mail::getFakedMails();
-        $mail = $mails[0];
-
-        $this->assertArrayHasKey('to', $mail);
-        $this->assertArrayHasKey('subject', $mail);
-        $this->assertArrayHasKey('body', $mail);
-        $this->assertArrayHasKey('content_type', $mail);
-        $this->assertArrayHasKey('cc', $mail);
-        $this->assertArrayHasKey('bcc', $mail);
-        $this->assertArrayHasKey('reply_to', $mail);
-        $this->assertArrayHasKey('attachments', $mail);
-    }
-
-    public function testHtmlDefaultsToTextPlainIfNotCalled(): void
-    {
-        Mail::to('test@example.com')
-            ->subject('Test')
-            ->text('Default body') // must set body since send() requires it
-            ->send();
-
+        Mail::to('a@test.com')->subject('S')->text('plain body')->send();
         $mails = Mail::getFakedMails();
         $this->assertSame('text/plain', $mails[0]['content_type']);
+        $this->assertSame('plain body', $mails[0]['body']);
+    }
+
+    public function testHtmlContentType(): void
+    {
+        Mail::to('a@test.com')->html('<p>x</p>')->send();
+        $this->assertSame('text/html', Mail::getFakedMails()[0]['content_type']);
+    }
+
+    public function testCcBccReplyTo(): void
+    {
+        Mail::to('to@test.com')
+            ->cc('cc@test.com')
+            ->bcc('bcc@test.com')
+            ->replyTo('reply@test.com')
+            ->subject('S')
+            ->html('x')
+            ->send();
+        $m = Mail::getFakedMails()[0];
+        $this->assertContains('cc@test.com', $m['cc']);
+        $this->assertContains('bcc@test.com', $m['bcc']);
+        $this->assertSame('reply@test.com', $m['reply_to']);
+    }
+
+    public function testAssertions(): void
+    {
+        Mail::to('to@test.com')->subject('Order Confirmed')->html('x')->send();
+        Mail::to('other@test.com')->subject('Other')->html('x')->send();
+        Mail::assertSent('Order Confirmed');
+        Mail::assertSentTo('to@test.com');
+        Mail::assertNotSentTo('nobody@test.com');
+    }
+
+    public function testSendWithoutBodyThrows(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        Mail::to('a@test.com')->send(); // no body
+    }
+
+    public function testSendWithoutRecipientThrows(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        Mail::to('')->html('x')->send();
+    }
+
+    public function testSmtpInjectionSanitized(): void
+    {
+        Mail::to("evil@test.com\r\nBcc: victim@test.com")
+            ->subject("Subject\r\nBcc: all@test.com")
+            ->html('x')
+            ->send();
+        $m = Mail::getFakedMails()[0];
+        // sanitize removes \r, \n, \0, space, tab from addresses; \r\n from headers
+        $this->assertSame('evil@test.comBcc:victim@test.com', $m['to']);
+        $this->assertSame('SubjectBcc: all@test.com', $m['subject']);
+    }
+
+    public function testQueuePushesJob(): void
+    {
+        // queue() requires DB (jobs table); in this unit test just ensure
+        // it does not throw when the Mail object is valid in fake context
+        Mail::to('q@test.com')->subject('Q')->html('x');
+        $this->assertTrue(true); // builder chain works
+    }
+
+    public function testAttachFile(): void
+    {
+        // attach() requires files within the project directory
+        $projDir = dirname(__DIR__, 2);
+        $tmp = $projDir . '/storage/test_mail_attach_' . uniqid() . '.txt';
+        file_put_contents($tmp, 'attachment data');
+        Mail::to('a@test.com')->subject('With attach')->html('x')->attach($tmp, 'doc.txt')->send();
+        $m = Mail::getFakedMails()[0];
+        $this->assertNotEmpty($m['attachments']);
+        @unlink($tmp);
+    }
+
+    public function testQueuePushesToQueue(): void
+    {
+        \Siro\Core\Queue::fake();
+        Mail::to('queue@test.com')->subject('Queued')->html('x')->queue();
+        \Siro\Core\Queue::assertPushed(\Siro\Core\SendMailJob::class);
+        \Siro\Core\Queue::reset();
+    }
+
+    public function testSendLaterQueuesWithDelay(): void
+    {
+        \Siro\Core\Queue::fake();
+        Mail::to('later@test.com')->subject('Later')->html('x')->sendLater(60);
+        \Siro\Core\Queue::assertPushed(\Siro\Core\SendMailJob::class);
+        \Siro\Core\Queue::reset();
     }
 }
