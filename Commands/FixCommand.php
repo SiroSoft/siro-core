@@ -52,6 +52,11 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $method = $this->safeStr($data['method'] ?? 'GET');
             $host = $this->safeStr($data['host'] ?? 'localhost:8080');
             $path = $this->safeStr($data['path'] ?? '/');
+            // Enterprise hardening: reject tampered trace targets (SSRF/URL injection).
+            if (!preg_match('/^[A-Za-z0-9.\-\[\]:]+$/', $host) || preg_match('/[\x00-\x1F\x7F\s]/', $path)) {
+                $this->write('  ❌ Refusing to replay: invalid host/path in trace.');
+                return 1;
+            }
             $body = $this->safeStr($data['request_body'] ?? '');
             $auth = $this->safeStr($data['auth_header'] ?? '');
             $ct = $this->safeStr($data['content_type'] ?? '');

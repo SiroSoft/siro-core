@@ -179,6 +179,18 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
+        // Enterprise hardening: validate the replay target.
+        // A tampered trace must not be able to point replay at arbitrary hosts
+        // (SSRF) or inject control characters into the URL/path.
+        if (!self::isValidHost($host)) {
+            $this->write('  ❌ Refusing to replay: invalid host in trace: ' . $host);
+            return 1;
+        }
+        if (!self::isValidPath($path)) {
+            $this->write('  ❌ Refusing to replay: invalid characters in path.');
+            return 1;
+        }
+
         // Detect HTTPS and insecure flags
         $useHttps = false;
         $insecure = false;
@@ -1281,5 +1293,55 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         if ($encoded !== false) {
             @file_put_contents($path, $encoded, LOCK_EX);
         }
+    }
+
+    /**
+     * Validate a replay target host string. Prevents SSRF / URL-breaking
+     * injection from tampered trace files.
+     */
+    public static function isValidHost(string $host): bool
+    {
+        if ($host === '') {
+            return false;
+        }
+        // host[:port] or [ipv6]:port — letters, digits, dots, dashes, colons, brackets
+        if (!preg_match('/^[A-Za-z0-9.\-\[\]:]+$/', $host)) {
+            return false;
+        }
+        // Port must be numeric and in range
+        $hostPart = $host;
+        $port = 0;
+        if (str_starts_with($host, '[')) {
+            // IPv6: [::1]:8080
+            if (preg_match('/^\[[0-9A-Fa-f:.]+\](?::(\d+))?$/', $host, $m)) {
+                $port = isset($m[1]) ? (int) $m[1] : 0;
+                return $port === 0 || ($port >= 1 && $port <= 65535);
+            }
+            return false;
+        }
+        if (substr_count($host, ':') === 1) {
+            [$hostPart, $portStr] = explode(':', $host, 2);
+            if (!ctype_digit($portStr)) {
+                return false;
+            }
+            $port = (int) $portStr;
+            if ($port < 1 || $port > 65535) {
+                return false;
+            }
+        }
+        // hostname: letters, digits, dots, dashes
+        return preg_match('/^[A-Za-z0-9]([A-Za-z0-9.\-]*[A-Za-z0-9])?$/', $hostPart) === 1;
+    }
+
+    /**
+     * Validate a replay path — reject control characters and whitespace that
+     * could break out of the URL or inject header lines.
+     */
+    public static function isValidPath(string $path): bool
+    {
+        if ($path === '') {
+            return false;
+        }
+        return preg_match('/[\x00-\x1F\x7F\s]/', $path) !== 1;
     }
 }
