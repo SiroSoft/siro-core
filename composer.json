@@ -1,7 +1,6 @@
 {
     "name": "sirosoft/core",
     "description": "Core engine powering the Siro API Framework with zero external dependencies.",
-    "version": "0.35.1",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -74,7 +73,7 @@
             "@php scripts/chaos-test.php"
         ],
         "psalm": "psalm --taint-analysis --show-info=true",
-        "audit": "composer audit --format=table",
+        "security:audit": "composer audit --format=table",
         "sbom": "@php scripts/generate-sbom.php",
         "audit:supply-chain": "@php scripts/audit-supply-chain.php",
         "health": "@php scripts/health-check.php",
@@ -86,8 +85,7 @@
             "@composer audit --format=table || true",
             "@php scripts/generate-sbom.php"
         ],
-        "optimize": [
-            "@php -r \"echo 'OPcache: ' . (extension_loaded('Zend OPcache') ? 'enabled' : 'disabled') . PHP_EOL;\"",
+        "optimize": [            "@php -r \"echo 'OPcache: ' . (extension_loaded('Zend OPcache') ? 'enabled' : 'disabled') . PHP_EOL;\"",
             "@php -r \"echo 'Clearing config cache...'; @unlink('storage/framework/config.php'); echo ' done' . PHP_EOL;\"",
             "@php -r \"echo 'Clearing route cache...'; @unlink('storage/framework/routes.php'); echo ' done' . PHP_EOL;\"",
             "echo 'Optimization complete. Run your app to warm caches.'"
