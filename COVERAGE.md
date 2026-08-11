@@ -6,8 +6,8 @@ Snapshot lấy từ `php -d zend_extension=xdebug vendor/bin/phpunit --coverage-
 
 | Metric | Giá trị |
 |--------|---------|
-| **Lines** | **22.64%** (4299 / 18989) |
-| **Methods** | 29.65% (515 / 1737) |
+| **Lines** | **24.84%** (4716 / 18984) |
+| **Methods** | 31.32% (544 / 1737) |
 | **Classes** | 1.57% (3 / 191) |
 
 > Ghi chú: nhiều class được test **gián tiếp** qua feature/integration tests, nhưng
