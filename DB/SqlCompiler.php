@@ -115,6 +115,10 @@ final class SqlCompiler
         if ($column === '*') {
             return false;
         }
+        // Numeric literals (e.g. SELECT 1) must not be quoted as columns
+        if (is_numeric($column)) {
+            return true;
+        }
         if (str_contains($column, '(') || str_contains($column, ')')) {
             return true;
         }
