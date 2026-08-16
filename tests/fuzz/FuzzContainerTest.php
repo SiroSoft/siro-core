@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Siro\Core\Tests\Fuzz;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 use Siro\Core\Container;
 
 final class FuzzContainerTest extends TestCase
@@ -17,7 +19,7 @@ final class FuzzContainerTest extends TestCase
         $this->container = new Container();
     }
 
-    /** @dataProvider provideBindings */
+    #[DataProvider('provideBindings')]
     public function testBindResolveNeverThrows(string $abstract, mixed $concrete): void
     {
         try {
@@ -42,7 +44,7 @@ final class FuzzContainerTest extends TestCase
         yield 'empty string' => ['', ''];
     }
 
-    /** @dataProvider provideSingletonBindings */
+    #[DataProvider('provideSingletonBindings')]
     public function testSingletonReturnsSameInstance(string $abstract, mixed $concrete): void
     {
         try {
@@ -63,7 +65,7 @@ final class FuzzContainerTest extends TestCase
         yield 'object' => ['db', new \stdClass()];
     }
 
-    /** @dataProvider provideInstanceBindings */
+    #[DataProvider('provideInstanceBindings')]
     public function testInstanceNeverThrows(string $abstract, mixed $instance): void
     {
         try {
@@ -85,7 +87,7 @@ final class FuzzContainerTest extends TestCase
         yield 'array' => ['config', ['key' => 'value']];
     }
 
-    /** @dataProvider provideHasChecks */
+    #[DataProvider('provideHasChecks')]
     public function testHasNeverThrows(string $abstract): void
     {
         $result = $this->container->has($abstract);

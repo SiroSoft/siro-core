@@ -94,7 +94,11 @@ class QueryBuilder
             }
         }
 
+        $hadDistinct = ($this->columns[0] ?? null) === 'DISTINCT';
         $this->columns = $normalized === [] ? ['*'] : $normalized;
+        if ($hadDistinct) {
+            array_unshift($this->columns, 'DISTINCT');
+        }
         return $this;
     }
 

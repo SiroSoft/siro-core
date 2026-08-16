@@ -221,14 +221,25 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $json = json_encode($collection, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-        file_put_contents($output, $json);
+        if (!is_dir(dirname($output))) {
+            mkdir(dirname($output), 0775, true);
+        }
+        if (@file_put_contents($output, $json) === false) {
+            $this->write('  Error: could not write Postman collection to ' . $output);
+            return 1;
+        }
 
         $publicOutput = $this->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json';
-        copy($output, $publicOutput);
+        if (!is_dir(dirname($publicOutput))) {
+            mkdir(dirname($publicOutput), 0775, true);
+        }
+        if (@copy($output, $publicOutput) === false) {
+            $this->write('  Warning: could not copy to public/postman_collection.json');
+        }
 
         $this->write('Postman collection generated:');
-        $this->write("  docs/postman/collection.json");
-        $this->write("  public/postman_collection.json");
+        $this->write('  ' . str_replace($this->basePath . DIRECTORY_SEPARATOR, '', $output));
+        $this->write('  public/postman_collection.json');
         if ($hasAuth) {
             $this->write('  - Auth: Bearer token auto-fetched via pre-request script');
             $this->write('  - Auth endpoint: ' . ((string) ($authEndpoint['method'] ?? 'POST')) . ' ' . ((string) ($authEndpoint['path'] ?? '/api/auth/login')));

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Siro\Core\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 final class PropertyBasedTest extends TestCase
 {
-    /** @dataProvider provideStrings */
+    #[DataProvider('provideStrings')]
     public function testValidatorEmailRuleNeverThrows(mixed $value): void
     {
         \Siro\Core\Validator::extend('__pbt_never_fails', fn() => true);

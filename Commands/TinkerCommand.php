@@ -39,7 +39,7 @@ final class TinkerCommand implements CommandInterface
         $this->printHeader();
 
         while (true) {
-            $code = $this->readLine("  \e[36msiro\e[0m> ");
+            $code = $this->readLine("  [36msiro[0m> ");
 
             if ($code === null) { break; }
 
@@ -63,7 +63,7 @@ final class TinkerCommand implements CommandInterface
         }
 
         $this->write('');
-        $this->write('  \e[90mbye\e[0m');
+        $this->write('  [90mbye[0m');
 
         return 0;
     }
@@ -115,7 +115,7 @@ final class TinkerCommand implements CommandInterface
             $elapsed = (microtime(true) - $start) * 1000;
             $queries = $this->queryCount();
             $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
-            $this->write('  \e[31m✗\e[0m  ' . $caught->getMessage() . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
+            $this->write('  [31m✗[0m  ' . $caught->getMessage() . '  [90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')[0m');
             restore_error_handler();
             return;
         }
@@ -127,42 +127,42 @@ final class TinkerCommand implements CommandInterface
         $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
 
         if ($result !== null) {
-            $this->write('  \e[32m✓\e[0m  ' . $this->render($result) . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
+            $this->write('  [32m✓[0m  ' . $this->render($result) . '  [90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')[0m');
         } elseif ($queries > 0) {
-            $this->write('  \e[32m✓\e[0m  ' . '  \e[90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')\e[0m');
+            $this->write('  [32m✓[0m  ' . '  [90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')[0m');
         }
     }
 
     private function render(mixed $value): string
     {
         if (is_null($value)) {
-            return '\e[90mnull\e[0m';
+            return '[90mnull[0m';
         }
         if (is_bool($value)) {
-            return $value ? '\e[94mtrue\e[0m' : '\e[94mfalse\e[0m';
+            return $value ? '[94mtrue[0m' : '[94mfalse[0m';
         }
         if (is_int($value) || is_float($value)) {
-            return '\e[93m' . ((string) $value) . '\e[0m';
+            return '[93m' . ((string) $value) . '[0m';
         }
         if (is_string($value)) {
-            return '\e[92m"' . $this->truncate($value, 120) . '"\e[0m';
+            return '[92m"' . $this->truncate($value, 120) . '"[0m';
         }
         if ($value instanceof \Siro\Core\Model) {
             return $this->renderModel($value);
         }
         if ($value instanceof \Siro\Core\Collection) {
-            return '\e[96mCollection\e[0m(' . ((string) $value->count()) . ')';
+            return '[96mCollection[0m(' . ((string) $value->count()) . ')';
         }
         if (is_array($value)) {
             return $this->renderArray($value);
         }
         if (is_object($value)) {
-            return '\e[96m' . $value::class . '\e[0m';
+            return '[96m' . $value::class . '[0m';
         }
         if (is_resource($value)) {
-            return '\e[90mresource\e[0m';
+            return '[90mresource[0m';
         }
-        return '\e[90m?\e[0m';
+        return '[90m?[0m';
     }
 
     private function renderModel(\Siro\Core\Model $model): string
@@ -176,7 +176,7 @@ final class TinkerCommand implements CommandInterface
             $v = $attrs[$k] ?? '';
             $fields[] = $k . ': ' . (is_string($v) ? $this->truncate($v, 40) : $this->render($v));
         }
-        $label = '\e[96m' . $short . '\e[0m { ' . implode(', ', $fields);
+        $label = '[96m' . $short . '[0m { ' . implode(', ', $fields);
         if (count($attrs) > 6) { $label .= ', ...'; }
         $label .= ' }';
         return $label;
@@ -185,7 +185,7 @@ final class TinkerCommand implements CommandInterface
     /** @param array<mixed> $arr */
     private function renderArray(array $arr): string
     {
-        if ($arr === []) { return '\e[90m[]\e[0m'; }
+        if ($arr === []) { return '[90m[][0m'; }
 
         $isList = array_is_list($arr);
         if ($isList && count($arr) <= 8) {
@@ -193,7 +193,7 @@ final class TinkerCommand implements CommandInterface
             return '[' . implode(', ', $items) . ']';
         }
         if ($isList) {
-            return '\e[90m[' . ((string) count($arr)) . ' items]\e[0m';
+            return '[90m[' . ((string) count($arr)) . ' items][0m';
         }
         $pairs = [];
         $i = 0;
@@ -216,33 +216,33 @@ final class TinkerCommand implements CommandInterface
         if ($lower === 'db') { $this->showDb(); return true; }
         if ($lower === 'routes') { $this->showRoutes(); return true; }
         if ($lower === 'vars') { $this->showVars(); return true; }
-        if ($lower === 'clear' || $lower === 'cls') { echo "\033[2J\033[H"; return true; }
+        if ($lower === 'clear' || $lower === 'cls') { echo "[2J[H"; return true; }
         return false;
     }
 
     private function showHelp(): void
     {
         $this->write('');
-        $this->write('  \e[36mSiro Tinker\e[0m — PHP playground in app context');
+        $this->write('  [36mSiro Tinker[0m — PHP playground in app context');
         $this->write('  ' . str_repeat('─', 44));
         $this->write('');
         $this->write('  Type any PHP, available by default:');
-        $this->write('    \e[96mUser\e[0m, \e[96mProduct\e[0m, \e[96mCategory\e[0m, \e[96mPost\e[0m, \e[96mOrder\e[0m, \e[96mTag\e[0m');
-        $this->write('    \e[96mDB\e[0m, \e[96mCache\e[0m, \e[96mConfig\e[0m, \e[96mRoute\e[0m, \e[96mQueue\e[0m, \e[96mEvent\e[0m, \e[96mMail\e[0m');
-        $this->write('    \e[96mHash\e[0m, \e[96mStr\e[0m, \e[96mValidator\e[0m, \e[96mLang\e[0m, \e[96mStorage\e[0m, \e[96mLog\e[0m, \e[96mEncrypter\e[0m');
+        $this->write('    [96mUser[0m, [96mProduct[0m, [96mCategory[0m, [96mPost[0m, [96mOrder[0m, [96mTag[0m');
+        $this->write('    [96mDB[0m, [96mCache[0m, [96mConfig[0m, [96mRoute[0m, [96mQueue[0m, [96mEvent[0m, [96mMail[0m');
+        $this->write('    [96mHash[0m, [96mStr[0m, [96mValidator[0m, [96mLang[0m, [96mStorage[0m, [96mLog[0m, [96mEncrypter[0m');
         $this->write('');
-        $this->write('  \e[90mShortcuts:\e[0m');
-        $this->write('    \e[36mdb\e[0m      Show database connection & query stats');
-        $this->write('    \e[36mroutes\e[0m  Show registered routes count');
-        $this->write('    \e[36mvars\e[0m    Show available context variables');
-        $this->write('    \e[36mclear\e[0m   Clear screen');
-        $this->write('    \e[36mexit\e[0m    Exit tinker');
+        $this->write('  [90mShortcuts:[0m');
+        $this->write('    [36mdb[0m      Show database connection & query stats');
+        $this->write('    [36mroutes[0m  Show registered routes count');
+        $this->write('    [36mvars[0m    Show available context variables');
+        $this->write('    [36mclear[0m   Clear screen');
+        $this->write('    [36mexit[0m    Exit tinker');
         $this->write('');
-        $this->write('  \e[90mExamples:\e[0m');
-        $this->write('    \e[32mUser::count()\e[0m');
-        $this->write('    \e[32mUser::where("email", "a@b.com")->first()\e[0m');
-        $this->write('    \e[32mCache::remember("key", 60, fn() => "hello")\e[0m');
-        $this->write('    \e[32mConfig::get("app.name")\e[0m');
+        $this->write('  [90mExamples:[0m');
+        $this->write('    [32mUser::count()[0m');
+        $this->write('    [32mUser::where("email", "a@b.com")->first()[0m');
+        $this->write('    [32mCache::remember("key", 60, fn() => "hello")[0m');
+        $this->write('    [32mConfig::get("app.name")[0m');
         $this->write('');
     }
 
@@ -253,9 +253,9 @@ final class TinkerCommand implements CommandInterface
             $version = Database::connection()->getAttribute(\PDO::ATTR_SERVER_VERSION);
             $driverName = is_string($driver) ? $driver : '?';
             $serverVersion = is_string($version) ? $version : '?';
-            $this->write('  \e[36mdb\e[0m  ' . $driverName . ' ' . $serverVersion);
+            $this->write('  [36mdb[0m  ' . $driverName . ' ' . $serverVersion);
         } catch (Throwable $e) {
-            $this->write('  \e[31m✗\e[0m  ' . $e->getMessage());
+            $this->write('  [31m✗[0m  ' . $e->getMessage());
         }
     }
 
@@ -263,24 +263,24 @@ final class TinkerCommand implements CommandInterface
     {
         $container = Container::getInstance();
         if (!$container->has(Router::class)) {
-            $this->write('  \e[90mno router\e[0m');
+            $this->write('  [90mno router[0m');
             return;
         }
         $router = $container->make(Router::class);
         if (!$router instanceof Router) {
-            $this->write('  \e[90mno router\e[0m');
+            $this->write('  [90mno router[0m');
             return;
         }
-        $this->write('  \e[36mroutes\e[0m  ' . ((string) count($router->getRoutes())) . ' registered');
+        $this->write('  [36mroutes[0m  ' . ((string) count($router->getRoutes())) . ' registered');
     }
 
     private function showVars(): void
     {
-        $this->write('  \e[90mCore classes available in context:\e[0m');
-        $this->write('    \e[96mDB\e[0m, \e[96mCache\e[0m, \e[96mConfig\e[0m, \e[96mRoute\e[0m, \e[96mQueue\e[0m, \e[96mEvent\e[0m');
-        $this->write('    \e[96mMail\e[0m, \e[96mHash\e[0m, \e[96mStr\e[0m, \e[96mValidator\e[0m, \e[96mLang\e[0m, \e[96mStorage\e[0m, \e[96mLog\e[0m, \e[96mEncrypter\e[0m');
-        $this->write('  \e[90mModels (if exist):\e[0m');
-        $this->write('    \e[96mUser\e[0m, \e[96mProduct\e[0m, \e[96mCategory\e[0m, \e[96mPost\e[0m, \e[96mOrder\e[0m, \e[96mTag\e[0m');
+        $this->write('  [90mCore classes available in context:[0m');
+        $this->write('    [96mDB[0m, [96mCache[0m, [96mConfig[0m, [96mRoute[0m, [96mQueue[0m, [96mEvent[0m');
+        $this->write('    [96mMail[0m, [96mHash[0m, [96mStr[0m, [96mValidator[0m, [96mLang[0m, [96mStorage[0m, [96mLog[0m, [96mEncrypter[0m');
+        $this->write('  [90mModels (if exist):[0m');
+        $this->write('    [96mUser[0m, [96mProduct[0m, [96mCategory[0m, [96mPost[0m, [96mOrder[0m, [96mTag[0m');
     }
 
     private function readLine(string $prompt): ?string
@@ -297,12 +297,12 @@ final class TinkerCommand implements CommandInterface
     private function printHeader(): void
     {
         $this->write('');
-        $this->write('  \e[36m╔══════════════════════════════════════╗');
+        $this->write('  [36m╔══════════════════════════════════════╗');
         $this->write('  ║       siro tinker · v' . Console::getVersion() . '       ║');
         $this->write('  ║  php playground · app context        ║');
         $this->write('  ╚══════════════════════════════════════╝');
-        $this->write('\e[0m');
-        $this->write('  \e[90mtype  help  for shortcuts ·  exit  to quit\e[0m');
+        $this->write('[0m');
+        $this->write('  [90mtype  help  for shortcuts ·  exit  to quit[0m');
         $this->write('');
     }
 

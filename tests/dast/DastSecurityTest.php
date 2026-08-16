@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\DAST;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Request;
@@ -19,7 +21,7 @@ final class DastSecurityTest extends TestCase
         $this->router = new Router();
     }
 
-    /** @dataProvider provideSqlInjectionPayloads */
+    #[DataProvider('provideSqlInjectionPayloads')]
     public function testRouterRejectsSqlInjectionPaths(string $path): void
     {
         $request = new Request('GET', $path);
@@ -50,7 +52,7 @@ final class DastSecurityTest extends TestCase
         }
     }
 
-    /** @dataProvider provideXssPayloads */
+    #[DataProvider('provideXssPayloads')]
     public function testRouterHandlesXssPathsGracefully(string $path): void
     {
         $request = new Request('GET', $path);
@@ -81,7 +83,7 @@ final class DastSecurityTest extends TestCase
         }
     }
 
-    /** @dataProvider providePathTraversalPayloads */
+    #[DataProvider('providePathTraversalPayloads')]
     public function testRouterRejectsPathTraversal(string $path): void
     {
         $request = new Request('GET', $path);
@@ -105,7 +107,7 @@ final class DastSecurityTest extends TestCase
         }
     }
 
-    /** @dataProvider provideHttpMethods */
+    #[DataProvider('provideHttpMethods')]
     public function testRouterHandlesAllHttpMethods(string $method, string $path): void
     {
         $request = new Request($method, $path);
@@ -125,7 +127,7 @@ final class DastSecurityTest extends TestCase
         }
     }
 
-    /** @dataProvider provideHeaderInjectionPayloads */
+    #[DataProvider('provideHeaderInjectionPayloads')]
     public function testRouterHandlesMalformedHeaders(string $name, string $value): void
     {
         $request = new Request('GET', '/', [], [$name => $value]);

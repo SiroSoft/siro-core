@@ -8,7 +8,7 @@
 
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-brightgreen)](https://phpstan.org)
-[![Tests](https://img.shields.io/badge/tests-19.496%20pass-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-19199%20pass-brightgreen)](tests/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
@@ -26,6 +26,52 @@ composer create-project sirosoft/api my-app
 ```
 
 ---
+
+
+---
+
+## Quickstart (5 commands)
+
+```bash
+# 1. Create a project
+composer create-project sirosoft/api my-app
+cd my-app
+
+# 2. Generate a full CRUD API
+php siro make:crud products
+
+# 3. Run the migration + start the server
+php siro migrate
+php siro serve
+
+# 4. Test the endpoint
+php siro api:test GET /api/products
+
+# 5. When something fails — why?
+php siro why
+```
+
+---
+
+## The Killer Feature: Debug workflow (Why → Replay → Fix → Test)
+
+Siro is built around **understanding what happened**, not just writing code.
+
+```bash
+php siro api:test POST /api/auth/login email=bad password=x   # fails (422)
+php siro why                                                    # why? shows exception + middleware + SQL
+php siro replay <trace_id> --force                             # replay the exact request
+php siro replay <trace_id> --diff                              # compare before/after a fix
+php siro replay <trace_id> --test                              # generate a regression test
+php siro fix                                                    # watcher: auto-replays on file change
+php siro test:regression                                       # catch regressions across all traces
+```
+
+Every failed request writes a **trace** (request, response, SQL, timing, exception).
+Replay it, diff it, turn it into a test. No other PHP framework does this.
+
+---
+
 
 ## Debug production in 1 command
 

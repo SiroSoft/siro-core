@@ -25,8 +25,8 @@ final class DbOptimizeCommand implements \Siro\Core\Commands\CommandInterface {
         $config = $this->loadConfig();
         $driver = is_string($config['driver'] ?? null) ? $config['driver'] : '';
 
-        if ($driver !== 'sqlite' && $driver !== 'siro_lite') {
-            $this->write('  ❌ db:optimize only supports SQLite databases.');
+        if ($driver !== 'sqlite' && $driver !== 'siro_lite' && $driver !== 'mysql' && $driver !== 'mariadb') {
+            $this->write('  ❌ db:optimize supports SQLite and MySQL databases.');
             return 1;
         }
 
@@ -36,6 +36,10 @@ final class DbOptimizeCommand implements \Siro\Core\Commands\CommandInterface {
         } catch (\Throwable $e) {
             $this->write('  ❌ Cannot connect to database: ' . $e->getMessage());
             return 1;
+        }
+
+        if ($driver === 'mysql' || $driver === 'mariadb') {
+            return $this->runMysql($pdo);
         }
 
         $liteConfig = new LiteConfig();
@@ -125,5 +129,51 @@ final class DbOptimizeCommand implements \Siro\Core\Commands\CommandInterface {
             return $database;
         }
         return rtrim($this->basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($database, './');
+    }
+
+    private function runMysql(\PDO $pdo): int
+    {
+        $this->write('');
+        $this->write('  ⚡ MySQL Optimization');
+        $this->write('  ' . str_repeat('=', 40));
+
+        $ok = true;
+
+        try {
+            $an = $pdo->query('ANALYZE TABLE users, products, categories, orders, posts, tags, refresh_tokens, api_keys, jobs');
+            if ($an !== false) {
+                $an->fetchAll(\PDO::FETCH_ASSOC);
+            }
+            $this->write('  ✅ ANALYZE completed');
+        } catch (\Throwable $e) {
+            // Fall back to schema-wide ANALYZE (requires table list)
+            try {
+                $an2 = $pdo->query('ANALYZE');
+                if ($an2 !== false) {
+                    $an2->fetchAll(\PDO::FETCH_ASSOC);
+                }
+                $this->write('  ✅ ANALYZE completed');
+            } catch (\Throwable $e2) {
+                $this->write('  ❌ ANALYZE failed: ' . $e2->getMessage());
+                $ok = false;
+            }
+        }
+
+        try {
+            $opt = $pdo->query('OPTIMIZE TABLE users, products, categories, orders, posts, tags, refresh_tokens, api_keys, jobs');
+            if ($opt !== false) {
+                $opt->fetchAll(\PDO::FETCH_ASSOC);
+            }
+            $this->write('  ✅ OPTIMIZE TABLE completed');
+        } catch (\Throwable $e) {
+            $this->write('  ❌ OPTIMIZE TABLE failed: ' . $e->getMessage());
+            $ok = false;
+        }
+
+        $this->write('  ' . str_repeat('-', 40));
+        $this->write('  ' . ($ok ? '✅ Optimization complete' : '⚠ Some steps failed'));
+        $this->write('');
+
+        return $ok ? 0 : 1;
     }
 }

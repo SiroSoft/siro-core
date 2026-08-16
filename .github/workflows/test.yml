@@ -37,19 +37,28 @@ jobs:
         run: vendor/bin/phpcs --standard=PSR12 --ignore=vendor .
 
   static-analysis:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        php: ['8.2', '8.3', '8.4']
+        exclude:
+          - os: windows-latest
+            php: '8.4'
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           tools: composer:v2
+          extensions: pdo, json, mbstring, sqlite3, pdo_sqlite
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
@@ -59,25 +68,35 @@ jobs:
         run: php -d memory_limit=512M vendor/bin/phpstan analyse --level=max --no-progress
 
   phpunit:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        php: ['8.2', '8.3', '8.4']
+        exclude:
+          - os: windows-latest
+            php: '8.4'
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           tools: composer:v2
+          extensions: pdo, json, mbstring, sqlite3, pdo_sqlite
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
       - name: Regenerate autoloader
         run: composer dump-autoload
       - name: Prepare env
+        shell: bash
         run: |
           if [ ! -f .env ]; then
             if [ -f .env.testing ]; then
@@ -93,6 +112,42 @@ jobs:
           sed -i 's|CACHE_DRIVER=.*|CACHE_DRIVER=file|g' .env
       - name: PHPUnit tests
         run: php vendor/bin/phpunit --no-progress
+
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          extensions: pdo, json, mbstring, sqlite3, pdo_sqlite, openssl
+          coverage: xdebug
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Prepare env
+        shell: bash
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.testing ]; then
+              cp .env.testing .env
+            elif [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              echo "ERROR: No .env template found!"
+              exit 1
+            fi
+          fi
+      - name: PHPUnit coverage (Unit suite)
+        run: php -d memory_limit=2048M vendor/bin/phpunit --testsuite=Unit --coverage-text --coverage-clover=coverage/clover.xml --no-progress
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage/clover.xml
+            coverage/text.txt
 
   mutation:
     runs-on: ubuntu-latest

@@ -254,6 +254,8 @@ final class Validator
                 if (!is_array($item)) {
                     continue;
                 }
+                continue;
+            }
 
                 $nestedValue = $item[$nestedField] ?? null;
                 $indexedField = $baseKey . '.' . $index . '.' . $nestedField;
@@ -296,14 +298,13 @@ final class Validator
                     break;
                 }
             }
-                }
-                self::$parsedRuleCache[$ruleLine] = [
-                    'parsed' => $fieldRules,
-                    'nullable' => $isNullable,
-                    'required' => $isRequired,
-                    'requiredIf' => $requiredIf,
-                ];
-            }
+            self::$parsedRuleCache[$ruleLine] = [
+                'parsed' => $fieldRules,
+                'nullable' => $isNullable,
+                'required' => $isRequired,
+                'requiredIf' => $requiredIf,
+            ];
+        }
         $cached = self::$parsedRuleCache[$ruleLine];
         $fieldRules = $cached['parsed'];
         $isNullable = $cached['nullable'];

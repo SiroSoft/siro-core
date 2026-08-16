@@ -150,6 +150,9 @@ trait CommandSupport
 
     protected function studly(string $value): string
     {
+        // Strip characters that are invalid in PHP identifiers (keeps ASCII letters,
+        // digits, - and _ as word separators; removes everything else incl. Unicode).
+        $value = preg_replace('/[^A-Za-z0-9\-_ ]+/', '', $value) ?? '';
         $value = str_replace(['-', '_'], ' ', trim($value));
         $words = explode(' ', $value);
         $words = array_map(fn(string $w): string => $w === '' ? '' : ucfirst($w), $words);
@@ -229,6 +232,54 @@ trait CommandSupport
             }
         }
         return $files;
+    }
+
+    /**
+     * Find the N most-recent trace files without materializing the full list.
+     * Keeps memory bounded and avoids sorting thousands of entries for "latest".
+     *
+     * @return array<int, string> newest-first trace file paths (max $limit entries)
+     */
+    protected function findRecentTraceFiles(string $tracesDir, int $limit): array
+    {
+        if (!is_dir($tracesDir) || $limit <= 0) {
+            return [];
+        }
+        /** @var array<string, int> $files path => mtime */
+        $files = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($tracesDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $entry) {
+            /** @var \SplFileInfo $entry */
+            if (!$entry->isFile() || $entry->getExtension() !== 'json') {
+                continue;
+            }
+            $path = $entry->getPathname();
+            $mtime = $entry->getMTime();
+            if ($mtime === false) {
+                $mtime = 0;
+            }
+            if (count($files) < $limit) {
+                $files[$path] = $mtime;
+                continue;
+            }
+            // Replace the oldest kept entry if this one is newer.
+            $oldestPath = null;
+            $minMtime = PHP_INT_MAX;
+            foreach ($files as $p => $mt) {
+                if ($mt < $minMtime) {
+                    $minMtime = $mt;
+                    $oldestPath = $p;
+                }
+            }
+            if ($oldestPath !== null && $mtime > $minMtime) {
+                unset($files[$oldestPath]);
+                $files[$path] = $mtime;
+            }
+        }
+        arsort($files);
+        return array_keys($files);
     }
 
     /**

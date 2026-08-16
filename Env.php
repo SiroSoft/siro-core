@@ -135,7 +135,7 @@ final class Env
             }
         }
 
-        // === Priority chain: load từng file, file sau ghi đè file trước ===
+        // === Priority chain: load each file, later files override earlier ones ===
         $loadedAny = false;
         foreach (self::ENV_PRIORITY as $suffix) {
             $resolved = str_replace('{env}', $appEnv, $suffix);
@@ -151,7 +151,7 @@ final class Env
 
         self::$loaded = true;
 
-        // Nếu không load được file nào, log warning (ko crash)
+        // If no env file was loaded, log a warning (do not crash)
         if (!$loadedAny) {
             trigger_error(
                 'SIRO_ENV: No .env file found. Create .env or .env.local in project root.',

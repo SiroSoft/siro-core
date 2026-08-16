@@ -27,8 +27,8 @@ final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface {
         $config = $this->loadConfig();
         $driver = is_string($config['driver'] ?? null) ? $config['driver'] : '';
 
-        if ($driver !== 'sqlite' && $driver !== 'siro_lite') {
-            $this->write('  ❌ db:health only supports SQLite databases.');
+        if ($driver !== 'sqlite' && $driver !== 'siro_lite' && $driver !== 'mysql' && $driver !== 'mariadb') {
+            $this->write('  ❌ db:health supports SQLite and MySQL databases.');
             return 1;
         }
 
@@ -38,6 +38,10 @@ final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface {
         } catch (\Throwable $e) {
             $this->write('  ❌ Cannot connect to database: ' . $e->getMessage());
             return 1;
+        }
+
+        if ($driver === 'mysql' || $driver === 'mariadb') {
+            return $this->runMysql($pdo, $config);
         }
 
         $liteConfig = new LiteConfig();
@@ -81,6 +85,76 @@ final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('');
 
         return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function runMysql(PDO $pdo, array $config): int
+    {
+        $database = is_string($config['database'] ?? null) ? $config['database'] : '';
+
+        $this->write('');
+        $this->write('  ⚡ MySQL Health');
+        $this->write('  ' . str_repeat('=', 40));
+
+        try {
+            $verStmt = $pdo->query('SELECT VERSION() AS v');
+            $versionRow = $verStmt !== false ? $verStmt->fetch(PDO::FETCH_ASSOC) : false;
+            $version = is_array($versionRow) && is_scalar($versionRow['v'] ?? null) ? (string) $versionRow['v'] : '?';
+            $this->write('  Database: MySQL');
+            $this->write('  Version:  ' . $version);
+            $this->write('');
+
+            // DB size from information_schema
+            $sizeStmt = $pdo->query("SELECT ROUND(SUM(data_length + index_length) / 1048576, 2) AS size_mb FROM information_schema.TABLES WHERE table_schema = " . $pdo->quote($database));
+            $sizeRow = $sizeStmt !== false ? $sizeStmt->fetch(PDO::FETCH_ASSOC) : false;
+            $sizeMb = is_array($sizeRow) && is_scalar($sizeRow['size_mb'] ?? null) ? (float) $sizeRow['size_mb'] : 0;
+            $this->write('  Size:     ' . number_format($sizeMb, 2) . ' MB');
+
+            // Table count
+            $tblStmt = $pdo->query("SELECT COUNT(*) AS c FROM information_schema.TABLES WHERE table_schema = " . $pdo->quote($database) . " AND table_type = 'BASE TABLE'");
+            $tblRow = $tblStmt !== false ? $tblStmt->fetch(PDO::FETCH_ASSOC) : false;
+            $tables = is_array($tblRow) && is_scalar($tblRow['c'] ?? null) ? (int) $tblRow['c'] : 0;
+            $this->write('  Tables:   ' . $tables);
+
+            // Index count
+            $idxStmt = $pdo->query("SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE table_schema = " . $pdo->quote($database));
+            $idxRow = $idxStmt !== false ? $idxStmt->fetch(PDO::FETCH_ASSOC) : false;
+            $indexes = is_array($idxRow) && is_scalar($idxRow['c'] ?? null) ? (int) $idxRow['c'] : 0;
+            $this->write('  Indexes:  ' . $indexes);
+
+            // Top 5 largest tables
+            $bigStmt = $pdo->query("SELECT table_name AS t, ROUND((data_length + index_length) / 1048576, 2) AS mb FROM information_schema.TABLES WHERE table_schema = " . $pdo->quote($database) . " ORDER BY (data_length + index_length) DESC LIMIT 5");
+            if ($bigStmt !== false) {
+                $this->write('');
+                $this->write('  Largest tables:');
+                $bigRows = $bigStmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($bigRows as $row) {
+                    if (!is_array($row)) continue;
+                    $name = is_scalar($row['t'] ?? null) ? (string) $row['t'] : '?';
+                    $mb = is_scalar($row['mb'] ?? null) ? (float) $row['mb'] : 0;
+                    $this->write('    ' . str_pad($name, 28, ' ') . number_format($mb, 2) . ' MB');
+                }
+            }
+
+            // Uptime + threads
+            $uptimeStmt = $pdo->query('SHOW GLOBAL STATUS LIKE "Uptime"');
+            $uptimeRow = $uptimeStmt !== false ? $uptimeStmt->fetch(PDO::FETCH_ASSOC) : false;
+            if (is_array($uptimeRow) && is_scalar($uptimeRow['Value'] ?? null)) {
+                $uptime = (int) $uptimeRow['Value'];
+                $this->write('');
+                $this->write('  Uptime:   ' . number_format($uptime / 86400, 1) . ' days');
+            }
+
+            $this->write('  ' . str_repeat('-', 40));
+            $this->write('  Status: ✅ Healthy');
+            $this->write('');
+            return 0;
+        } catch (\Throwable $e) {
+            $this->write('  ❌ Health check failed: ' . $e->getMessage());
+            return 1;
+        }
     }
 
     /** @return array<string, mixed> */

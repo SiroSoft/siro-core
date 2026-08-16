@@ -3,13 +3,15 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\DB\QueryBuilder;
 
 final class FuzzQueryBuilderTest extends TestCase
 {
-    /** @dataProvider provideTableNames */
+    #[DataProvider('provideTableNames')]
     public function testConstructorNeverThrows(string $table): void
     {
         try {
@@ -38,7 +40,7 @@ final class FuzzQueryBuilderTest extends TestCase
         }
     }
 
-    /** @dataProvider provideChainedMethods */
+    #[DataProvider('provideChainedMethods')]
     public function testChainedMethodsNeverThrow(QueryBuilder $qb): void
     {
         $result = $qb->toSql();
@@ -121,7 +123,7 @@ final class FuzzQueryBuilderTest extends TestCase
         yield 'whereRaw' => [$b];
     }
 
-    /** @dataProvider provideWhereValueFuzz */
+    #[DataProvider('provideWhereValueFuzz')]
     public function testWhereWithFuzzValuesNeverThrows(string $column, mixed $operator, mixed $value): void
     {
         $qb = new QueryBuilder('test_table');
@@ -154,7 +156,7 @@ final class FuzzQueryBuilderTest extends TestCase
         }
     }
 
-    /** @dataProvider provideOrderByFuzz */
+    #[DataProvider('provideOrderByFuzz')]
     public function testOrderByFuzzNeverThrows(string $column, string $direction): void
     {
         $qb = new QueryBuilder('test');
@@ -180,7 +182,7 @@ final class FuzzQueryBuilderTest extends TestCase
         }
     }
 
-    /** @dataProvider provideSelectFuzz */
+    #[DataProvider('provideSelectFuzz')]
     public function testSelectFuzzNeverThrows(array $columns): void
     {
         $qb = new QueryBuilder('test');

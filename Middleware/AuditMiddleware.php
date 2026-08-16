@@ -7,6 +7,7 @@ namespace Siro\Core\Middleware;
 use Siro\Core\Request;
 use Siro\Core\Response;
 use Siro\Core\Logger;
+use Siro\Core\Audit;
 
 /**
  * Security audit middleware.
@@ -32,40 +33,48 @@ final class AuditMiddleware implements MiddlewareInterface
             $status = $response->statusCode();
 
             if ($status === 401) {
-                Logger::security(self::AUDIT_FAILED_AUTH, [
+                $context = [
                     'ip' => $request->ip(),
                     'method' => $request->method(),
                     'path' => $request->path(),
                     'user_agent' => $request->header('user-agent', ''),
-                ]);
+                ];
+                Logger::security(self::AUDIT_FAILED_AUTH, $context);
+                Audit::log(self::AUDIT_FAILED_AUTH, $context);
             }
 
             if ($status === 403) {
                 $user = $request->user();
-                Logger::security(self::AUDIT_UNAUTHORIZED, [
+                $context = [
                     'ip' => $request->ip(),
                     'user_id' => $user['id'] ?? 'unknown',
                     'role' => $user['role'] ?? 'unknown',
                     'path' => $request->path(),
                     'method' => $request->method(),
-                ]);
+                ];
+                Logger::security(self::AUDIT_UNAUTHORIZED, $context);
+                Audit::log(self::AUDIT_UNAUTHORIZED, $context);
             }
 
             if ($status === 429) {
-                Logger::security(self::AUDIT_RATE_LIMIT, [
+                $context = [
                     'ip' => $request->ip(),
                     'path' => $request->path(),
                     'method' => $request->method(),
-                ]);
+                ];
+                Logger::security(self::AUDIT_RATE_LIMIT, $context);
+                Audit::log(self::AUDIT_RATE_LIMIT, $context);
             }
 
             if (in_array('sensitive', $context, true)) {
                 $user = $request->user();
-                Logger::security(self::AUDIT_SENSITIVE, [
+                $sctx = [
                     'user_id' => $user['id'] ?? 'unknown',
                     'action' => $request->method() . ' ' . $request->path(),
                     'ip' => $request->ip(),
-                ]);
+                ];
+                Logger::security(self::AUDIT_SENSITIVE, $sctx);
+                Audit::log(self::AUDIT_SENSITIVE, $sctx);
             }
         }
 

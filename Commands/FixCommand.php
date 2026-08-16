@@ -52,13 +52,18 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $method = $this->safeStr($data['method'] ?? 'GET');
             $host = $this->safeStr($data['host'] ?? 'localhost:8080');
             $path = $this->safeStr($data['path'] ?? '/');
+            // Enterprise hardening: reject tampered trace targets (SSRF/URL injection).
+            if (!preg_match('/^[A-Za-z0-9.\-\[\]:]+$/', $host) || preg_match('/[\x00-\x1F\x7F\s]/', $path)) {
+                $this->write('  ❌ Refusing to replay: invalid host/path in trace.');
+                return 1;
+            }
             $body = $this->safeStr($data['request_body'] ?? '');
             $auth = $this->safeStr($data['auth_header'] ?? '');
             $ct = $this->safeStr($data['content_type'] ?? '');
             /** @var array<string, string>|null $rawHeaders */
             $rawHeaders = $data['request_headers'] ?? null;
-            /** @var array<string, string> $rawHeaders */
-            $headers = $rawHeaders;
+            /** @var array<string, string> $headers */
+            $headers = is_array($rawHeaders) ? $rawHeaders : [];
 
             $curlHeaders = ['Content-Type: ' . ($ct !== '' ? $ct : 'application/json')];
             if ($auth !== '') {
@@ -126,41 +131,58 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  Watching...');
 
         $lastMtime = $this->getMaxMtime($dirs);
+        $maxIterations = (int) getenv('SIRO_FIX_MAX_ITERATIONS');
+        $iteration = 0;
 
-        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
+            $iteration++;
+            if ($maxIterations > 0 && $iteration > $maxIterations) {
+                break;
+            }
             sleep(1);
             $currentMtime = $this->getMaxMtime($dirs);
             if ($currentMtime > $lastMtime) {
                 $lastMtime = $currentMtime;
-                $traceId = $this->getLastTraceId();
-                $this->write('');
-                $this->write('  🔄 Code changed → replaying ' . ($traceId ?? 'last request') . '...');
-                $output = shell_exec($lastTest . ' 2>&1');
-                if ($output !== null) {
-                    $lines = explode("\n", (string) $output);
-                    $statusLine = '';
-                    foreach ($lines as $line) {
-                        if (str_contains($line, 'Status:')) {
-                            $statusLine = trim($line);
-                            if (str_contains($statusLine, '200') || str_contains($statusLine, '201')) {
-                                $this->write('  ✅ ' . $statusLine . ' — FIX SUCCESSFUL');
-                            } elseif (str_contains($statusLine, '422') || str_contains($statusLine, '400') || str_contains($statusLine, '401')) {
-                                $this->write('  ❌ ' . $statusLine . ' — still failing');
-                                // Show the error
-                                foreach ($lines as $l) {
-                                    if (str_contains($l, '❌') || str_contains($l, 'Validation failed') || str_contains($l, 'error')) {
-                                        $this->write('     ' . trim($l));
-                                    }
-                                }
-                            } else {
-                                $this->write('  ' . $statusLine);
-                            }
-                            break;
-                        }
-                    }
-                }
+                $this->handleCodeChange($lastTest);
                 $this->write('  Watching...');
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Replay the last api:test after a code change and print pass/fail status.
+     */
+    private function handleCodeChange(string $lastTest): void
+    {
+        $traceId = $this->getLastTraceId();
+        $this->write('');
+        $this->write('  🔄 Code changed → replaying ' . ($traceId ?? 'last request') . '...');
+        // Run the last api:test through the Siro CLI
+        $cmd = 'php ' . escapeshellarg($this->basePath . DIRECTORY_SEPARATOR . 'siro') . ' ' . $lastTest . ' 2>&1';
+        $output = shell_exec($cmd);
+        if ($output !== null) {
+            $lines = explode("\n", (string) $output);
+            $statusLine = '';
+            foreach ($lines as $line) {
+                if (str_contains($line, 'Status:')) {
+                    $statusLine = trim($line);
+                    if (str_contains($statusLine, '200') || str_contains($statusLine, '201')) {
+                        $this->write('  ✅ ' . $statusLine . ' — FIX SUCCESSFUL');
+                    } elseif (str_contains($statusLine, '422') || str_contains($statusLine, '400') || str_contains($statusLine, '401')) {
+                        $this->write('  ❌ ' . $statusLine . ' — still failing');
+                        // Show the error
+                        foreach ($lines as $l) {
+                            if (str_contains($l, '❌') || str_contains($l, 'Validation failed') || str_contains($l, 'error')) {
+                                $this->write('     ' . trim($l));
+                            }
+                        }
+                    } else {
+                        $this->write('  ' . $statusLine);
+                    }
+                    break;
+                }
             }
         }
     }
@@ -200,8 +222,26 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $history = json_decode((string) file_get_contents($historyFile), true);
             if (is_array($history) && $history !== []) {
                 $last = end($history);
-                if (is_array($last) && isset($last['command']) && is_string($last['command'])) {
-                    return $last['command'];
+                if (is_array($last)) {
+                    // Command string stored verbatim (newer versions)
+                    if (isset($last['command']) && is_string($last['command']) && $last['command'] !== '') {
+                        return $last['command'];
+                    }
+                    // Reconstruct from method + path + fields (schema written by api:test)
+                    $method = is_string($last['method'] ?? null) ? strtoupper($last['method']) : '';
+                    $path = is_string($last['path'] ?? null) ? $last['path'] : '';
+                    if ($method !== '' && $path !== '') {
+                        $cmd = "api:test {$method} {$path}";
+                        $fields = $last['fields'] ?? null;
+                        if (is_array($fields) && $fields !== []) {
+                            foreach ($fields as $k => $v) {
+                                if (is_scalar($v)) {
+                                    $cmd .= " {$k}=" . (string) $v;
+                                }
+                            }
+                        }
+                        return $cmd;
+                    }
                 }
             }
         }

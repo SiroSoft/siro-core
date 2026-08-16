@@ -67,8 +67,9 @@ final class Schedule
         $name = $parts[0];
         $args = array_slice($parts, 1);
 
+        // Console::run() reads the command from $argv[1]; index 0 is the script name.
         $console = new Console($basePath);
-        $console->run([$name, ...$args]);
+        $console->run([0 => 'siro', 1 => $name, ...$args]);
     }
 }
 

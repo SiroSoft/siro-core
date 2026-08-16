@@ -94,7 +94,13 @@ final class SeedCommand implements \Siro\Core\Commands\CommandInterface {
                             require $path;
                             if (class_exists($class) && method_exists($class, 'run')) {
                                 $this->write('Seeding: ' . $class);
-                                (new $class())->run();
+                                try {
+                                    (new $class())->run();
+                                } catch (\Throwable $e) {
+                                    $this->write('  ' . $this->colorize('✗ Seeder failed: ' . $class, 'red'));
+                                    $this->write('  ' . $this->colorize($e->getMessage(), 'red'));
+                                    return 1;
+                                }
                             }
                         }
                     }

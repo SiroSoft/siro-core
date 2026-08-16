@@ -65,7 +65,13 @@ final class ConfigCacheCommand implements \Siro\Core\Commands\CommandInterface {
             'cached_at' => date('Y-m-d H:i:s'),
         ], true) . ';' . PHP_EOL;
 
-        file_put_contents($cacheDir . DIRECTORY_SEPARATOR . 'config.php', $content);
+        $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'config.php';
+        $written = @file_put_contents($cacheFile, $content);
+        if ($written === false) {
+            $this->write('  Error: could not write config cache to ' . $cacheFile);
+            $this->write('  Check that storage/framework is writable.');
+            return 1;
+        }
         $this->write('Config cached successfully!');
 
         return 0;

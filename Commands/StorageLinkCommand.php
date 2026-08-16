@@ -70,7 +70,7 @@ final class StorageLinkCommand implements \Siro\Core\Commands\CommandInterface {
             return false;
         }
 
-        $cmd = sprintf('mklink /J %s %s', escapeshellarg($target), escapeshellarg($link));
+        $cmd = sprintf('cmd /c mklink /J %s %s 2>&1', escapeshellarg($target), escapeshellarg($link));
         $output = [];
         $returnCode = 0;
         exec($cmd, $output, $returnCode);

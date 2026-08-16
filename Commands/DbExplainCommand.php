@@ -20,8 +20,8 @@ final class DbExplainCommand implements \Siro\Core\Commands\CommandInterface {
     public function run(array $args): int
     {
         $this->write('');
-        $this->write('  ⚠ db:explain has been merged into db:why');
-        $this->write('  Use: ' . "\033[36mphp siro db:why --explain\033[0m");
+        $this->write('  db:explain has been merged into db:why');
+        $this->write('  Use: ' . "\033[36mphp siro db:why --query=\"SELECT ...\"\033[0m");
         $this->write('');
 
         $storage = $this->basePath . DIRECTORY_SEPARATOR . 'storage';

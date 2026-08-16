@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Siro\Core\Tests\Cli;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+
 use Siro\Core\Console;
 use Siro\Core\App;
 
@@ -48,7 +50,7 @@ class OpenApiTest extends TestCase
         $this->rrmdir($this->tempDir);
     }
 
-    /** @test */
+    #[Test]
     public function openApiCommandGeneratesSpec(): void
     {
         ob_start();
@@ -59,7 +61,7 @@ class OpenApiTest extends TestCase
         $this->assertFileExists($this->specFile, 'openapi.json should be generated');
     }
 
-    /** @test */
+    #[Test]
     public function specIsValidJson(): void
     {
         ob_start();
@@ -71,7 +73,7 @@ class OpenApiTest extends TestCase
         $this->assertNotNull($spec, 'Spec must be valid JSON. Error: ' . json_last_error_msg());
     }
 
-    /** @test */
+    #[Test]
     public function specHasRequiredFields(): void
     {
         ob_start();
@@ -91,7 +93,7 @@ class OpenApiTest extends TestCase
         $this->assertArrayHasKey('bearerAuth', $spec['components']['securitySchemes'], 'Must have bearerAuth');
     }
 
-    /** @test */
+    #[Test]
     public function specHasEndpoints(): void
     {
         ob_start();
@@ -110,7 +112,7 @@ class OpenApiTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function specHasCorrectMethods(): void
     {
         ob_start();
@@ -132,7 +134,7 @@ class OpenApiTest extends TestCase
         $this->assertArrayHasKey('delete', $paths['/api/users/{id}'], '/api/users/{id} must have DELETE');
     }
 
-    /** @test */
+    #[Test]
     public function specHasParameters(): void
     {
         ob_start();
@@ -148,7 +150,7 @@ class OpenApiTest extends TestCase
         $this->assertNotEmpty($ids, 'GET /api/users/{id} must have path param "id"');
     }
 
-    /** @test */
+    #[Test]
     public function specHasRequestBodyForPost(): void
     {
         ob_start();
@@ -163,7 +165,7 @@ class OpenApiTest extends TestCase
         $this->assertArrayHasKey('application/json', $postOp['requestBody']['content'], 'Must accept JSON');
     }
 
-    /** @test */
+    #[Test]
     public function specHasResponses(): void
     {
         ob_start();
@@ -186,7 +188,7 @@ class OpenApiTest extends TestCase
         $this->assertArrayHasKey('404', $showOp['responses'] ?? [], 'GET by id must have 404 response');
     }
 
-    /** @test */
+    #[Test]
     public function specHasSecurityForProtectedRoutes(): void
     {
         ob_start();
@@ -198,7 +200,7 @@ class OpenApiTest extends TestCase
         $this->assertArrayHasKey('paths', $spec, 'Spec should contain paths');
     }
 
-    /** @test */
+    #[Test]
     public function specHasComponents(): void
     {
         ob_start();
@@ -225,7 +227,7 @@ class OpenApiTest extends TestCase
         $this->assertTrue($hasDataSchema, 'Should have at least one data response schema');
     }
 
-    /** @test */
+    #[Test]
     public function specExcludesSensitiveFields(): void
     {
         ob_start();
@@ -240,7 +242,7 @@ class OpenApiTest extends TestCase
         $this->assertStringNotContainsString('deleted_at', $specContent, 'Must not expose deleted_at');
     }
 
-    /** @test */
+    #[Test]
     public function specTagsAreCorrect(): void
     {
         ob_start();
@@ -255,7 +257,7 @@ class OpenApiTest extends TestCase
         // Auth tag only appears with --flow=auth, not --flow=crud
     }
 
-    /** @test */
+    #[Test]
     public function specSummaryIsDescriptive(): void
     {
         ob_start();
@@ -278,7 +280,7 @@ class OpenApiTest extends TestCase
         $this->assertContains('Delete users', $summaries, 'DELETE /api/users/{id} should be "Delete users"');
     }
 
-    /** @test */
+    #[Test]
     public function specWithAuthFlowWorks(): void
     {
         ob_start();
@@ -296,7 +298,7 @@ class OpenApiTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function specExcludesOptionsRoutes(): void
     {
         ob_start();
@@ -307,7 +309,7 @@ class OpenApiTest extends TestCase
         $this->assertStringNotContainsString('OPTIONS', $specContent, 'Must not include OPTIONS methods');
     }
 
-    /** @test */
+    #[Test]
     public function specProducesSameOutputEveryRun(): void
     {
         ob_start();
@@ -326,7 +328,7 @@ class OpenApiTest extends TestCase
         $this->assertEquals($first, $second, 'Output must be deterministic (same every run)');
     }
 
-    /** @test */
+    #[Test]
     public function specValidationErrorSchemaUsed(): void
     {
         ob_start();

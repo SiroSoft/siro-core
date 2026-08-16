@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+use Siro\Core\Console;
+
 final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
@@ -23,10 +25,21 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $this->parseArgs($args);
 
-        $this->write('');
-        $this->write('  ⚡ SiroPHP Benchmark v1.0.0');
-        $this->write('  ' . str_repeat('=', 58));
-        $this->write('');
+        if ($this->iterations < 1) {
+            $this->write('  Error: --iterations must be >= 1 (got ' . $this->iterations . ')');
+            return 1;
+        }
+        if ($this->warmup < 0) {
+            $this->write('  Error: --warmup must be >= 0 (got ' . $this->warmup . ')');
+            return 1;
+        }
+
+        if (!$this->jsonOutput) {
+            $this->write('');
+            $this->write('  ⚡ SiroPHP Benchmark v' . Console::VERSION);
+            $this->write('  ' . str_repeat('=', 58));
+            $this->write('');
+        }
 
         $benchmarks = $this->runBenchmarks();
 
@@ -62,14 +75,18 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $results = [];
 
-        $this->write("  Running warmup ({$this->warmup} iterations)...");
+        if (!$this->jsonOutput) {
+            $this->write("  Running warmup ({$this->warmup} iterations)...");
+        }
         for ($i = 0; $i < $this->warmup; $i++) {
             $this->benchmarkContainer();
             $this->benchmarkConfig();
             $this->benchmarkString();
         }
-        $this->write("  Warmup complete. Running benchmarks ({$this->iterations} iterations)...");
-        $this->write('');
+        if (!$this->jsonOutput) {
+            $this->write("  Warmup complete. Running benchmarks ({$this->iterations} iterations)...");
+            $this->write('');
+        }
 
         $results['container'] = $this->benchmarkContainer();
         $results['config'] = $this->benchmarkConfig();
@@ -275,7 +292,7 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
     private function outputJson(array $benchmarks): void
     {
         $output = [
-            'version' => '0.22.0',
+            'version' => Console::VERSION,
             'timestamp' => date('c'),
             'iterations' => $this->iterations,
             'warmup' => $this->warmup,

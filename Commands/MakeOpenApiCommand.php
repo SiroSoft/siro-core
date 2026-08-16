@@ -118,15 +118,22 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $json = json_encode($spec, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $outputDir = dirname($this->outputFile !== '' ? $this->outputFile : ($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi'));
+        // Honor --output=<full path>; fall back to docs/openapi/openapi.json
+        $outputFile = $this->outputFile !== ''
+            ? $this->outputFile
+            : $this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' . DIRECTORY_SEPARATOR . 'openapi.json';
+        $outputDir = dirname($outputFile);
         if (!is_dir($outputDir)) {
             mkdir($outputDir, 0775, true);
         }
-        file_put_contents($outputDir . DIRECTORY_SEPARATOR . 'openapi.json', $json);
-        $this->write('Generated: ' . $outputDir . DIRECTORY_SEPARATOR . 'openapi.json (' . count($paths) . ' endpoints)');
+        if (@file_put_contents($outputFile, $json) === false) {
+            $this->write('  Error: could not write OpenAPI spec to ' . $outputFile);
+            return 1;
+        }
+        $this->write('Generated: ' . $outputFile . ' (' . count($paths) . ' endpoints)');
 
         // Always copy to public for Swagger UI access
-        $this->copyToPublic($outputDir);
+        $this->copyToPublic($outputFile);
 
         if ($this->withSwagger) {
             $this->generateSwaggerUi($outputDir);
@@ -705,6 +712,26 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             }));
         }
 
+        // Pattern 7: FormRequest type-hinting (read rules() from FormRequest class)
+        if (preg_match('/function\s+' . preg_quote($method, '/') . '\s*\(([^)]*)\)/s', $content, $sigMatch)) {
+            if (preg_match('/(\w+Request)\s+\$\w+/', $sigMatch[1], $reqMatch)) {
+                $requestClass = $reqMatch[1];
+                $requestFile = $this->basePath . '/app/Http/Requests/' . $requestClass . '.php';
+                if (file_exists($requestFile)) {
+                    $reqContent = (string) file_get_contents($requestFile);
+                    if (preg_match('/public\s+function\s+rules\s*\(\s*\)\s*(?::\s*array\s*)?\{/', $reqContent, $rulesMatch, PREG_OFFSET_CAPTURE)) {
+                        $body = $this->extractMethodBody($reqContent, (int) $rulesMatch[0][1]);
+                        if (preg_match('/return\s*\[([^]]+)\]\s*;/s', $body, $returnMatch)) {
+                            preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $returnMatch[1], $pairs);
+                            foreach ($pairs[1] as $i => $field) {
+                                $rules[$field] = explode('|', $pairs[2][$i]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         return $rules;
     }
 
@@ -1125,12 +1152,17 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('Generated: ' . $swaggerDir . DIRECTORY_SEPARATOR . 'index.html');
     }
 
-    private function copyToPublic(string $outputDir): void
+    private function copyToPublic(string $outputFile): void
     {
         $publicDir = $this->basePath . DIRECTORY_SEPARATOR . 'public';
         if (!is_dir($publicDir)) mkdir($publicDir, 0775, true);
-        copy($outputDir . DIRECTORY_SEPARATOR . 'openapi.json', $publicDir . DIRECTORY_SEPARATOR . 'openapi.json');
-        copy($outputDir . DIRECTORY_SEPARATOR . 'swagger' . DIRECTORY_SEPARATOR . 'index.html', $publicDir . DIRECTORY_SEPARATOR . 'docs.html');
+        if (is_file($outputFile)) {
+            copy($outputFile, $publicDir . DIRECTORY_SEPARATOR . 'openapi.json');
+        }
+        $swaggerUi = dirname($outputFile) . DIRECTORY_SEPARATOR . 'swagger' . DIRECTORY_SEPARATOR . 'index.html';
+        if (is_file($swaggerUi)) {
+            copy($swaggerUi, $publicDir . DIRECTORY_SEPARATOR . 'docs.html');
+        }
         $isProd = in_array(strtolower((string) getenv('APP_ENV')), ['production', 'prod', 'staging'], true);
         if ($isProd) {
             $this->write('  ⚠ Files copied to public/ — accessible to anyone!');

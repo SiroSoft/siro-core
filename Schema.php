@@ -112,7 +112,14 @@ final class Schema
             default => "SHOW TABLES LIKE :table",
         };
         $stmt = self::pdo()->prepare($sql);
-        $stmt->execute([':table' => str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $table)]);
+        $param = $table;
+        // Only MySQL's LIKE branch needs wildcard escaping; pgsql/sqlite use
+        // exact = comparison where backslash-escaping would break names with
+        // underscores (e.g. temp_tbl).
+        if ($driver !== 'sqlite' && $driver !== 'pgsql') {
+            $param = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $table);
+        }
+        $stmt->execute([':table' => $param]);
         return (bool) $stmt->fetch(PDO::FETCH_COLUMN);
     }
 

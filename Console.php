@@ -98,10 +98,12 @@ use Siro\Core\Commands\DbBackupCommand;
 use Siro\Core\Commands\DbRestoreCommand;
 use Siro\Core\Commands\DbExplainCommand;
 use Siro\Core\Commands\DbBenchmarkCommand;
+use Siro\Core\Commands\AuditVerifyCommand;
+use Siro\Core\Commands\AuditLogCommand;
 
 final class Console
 {
-    public const VERSION = '0.35.0';
+    public const VERSION = '0.35.1';
 
     /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
     private static array $appCommands = [];
@@ -237,14 +239,14 @@ final class Console
             'migrate:refresh'   => ['handler' => MigrateRefreshCommand::class, 'desc' => 'Rollback all and re-run migrations', 'usage' => 'php siro migrate:refresh [--seed]'],
             'db:seed'           => ['handler' => SeedCommand::class, 'desc' => 'Run seeders', 'usage' => 'php siro db:seed'],
             'db:show'           => ['handler' => DbShowCommand::class, 'desc' => 'Show table data/schema', 'usage' => 'php siro db:show <table> [--schema] [--limit=N]'],
-            'db:health'    => ['handler' => DbHealthCommand::class, 'desc' => 'Database health check', 'usage' => 'php siro db:health'],
-            'db:check'     => ['handler' => DbCheckCommand::class, 'desc' => 'Database integrity check', 'usage' => 'php siro db:check'],
-            'db:stats'     => ['handler' => DbStatsCommand::class, 'desc' => 'Database statistics', 'usage' => 'php siro db:stats'],
-            'db:optimize'  => ['handler' => DbOptimizeCommand::class, 'desc' => 'Optimize database', 'usage' => 'php siro db:optimize'],
-            'db:backup'    => ['handler' => DbBackupCommand::class, 'desc' => 'Backup database', 'usage' => 'php siro db:backup [--compress]'],
-            'db:restore'   => ['handler' => DbRestoreCommand::class, 'desc' => 'Restore database from backup', 'usage' => 'php siro db:restore <file> [--force]'],
-            'db:explain'   => ['handler' => DbExplainCommand::class, 'desc' => 'EXPLAIN query', 'usage' => 'php siro db:explain --query="..."'],
-            'db:benchmark' => ['handler' => DbBenchmarkCommand::class, 'desc' => 'Database performance benchmark', 'usage' => 'php siro db:benchmark [--iterations=N]'],
+            'db:health'    => ['handler' => DbHealthCommand::class, 'desc' => 'Database health check (SQLite + MySQL)', 'usage' => 'php siro db:health'],
+            'db:check'     => ['handler' => DbCheckCommand::class, 'desc' => 'Database integrity check (SQLite + MySQL)', 'usage' => 'php siro db:check'],
+            'db:stats'     => ['handler' => DbStatsCommand::class, 'desc' => 'Database statistics (SQLite + MySQL)', 'usage' => 'php siro db:stats'],
+            'db:optimize'  => ['handler' => DbOptimizeCommand::class, 'desc' => 'Optimize database (SQLite + MySQL)', 'usage' => 'php siro db:optimize'],
+            'db:backup'    => ['handler' => DbBackupCommand::class, 'desc' => 'Backup database (SQLite + MySQL)', 'usage' => 'php siro db:backup [--compress]'],
+            'db:restore'   => ['handler' => DbRestoreCommand::class, 'desc' => 'Restore SQLite database from backup', 'usage' => 'php siro db:restore <file> [--force] (SQLite only)'],
+            'db:explain'   => ['handler' => DbExplainCommand::class, 'desc' => 'EXPLAIN query (merged into db:why)', 'usage' => 'php siro db:why --query="..."'],
+            'db:benchmark' => ['handler' => DbBenchmarkCommand::class, 'desc' => 'SQLite performance benchmark', 'usage' => 'php siro db:benchmark [--iterations=N] (SQLite only)'],
 
             'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request (--set, --seed)', 'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val] [--format=] [--safe] [--dry-run]'],
             'log:trace'   => ['handler' => LogTraceCommand::class, 'desc' => 'View trace details (--full for more)', 'usage' => 'php siro log:trace [<id>] [--status=500] [--limit=N] [--full]'],
@@ -301,6 +303,8 @@ final class Console
             'test'          => ['handler' => TestCommand::class, 'desc' => 'Run tests (--filter=, --suite=, --coverage)', 'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]'],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
             'new:project'   => ['handler' => NewProjectCommand::class, 'desc' => 'Create project via composer', 'usage' => 'php siro new:project <name>'],
+            'audit:verify'  => ['handler' => AuditVerifyCommand::class, 'desc' => 'Verify immutable audit trail integrity', 'usage' => 'php siro audit:verify [--all]'],
+            'audit:log'     => ['handler' => AuditLogCommand::class, 'desc' => 'Append a manual audit entry', 'usage' => 'php siro audit:log <action> [--context=key=value]'],
         ];
     }
 
@@ -478,34 +482,27 @@ final class Console
     private function printHelp(): void
     {
         $this->write('');
-  $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — PHP Micro-Framework');
-    $this->write('  --------------------------------------------------');
-    $this->write('');
-    $this->write('  Usage:');
-    $this->write('    php siro <command> [options]');
-    $this->write('    php siro list                  All ' . count($this->commandRegistry()) . ' commands');
+        $this->write('  ⚡ SiroPHP v' . self::VERSION . ' — PHP Micro-Framework');
+        $this->write('  --------------------------------------------------');
+        $this->write('');
+        $this->write('  Usage:');
+        $this->write('    php siro <command> [options]');
+        $this->write('    php siro list                  All ' . count($this->commandRegistry()) . ' commands');
         $this->write('    php siro <command> --help      Command details');
         $this->write('    php siro --version             Version info');
         $this->write('');
 
-        $layers = [
-            '🎯 Core Workflow' => ['make:crud', 'serve', 'api:test', 'api:why', 'db:why', 'why', 'fix', 'replay', 'trace:list', 'demo'],
-            '🔧 Daily Dev'     => ['make:controller', 'make:model', 'make:migration', 'make:test', 'make:seeder',
-                                    'make:service', 'make:repository', 'make:auth', 'migrate', 'db:seed', 'test', 'route:list'],
-            '📦 Advanced'      => ['make:job', 'make:mail', 'make:event', 'make:listener', 'make:observer', 'make:lang', 'make:factory', 'make:openapi', 'make:postman',
-                                    'queue:work', 'queue:status', 'schedule:run', 'deploy', 'optimize', 'config:cache',
-                                    'down', 'up', 'log:trace', 'log:replay', 'log:slow', 'debug:last', 'mercure:subscribe'],
-            '⚙️ System'        => ['key:generate', 'doctor', 'env:check', 'env:switch', 'route:search', 'route:rules',
-                                    'rate:status', 'db:show', 'migrate:rollback', 'migrate:status', 'log:export',
-                                    'log:cleanup', 'log:tail', 'log:stats', 'log:top', 'storage:link', 'live', 'new',
-                                    'benchmark'],
-        ];
-
-        foreach ($layers as $layer => $cmds) {
-            $this->write('  ' . $layer . ':');
-            $this->write('    ' . implode(', ', $cmds));
+        $registry = $this->commandRegistry();
+        foreach ($this->groupedCommands() as $group => $commands) {
+            $this->write('  ' . $group . ':');
+            foreach ($commands as $cmd => $desc) {
+                $usage = $registry[$cmd]['usage'] ?? 'php siro ' . $cmd;
+                $this->write('    ' . str_pad($cmd, 22, ' ') . $desc . '  ' . $usage);
+            }
             $this->write('');
         }
+
+        $this->write('  Run "php siro <command> --help" for command details.');
     }
 
     private function printList(): void

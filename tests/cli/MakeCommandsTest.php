@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core\Tests\Cli;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Siro\Core\Console;
 
 final class MakeCommandsTest extends TestCase
@@ -322,9 +323,9 @@ final class MakeCommandsTest extends TestCase
     }
 
     /**
-     * @dataProvider makeCommandProvider
      * @param list<string> $args
      */
+    #[DataProvider('makeCommandProvider')]
     public function testMakeCommand(string $command, array $args, string $expectedPath): void
     {
         $argv = array_merge(['siro', $command], $args);

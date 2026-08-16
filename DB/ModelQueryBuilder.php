@@ -237,11 +237,12 @@ final class ModelQueryBuilder extends QueryBuilder
         if ($operator === '>=' && $count === 1) {
             $qb = $relQuery;
             $qb->selectRaw('1')->whereRaw($cond);
-            $subSql = $qb->toSql();
+            [$subSql, $subBindings] = $qb->toCompiled();
             $this->wheres[] = [
                 'type' => 'raw',
                 'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
                 'sql' => 'EXISTS (' . $subSql . ')',
+                'bindings' => $subBindings,
             ];
             return $this;
         }
@@ -249,13 +250,14 @@ final class ModelQueryBuilder extends QueryBuilder
         // For count conditions, use (SELECT COUNT(*) ... HAVING ...) >= count
         $qb = $relQuery;
         $qb->whereRaw($cond);
-        $subSql = $qb->toSql();
+        [$subSql, $subBindings] = $qb->toCompiled();
         $disallowed = ['!=', '<>'];
         $safeOp = in_array($operator, $disallowed, true) ? $operator : '>=';
         $this->wheres[] = [
             'type' => 'raw',
             'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
             'sql' => '(SELECT COUNT(*) FROM (' . $subSql . ') AS siro_has_count) ' . $safeOp . ' ' . $count,
+            'bindings' => $subBindings,
         ];
         return $this;
     }
@@ -291,11 +293,12 @@ final class ModelQueryBuilder extends QueryBuilder
                 $callback($relQuery);
             }
 
-            $subSql = $relQuery->toSql();
+            [$subSql, $subBindings] = $relQuery->toCompiled();
             $this->wheres[] = [
                 'type' => 'raw',
                 'boolean' => $boolean === 'OR' ? 'OR' : 'AND',
                 'sql' => 'EXISTS (' . $subSql . ')',
+                'bindings' => $subBindings,
             ];
             return;
         }

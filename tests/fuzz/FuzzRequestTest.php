@@ -3,13 +3,15 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Request;
 
 final class FuzzRequestTest extends TestCase
 {
-    /** @dataProvider provideConstructorParams */
+    #[DataProvider('provideConstructorParams')]
     public function testConstructorNeverThrows(string $method, string $path, array $query, array $headers, array $body, string $ip): void
     {
         $request = new Request($method, $path, $query, $headers, $body, $ip);
@@ -48,7 +50,7 @@ final class FuzzRequestTest extends TestCase
         }
     }
 
-    /** @dataProvider provideInputVariations */
+    #[DataProvider('provideInputVariations')]
     public function testInputMethodsNeverThrow(Request $request): void
     {
         $this->assertIsString($request->method());
@@ -83,7 +85,7 @@ final class FuzzRequestTest extends TestCase
         yield 3 => [new Request('', '')];
     }
 
-    /** @dataProvider provideCacheKeyInputs */
+    #[DataProvider('provideCacheKeyInputs')]
     public function testCacheKeyNeverThrows(Request $request): void
     {
         $key = $request->cacheKey();

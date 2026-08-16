@@ -19,9 +19,13 @@ final class PenetrationTest extends TestCase
 {
     private string $tmpDir;
     private string $origCwd;
+    private string $savedAppKeyEnv = '';
+    private string $savedAppKeyGetenv = '';
 
     protected function setUp(): void
     {
+        $this->savedAppKeyEnv = (string) ($_ENV['APP_KEY'] ?? '');
+        $this->savedAppKeyGetenv = (string) getenv('APP_KEY');
         $this->tmpDir = sys_get_temp_dir() . '/siro_pentest_' . bin2hex(random_bytes(8));
         Database::purgeAll();
         Storage::fake();
@@ -33,6 +37,13 @@ final class PenetrationTest extends TestCase
         if (is_dir($this->tmpDir)) {
             $this->removeDir($this->tmpDir);
         }
+        // Restore APP_KEY so crypto tests elsewhere aren't affected by keys set here.
+        if ($this->savedAppKeyEnv === '') {
+            unset($_ENV['APP_KEY']);
+        } else {
+            $_ENV['APP_KEY'] = $this->savedAppKeyEnv;
+        }
+        putenv('APP_KEY=' . $this->savedAppKeyGetenv);
     }
 
     // ========================================================================

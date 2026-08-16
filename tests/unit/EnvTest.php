@@ -128,7 +128,22 @@ final class EnvTest extends TestCase
 
     public function testLoadReturnsEarlyForMissingFile(): void
     {
-        Env::load('/nonexistent/.env');
+        // Env::load emits an intentional E_USER_NOTICE for a missing .env.
+        // Capture it so it doesn't surface as a PHPUnit notice.
+        $caught = false;
+        set_error_handler(function (int $errno, string $errstr) use (&$caught): bool {
+            if ($errno === E_USER_NOTICE && str_contains($errstr, 'SIRO_ENV')) {
+                $caught = true;
+                return true;
+            }
+            return false;
+        });
+        try {
+            Env::load('/nonexistent/.env');
+        } finally {
+            restore_error_handler();
+        }
+        $this->assertTrue($caught, 'Expected SIRO_ENV notice');
         $this->assertNull(Env::get('ANYTHING'));
     }
 
