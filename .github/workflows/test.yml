@@ -108,8 +108,6 @@ jobs:
               exit 1
             fi
           fi
-          sed -i 's|DB_DATABASE=.*|DB_DATABASE=:memory:|g' .env
-          sed -i 's|CACHE_DRIVER=.*|CACHE_DRIVER=file|g' .env
       - name: PHPUnit tests
         run: php vendor/bin/phpunit --no-progress
 
@@ -163,7 +161,7 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
       - name: Infection Mutation Testing (min MSI 80%)
-        run: php -d zend_extension=xdebug vendor/bin/infection --min-msi=80 --threads=4 --no-progress
+        run: php vendor/bin/infection --min-msi=80 --threads=4 --no-progress
 
   benchmark:
     runs-on: ubuntu-latest

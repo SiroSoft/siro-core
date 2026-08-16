@@ -254,9 +254,6 @@ final class Validator
                 if (!is_array($item)) {
                     continue;
                 }
-                continue;
-            }
-
                 $nestedValue = $item[$nestedField] ?? null;
                 $indexedField = $baseKey . '.' . $index . '.' . $nestedField;
 
