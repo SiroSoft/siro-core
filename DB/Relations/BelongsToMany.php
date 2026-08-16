@@ -14,7 +14,7 @@ class BelongsToMany
     private array $cachedResults = [];
 
     /** @var array<int, string> Extra pivot columns to include (e.g. ['quantity', 'price']) */
-    private array $pivotColumns;
+    private array $pivotColumns = [];
 
     public function __construct(
         private readonly string $relatedClass,
@@ -103,17 +103,16 @@ class BelongsToMany
 
         /** @var Model $relatedInstance */
         $relatedInstance = new $this->relatedClass();
-        $select = ["{$relatedTable}.*"];
+        $query = $relatedInstance->query();
+        // Use raw for qualified "table.*" (select() would quote the * as a column)
+        $query->selectRaw("{$relatedTable}.*");
 
         // Include extra pivot columns in select
         foreach ($this->pivotColumns as $col) {
-            $select[] = "{$pivotTable}.{$col}";
+            $query->selectRaw("{$pivotTable}.{$col}");
         }
 
-        /** @var ModelQueryBuilder $query */
-        $query = $relatedInstance
-            ->query()
-            ->select(...$select)
+        $query
             ->join("{$pivotTable}", "{$pivotTable}.{$relatedKey}", '=', "{$relatedTable}.id")
             ->where("{$pivotTable}.{$foreignKey}", '=', $localValue);
         return $query;

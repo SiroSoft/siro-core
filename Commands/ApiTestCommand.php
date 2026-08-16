@@ -23,18 +23,38 @@ use Siro\Core\Lang;
 use Siro\Core\ValidationException;
 
 final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
-    use CommandSupport;
+    use CommandSupport {
+        ask as protected traitAsk;
+    }
 
     private string $authFile;
     private string $historyFile;
     private string $collectionFile;
+    /** @var \Closure(string): string|null */
+    private ?\Closure $inputProvider;
+    private int $watchMaxIterations = 0;
 
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+        ?\Closure $inputProvider = null,
+    ) {
+        $this->inputProvider = $inputProvider;
         $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage';
         $this->authFile = $dir . DIRECTORY_SEPARATOR . 'api-test-auth.json';
         $this->historyFile = $dir . DIRECTORY_SEPARATOR . 'api-test-history.json';
         $this->collectionFile = $dir . DIRECTORY_SEPARATOR . 'api-test-collections.json';
+    }
+
+    /**
+     * Read a line of input. Uses the injected provider when available (tests/automation).
+     */
+    protected function ask(string $question): string
+    {
+        if ($this->inputProvider !== null) {
+            $provider = $this->inputProvider;
+            return trim((string) $provider($question));
+        }
+        return $this->traitAsk($question);
     }
 
     /** @param array<int, string> $args */
@@ -112,20 +132,18 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             } elseif (str_starts_with($arg, '--collection-save=')) {
                 $collectionSave = substr($arg, 18);
             } elseif (str_starts_with($arg, '--body=')) {
-                // --body key=value format
+                // --body key=value  OR  --body '{"json":"payload"}'
                 $bodyArg = substr($arg, 7);
-                if (str_contains($bodyArg, '=')) {
-                    $parts = explode('=', $bodyArg, 2);
-                    $fields[$parts[0]] = $parts[1];
-                }
-            } elseif (str_starts_with($arg, "--body=")) {
-                // --body '{"json":"payload"}'
-                $bodyVal = substr($arg, 7);
-                if (str_starts_with($bodyVal, '{')) {
-                    $decoded = json_decode($bodyVal, true);
+                if (str_starts_with($bodyArg, '{')) {
+                    // JSON object payload
+                    $decoded = json_decode($bodyArg, true);
                     if (is_array($decoded)) {
                         $fields = array_merge($fields, $decoded);
                     }
+                } elseif (str_contains($bodyArg, '=')) {
+                    // key=value format
+                    $parts = explode('=', $bodyArg, 2);
+                    $fields[$parts[0]] = $parts[1];
                 }
             } elseif (str_starts_with($arg, '--json=')) {
                 $jsonStr = substr($arg, 7);
@@ -267,8 +285,14 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write("  \033[33mWatching for changes... (Ctrl+C to stop)\033[0m");
         $this->write('');
 
+        $maxIterations = (int) getenv('SIRO_API_TEST_WATCH_MAX');
+        $iteration = 0;
         // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
+            $iteration++;
+            if ($maxIterations > 0 && $iteration > $maxIterations) {
+                break;
+            }
             sleep(1);
             $changed = false;
             foreach ($watched as $file => $mtime) {
@@ -549,6 +573,11 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             $duration = (microtime(true) - $start) * 1000;
             $memory = memory_get_peak_usage(true) / 1024 / 1024;
 
+            // Write a trace so the Why/Replay/Fix loop can pick this request up.
+            // api:test dispatches in-process (not via the HTTP server), so the
+            // normal App::run() trace hook is bypassed — write it here instead.
+            $this->writeInternalTrace($method, $pathOnly, $statusCode, $duration, $request, $response);
+
             $response->send();
             $body = ob_get_clean() ?: '';
 
@@ -581,7 +610,7 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
 
                     if (is_string($t) && strlen($t) >= 10) {
                         $tokens = $this->loadTokens();
-                        $tokens[$as] = $t;
+                        $tokens[$as] = 'enc:' . $this->encryptToken($t);
                         $dir = dirname($this->authFile);
                         if (!is_dir($dir)) {
                             mkdir($dir, 0755, true);
@@ -636,7 +665,41 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             return [];
         }
         /** @var array<string, mixed> $raw */
+        foreach ($raw as $k => $v) {
+            if (is_string($v) && str_starts_with($v, 'enc:')) {
+                $decrypted = $this->decryptToken(substr($v, 4));
+                if ($decrypted !== null) {
+                    $raw[$k] = $decrypted;
+                }
+            }
+        }
         return $raw;
+    }
+
+    private function encryptToken(string $token): string
+    {
+        $key = (string) \Siro\Core\Env::get('APP_KEY', '');
+        if ($key === '') {
+            return $token;
+        }
+        try {
+            return \Siro\Core\Encrypter::encrypt($token);
+        } catch (\Throwable $e) {
+            return $token;
+        }
+    }
+
+    private function decryptToken(string $token): ?string
+    {
+        $key = (string) \Siro\Core\Env::get('APP_KEY', '');
+        if ($key === '') {
+            return $token;
+        }
+        try {
+            return \Siro\Core\Encrypter::decrypt($token);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
@@ -789,9 +852,14 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $count = 0;
+        $maxIterations = (int) getenv('SIRO_API_TEST_WEBHOOK_MAX');
+        $acceptTimeout = (int) getenv('SIRO_API_TEST_WEBHOOK_ACCEPT_TIMEOUT') ?: 5;
         // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
-            $conn = @stream_socket_accept($socket, 5);
+            if ($maxIterations > 0 && $count >= $maxIterations) {
+                break;
+            }
+            $conn = @stream_socket_accept($socket, $acceptTimeout);
             if ($conn === false) {
                 continue;
             }
@@ -843,6 +911,8 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             fwrite($conn, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"received\":true}");
             fclose($conn);
         }
+
+        return 0;
     }
 
     private function printHelp(): void
@@ -868,5 +938,38 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  php siro api:test POST /users name=John --collection-save=myapi');
         $this->write('  php siro api:test --collection=myapi');
         $this->write('  php siro api:test GET /users --watch');
+    }
+
+    /**
+     * Write a request trace so the Why/Replay/Fix workflow can consume api:test
+     * requests even though they are dispatched in-process (not via HTTP server).
+     */
+    private function writeInternalTrace(string $method, string $path, int $status, float $durationMs, \Siro\Core\Request $request, \Siro\Core\Response $response): void
+    {
+        try {
+            if (!\Siro\Core\Env::bool('APP_DEBUG', false)) {
+                return;
+            }
+            $traceId = 'siro_' . bin2hex(random_bytes(16));
+            $traceData = [
+                'method' => strtoupper($method),
+                'path' => $path,
+                'status' => $status,
+                'time_ms' => round($durationMs, 2),
+                'trace_id' => $traceId,
+                'ip' => '127.0.0.1',
+                'user_agent' => 'siro-api-test',
+                'host' => 'localhost:8080',
+                'timestamp' => date('c'),
+            ];
+            $rawBody = \Siro\Core\Request::getRawBodyCache();
+            if (is_string($rawBody) && $rawBody !== '') {
+                $traceData['request_body'] = $rawBody;
+            }
+            $traceData['response_body'] = (string) json_encode($response->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            \Siro\Core\Logger::trace($traceId, $traceData);
+        } catch (\Throwable $e) {
+            // Tracing must never break the api:test command itself.
+        }
     }
 }

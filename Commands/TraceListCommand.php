@@ -34,7 +34,8 @@ final class TraceListCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $tracesDir = $this->getTracesDir($this->basePath);
-        $files = $this->findTraceFiles($tracesDir);
+        // Bounded scan: only keep the newest files (avoids O(n) memory on large trace sets)
+        $files = $this->findRecentTraceFiles($tracesDir, $limit + 10);
         if ($files === []) {
             $this->write('  No traces found.');
             return 1;
@@ -50,7 +51,7 @@ final class TraceListCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
-        usort($files, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
+        // findRecentTraceFiles already returns newest-first
         $files = array_slice($files, 0, $limit);
 
         $this->write('');

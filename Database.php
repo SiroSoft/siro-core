@@ -44,9 +44,9 @@ final class Database
         self::getInstance()->default($name);
     }
 
-    public static function connection(?string $name = null): PDO
+    public static function connection(?string $name = null, bool $write = false): PDO
     {
-        return self::getInstance()->connection($name);
+        return self::getInstance()->connection($name, $write);
     }
 
     public static function purge(?string $name = null): void
@@ -57,6 +57,11 @@ final class Database
     public static function purgeAll(): void
     {
         self::getInstance()->purgeAll();
+    }
+
+    public static function writeConnection(?string $name = null): PDO
+    {
+        return self::getInstance()->connection($name, true);
     }
 
     /** @return array<int, string> */

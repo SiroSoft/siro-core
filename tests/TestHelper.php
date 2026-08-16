@@ -73,11 +73,11 @@ trait TestHelper
         if (isset($response['data'])) {
             $this->assertIsArray($response['data'], 'Data must be an array');
         }
-        if (isset($response['errors'])) {
-            $this->assertIsArray($response['errors'], 'Errors must be an array');
-        }
         if (isset($response['meta'])) {
             $this->assertIsArray($response['meta'], 'Meta must be an array');
+            if (isset($response['meta']['errors'])) {
+                $this->assertIsArray($response['meta']['errors'], 'Meta.errors must be an array');
+            }
         }
     }
 

@@ -12,7 +12,7 @@ interface DatabaseInterface
     /** @param array<string, mixed> $config */
     public function configure(array $config, string $name = 'default'): void;
     public function default(string $name): void;
-    public function connection(?string $name = null): PDO;
+    public function connection(?string $name = null, bool $write = false): PDO;
     public function purge(?string $name = null): void;
     public function purgeAll(): void;
     /** @return array<int, string> */

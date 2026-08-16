@@ -115,6 +115,14 @@ final class SqlCompiler
         if ($column === '*') {
             return false;
         }
+        // Qualified wildcard "table.*" must stay raw (don't quote the *)
+        if (str_contains($column, '.*')) {
+            return true;
+        }
+        // Numeric literals (e.g. SELECT 1) must not be quoted as columns
+        if (is_numeric($column)) {
+            return true;
+        }
         if (str_contains($column, '(') || str_contains($column, ')')) {
             return true;
         }
@@ -166,7 +174,13 @@ final class SqlCompiler
                 $quotedColumns[] = $this->quoteIdentifier($column);
             }
         }
-        $sql = sprintf('SELECT %s FROM %s', implode(', ', $quotedColumns), $this->quoteIdentifier($table));
+        $distinct = false;
+        if (($quotedColumns[0] ?? '') === 'DISTINCT') {
+            $distinct = true;
+            array_shift($quotedColumns);
+        }
+        $prefix = $distinct ? 'SELECT DISTINCT ' : 'SELECT ';
+        $sql = sprintf('%s%s FROM %s', $prefix, implode(', ', $quotedColumns), $this->quoteIdentifier($table));
         $sql .= $this->compileJoins($joins);
         $sql .= $whereSql;
         $sql .= $this->compileGroupBy($groups);

@@ -1,5 +1,55 @@
 # Upgrade Guide
 
+## v0.35.x → v1.0.0
+
+### Overview
+
+v1.0.0 is the first stable release with an **API stability promise**. From this
+version forward, public API changes that break compatibility require a major
+version bump. The public method surface is guarded by `ApiStabilityTest`.
+
+### Breaking changes from 0.35.x (none)
+
+There are **no breaking changes** from v0.35.1 to v1.0.0. All code written
+against 0.35.x continues to work unchanged.
+
+### New in v1.0.0 (from 0.35.x)
+
+| Area | What's new |
+|------|-----------|
+| **Security** | Immutable HMAC-chained audit trail (`Audit`, `audit:verify`, `audit:log`) |
+| **Credentials** | Replay auth tokens now encrypted on disk (`.siro_auth.json` legacy plaintext still readable) |
+| **db:backup/restore** | Real implementation (was a stub); `.gz` compression supported |
+| **MySQL support** | `db:backup/health/check/stats/optimize` now support MySQL |
+| **Debug loop** | `api:test` writes traces; `fix --last`; `replay --test` generates regression tests |
+| **CLI** | All 93 commands listed in `help`; `audit:verify`; `audit:log` |
+| **Quality** | PHPUnit 12 attributes; 0 failures/notices/deprecations; PHPStan level=max clean |
+
+### Upgrade steps
+
+```bash
+# 1. Update the framework
+composer update sirosoft/core
+
+# 2. (Recommended) re-generate your app key if using encrypted replay auth
+php siro key:generate --force   # only if you rotated APP_KEY
+
+# 3. Run the test suite
+php siro test
+
+# 4. Verify your audit trail
+php siro audit:verify
+```
+
+### API stability policy (v1.0+)
+
+- **Patch (1.0.x)**: bug fixes, no public API changes.
+- **Minor (1.1.x)**: additive public API only (new methods/classes, no removals).
+- **Major (2.0)**: breaking public API changes.
+- The `ApiStabilityTest` fails if the public method count grows >15% without
+  updating the baseline — a signal to review before tagging a patch.
+# Upgrade Guide
+
 ## v0.27.x → v1.0.0
 
 ### Overview

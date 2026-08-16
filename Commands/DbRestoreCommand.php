@@ -8,7 +8,7 @@ use Siro\Core\Database;
 use Siro\Core\Lite\BackupManager;
 
 /**
- * Restore SQLite database from a backup file.
+ * Restore SQLite database from a backup file (SQLite only).
  *
  * Usage: php siro db:restore <backup_file>
  */

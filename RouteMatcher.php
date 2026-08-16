@@ -12,6 +12,8 @@ final class RouteMatcher
     private array $dynamicRoutes;
     /** @var array<string, array<string, string>> */
     private array $whereConstraints;
+    /** @var array<string, array<int, array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>>> */
+    private array $routesByDepth;
 
     /** @var array<string, array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null> */
     private array $matchCache = [];
@@ -35,6 +37,14 @@ final class RouteMatcher
         $this->staticRoutes = $staticRoutes;
         $this->dynamicRoutes = $dynamicRoutes;
         $this->whereConstraints = $whereConstraints;
+        // Group dynamic routes by segment count for faster matching
+        $this->routesByDepth = [];
+        foreach ($dynamicRoutes as $method => $routes) {
+            foreach ($routes as $route) {
+                $depth = count($route['segments']);
+                $this->routesByDepth[$method][$depth][] = $route;
+            }
+        }
     }
 
     public function markDirty(): void
@@ -60,7 +70,9 @@ final class RouteMatcher
             return $route;
         }
 
-        $result = $this->linearMatch($method, $this->splitSegments($path));
+        $segments = $this->splitSegments($path);
+        $depth = count($segments);
+        $result = $this->linearMatchByDepth($method, $segments, $depth);
         $this->setMatchCache($cacheKey, $result);
         return $result;
     }
@@ -82,14 +94,20 @@ final class RouteMatcher
      * @param array<int, string> $pathSegments
      * @return array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null
      */
-    private function linearMatch(string $method, array $pathSegments): ?array
+    private function linearMatchByDepth(string $method, array $pathSegments, int $depth): ?array
     {
-        $routes = $this->dynamicRoutes[$method] ?? [];
+        $routes = $this->routesByDepth[$method][$depth] ?? [];
+        return $this->matchSegments($routes, $method, $pathSegments);
+    }
+
+    /**
+     * @param array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}> $routes
+     * @param array<int, string> $pathSegments
+     * @return array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null
+     */
+    private function matchSegments(array $routes, string $method, array $pathSegments): ?array
+    {
         foreach ($routes as $route) {
-            /** @var array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
-            if (count($route['segments']) !== count($pathSegments)) {
-                continue;
-            }
             $params = [];
             $match = true;
             foreach ($route['segments'] as $i => $segment) {

@@ -470,7 +470,7 @@ final class App
 
         if ($jwtSecret === '' || strlen($jwtSecret) < 32 || $looksLikePlaceholder) {
             throw new RuntimeException(
-                'A configuration error occurred. Please check server setup.'
+                'JWT_SECRET is missing or too weak. Must be at least 32 characters.'
             );
         }
     }

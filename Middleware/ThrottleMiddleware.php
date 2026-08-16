@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\Middleware;
 
+use Siro\Core\Cache\CacheInstance;
 use Siro\Core\Env;
 use Siro\Core\Request;
 use Siro\Core\Response;
@@ -29,9 +30,10 @@ final class ThrottleMiddleware implements MiddlewareInterface
             return $this->handleFallback($request, $next, $limit, $windowMinutes, $ttl);
         }
 
+        $prefix = (string) Env::get('REDIS_PREFIX', 'siro:throttle:');
         $ip = $request->ip();
         $route = rawurlencode($request->method() . ':' . self::normalizePath($request->path()));
-        $key = sprintf('rate:%s:%s', $ip, $route);
+        $key = $prefix . sprintf('rate:%s:%s', $ip, $route);
 
         try {
             $result = $redis->eval(
@@ -118,7 +120,6 @@ final class ThrottleMiddleware implements MiddlewareInterface
         }
 
         $file = $storeDir . DIRECTORY_SEPARATOR . hash('sha256', $key) . '.json';
-        $tmpFile = $file . '.' . bin2hex(random_bytes(8)) . '.tmp';
         $now = time();
         $count = 0;
         $expiresAt = $now + $ttl;
@@ -159,15 +160,15 @@ final class ThrottleMiddleware implements MiddlewareInterface
                 'count' => $count,
                 'expires_at' => $expiresAt,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            if (file_put_contents($tmpFile, $encoded, LOCK_EX) === false) {
-                @unlink($tmpFile);
+            ftruncate($fp, 0);
+            rewind($fp);
+            if (fwrite($fp, $encoded) === false) {
                 flock($fp, LOCK_UN);
                 fclose($fp);
                 return Response::error('Too Many Requests', 429, [
                     'throttle' => ['Rate limiter fallback write failed'],
                 ]);
             }
-            rename($tmpFile, $file);
             flock($fp, LOCK_UN);
             fclose($fp);
 
@@ -194,7 +195,6 @@ final class ThrottleMiddleware implements MiddlewareInterface
             }
             return $response;
         } catch (Throwable) {
-            @unlink($tmpFile);
             if (isset($fp) && is_resource($fp)) {
                 @flock($fp, LOCK_UN);
                 @fclose($fp);
@@ -213,37 +213,12 @@ final class ThrottleMiddleware implements MiddlewareInterface
 
         $this->resolved = true;
 
-        if (!class_exists(\Redis::class)) {
-            return null;
-        }
-
-        try {
-            $redis = new \Redis();
-            $connected = $redis->connect(
-                (string) Env::get('REDIS_HOST', '127.0.0.1'),
-                (int) Env::get('REDIS_PORT', '6379'),
-                (float) Env::get('REDIS_TIMEOUT', '0.2')
-            );
-
-            if (!$connected) {
-                return null;
-            }
-
-            $password = (string) Env::get('REDIS_PASSWORD', '');
-            if ($password !== '') {
-                $redis->auth($password);
-            }
-
-            $database = (int) Env::get('REDIS_DB', '0');
-            if ($database > 0) {
-                $redis->select($database);
-            }
-
+        $redis = CacheInstance::getRedisConnection();
+        if ($redis instanceof \Redis) {
             $this->redis = $redis;
-            return $this->redis;
-        } catch (Throwable) {
-            return null;
         }
+
+        return $this->redis;
     }
 
     /** Normalize path by replacing numeric IDs and UUIDs with placeholders */

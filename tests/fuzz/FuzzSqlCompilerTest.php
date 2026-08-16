@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\DB\SqlCompiler;
@@ -18,7 +20,7 @@ final class FuzzSqlCompilerTest extends TestCase
         $this->compiler->setTable('test_table');
     }
 
-    /** @dataProvider provideIdentifiers */
+    #[DataProvider('provideIdentifiers')]
     public function testQuoteIdentifierNeverThrows(string $identifier): void
     {
         try {
@@ -29,7 +31,7 @@ final class FuzzSqlCompilerTest extends TestCase
         }
     }
 
-    /** @dataProvider provideIdentifiers */
+    #[DataProvider('provideIdentifiers')]
     public function testQuoteIdentifierIsIdempotent(string $identifier): void
     {
         try {
@@ -62,7 +64,7 @@ final class FuzzSqlCompilerTest extends TestCase
         }
     }
 
-    /** @dataProvider provideOperators */
+    #[DataProvider('provideOperators')]
     public function testNormalizeOperatorNeverThrows(string $operator): void
     {
         try {
@@ -87,7 +89,7 @@ final class FuzzSqlCompilerTest extends TestCase
         }
     }
 
-    /** @dataProvider provideBuildSelectInputs */
+    #[DataProvider('provideBuildSelectInputs')]
     public function testBuildSelectQueryNeverThrows(
         array $columns, string $table, array $wheres, array $havings,
         array $joins, array $groups, array $orders, ?int $limit, ?int $offset, array $bindings
@@ -155,7 +157,7 @@ final class FuzzSqlCompilerTest extends TestCase
         ];
     }
 
-    /** @dataProvider provideBuildInsertInputs */
+    #[DataProvider('provideBuildInsertInputs')]
     public function testBuildInsertSqlNeverThrows(string $table, array $data): void
     {
         try {
@@ -180,7 +182,7 @@ final class FuzzSqlCompilerTest extends TestCase
         yield 'unicode' => ['users', ['name' => 'HeartSpadeClub']];
     }
 
-    /** @dataProvider provideBuildUpdateInputs */
+    #[DataProvider('provideBuildUpdateInputs')]
     public function testBuildUpdateSqlNeverThrows(string $table, array $data, array $wheres, array $bindings): void
     {
         try {
@@ -206,7 +208,7 @@ final class FuzzSqlCompilerTest extends TestCase
         yield 'null values' => ['users', ['deleted_at' => null, 'name' => 'test'], [], []];
     }
 
-    /** @dataProvider provideBuildDeleteInputs */
+    #[DataProvider('provideBuildDeleteInputs')]
     public function testBuildDeleteSqlNeverThrows(string $table, array $wheres, array $bindings): void
     {
         try {
@@ -235,7 +237,7 @@ final class FuzzSqlCompilerTest extends TestCase
         ];
     }
 
-    /** @dataProvider provideJoinsInputs */
+    #[DataProvider('provideJoinsInputs')]
     public function testCompileJoinsNeverThrows(array $joins): void
     {
         $result = $this->compiler->compileJoins($joins);

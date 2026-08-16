@@ -76,10 +76,8 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
         // 5. Controller
         if (!$this->generateController($controllerClass, $model, $resourceClass, $serviceName, $withoutService)) { $ok = false; }
 
-        // 6. Resource (skip in simple mode)
-        if (!$isSimple) {
-            if (!$this->generateResource($resourceClass)) { $ok = false; }
-        }
+        // 6. Resource (needed by both simple and full controllers)
+        if (!$this->generateResource($resourceClass)) { $ok = false; }
 
         // 7. Routes
         if (!$this->generateRoutes($resource, $controllerClass)) { $ok = false; }

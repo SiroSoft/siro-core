@@ -34,12 +34,12 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     protected static array $observers = [];
 
     /** @var array<string, mixed> */
-    private array $relations = [];
+    protected array $relations = [];
     /** @var array<string, mixed> */
-    private array $attributes = [];
+    protected array $attributes = [];
     /** @var array<string, mixed> */
-    private array $original = [];
-    private bool $exists = false;
+    protected array $original = [];
+    protected bool $exists = false;
     protected string $primaryKey = 'id';
     protected bool $timestamps = true;
 
@@ -138,6 +138,14 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     public function setAttribute(string $key, mixed $value): void
     {
+        // Always allow setting the primary key
+        if ($key === $this->primaryKey) {
+            $this->attributes[$key] = $value;
+            if ($this->exists) {
+                $this->original[$key] = $value;
+            }
+            return;
+        }
         if ($this->fillable !== [] && !in_array($key, $this->fillable, true)) {
             return;
         }
@@ -574,7 +582,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                 return false;
             }
 
-            $id = Database::table($table)->insert($data);
+            $id = Database::table($table)->insertGetId($data);
 
             if ($id !== 0) {
                 $this->setAttribute($key, $id);
@@ -585,6 +593,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                 $this->notifyObservers('created');
             }
             Event::emit("{$table}.created", $this);
+            if (class_exists(Mercure::class)) {
+                $pk = $this->getAttribute($key);
+                Mercure::publish(Mercure::topic($table, is_numeric($pk) ? (int) $pk : (is_string($pk) ? $pk : null)), [
+                    'action' => 'created',
+                    'id' => $pk,
+                ]);
+            }
         } else {
             if ($hasObservers) {
                 $this->notifyObservers('updating');
@@ -602,6 +617,13 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                     $this->notifyObservers('updated');
                 }
                 Event::emit("{$table}.updated", $this);
+                if (class_exists(Mercure::class)) {
+                    $pk = $this->getAttribute($key);
+                    Mercure::publish(Mercure::topic($table, is_numeric($pk) ? (int) $pk : (is_string($pk) ? $pk : null)), [
+                        'action' => 'updated',
+                        'id' => $pk,
+                    ]);
+                }
             }
         }
 

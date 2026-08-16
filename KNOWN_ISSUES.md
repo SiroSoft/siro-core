@@ -1,5 +1,35 @@
 # Known Issues & Limitations
 
+## v0.35.1 — Resolved & Current Limitations
+
+### Resolved since v0.26
+The following previously-listed issues were fixed in v0.35.1:
+
+| Issue | Fixed in |
+|-------|----------|
+| `db:backup` / `db:restore` were stubs (reported success, did nothing) | Real `VACUUM INTO` snapshot + validated restore |
+| `db:seed` dumped raw PDO stack trace on seeder failure | Wrapped, friendly errors |
+| `key:generate` silently rotated production JWT_SECRET | Requires `--force` |
+| `siro new` copied real `.env` (secrets) into new projects | Regenerates from `.env.example` |
+| `make:crud --simple` referenced a non-existent Resource class | Resource generated |
+| `benchmark --iterations=0` crashed (DivisionByZero) | Validated |
+| `benchmark --json` polluted with banner text | Clean JSON |
+| `config:cache` false success on write failure | Reports error |
+| `fix --last` / `api:test` trace gap (Why step missed api:test) | Traces written |
+| 30 commands missing from `help` | All 93 listed |
+| Vietnamese hardcoded messages | English |
+
+### Current Limitations (v0.35.1)
+| Issue | Severity | Workaround |
+|-------|----------|------------|
+| `db:benchmark` SQLite-only (by design — cross-driver benchmarks aren't comparable) | Low | Compare within a driver |
+| Cache stampede — `Cache::remember()` no mutex locking | Medium | Acceptable for most workloads |
+| No Prometheus push gateway integration | Low | `/metrics` pull endpoint exists |
+| `expose_php`/`X-Powered-By` not disabled by default | Low | `expose_php = Off` in php.ini |
+| Trace retention not automatic | Low | `log:cleanup --days=N` |
+| Cross-platform CI (Linux/macOS) not yet running | Low | Windows-verified; CI files added, pending GitHub Actions run |
+# Known Issues & Limitations
+
 ## v0.26 Known Issues
 
 ### Observability / Production

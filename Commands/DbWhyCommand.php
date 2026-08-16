@@ -31,15 +31,36 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         $queryHash = trim((string) ($args[0] ?? ''));
         $listSlow = in_array('--slow', $args, true);
 
+        // Support: db:why --query="SELECT ..."  and  db:why --explain --query="..."
+        $queryArg = null;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--query=')) {
+                $queryArg = substr($arg, 8);
+            }
+        }
+        if ($queryHash === '' && $queryArg !== null && $queryArg !== '') {
+            $queryHash = substr(sha1($queryArg), 0, 8);
+        }
+
         if ($queryHash === '' && !$listSlow) {
             $this->write('  Usage: php siro db:why <query_hash>');
             $this->write('  ' . self::GRAY . '  php siro db:why a1b2c3d4' . self::RESET);
             $this->write('  ' . self::GRAY . '  php siro db:why --slow        (list slow queries)' . self::RESET);
+            $this->write('  ' . self::GRAY . '  php siro db:why --query="SELECT * FROM users"   (analyze a query directly)' . self::RESET);
             return 1;
         }
 
         if ($listSlow) {
             return $this->listSlowQueries();
+        }
+
+        // Analyze a query directly from --query= (no trace lookup needed)
+        if ($queryArg !== null && $queryArg !== '') {
+            $this->analyzeQuery(
+                ['sql' => $queryArg, 'time_ms' => 0.0, 'rows' => 0],
+                ['trace_id' => '', 'method' => '', 'path' => ''],
+            );
+            return 0;
         }
 
         // Find query by hash from trace files
@@ -277,9 +298,15 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
             $type = is_string($row['type'] ?? null) ? strtolower($row['type']) : '';
             $extra = is_string($row['Extra'] ?? null) ? strtolower($row['Extra']) : (is_string($row['extra'] ?? null) ? strtolower($row['extra']) : '');
             $rowsVal = is_numeric($row['rows'] ?? null) ? (int) $row['rows'] : (is_numeric($row['ROWS'] ?? null) ? (int) $row['ROWS'] : 0);
+            // SQLite EXPLAIN QUERY PLAN uses a 'detail' column (e.g. "SCAN orders",
+            // "USE TEMP B-TREE FOR ORDER BY"). Detect scans from it as well.
+            $detail = is_string($row['detail'] ?? null) ? strtolower($row['detail']) : '';
+            $isScan = $type === 'all' || $type === 'full scan'
+                || str_contains($detail, 'scan')
+                || (str_contains($detail, 'using') && !str_contains($detail, 'index'));
 
-            if ($type === 'all' || $type === 'full scan') {
-                $suggestions[] = 'Full table scan detected (' . number_format($rowsVal) . ' rows scanned)';
+            if ($isScan) {
+                $suggestions[] = 'Full table scan detected' . ($rowsVal > 0 ? ' (' . number_format($rowsVal) . ' rows scanned)' : '');
                 $suggestions[] = 'Add index on columns used in WHERE and JOIN clauses';
                 // Extract table name and WHERE columns from SQL
                 $tableName = $this->extractTableName($sql);
@@ -292,7 +319,7 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
                 }
             }
 
-            if (str_contains($extra, 'using filesort') || str_contains($extra, 'using temporary')) {
+            if (str_contains($extra, 'using filesort') || str_contains($extra, 'using temporary') || str_contains($detail, 'temp b-tree for order by') || str_contains($detail, 'using filesort')) {
                 $suggestions[] = 'Using filesort/temporary — add composite index covering ORDER BY columns';
             }
 

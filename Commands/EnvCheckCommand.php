@@ -6,6 +6,9 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\Env;
 
+/**
+ * Check environment configuration — shows MySQL connection info when DB_CONNECTION=mysql.
+ */
 final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
     use CommandSupport;
 
@@ -90,7 +93,7 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
         // Check PHP extensions
         $this->write('');
         $this->write('PHP Extensions:');
-        $extensions = ['pdo', 'json', 'mbstring', 'pdo_mysql', 'pdo_sqlite'];
+        $extensions = ['pdo', 'json', 'mbstring', 'pdo_mysql', 'pdo_sqlite', 'redis'];
         foreach ($extensions as $ext) {
             if (extension_loaded($ext)) {
                 $this->write('  [OK]   ' . $ext);
@@ -109,21 +112,21 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
             try {
                 $stmt = \Siro\Core\Database::connection()->query('SELECT VERSION() AS v');
                 if ($stmt === false) {
-                    $this->write('  [WARN] Không thể query MySQL version');
+                    $this->write('  [WARN] Could not query MySQL version');
                     $failed++;
                 } else {
                     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
                     $version = is_array($row) && isset($row['v']) && is_scalar($row['v']) ? (string) $row['v'] : '';
                     if (version_compare($version, '8.0', '<')) {
-                        $this->write('  [FAIL] MySQL ' . $version . ' — phiên bản 5.x không hỗ trợ JSON column. Nâng cấp lên MySQL 8.0+');
+                        $this->write('  [FAIL] MySQL ' . $version . ' — 5.x does not support JSON columns. Upgrade to MySQL 8.0+');
                         $failed++;
                     } else {
-                        $this->write('  [OK]   MySQL ' . $version . ' (hỗ trợ JSON column)');
+                        $this->write('  [OK]   MySQL ' . $version . ' (JSON column supported)');
                         $passed++;
                     }
                 }
             } catch (\Throwable $e) {
-                $this->write('  [WARN] Không thể kết nối MySQL: ' . $e->getMessage());
+                $this->write('  [WARN] Could not connect to MySQL: ' . $e->getMessage());
                 $failed++;
             }
         }

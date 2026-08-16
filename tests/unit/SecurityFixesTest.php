@@ -19,10 +19,14 @@ final class SecurityFixesTest extends TestCase
     }
 
     private string $tempDir;
+    private string $savedAppKeyEnv;
+    private string $savedAppKeyGetenv;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->savedAppKeyEnv = (string) ($_ENV['APP_KEY'] ?? '');
+        $this->savedAppKeyGetenv = (string) getenv('APP_KEY');
         $this->tempDir = sys_get_temp_dir() . '/siro_security_fixes_' . uniqid();
         Config::reset();
         Storage::fake();
@@ -38,6 +42,14 @@ final class SecurityFixesTest extends TestCase
         if (is_dir($siblingStorage)) {
             $this->removeDir($siblingStorage);
         }
+        // Restore APP_KEY exactly, so tests that read it via Env::get (which
+        // prefers $_ENV) are not affected by keys set here.
+        if ($this->savedAppKeyEnv === '') {
+            unset($_ENV['APP_KEY']);
+        } else {
+            $_ENV['APP_KEY'] = $this->savedAppKeyEnv;
+        }
+        putenv('APP_KEY=' . $this->savedAppKeyGetenv);
     }
 
     // ----- 1. XSS Fix in Queue::dashboardHtml() -----
@@ -294,12 +306,11 @@ final class SecurityFixesTest extends TestCase
             'dynamic' => [],
         ];
 
-        $json = json_encode($exported, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $secret = 'test_app_key_for_unit_tests_router_cache_32chars!';
         putenv('APP_KEY=' . $secret);
         $_ENV['APP_KEY'] = $secret;
-        $hmac = hash_hmac('sha256', $json, $secret);
-        $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
+        $exported['hmac'] = hash_hmac('sha256', json_encode($exported['static']) . json_encode($exported['dynamic']), $secret);
+        $content = '<?php exit; ?>' . PHP_EOL . json_encode($exported, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         file_put_contents($cacheFile, $content);
 
         $router = new Router();

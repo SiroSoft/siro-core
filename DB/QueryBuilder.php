@@ -94,7 +94,11 @@ class QueryBuilder
             }
         }
 
+        $hadDistinct = ($this->columns[0] ?? null) === 'DISTINCT';
         $this->columns = $normalized === [] ? ['*'] : $normalized;
+        if ($hadDistinct) {
+            array_unshift($this->columns, 'DISTINCT');
+        }
         return $this;
     }
 
@@ -843,7 +847,10 @@ class QueryBuilder
     /** @param array<string, mixed> $data */
     public function insertGetId(array $data): int
     {
-        return $this->insert($data);
+        $this->insert($data);
+        $pdo = Database::connection($this->connectionName);
+        $lastId = $pdo->lastInsertId();
+        return $lastId !== false && $lastId !== '0' ? (int) $lastId : 0;
     }
 
     /** @param array<string, mixed> $data */
@@ -883,17 +890,30 @@ class QueryBuilder
             $values[] = $data[$col];
         }
 
-        $updateSet = implode(', ', array_map(fn(string $c): string => "{$c} = VALUES({$c})", $update));
-
-        $sql = sprintf(
-            'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s',
-            $this->table,
-            implode(', ', $columns),
-            implode(', ', $placeholders),
-            $updateSet,
-        );
-
+        $cols = implode(', ', $columns);
+        $vals = implode(', ', $placeholders);
         $pdo = Database::connection($this->connectionName);
+        $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+
+        $sql = match ($driver) {
+            'mysql', 'mariadb' => sprintf(
+                'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s',
+                $this->table, $cols, $vals,
+                implode(', ', array_map(fn(string $c): string => "{$c} = VALUES({$c})", $update))
+            ),
+            'pgsql', 'postgres', 'postgresql' => sprintf(
+                'INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s',
+                $this->table, $cols, $vals,
+                implode(', ', $update),
+                implode(', ', array_map(fn(string $c): string => "{$c} = EXCLUDED.{$c}", $update))
+            ),
+            default => sprintf(
+                'INSERT INTO %s (%s) VALUES (%s) ON CONFLICT(%s) DO UPDATE SET %s',
+                $this->table, $cols, $vals,
+                implode(',', $update),
+                implode(', ', array_map(fn(string $c): string => "{$c} = excluded.{$c}", $update))
+            ),
+        };
         $stmt = $pdo->prepare($sql);
         $stmt->execute($values);
         Cache::flushQueryBuilderTable($this->cacheTable);

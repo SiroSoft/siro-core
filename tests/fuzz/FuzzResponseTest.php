@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Siro\Core\Tests\Fuzz;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 use Siro\Core\Response;
 
 final class FuzzResponseTest extends TestCase
 {
-    /** @dataProvider providePayloadVariations */
+    #[DataProvider('providePayloadVariations')]
     public function testSuccessNeverThrows(mixed $data, string $message, int $status): void
     {
         $r = Response::success($data, $message, $status);
@@ -39,7 +41,7 @@ final class FuzzResponseTest extends TestCase
         }
     }
 
-    /** @dataProvider provideErrorVariations */
+    #[DataProvider('provideErrorVariations')]
     public function testErrorNeverThrows(string $message, int $status, array $errors): void
     {
         $r = Response::error($message, $status, $errors);
@@ -59,7 +61,7 @@ final class FuzzResponseTest extends TestCase
         yield 'nested errors' => ['Bad request', 400, ['meta' => ['errors' => ['deep' => 'error']]]];
     }
 
-    /** @dataProvider providePaginatedVariations */
+    #[DataProvider('providePaginatedVariations')]
     public function testPaginatedNeverThrows(array $data, array $meta, string $message): void
     {
         $r = Response::paginated($data, $meta, $message);
@@ -76,7 +78,7 @@ final class FuzzResponseTest extends TestCase
         yield 'large meta' => [[], ['page' => 1, 'per_page' => 100, 'total' => 0, 'last_page' => 1], ''];
     }
 
-    /** @dataProvider provideStatusCodeRanges */
+    #[DataProvider('provideStatusCodeRanges')]
     public function testStatusCodeNeverThrows(int $status): void
     {
         $r = Response::error('test', $status);
@@ -91,7 +93,7 @@ final class FuzzResponseTest extends TestCase
         }
     }
 
-    /** @dataProvider provideHeaderVariations */
+    #[DataProvider('provideHeaderVariations')]
     public function testHeadersNeverThrows(string $name, string $value): void
     {
         $r = Response::success(null);

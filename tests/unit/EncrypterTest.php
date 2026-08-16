@@ -10,17 +10,25 @@ use Siro\Core\Encrypter;
 final class EncrypterTest extends TestCase
 {
     private string $originalKey;
+    private string $originalEnvKey = '';
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->originalKey = getenv('APP_KEY') ?: '';
+        $this->originalEnvKey = (string) ($_ENV['APP_KEY'] ?? '');
+        $_ENV['APP_KEY'] = 'test_encryption_key_32chars!!';
         putenv('APP_KEY=test_encryption_key_32chars!!');
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
+        if ($this->originalEnvKey === '') {
+            unset($_ENV['APP_KEY']);
+        } else {
+            $_ENV['APP_KEY'] = $this->originalEnvKey;
+        }
         putenv('APP_KEY=' . $this->originalKey);
     }
 

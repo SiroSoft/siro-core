@@ -105,7 +105,8 @@ final class Env
             if ($useCache && is_file(self::$cachedFile)) {
                 $raw = substr((string) file_get_contents(self::$cachedFile), strlen('<?php exit; ?>'));
                 $cached = null;
-                $appKey = (string) self::get('APP_KEY', '');
+                // APP_KEY is excluded from cache (SENSITIVE_KEYS), so read directly from .env
+                $appKey = self::readKeyFromEnvFile($mainFile, 'APP_KEY');
                 if ($appKey !== '' && strlen($appKey) >= 16 && class_exists(\Siro\Core\Encrypter::class)) {
                     try {
                         $decrypted = \Siro\Core\Encrypter::decrypt($raw, $appKey);
@@ -134,7 +135,7 @@ final class Env
             }
         }
 
-        // === Priority chain: load từng file, file sau ghi đè file trước ===
+        // === Priority chain: load each file, later files override earlier ones ===
         $loadedAny = false;
         foreach (self::ENV_PRIORITY as $suffix) {
             $resolved = str_replace('{env}', $appEnv, $suffix);
@@ -150,7 +151,7 @@ final class Env
 
         self::$loaded = true;
 
-        // Nếu không load được file nào, log warning (ko crash)
+        // If no env file was loaded, log a warning (do not crash)
         if (!$loadedAny) {
             trigger_error(
                 'SIRO_ENV: No .env file found. Create .env or .env.local in project root.',
@@ -263,6 +264,21 @@ final class Env
     public static function isLoaded(): bool
     {
         return self::$loaded;
+    }
+
+    private static function readKeyFromEnvFile(string $envPath, string $key): string
+    {
+        $lines = is_file($envPath) ? @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : false;
+        if ($lines === false) return '';
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) continue;
+            $pos = strpos($line, '=');
+            if ($pos === false) continue;
+            $k = trim(substr($line, 0, $pos));
+            if ($k === $key) return trim(substr($line, $pos + 1));
+        }
+        return '';
     }
 
     public static function get(string $key, ?string $default = null): ?string

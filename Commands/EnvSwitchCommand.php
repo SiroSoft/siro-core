@@ -26,6 +26,13 @@ final class EnvSwitchCommand implements \Siro\Core\Commands\CommandInterface {
         $profileFile = $this->basePath . DIRECTORY_SEPARATOR . ".env.{$env}";
 
         if (!is_file($profileFile)) {
+            // Allow restoring the pre-switch .env from the backup
+            $backup = $this->basePath . DIRECTORY_SEPARATOR . '.env.backup';
+            if (is_file($backup)) {
+                copy($backup, $envFile);
+                $this->write("Environment restored from .env.backup");
+                return 0;
+            }
             $this->write("Environment file not found: .env.{$env}");
             $this->write('Create it first: cp .env ' . ".env.{$env}");
             return 1;

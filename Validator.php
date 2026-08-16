@@ -24,6 +24,9 @@ final class Validator
 
     /** @var array<string, string> */
     private static array $customMessages = [];
+
+    /** @var array<string, array{parsed:array<int,string>,nullable:bool,required:bool,requiredIf:?string}> */
+    private static array $parsedRuleCache = [];
     /**
      * Register a custom validation rule.
      *
@@ -205,6 +208,11 @@ final class Validator
         self::initStrategies();
 
         foreach ($rules as $field => $ruleLine) {
+            // Skip wildcard rules in the main loop — they are handled in a second pass
+            if (str_contains($field, '.*.')) {
+                continue;
+            }
+
             $value = $input[$field] ?? null;
 
             // Reject arrays for non-file rules (type confusion)
@@ -216,11 +224,70 @@ final class Validator
                 }
             }
 
+            $fieldErrors = self::validateValue($value, $field, $ruleLine, $input);
+            foreach ($fieldErrors as $errField => $errMsgs) {
+                foreach ($errMsgs as $msg) {
+                    $errors[$errField][] = $msg;
+                }
+            }
+        }
+
+        // Second pass: handle wildcard rules (e.g. items.*.product_id)
+        foreach ($rules as $field => $ruleLine) {
+            if (!str_contains($field, '.*.')) {
+                continue;
+            }
+
+            $dotStarDotPos = strpos($field, '.*.');
+            if ($dotStarDotPos === false) {
+                continue;
+            }
+            $baseKey = substr($field, 0, $dotStarDotPos);
+            $nestedField = substr($field, $dotStarDotPos + 3);
+
+            $arrayValue = $input[$baseKey] ?? null;
+            if (!is_array($arrayValue)) {
+                continue;
+            }
+
+            foreach ($arrayValue as $index => $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $nestedValue = $item[$nestedField] ?? null;
+                $indexedField = $baseKey . '.' . $index . '.' . $nestedField;
+
+                $fieldErrors = self::validateValue($nestedValue, $indexedField, $ruleLine, $input);
+                foreach ($fieldErrors as $errField => $errMsgs) {
+                    foreach ($errMsgs as $msg) {
+                        $errors[$errField][] = $msg;
+                    }
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Validate a single value against a rule string.
+     *
+     * @param mixed $value The value to validate
+     * @param string $field The field name (for error reporting)
+     * @param string $ruleLine The rule string (e.g., 'required|integer|min:1')
+     * @param array<string, mixed> $input Full input array
+     * @return array<string, array<int, string>> Errors keyed by field (empty if valid)
+     */
+    private static function validateValue(mixed $value, string $field, string $ruleLine, array $input): array
+    {
+        /** @var array<string, array<int, string>> $errors */
+        $errors = [];
+
+        // Use cached parsed rules if available
+        if (!isset(self::$parsedRuleCache[$ruleLine])) {
             $fieldRules = explode('|', $ruleLine);
             $isNullable = in_array('nullable', $fieldRules, true);
             $isRequired = in_array('required', $fieldRules, true);
-
-            // Handle required_if
             $requiredIf = null;
             foreach ($fieldRules as $rule) {
                 if (str_starts_with($rule, 'required_if:')) {
@@ -228,116 +295,128 @@ final class Validator
                     break;
                 }
             }
-            if ($requiredIf !== null) {
-                $parts = explode(',', $requiredIf, 2);
-                $otherField = trim($parts[0]);
-                $otherValue = trim($parts[1] ?? '');
-                if ($otherField !== '' && ($input[$otherField] ?? null) === $otherValue) {
-                    $isRequired = true;
-                }
-            }
+            self::$parsedRuleCache[$ruleLine] = [
+                'parsed' => $fieldRules,
+                'nullable' => $isNullable,
+                'required' => $isRequired,
+                'requiredIf' => $requiredIf,
+            ];
+        }
+        $cached = self::$parsedRuleCache[$ruleLine];
+        $fieldRules = $cached['parsed'];
+        $isNullable = $cached['nullable'];
+        $isRequired = $cached['required'];
+        $requiredIf = $cached['requiredIf'];
 
-            // Check required
-            $checkValue = is_string($value) ? trim($value) : $value;
-            if ($isRequired && ($checkValue === null || $checkValue === '')) {
-                $errors[$field][] = self::msg(self::message('required', 'validation.required'), ['field' => self::label($field)]);
+        if ($requiredIf !== null) {
+            $parts = explode(',', $requiredIf, 2);
+            $otherField = trim($parts[0]);
+            $otherValue = trim($parts[1] ?? '');
+            if ($otherField !== '' && ($input[$otherField] ?? null) === $otherValue) {
+                $isRequired = true;
+            }
+        }
+
+        // Check required
+        $checkValue = is_string($value) ? trim($value) : $value;
+        if ($isRequired && ($checkValue === null || $checkValue === '')) {
+            $errors[$field][] = self::msg(self::message('required', 'validation.required'), ['field' => self::label($field)]);
+            return $errors;
+        }
+
+        // Skip validation for empty values if nullable or not required
+        if (($value === null || $value === '') && !$isRequired) {
+            return $errors;
+        }
+        if ($value === null && $isNullable) {
+            return $errors;
+        }
+
+        foreach ($fieldRules as $rule) {
+            // Skip meta-rules
+            if ($rule === 'nullable' || $rule === 'required' || str_starts_with($rule, 'required_if:')) {
                 continue;
             }
 
-            // Skip validation for empty values if nullable or not required
-            if (($value === null || $value === '') && !$isRequired) {
-                continue;
-            }
-            if ($value === null && $isNullable) {
-                continue;
+            // Parse rule name and parameter
+            $ruleName = $rule;
+            $ruleParam = null;
+            if (str_contains($rule, ':')) {
+                $parts = explode(':', $rule, 2);
+                $ruleName = $parts[0];
+                $ruleParam = $parts[1] ?? null;
             }
 
-            foreach ($fieldRules as $rule) {
-                // Skip meta-rules
-                if ($rule === 'nullable' || $rule === 'required' || str_starts_with($rule, 'required_if:')) {
+            // Check custom rules first
+            if (isset(self::$customRules[$ruleName])) {
+                $result = (self::$customRules[$ruleName])($value, $field, $input, $ruleParam);
+                if ($result !== true) {
+                    $msg = is_string($result) ? $result : self::label($field) . ' is invalid';
+                    $errors[$field][] = str_replace(':field', self::label($field), $msg);
                     continue;
                 }
+                continue;
+            }
 
-                // Parse rule name and parameter
-                $ruleName = $rule;
-                $ruleParam = null;
-                if (str_contains($rule, ':')) {
-                    $parts = explode(':', $rule, 2);
-                    $ruleName = $parts[0];
-                    $ruleParam = $parts[1] ?? null;
-                }
+            // Check built-in strategy rules
+            if (isset(self::$ruleStrategies[$ruleName])) {
+                $strategy = self::$ruleStrategies[$ruleName];
 
-                // Check custom rules first
-                if (isset(self::$customRules[$ruleName])) {
-                    $result = (self::$customRules[$ruleName])($value, $field, $input, $ruleParam);
-                    if ($result !== true) {
-                        $msg = is_string($result) ? $result : self::label($field) . ' is invalid';
-                        $errors[$field][] = str_replace(':field', self::label($field), $msg);
-                        continue;
+                // Some strategies need extra context
+                $result = match ($ruleName) {
+                    'confirmed' => $strategy($value, $ruleParam, $input, $field),
+                    default => $strategy($value, $ruleParam)
+                };
+
+                if ($result !== null) {
+                    // Result can be string key or [key, replacements]
+                    if (is_array($result)) {
+                        $key = isset($result[0]) && is_scalar($result[0]) ? (string) $result[0] : '';
+                        $replacements = isset($result[1]) && is_array($result[1]) ? $result[1] : [];
+                        /** @var array<string, string> $replacements */
+                        $replacements['field'] = self::label($field);
+                        $errors[$field][] = self::msg($key, $replacements);
+                    } else {
+                        $errors[$field][] = self::msg(is_scalar($result) ? (string) $result : '', ['field' => self::label($field)]);
                     }
                     continue;
                 }
+            }
 
-                // Check built-in strategy rules
-                if (isset(self::$ruleStrategies[$ruleName])) {
-                    $strategy = self::$ruleStrategies[$ruleName];
+            // Handle unique/exists rules (need database access)
+            if ($ruleName === 'unique') {
+                if ($ruleParam !== null) {
+                    $parts = explode(',', $ruleParam);
+                    $table = trim($parts[0]);
+                    $column = trim($parts[1] ?? $field);
 
-                    // Some strategies need extra context
-                    $result = match ($ruleName) {
-                        'confirmed' => $strategy($value, $ruleParam, $input, $field),
-                        default => $strategy($value, $ruleParam)
-                    };
+                    if ($table !== '') {
+                        $exists = Database::table($table)
+                            ->where($column, '=', $value)
+                            ->count();
 
-                    if ($result !== null) {
-                        // Result can be string key or [key, replacements]
-                        if (is_array($result)) {
-                            $key = isset($result[0]) && is_scalar($result[0]) ? (string) $result[0] : '';
-                            $replacements = isset($result[1]) && is_array($result[1]) ? $result[1] : [];
-                            /** @var array<string, string> $replacements */
-                            $replacements['field'] = self::label($field);
-                            $errors[$field][] = self::msg($key, $replacements);
-                        } else {
-                            $errors[$field][] = self::msg(is_scalar($result) ? (string) $result : '', ['field' => self::label($field)]);
-                        }
-                        continue;
-                    }
-                }
-
-                // Handle unique/exists rules (need database access)
-                if ($ruleName === 'unique') {
-                    if ($ruleParam !== null) {
-                        $parts = explode(',', $ruleParam);
-                        $table = trim($parts[0]);
-                        $column = trim($parts[1] ?? $field);
-
-                        if ($table !== '') {
-                            $exists = Database::table($table)
-                                ->where($column, '=', $value)
-                                ->count();
-
-                            if ($exists > 0) {
-                                $errors[$field][] = self::msg(self::message('unique', 'validation.unique'), ['field' => self::label($field)]);
-                                continue;
-                            }
+                        if ($exists > 0) {
+                            $errors[$field][] = self::msg(self::message('unique', 'validation.unique'), ['field' => self::label($field)]);
+                            continue;
                         }
                     }
                 }
+            }
 
-                if ($ruleName === 'exists') {
-                    if ($ruleParam !== null) {
-                        $parts = explode(',', $ruleParam);
-                        $table = trim($parts[0]);
-                        $column = trim($parts[1] ?? $field);
+            if ($ruleName === 'exists') {
+                if ($ruleParam !== null) {
+                    $parts = explode(',', $ruleParam);
+                    $table = trim($parts[0]);
+                    $column = trim($parts[1] ?? $field);
 
-                        if ($table !== '') {
-                            $exists = Database::table($table)
-                                ->where($column, '=', $value)
-                                ->count();
+                    if ($table !== '') {
+                        $exists = Database::table($table)
+                            ->where($column, '=', $value)
+                            ->count();
 
-                            if ($exists === 0) {
-                                $errors[$field][] = self::msg(self::message('exists', 'validation.exists'), ['field' => self::label($field)]);
-                                continue;
-                            }
+                        if ($exists === 0) {
+                            $errors[$field][] = self::msg(self::message('exists', 'validation.exists'), ['field' => self::label($field)]);
+                            continue;
                         }
                     }
                 }

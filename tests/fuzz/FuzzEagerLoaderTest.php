@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Model;
@@ -10,7 +12,7 @@ use Siro\Core\DB\EagerLoader;
 
 final class FuzzEagerLoaderTest extends TestCase
 {
-    /** @dataProvider provideRelationNames */
+    #[DataProvider('provideRelationNames')]
     public function testLoadBatchNeverThrows(string $relation): void
     {
         $model = new class extends Model {
@@ -37,7 +39,7 @@ final class FuzzEagerLoaderTest extends TestCase
         yield 'long' => [str_repeat('x', 100)];
     }
 
-    /** @dataProvider provideModelCollections */
+    #[DataProvider('provideModelCollections')]
     public function testLoadWithEmptyModelsNeverThrows(array $models, array $eagerLoads): void
     {
         $loader = new EagerLoader(\stdClass::class);
@@ -57,7 +59,7 @@ final class FuzzEagerLoaderTest extends TestCase
         yield 'invalid relation' => [[], ['!@#' => ['*']]];
     }
 
-    /** @dataProvider provideEagerLoadColumns */
+    #[DataProvider('provideEagerLoadColumns')]
     public function testEagerLoadWithColumnVariations(string $relation, array $columns): void
     {
         $model = new class extends Model {

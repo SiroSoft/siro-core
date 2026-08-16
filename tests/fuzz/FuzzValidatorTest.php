@@ -3,20 +3,22 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Validator;
 
 final class FuzzValidatorTest extends TestCase
 {
-    /** @dataProvider provideMakeInputFuzz */
+    #[DataProvider('provideMakeInputFuzz')]
     public function testMakeNeverThrows(array $input, array $rules): void
     {
         $result = Validator::make($input, $rules);
         $this->assertIsArray($result);
     }
 
-    /** @dataProvider provideMakeInputFuzz */
+    #[DataProvider('provideMakeInputFuzz')]
     public function testMakeReturnsArrayOfStringsOrArrays(array $input, array $rules): void
     {
         $result = Validator::make($input, $rules);
@@ -66,7 +68,7 @@ final class FuzzValidatorTest extends TestCase
         }
     }
 
-    /** @dataProvider provideRegexFuzz */
+    #[DataProvider('provideRegexFuzz')]
     public function testRegexRuleNeverThrows(string $pattern, mixed $value): void
     {
         $result = Validator::make(
@@ -94,7 +96,7 @@ final class FuzzValidatorTest extends TestCase
         }
     }
 
-    /** @dataProvider provideEdgeCaseRuleFormats */
+    #[DataProvider('provideEdgeCaseRuleFormats')]
     public function testEdgeCaseRuleFormats(array $input, array $rules): void
     {
         $result = Validator::make($input, $rules);
