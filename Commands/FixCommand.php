@@ -62,8 +62,8 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             $ct = $this->safeStr($data['content_type'] ?? '');
             /** @var array<string, string>|null $rawHeaders */
             $rawHeaders = $data['request_headers'] ?? null;
-            /** @var array<string, string> $rawHeaders */
-            $headers = $rawHeaders;
+            /** @var array<string, string> $headers */
+            $headers = is_array($rawHeaders) ? $rawHeaders : [];
 
             $curlHeaders = ['Content-Type: ' . ($ct !== '' ? $ct : 'application/json')];
             if ($auth !== '') {
@@ -131,43 +131,58 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  Watching...');
 
         $lastMtime = $this->getMaxMtime($dirs);
+        $maxIterations = (int) getenv('SIRO_FIX_MAX_ITERATIONS');
+        $iteration = 0;
 
-        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
+            $iteration++;
+            if ($maxIterations > 0 && $iteration > $maxIterations) {
+                break;
+            }
             sleep(1);
             $currentMtime = $this->getMaxMtime($dirs);
             if ($currentMtime > $lastMtime) {
                 $lastMtime = $currentMtime;
-                $traceId = $this->getLastTraceId();
-                $this->write('');
-                $this->write('  🔄 Code changed → replaying ' . ($traceId ?? 'last request') . '...');
-                // Run the last api:test through the Siro CLI
-                $cmd = 'php ' . escapeshellarg($this->basePath . DIRECTORY_SEPARATOR . 'siro') . ' ' . $lastTest . ' 2>&1';
-                $output = shell_exec($cmd);
-                if ($output !== null) {
-                    $lines = explode("\n", (string) $output);
-                    $statusLine = '';
-                    foreach ($lines as $line) {
-                        if (str_contains($line, 'Status:')) {
-                            $statusLine = trim($line);
-                            if (str_contains($statusLine, '200') || str_contains($statusLine, '201')) {
-                                $this->write('  ✅ ' . $statusLine . ' — FIX SUCCESSFUL');
-                            } elseif (str_contains($statusLine, '422') || str_contains($statusLine, '400') || str_contains($statusLine, '401')) {
-                                $this->write('  ❌ ' . $statusLine . ' — still failing');
-                                // Show the error
-                                foreach ($lines as $l) {
-                                    if (str_contains($l, '❌') || str_contains($l, 'Validation failed') || str_contains($l, 'error')) {
-                                        $this->write('     ' . trim($l));
-                                    }
-                                }
-                            } else {
-                                $this->write('  ' . $statusLine);
-                            }
-                            break;
-                        }
-                    }
-                }
+                $this->handleCodeChange($lastTest);
                 $this->write('  Watching...');
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Replay the last api:test after a code change and print pass/fail status.
+     */
+    private function handleCodeChange(string $lastTest): void
+    {
+        $traceId = $this->getLastTraceId();
+        $this->write('');
+        $this->write('  🔄 Code changed → replaying ' . ($traceId ?? 'last request') . '...');
+        // Run the last api:test through the Siro CLI
+        $cmd = 'php ' . escapeshellarg($this->basePath . DIRECTORY_SEPARATOR . 'siro') . ' ' . $lastTest . ' 2>&1';
+        $output = shell_exec($cmd);
+        if ($output !== null) {
+            $lines = explode("\n", (string) $output);
+            $statusLine = '';
+            foreach ($lines as $line) {
+                if (str_contains($line, 'Status:')) {
+                    $statusLine = trim($line);
+                    if (str_contains($statusLine, '200') || str_contains($statusLine, '201')) {
+                        $this->write('  ✅ ' . $statusLine . ' — FIX SUCCESSFUL');
+                    } elseif (str_contains($statusLine, '422') || str_contains($statusLine, '400') || str_contains($statusLine, '401')) {
+                        $this->write('  ❌ ' . $statusLine . ' — still failing');
+                        // Show the error
+                        foreach ($lines as $l) {
+                            if (str_contains($l, '❌') || str_contains($l, 'Validation failed') || str_contains($l, 'error')) {
+                                $this->write('     ' . trim($l));
+                            }
+                        }
+                    } else {
+                        $this->write('  ' . $statusLine);
+                    }
+                    break;
+                }
             }
         }
     }

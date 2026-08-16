@@ -472,14 +472,8 @@ final class Queue
     {
         if (!extension_loaded('pcntl') || !function_exists('pcntl_fork') || $workers <= 1) {
             $processed = 0;
-            $deadline = time() + 86400 * 365;
-            while (time() < $deadline) {
-                try {
-                    self::work();
-                    $processed++;
-                } catch (\Throwable) {
-                }
-                usleep(100000);
+            while (self::work()) {
+                $processed++;
             }
             return $processed;
         }

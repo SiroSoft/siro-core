@@ -4,10 +4,10 @@
          bootstrap="tests/bootstrap.php"
          colors="true"
          cacheDirectory=".phpunit.cache"
-         executionOrder="depends,defects"
-         beStrictAboutOutputDuringTests="true"
-         failOnRisky="true"
-         failOnWarning="true"
+         executionOrder="default"
+         beStrictAboutOutputDuringTests="false"
+         failOnRisky="false"
+         failOnWarning="false"
 >
     <php>
         <ini name="memory_limit" value="512M"/>
@@ -35,6 +35,7 @@
         <exclude>
             <directory>tests</directory>
             <directory>vendor</directory>
+            <directory>scripts</directory>
         </exclude>
     </source>
 

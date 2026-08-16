@@ -155,4 +155,31 @@ final class ConsoleTest extends TestCase
             $this->assertEquals(0, $this->runCommand($cmd, ['--help']), "$cmd --help failed");
         }
     }
+
+    public function testListRaw(): void
+    {
+        $this->assertEquals(0, $this->runCommand('list', ['--raw']));
+    }
+
+    public function testListJson(): void
+    {
+        $this->assertEquals(0, $this->runCommand('list', ['--json']));
+    }
+
+    public function testListPlain(): void
+    {
+        $this->assertEquals(0, $this->runCommand('list'));
+    }
+
+    public function testOpenPostmanAlias(): void
+    {
+        $code = $this->console->run(['siro', 'open:postman']);
+        $this->assertContains($code, [0, 1]);
+    }
+
+    public function testTinkerShortcut(): void
+    {
+        $code = $this->console->run(['siro', 'tink']);
+        $this->assertContains($code, [0, 1]);
+    }
 }

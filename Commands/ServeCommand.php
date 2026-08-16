@@ -82,7 +82,7 @@ final class ServeCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('');
 
         $command = sprintf(
-            '%s -S %s:%s -t %s %s',
+            '%s -S %s:%s -t %s %s 2>&1',
             escapeshellarg(PHP_BINARY),
             $host,
             $port,

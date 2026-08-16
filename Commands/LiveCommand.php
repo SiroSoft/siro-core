@@ -21,9 +21,16 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
 
     private int $port = 9090;
     private string $host = 'localhost';
+    private bool $shutdown = false;
 
     public function __construct(private readonly string $basePath)
     {
+    }
+
+    /** Signal the watch loop to terminate (used by tests). */
+    public function shutdown(): void
+    {
+        $this->shutdown = true;
     }
 
     /** @param array<int, string> $args */
@@ -71,12 +78,17 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
         // Use a file-based timestamp to signal restarts
         $signalFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_live_' . md5($this->basePath) . '.tmp';
 
-        $this->startServer($serverCmd, $signalFile);
+        if (!$this->shutdown) {
+            $this->startServer($serverCmd, $signalFile);
+        }
 
         $this->write('  Watching for file changes...');
 
         // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
+            if ($this->shutdown) {
+                return 0;
+            }
             if (filemtime($signalFile) > $lastRestart) {
                 // Server was already restarted by watcher
                 $lastRestart = filemtime($signalFile);
@@ -108,8 +120,7 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
      * @param array<int, string> $dirs
      */
     private function checkChanges(array $dirs, int $since): string
-    {
-        foreach ($dirs as $dir) {
+    {        foreach ($dirs as $dir) {
             if (!is_dir($dir)) {
                 continue;
             }

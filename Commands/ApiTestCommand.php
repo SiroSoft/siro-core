@@ -23,18 +23,38 @@ use Siro\Core\Lang;
 use Siro\Core\ValidationException;
 
 final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
-    use CommandSupport;
+    use CommandSupport {
+        ask as protected traitAsk;
+    }
 
     private string $authFile;
     private string $historyFile;
     private string $collectionFile;
+    /** @var \Closure(string): string|null */
+    private ?\Closure $inputProvider;
+    private int $watchMaxIterations = 0;
 
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+        ?\Closure $inputProvider = null,
+    ) {
+        $this->inputProvider = $inputProvider;
         $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage';
         $this->authFile = $dir . DIRECTORY_SEPARATOR . 'api-test-auth.json';
         $this->historyFile = $dir . DIRECTORY_SEPARATOR . 'api-test-history.json';
         $this->collectionFile = $dir . DIRECTORY_SEPARATOR . 'api-test-collections.json';
+    }
+
+    /**
+     * Read a line of input. Uses the injected provider when available (tests/automation).
+     */
+    protected function ask(string $question): string
+    {
+        if ($this->inputProvider !== null) {
+            $provider = $this->inputProvider;
+            return trim((string) $provider($question));
+        }
+        return $this->traitAsk($question);
     }
 
     /** @param array<int, string> $args */
@@ -112,20 +132,18 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             } elseif (str_starts_with($arg, '--collection-save=')) {
                 $collectionSave = substr($arg, 18);
             } elseif (str_starts_with($arg, '--body=')) {
-                // --body key=value format
+                // --body key=value  OR  --body '{"json":"payload"}'
                 $bodyArg = substr($arg, 7);
-                if (str_contains($bodyArg, '=')) {
-                    $parts = explode('=', $bodyArg, 2);
-                    $fields[$parts[0]] = $parts[1];
-                }
-            } elseif (str_starts_with($arg, "--body=")) {
-                // --body '{"json":"payload"}'
-                $bodyVal = substr($arg, 7);
-                if (str_starts_with($bodyVal, '{')) {
-                    $decoded = json_decode($bodyVal, true);
+                if (str_starts_with($bodyArg, '{')) {
+                    // JSON object payload
+                    $decoded = json_decode($bodyArg, true);
                     if (is_array($decoded)) {
                         $fields = array_merge($fields, $decoded);
                     }
+                } elseif (str_contains($bodyArg, '=')) {
+                    // key=value format
+                    $parts = explode('=', $bodyArg, 2);
+                    $fields[$parts[0]] = $parts[1];
                 }
             } elseif (str_starts_with($arg, '--json=')) {
                 $jsonStr = substr($arg, 7);
@@ -267,8 +285,14 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write("  \033[33mWatching for changes... (Ctrl+C to stop)\033[0m");
         $this->write('');
 
+        $maxIterations = (int) getenv('SIRO_API_TEST_WATCH_MAX');
+        $iteration = 0;
         // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
+            $iteration++;
+            if ($maxIterations > 0 && $iteration > $maxIterations) {
+                break;
+            }
             sleep(1);
             $changed = false;
             foreach ($watched as $file => $mtime) {
@@ -828,9 +852,14 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $count = 0;
+        $maxIterations = (int) getenv('SIRO_API_TEST_WEBHOOK_MAX');
+        $acceptTimeout = (int) getenv('SIRO_API_TEST_WEBHOOK_ACCEPT_TIMEOUT') ?: 5;
         // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
-            $conn = @stream_socket_accept($socket, 5);
+            if ($maxIterations > 0 && $count >= $maxIterations) {
+                break;
+            }
+            $conn = @stream_socket_accept($socket, $acceptTimeout);
             if ($conn === false) {
                 continue;
             }
@@ -882,6 +911,8 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             fwrite($conn, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"received\":true}");
             fclose($conn);
         }
+
+        return 0;
     }
 
     private function printHelp(): void

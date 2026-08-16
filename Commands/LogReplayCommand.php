@@ -15,10 +15,39 @@ namespace Siro\Core\Commands;
  * @package Siro\Core\Commands
  */
 final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
-    use CommandSupport;
+    use CommandSupport {
+        ask as protected traitAsk;
+    }
 
-    public function __construct(private readonly string $basePath)
+    /** @var \Closure(string): string|null */
+    private ?\Closure $inputProvider;
+    private bool $curlMissing;
+
+    public function __construct(
+        private readonly string $basePath,
+        ?\Closure $inputProvider = null,
+        bool $curlMissing = false,
+    ) {
+        $this->inputProvider = $inputProvider;
+        $this->curlMissing = $curlMissing;
+    }
+
+    /**
+     * Read a line of input. When an input provider is injected (tests/automation),
+     * it is used instead of reading from the terminal.
+     */
+    protected function ask(string $question): string
     {
+        if ($this->inputProvider !== null) {
+            $provider = $this->inputProvider;
+            return trim((string) $provider($question));
+        }
+        return $this->traitAsk($question);
+    }
+
+    protected function curlAvailable(): bool
+    {
+        return !$this->curlMissing && function_exists('curl_init');
     }
 
     /** @param array<int, string> $args */
@@ -183,11 +212,11 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         // A tampered trace must not be able to point replay at arbitrary hosts
         // (SSRF) or inject control characters into the URL/path.
         if (!self::isValidHost($host)) {
-            $this->write('  ❌ Refusing to replay: invalid host in trace: ' . $host);
+            $this->write('  âŒ Refusing to replay: invalid host in trace: ' . $host);
             return 1;
         }
         if (!self::isValidPath($path)) {
-            $this->write('  ❌ Refusing to replay: invalid characters in path.');
+            $this->write('  âŒ Refusing to replay: invalid characters in path.');
             return 1;
         }
 
@@ -217,8 +246,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         // Auto-auth: refresh token or login
         $authFile = $this->basePath . DIRECTORY_SEPARATOR . '.siro_auth.json';
         if ($authMode || $asUser !== '') {
-            if (!function_exists('curl_init')) {
-                $this->write('  ❌ PHP curl extension required for --auth/--as=' . $asUser);
+            if (!$this->curlAvailable()) {
+                $this->write('  âŒ PHP curl extension required for --auth/--as=' . $asUser);
                 return 1;
             }
             $this->write('');
@@ -233,10 +262,10 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                             $auth = 'Bearer ' . $newToken;
                             $stored['access_token'] = $newToken;
                             $this->writeAuthFile($authFile, $stored);
-                            $this->write('  🔑 Auth: Bearer [refreshed]');
+                            $this->write('  ðŸ”‘ Auth: Bearer [refreshed]');
                             $authed = true;
                         } else {
-                            $this->write('  ⚠ Auth refresh failed — token may be expired');
+                            $this->write('  âš  Auth refresh failed â€” token may be expired');
                         }
                     }
                 }
@@ -245,18 +274,18 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 if (!$authed) {
                     $password = $this->ask('  Password for ' . $asUser . ': ');
                     if ($password === '') {
-                        $this->write('  ❌ Password required.');
+                        $this->write('  âŒ Password required.');
                         return 1;
                     }
                     $newToken = $this->login($host, $asUser, $password);
                     if ($newToken === null) {
-                        $this->write('  ❌ Login failed for ' . $asUser);
+                        $this->write('  âŒ Login failed for ' . $asUser);
                         return 1;
                     }
                     $auth = 'Bearer ' . $newToken;
-                    $this->write('  🔑 Auth: logged in as ' . $asUser);
+                    $this->write('  ðŸ”‘ Auth: logged in as ' . $asUser);
                 } else {
-                    $this->write('  🔑 Auth: already refreshed for ' . $asUser);
+                    $this->write('  ðŸ”‘ Auth: already refreshed for ' . $asUser);
                 }
             }
             $this->write('');
@@ -265,7 +294,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         // --edit: interactive edit
         if ($editMode) {
             $this->write('');
-            $this->write('  ✏️  Edit request body:');
+            $this->write('  âœï¸  Edit request body:');
             $this->write('  ' . str_repeat('-', 40));
             /** @var array<string, mixed>|null $decoded */
             $decoded = json_decode($body, true);
@@ -273,14 +302,14 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 $this->editRecursive($decoded, '');
             } elseif ($body !== '' && $body !== '{}') {
                 // Non-JSON body: show raw text for editing
-                $this->write('  (raw body — edit as text)');
+                $this->write('  (raw body â€” edit as text)');
                 $this->write('  \033[33m' . $body . '\033[0m');
                 $input = $this->ask("  New value (Enter to keep): ");
                 if ($input !== '') {
                     $body = $input;
                 }
             } else {
-                $this->write('  (empty body — no fields to edit)');
+                $this->write('  (empty body â€” no fields to edit)');
                 $this->write('  Use --set key=value to add fields');
             }
             if (is_array($decoded)) {
@@ -337,7 +366,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         // Dry run: preview only, no request sent
         if ($dryRun) {
             $this->write('');
-            $this->write('  🔍 Dry run — no request sent');
+            $this->write('  ðŸ” Dry run â€” no request sent');
             $this->write('  ' . str_repeat('-', 40));
             $this->write('  Method: ' . $method);
             $this->write('  URL:    ' . $url);
@@ -352,7 +381,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         if ($isProduction) {
             if (!$force && !$editMode && !$diffMode) {
                 $this->write('');
-                $this->write('  ⚠ Production environment detected — auto-switched to dry-run');
+                $this->write('  âš  Production environment detected â€” auto-switched to dry-run');
                 $this->write('  ' . str_repeat('-', 40));
                 $this->write('  Method: ' . $method);
                 $this->write('  URL:    ' . $url);
@@ -361,14 +390,14 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 $this->write('  ' . str_repeat('-', 40));
                 $this->write('  To replay: php siro replay ' . $traceId . ' --force  (with confirmation)');
                 $this->write('');
-                $this->outputCurl($method, $url, $body, $headers, $auth, $data);
+                $this->outputCommand($format, $method, $url, $body, $headers, $auth, $data);
                 return 1;
             }
 
-            // Dev explicitly passed --force, --edit, or --diff — require confirmation
+            // Dev explicitly passed --force, --edit, or --diff â€” require confirmation
             $mode = $diffMode ? 'diff' : ($editMode ? 'edit' : 'replay');
             $this->write('');
-            $this->write('  ' . "\033[41m\033[97m ⚠ DANGER: Production environment! ⚠ \033[0m");
+            $this->write('  ' . "\033[41m\033[97m âš  DANGER: Production environment! âš  \033[0m");
             $this->write('  You are about to ' . $mode . ' a ' . $method . ' request on PRODUCTION.');
             $this->write('  URL: ' . $url);
             if ($body !== '' && $body !== '{}') {
@@ -384,18 +413,18 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         // Check curl extension before any execution
-        if (!function_exists('curl_init')) {
-            $this->write('  ❌ PHP curl extension is not installed.');
+        if (!$this->curlAvailable()) {
+            $this->write('  âŒ PHP curl extension is not installed.');
             $this->write('  Install php-curl to use replay execution.');
             $this->write('  Alternative: use --dry-run to preview, or copy the curl command below.');
-            $this->outputCurl($method, $url, $body, $headers, $auth, $data);
+            $this->outputCommand($format, $method, $url, $body, $headers, $auth, $data);
             return 1;
         }
 
         // --diff mode: execute and compare
         if ($diffMode) {
             $this->write('');
-            $this->write('  🔄 Replaying with diff...');
+            $this->write('  ðŸ”„ Replaying with diff...');
             $this->write('  ' . str_repeat('=', 40));
 
             $beforeStatusVal = $data['status'] ?? 0;
@@ -407,7 +436,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
 
             $curlError = $this->safeStr($result['error'] ?? '');
             if ($curlError !== '') {
-                $this->write('  ❌ curl error: ' . $curlError);
+                $this->write('  âŒ curl error: ' . $curlError);
                 $this->write('  URL: ' . $url);
                 return 1;
             }
@@ -465,16 +494,16 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
 
             // Diff verdict
             if (!$statusChanged && !$bodyChanged) {
-                $this->write('  ✅ No changes detected — responses match.');
+                $this->write('  âœ… No changes detected â€” responses match.');
             } elseif ($statusChanged && $statusAfter >= 200 && $statusAfter < 300) {
-                $this->write('  ✅ Status changed from ' . $beforeStatus . ' → ' . $statusAfter . ' — likely fixed.');
+                $this->write('  âœ… Status changed from ' . $beforeStatus . ' â†’ ' . $statusAfter . ' â€” likely fixed.');
             } elseif ($statusAfter >= 200 && $statusAfter < 300 && $afterNorm !== null && ($afterNorm['success'] ?? false) === true) {
-                $this->write('  ✅ Fixed!');
+                $this->write('  âœ… Fixed!');
             } else {
                 $changes = [];
-                if ($statusChanged) $changes[] = "status: {$beforeStatus} → {$statusAfter}";
+                if ($statusChanged) $changes[] = "status: {$beforeStatus} â†’ {$statusAfter}";
                 if ($bodyChanged) $changes[] = 'response body changed';
-                $this->write('  ⚠ ' . implode(', ', $changes));
+                $this->write('  âš  ' . implode(', ', $changes));
             }
 
             return 0;
@@ -487,13 +516,13 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         /** @var array<string, string> $headers */
         /** @var array<string, mixed> $data */
 
-        // GET requests are idempotent — allow without --force
+        // GET requests are idempotent â€” allow without --force
         // POST/PUT/DELETE/PATCH require --force or --edit
         $isWriteMethod = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
 
         if ($force || $editMode || !$isWriteMethod) {
             $this->write('');
-            $this->write('  🔄 Replaying ' . $method . ' ' . $path . '...');
+            $this->write('  ðŸ”„ Replaying ' . $method . ' ' . $path . '...');
             $this->write('  ' . str_repeat('=', 40));
             // Show headers
             $hasAnyHeader = false;
@@ -519,7 +548,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 }
             }
             if (!$hasAnyHeader) {
-                $this->write('  Headers: (none captured — enable APP_DEBUG=true)');
+                $this->write('  Headers: (none captured â€” enable APP_DEBUG=true)');
             }
             // Show body
             $hasBody = $body !== '' && $body !== '{}' && $body !== '[]';
@@ -539,7 +568,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
             $curlError = $this->safeStr($result['error'] ?? '');
             if ($curlError !== '') {
-                $this->write('  ❌ curl error: ' . $curlError);
+                $this->write('  âŒ curl error: ' . $curlError);
                 $this->write('  URL: ' . $url);
                 return 1;
             }
@@ -552,30 +581,30 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             // Skip if --safe: auto-auth creates side effects (login request)
             if ($status === 401 && $auth !== '' && !$authMode && $asUser === '' && !in_array('--safe', $args, true)) {
                 if ($isProduction) {
-                    $this->write('  ⛔ Production mode: auto-auth disabled for safety.');
+                    $this->write('  â›” Production mode: auto-auth disabled for safety.');
                     $this->write('  Run manually: php siro replay ' . $traceId . ' --as=email');
                 } else {
-                    $this->write('  ⚠ Original token expired — attempting auto-refresh...');
+                    $this->write('  âš  Original token expired â€” attempting auto-refresh...');
                     /** @var array{token:?string,strategy:string} $authResult */
                     $authResult = $this->autoReauthenticate($host, $data);
                     $newAuth = $authResult['token'];
                     if ($newAuth !== null) {
                         $auth = 'Bearer ' . $newAuth;
-                        $this->write('  🔑 New token acquired [' . $authResult['strategy'] . '] → retrying...');
+                        $this->write('  ðŸ”‘ New token acquired [' . $authResult['strategy'] . '] â†’ retrying...');
                         $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
                         $status = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
                         $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
                         $responseBody = $this->safeStr($result['body'] ?? '{}');
                         $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
                     if ($status >= 200 && $status < 300) {
-                        $this->write('  ✅ Replay succeeded with refreshed token.');
+                        $this->write('  âœ… Replay succeeded with refreshed token.');
                     } elseif ($status >= 400 && $status < 500) {
-                        $this->write('  ℹ️ Auth OK — server returned ' . $status . ' (client error, likely bad request data).');
+                        $this->write('  â„¹ï¸ Auth OK â€” server returned ' . $status . ' (client error, likely bad request data).');
                     } else {
-                        $this->write('  ⚠ Replay returned ' . $status . ' even after auth refresh.');
+                        $this->write('  âš  Replay returned ' . $status . ' even after auth refresh.');
                     }
                     } else {
-                        $this->write('  ⚠ Could not auto-refresh. Try manual login:');
+                        $this->write('  âš  Could not auto-refresh. Try manual login:');
                         $manualEmail = $this->ask('  Email/username: ');
                         if ($manualEmail !== '') {
                             $this->write('  Password (input hidden): ');
@@ -584,19 +613,19 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                                 $manualToken = $this->loginDevOnly($host, $manualEmail, $manualPass);
                                 if ($manualToken !== null) {
                                     $auth = 'Bearer ' . $manualToken;
-                                    $this->write('  🔑 Logged in as ' . $manualEmail . ' → retrying...');
+                                    $this->write('  ðŸ”‘ Logged in as ' . $manualEmail . ' â†’ retrying...');
                                     $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
                                     $status = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
                                     $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
                                     $responseBody = $this->safeStr($result['body'] ?? '{}');
                                     $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
                                 if ($status >= 200 && $status < 300) {
-                                    $this->write('  ✅ Replay succeeded.');
+                                    $this->write('  âœ… Replay succeeded.');
                                 } elseif ($status >= 400 && $status < 500) {
-                                    $this->write('  ℹ️ Auth OK — server returned ' . $status . ' (client error).');
+                                    $this->write('  â„¹ï¸ Auth OK â€” server returned ' . $status . ' (client error).');
                                 }
                                 } else {
-                                    $this->write('  ❌ Login failed. Try: php siro replay ' . $traceId . ' --as=email');
+                                    $this->write('  âŒ Login failed. Try: php siro replay ' . $traceId . ' --as=email');
                                 }
                             }
                         }
@@ -618,7 +647,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         $this->write('  Run with --force to execute, or --edit to modify body before replay.');
-        $this->outputCurl($method, $url, $body, $headers, $auth, $data);
+        $this->outputCommand($format, $method, $url, $body, $headers, $auth, $data);
 
         return 0;
     }
@@ -746,7 +775,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $hasHeaders = $headers !== [] || $auth !== '';
         $hasBody = $body !== '' && $body !== '[]' && $body !== '{}';
         if (!$hasHeaders && !$hasBody) {
-            $this->write('  ⚠ This trace has limited data (no headers/body captured).');
+            $this->write('  âš  This trace has limited data (no headers/body captured).');
             $this->write('  Enable APP_DEBUG=true in .env for full capture.');
         } else {
             if ($hasHeaders) {
@@ -759,8 +788,23 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
+     * Dispatch the request preview to the requested output format.
+     * Supports 'curl' (default) and 'httpie'.
+     *
      * @param array<string, string> $headers
-     * @phpstan-ignore-next-line method.unused
+     * @param array<string, mixed> $data
+     */
+    private function outputCommand(string $format, string $method, string $url, string $body, array $headers, string $auth, array $data): void
+    {
+        if ($format === 'httpie') {
+            $this->outputHttpie($method, $url, $body, $headers, $auth);
+        } else {
+            $this->outputCurl($method, $url, $body, $headers, $auth, $data);
+        }
+    }
+
+    /**
+     * @param array<string, string> $headers
      */
     private function outputHttpie(string $method, string $url, string $body, array $headers, string $auth): void
     {
@@ -792,7 +836,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
 
     /**
      * Recursively flatten nested arrays for --edit mode.
-     * Flattens: {"user":{"name":"A","addr":{"city":"B"}}} → user.name, user.addr.city
+     * Flattens: {"user":{"name":"A","addr":{"city":"B"}}} â†’ user.name, user.addr.city
      */
     /**
      * @param array<mixed> $data
@@ -1048,7 +1092,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * Login in dev mode only — stores token but NEVER raw password.
+     * Login in dev mode only â€” stores token but NEVER raw password.
      */
     private function loginDevOnly(string $host, string $email, string $password): ?string
     {
@@ -1076,6 +1120,11 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
      */
     private function readPassword(): string
     {
+        if ($this->inputProvider !== null) {
+            $provider = $this->inputProvider;
+            return trim((string) $provider(''));
+        }
+
         if (PHP_OS_FAMILY === 'Windows') {
             // Windows: use inline script to read hidden input
             $psCmd = 'powershell -Command "$p=Read-Host -AsSecureString; $r=[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p)); Write-Output $r"';
@@ -1238,7 +1287,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->warn("ADMIN_EMAIL and ADMIN_PASSWORD not set in .env. Auto-auth requires explicit credentials.");
         }
 
-        // 3) Register a new user via API (last resort — dev only)
+        // 3) Register a new user via API (last resort â€” dev only)
         $isLocal = !in_array((string) getenv('APP_ENV'), ['production', 'prod', 'staging'], true);
         if ($isLocal) {
             $email = 'replay-' . bin2hex(random_bytes(4)) . '@siro.local';
@@ -1342,7 +1391,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         if ($host === '') {
             return false;
         }
-        // host[:port] or [ipv6]:port — letters, digits, dots, dashes, colons, brackets
+        // host[:port] or [ipv6]:port â€” letters, digits, dots, dashes, colons, brackets
         if (!preg_match('/^[A-Za-z0-9.\-\[\]:]+$/', $host)) {
             return false;
         }
@@ -1372,7 +1421,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /**
-     * Validate a replay path — reject control characters and whitespace that
+     * Validate a replay path â€” reject control characters and whitespace that
      * could break out of the URL or inject header lines.
      */
     public static function isValidPath(string $path): bool
