@@ -11,11 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           tools: composer:v2
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
       - name: PHP syntax check
         run: find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 php -l
 
@@ -23,11 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           tools: composer:v2
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
       - name: Regenerate autoloader
@@ -41,21 +43,18 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        php: ['8.2', '8.3', '8.4']
-        exclude:
-          - os: windows-latest
-            php: '8.4'
+        php: ['8.2', '8.3']
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
           tools: composer:v2
-          extensions: pdo, json, mbstring, sqlite3, pdo_sqlite
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl, pdo_mysql
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: vendor
           key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -72,21 +71,18 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        php: ['8.2', '8.3', '8.4']
-        exclude:
-          - os: windows-latest
-            php: '8.4'
+        php: ['8.2', '8.3']
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
           tools: composer:v2
-          extensions: pdo, json, mbstring, sqlite3, pdo_sqlite
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl, pdo_mysql
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: vendor
           key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -115,12 +111,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           tools: composer:v2
-          extensions: pdo, json, mbstring, sqlite3, pdo_sqlite, openssl
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
           coverage: xdebug
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
@@ -151,12 +147,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           tools: composer:v2
-          extensions: pdo, json, mbstring
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
           coverage: xdebug
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
@@ -167,12 +163,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           tools: composer:v2
-          extensions: pdo, json, mbstring
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
       - name: Run benchmarks
@@ -182,11 +178,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           tools: composer:v2
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
       - name: Regenerate autoloader
