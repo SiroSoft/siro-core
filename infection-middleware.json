@@ -1,0 +1,16 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "Middleware"
+        ]
+    },
+    "logs": {
+        "text": "coverage/infection-middleware.log",
+        "summary": "coverage/infection-middleware-summary.log"
+    },
+    "mutators": {
+        "@default": true
+    },
+    "timeout": 30
+}
