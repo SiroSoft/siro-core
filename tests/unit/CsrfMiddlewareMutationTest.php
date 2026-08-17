@@ -131,6 +131,9 @@ final class CsrfMiddlewareMutationTest extends TestCase
         $req = new Request('POST', '/x', [], ['X-CSRF-TOKEN' => 'wrongtoken']);
         $resp = $mw->handle($req, fn () => Response::success());
         $this->assertSame(419, $resp->statusCode());
+        $payload = $resp->payload();
+        $this->assertArrayHasKey('success', $payload);
+        $this->assertArrayHasKey('message', $payload);
     }
 
     public function testSessionFlowMissingToken(): void
@@ -142,6 +145,9 @@ final class CsrfMiddlewareMutationTest extends TestCase
         $req = new Request('POST', '/x', [], ['X-CSRF-TOKEN' => 'sometoken']);
         $resp = $mw->handle($req, fn () => Response::success());
         $this->assertSame(419, $resp->statusCode());
+        $payload = $resp->payload();
+        $this->assertArrayHasKey('success', $payload);
+        $this->assertArrayHasKey('message', $payload);
     }
 
     public function testSessionFlowRotation(): void

@@ -120,11 +120,12 @@ final class ThrottleFallbackMutationTest extends TestCase
     {
         putenv('THROTTLE_FALLBACK=file');
         $_ENV['THROTTLE_FALLBACK'] = 'file';
-        $file = $this->rateDir . DIRECTORY_SEPARATOR . 'rate.json';
+        $key = 'rate:127.0.0.1:' . rawurlencode('GET:/api/fb');
+        $file = $this->rateDir . DIRECTORY_SEPARATOR . hash('sha256', $key) . '.json';
         if (!is_dir($this->rateDir)) {
             mkdir($this->rateDir, 0775, true);
         }
-        file_put_contents($file, json_encode(['rate:127.0.0.1:%2Fapi%2Ffb' => ['count' => 10, 'reset_at' => time() - 100]]));
+        file_put_contents($file, json_encode(['count' => 10, 'expires_at' => time() - 100]));
         $mw = new ThrottleMiddleware();
         $called = false;
         $resp = $mw->handle($this->makeRequest(), function () use (&$called) {
@@ -140,11 +141,54 @@ final class ThrottleFallbackMutationTest extends TestCase
     {
         putenv('THROTTLE_FALLBACK=file');
         $_ENV['THROTTLE_FALLBACK'] = 'file';
-        $file = $this->rateDir . DIRECTORY_SEPARATOR . 'rate.json';
+        $key = 'rate:127.0.0.1:' . rawurlencode('GET:/api/fb');
+        $file = $this->rateDir . DIRECTORY_SEPARATOR . hash('sha256', $key) . '.json';
         if (!is_dir($this->rateDir)) {
             mkdir($this->rateDir, 0775, true);
         }
         file_put_contents($file, 'not-json{{{');
+        $mw = new ThrottleMiddleware();
+        $called = false;
+        $resp = $mw->handle($this->makeRequest(), function () use (&$called) {
+            $called = true;
+            return Response::success();
+        }, 5, 1);
+        $this->assertTrue($called);
+        $this->assertSame(200, $resp->statusCode());
+        @unlink($file);
+    }
+
+    public function testFallbackFileNonExpiredContinuesCount(): void
+    {
+        putenv('THROTTLE_FALLBACK=file');
+        $_ENV['THROTTLE_FALLBACK'] = 'file';
+        $key = 'rate:127.0.0.1:' . rawurlencode('GET:/api/fb');
+        $file = $this->rateDir . DIRECTORY_SEPARATOR . hash('sha256', $key) . '.json';
+        if (!is_dir($this->rateDir)) {
+            mkdir($this->rateDir, 0775, true);
+        }
+        file_put_contents($file, json_encode(['count' => 3, 'expires_at' => time() + 60]));
+        $mw = new ThrottleMiddleware();
+        $called = false;
+        $resp = $mw->handle($this->makeRequest(), function () use (&$called) {
+            $called = true;
+            return Response::success();
+        }, 5, 1);
+        $this->assertTrue($called);
+        $this->assertSame(200, $resp->statusCode());
+        @unlink($file);
+    }
+
+    public function testFallbackFileEmptyContent(): void
+    {
+        putenv('THROTTLE_FALLBACK=file');
+        $_ENV['THROTTLE_FALLBACK'] = 'file';
+        $key = 'rate:127.0.0.1:' . rawurlencode('GET:/api/fb');
+        $file = $this->rateDir . DIRECTORY_SEPARATOR . hash('sha256', $key) . '.json';
+        if (!is_dir($this->rateDir)) {
+            mkdir($this->rateDir, 0775, true);
+        }
+        file_put_contents($file, '');
         $mw = new ThrottleMiddleware();
         $called = false;
         $resp = $mw->handle($this->makeRequest(), function () use (&$called) {

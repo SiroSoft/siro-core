@@ -96,6 +96,45 @@ final class AuthMiddlewareDetailedMutationTest extends TestCase
         $this->assertSame('Alice', $user->getAttribute('name'));
     }
 
+    public function testMissingHeader(): void
+    {
+        $mw = new AuthMiddleware();
+        $req = $this->request('');
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(401, $resp->statusCode());
+        $this->assertPayloadStructure($resp->payload());
+    }
+
+    public function testEmptyBearer(): void
+    {
+        $mw = new AuthMiddleware();
+        $req = $this->request('Bearer   ');
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(401, $resp->statusCode());
+        $this->assertPayloadStructure($resp->payload());
+    }
+
+    public function testRefreshTokenForbidden(): void
+    {
+        $token = JWT::encodeRefresh(1, 1);
+        $mw = new AuthMiddleware();
+        $req = $this->request('Bearer ' . $token);
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertContains($resp->statusCode(), [401, 403]);
+        if ($resp->statusCode() === 403) {
+            $this->assertPayloadStructure($resp->payload());
+        }
+    }
+
+    public function testBadToken(): void
+    {
+        $mw = new AuthMiddleware();
+        $req = $this->request('Bearer not.a.valid.token');
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertContains($resp->statusCode(), [401, 403]);
+        $this->assertPayloadStructure($resp->payload());
+    }
+
     public function testRoleMatchPasses(): void
     {
         $token = JWT::encodeAccess(1, 2);
@@ -124,6 +163,7 @@ final class AuthMiddlewareDetailedMutationTest extends TestCase
         $req = $this->request('Bearer ' . $token);
         $resp = $mw->handle($req, fn () => Response::success());
         $this->assertSame(401, $resp->statusCode());
+        $this->assertPayloadStructure($resp->payload());
     }
 
     public function testTokenVersionMismatch(): void
@@ -133,6 +173,7 @@ final class AuthMiddlewareDetailedMutationTest extends TestCase
         $req = $this->request('Bearer ' . $token);
         $resp = $mw->handle($req, fn () => Response::success());
         $this->assertSame(401, $resp->statusCode());
+        $this->assertPayloadStructure($resp->payload());
     }
 
     public function testUserNotFound(): void
@@ -142,6 +183,7 @@ final class AuthMiddlewareDetailedMutationTest extends TestCase
         $req = $this->request('Bearer ' . $token);
         $resp = $mw->handle($req, fn () => Response::success());
         $this->assertSame(401, $resp->statusCode());
+        $this->assertPayloadStructure($resp->payload());
     }
 
     public function testZeroUserId(): void
@@ -151,6 +193,7 @@ final class AuthMiddlewareDetailedMutationTest extends TestCase
         $req = $this->request('Bearer ' . $token);
         $resp = $mw->handle($req, fn () => Response::success());
         $this->assertSame(401, $resp->statusCode());
+        $this->assertPayloadStructure($resp->payload());
     }
 
     public function testZeroTokenVersion(): void
@@ -160,6 +203,17 @@ final class AuthMiddlewareDetailedMutationTest extends TestCase
         $req = $this->request('Bearer ' . $token);
         $resp = $mw->handle($req, fn () => Response::success());
         $this->assertSame(401, $resp->statusCode());
+        $this->assertPayloadStructure($resp->payload());
+    }
+
+    private function assertPayloadStructure(array $payload): void
+    {
+        $this->assertArrayHasKey('success', $payload);
+        $this->assertArrayHasKey('message', $payload);
+        $this->assertArrayHasKey('meta', $payload);
+        $this->assertIsArray($payload['meta']);
+        $this->assertArrayHasKey('errors', $payload['meta']);
+        $this->assertArrayHasKey('token', $payload['meta']['errors']);
     }
 
     public function testLowercaseBearer(): void
@@ -262,6 +316,45 @@ final class AuthMiddlewareDetailedMutationTest extends TestCase
         $mw = new AuthMiddleware();
         $req = $this->request('Bearer ' . $token);
         $resp = $mw->handle($req, fn () => Response::success(), 'editor', 'admin', 'viewer');
+        $this->assertSame(200, $resp->statusCode());
+    }
+
+    public function testCachedUserPath(): void
+    {
+        $token = JWT::encodeAccess(1, 2);
+        $mw = new AuthMiddleware();
+        $req = $this->request('Bearer ' . $token);
+        $resp1 = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(200, $resp1->statusCode());
+        $user = $req->getAttribute('_auth_user');
+        $this->assertInstanceOf(Model::class, $user);
+        $this->assertSame(1, $user->getAttribute('id'));
+        // Second call: resolveUser uses cache
+        $resp2 = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(200, $resp2->statusCode());
+    }
+
+    public function testSessionRegeneration(): void
+    {
+        $session = \Siro\Core\Session::instance();
+        $session->start();
+        $session->set('_auth_regen_at', time() - 1000);
+        $token = JWT::encodeAccess(1, 2);
+        $mw = new AuthMiddleware();
+        $req = $this->request('Bearer ' . $token);
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(200, $resp->statusCode());
+    }
+
+    public function testSessionRecentNoRegen(): void
+    {
+        $session = \Siro\Core\Session::instance();
+        $session->start();
+        $session->set('_auth_regen_at', time() - 10);
+        $token = JWT::encodeAccess(1, 2);
+        $mw = new AuthMiddleware();
+        $req = $this->request('Bearer ' . $token);
+        $resp = $mw->handle($req, fn () => Response::success());
         $this->assertSame(200, $resp->statusCode());
     }
 }
