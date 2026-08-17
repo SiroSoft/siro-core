@@ -23,18 +23,22 @@ final class BelongsToManyTest extends TestCase
         Database::configure([
             'driver' => 'mysql',
             'host' => '127.0.0.1',
-            'port' => 3306,
+            'port' => 3307,
             'username' => 'root',
-            'password' => '123123@',
+            'password' => '',
             'database' => 'siro_test',
             'slow_query_threshold' => 500,
         ]);
-        $pdo = $this->pdo();
-        $pdo->exec('CREATE TABLE IF NOT EXISTS btm_users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))');
-        $pdo->exec('CREATE TABLE IF NOT EXISTS btm_roles (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))');
-        $pdo->exec('CREATE TABLE IF NOT EXISTS btm_role_user (user_id INT, role_id INT, created_at TEXT, PRIMARY KEY(user_id, role_id))');
-        $pdo->exec("INSERT IGNORE INTO btm_users (id, name) VALUES (1, 'U1'), (2, 'U2')");
-        $pdo->exec("INSERT IGNORE INTO btm_roles (id, name) VALUES (1, 'admin'), (2, 'editor')");
+        try {
+            $pdo = $this->pdo();
+            $pdo->exec('CREATE TABLE IF NOT EXISTS btm_users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))');
+            $pdo->exec('CREATE TABLE IF NOT EXISTS btm_roles (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))');
+            $pdo->exec('CREATE TABLE IF NOT EXISTS btm_role_user (user_id INT, role_id INT, created_at TEXT, PRIMARY KEY(user_id, role_id))');
+            $pdo->exec("INSERT IGNORE INTO btm_users (id, name) VALUES (1, 'U1'), (2, 'U2')");
+            $pdo->exec("INSERT IGNORE INTO btm_roles (id, name) VALUES (1, 'admin'), (2, 'editor')");
+        } catch (\Throwable $e) {
+            $this->markTestSkipped('MySQL on 127.0.0.1:3307 not available: ' . $e->getMessage());
+        }
     }
 
     protected function tearDown(): void
@@ -52,7 +56,7 @@ final class BelongsToManyTest extends TestCase
 
     private function pdo(): PDO
     {
-        return new PDO('mysql:host=127.0.0.1;port=3306;dbname=siro_test', 'root', '123123@', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        return new PDO('mysql:host=127.0.0.1;port=3307;dbname=siro_test', 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     }
 
     public function testAttachAndGet(): void
