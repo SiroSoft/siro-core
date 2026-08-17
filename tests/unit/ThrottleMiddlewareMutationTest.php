@@ -21,6 +21,8 @@ final class ThrottleMiddlewareMutationTest extends TestCase
         parent::setUp();
         $_ENV['THROTTLE_FALLBACK'] = 'file';
         putenv('THROTTLE_FALLBACK=file');
+        $_ENV['REDIS_PORT'] = '1';
+        putenv('REDIS_PORT=1');
         $this->rateDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'rate_limit';
         $this->cleanRateFiles();
     }
