@@ -22,7 +22,19 @@
         "TrueValue": false,
         "IncrementInteger": false,
         "DecrementInteger": false,
-        "CastInt": false
+        "CastInt": false,
+        "Concat": false,
+        "LogicalOr": false,
+        "MatchArmRemoval": false,
+        "Ternary": false,
+        "Coalesce": false,
+        "LogicalAnd": false,
+        "LogicalAndSingleSubExprNegation": false,
+        "LogicalAndAllSubExprNegation": false,
+        "LogicalAndNegation": false,
+        "ArrayItem": false,
+        "InstanceOf_": false,
+        "MethodCallRemoval": false
     },
     "timeout": 30
 }
