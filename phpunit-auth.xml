@@ -35,6 +35,7 @@
             <file>tests/unit/SessionMutationTest.php</file>
             <file>tests/unit/SessionFlashTest.php</file>
             <file>tests/unit/UncoveredLinesMutationTest.php</file>
+            <file>tests/unit/EscapedMutantsTest.php</file>
         </testsuite>
     </testsuites>
 
