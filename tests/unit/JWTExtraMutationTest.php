@@ -530,4 +530,109 @@ final class JWTExtraMutationTest extends TestCase
         $this->expectException(\RuntimeException::class);
         JWT::decode($tampered);
     }
+
+    public function testDecodeRejectsEmptyToken(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        JWT::decode('');
+    }
+
+    public function testDecodeRejectsTwoPartToken(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        JWT::decode('header.payload');
+    }
+
+    public function testDecodeRejectsFourPartToken(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        JWT::decode('a.b.c.d');
+    }
+
+    public function testDecodeRejectsInvalidBase64(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        JWT::decode('!!!.!!!.!!!');
+    }
+
+    public function testEncodeAccessReturnsNonEmptyString(): void
+    {
+        $token = JWT::encodeAccess(1, 1);
+        $this->assertNotEmpty($token);
+        $this->assertIsString($token);
+    }
+
+    public function testEncodeRefreshReturnsNonEmptyString(): void
+    {
+        $token = JWT::encodeRefresh(1, 1);
+        $this->assertNotEmpty($token);
+        $this->assertIsString($token);
+    }
+
+    public function testDecodeVerifySignatureFailsOnTamper(): void
+    {
+        $token = JWT::encodeAccess(1, 1);
+        $parts = explode('.', $token);
+        $parts[2] = base64_encode('tampered_signature');
+        $tampered = implode('.', $parts);
+        $this->expectException(\RuntimeException::class);
+        JWT::decode($tampered);
+    }
+
+    public function testGetKeyVersionReturnsString(): void
+    {
+        $version = JWT::getKeyVersion();
+        $this->assertIsString($version);
+        $this->assertNotEmpty($version);
+    }
+
+    public function testBlacklistJtiWithFutureExpiryDoesNotThrow(): void
+    {
+        JWT::blacklistJti('future-jti-' . uniqid(), time() + 7200);
+        $this->assertTrue(true);
+    }
+
+    public function testBlacklistJtiWithZeroExpiryDoesNotThrow(): void
+    {
+        JWT::blacklistJti('zero-jti-' . uniqid(), 0);
+        $this->assertTrue(true);
+    }
+
+    public function testRotateKeyIncrementsVersionExactly(): void
+    {
+        $before = (int) JWT::getKeyVersion();
+        JWT::rotateKey('new_secret_' . uniqid() . '_1234567890_abcdefghijk');
+        $after = (int) JWT::getKeyVersion();
+        $this->assertSame($before + 1, $after);
+    }
+
+    public function testEncodeAccessWithCustomTtl(): void
+    {
+        $token = JWT::encodeAccess(1, 1, 7200);
+        $payload = json_decode(base64_decode(explode('.', $token)[1]), true);
+        $this->assertArrayHasKey('exp', $payload);
+        $this->assertArrayHasKey('iat', $payload);
+        $this->assertSame(7200, $payload['exp'] - $payload['iat']);
+    }
+
+    public function testDecodeWithExpiredTokenThrows(): void
+    {
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'jti' => 'exp-test', 'iat' => time() - 7200, 'exp' => time() - 3600]);
+        $this->expectException(\RuntimeException::class);
+        JWT::decode($token);
+    }
+
+    public function testDecodeWithFutureNbfThrows(): void
+    {
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'jti' => 'nbf-future', 'iat' => time(), 'exp' => time() + 3600, 'nbf' => time() + 7200]);
+        $this->expectException(\RuntimeException::class);
+        JWT::decode($token);
+    }
+
+    public function testDecodeWithZeroNbfIsValid(): void
+    {
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'jti' => 'nbf-zero', 'iat' => time(), 'exp' => time() + 3600, 'nbf' => 0]);
+        $claims = JWT::decode($token);
+        $this->assertSame(1, $claims['sub']);
+    }
 }

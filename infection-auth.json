@@ -2,12 +2,12 @@
     "$schema": "vendor/infection/infection/resources/schema.json",
     "source": {
         "directories": [
-            "Middleware"
+            "Auth"
         ]
     },
     "logs": {
-        "text": "coverage/infection-middleware.log",
-        "summary": "coverage/infection-middleware-summary.log"
+        "text": "coverage/infection-auth.log",
+        "summary": "coverage/infection-auth-summary.log"
     },
     "mutators": {
         "@default": true,

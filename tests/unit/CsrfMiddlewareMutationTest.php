@@ -159,6 +159,59 @@ final class CsrfMiddlewareMutationTest extends TestCase
         $session->set('_csrf_rotated_at', time() - 60);
         $mw = new CsrfMiddleware();
         $req = new Request('POST', '/x', [], ['X-CSRF-TOKEN' => $token]);
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(200, $resp->statusCode());
+        $newToken = $session->get('_csrf_token');
+        $this->assertNotSame($token, $newToken);
+    }
+
+    public function testSessionFlowNoRotationWhenRecent(): void
+    {
+        $session = \Siro\Core\Session::instance();
+        $session->start();
+        $token = CsrfMiddleware::generateToken();
+        $session->set('_csrf_token', $token);
+        $session->set('_csrf_rotated_at', time() - 2);
+        $mw = new CsrfMiddleware();
+        $req = new Request('POST', '/x', [], ['X-CSRF-TOKEN' => $token]);
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(200, $resp->statusCode());
+        $this->assertSame($token, $session->get('_csrf_token'));
+    }
+
+    public function testDoubleSubmitCookieMissingCookieReturns419(): void
+    {
+        $mw = new CsrfMiddleware();
+        $_COOKIE = [];
+        $req = new Request('POST', '/x', [], ['X-CSRF-TOKEN' => 'some-token']);
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(419, $resp->statusCode());
+    }
+
+    public function testDoubleSubmitCookieMissingHeaderReturns419(): void
+    {
+        $mw = new CsrfMiddleware();
+        $_COOKIE = ['csrf_token' => 'some-token'];
+        $req = new Request('POST', '/x', [], []);
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(419, $resp->statusCode());
+    }
+
+    public function testDoubleSubmitCookieMismatchReturns419(): void
+    {
+        $mw = new CsrfMiddleware();
+        $_COOKIE = ['csrf_token' => 'cookie-value'];
+        $req = new Request('POST', '/x', [], ['X-CSRF-TOKEN' => 'header-value']);
+        $resp = $mw->handle($req, fn () => Response::success());
+        $this->assertSame(419, $resp->statusCode());
+    }
+
+    public function testDoubleSubmitCookieMatchPasses(): void
+    {
+        $mw = new CsrfMiddleware();
+        $token = CsrfMiddleware::generateToken();
+        $_COOKIE = ['csrf_token' => $token];
+        $req = new Request('POST', '/x', [], ['X-CSRF-TOKEN' => $token]);
         $called = false;
         $resp = $mw->handle($req, function () use (&$called) {
             $called = true;
@@ -166,5 +219,41 @@ final class CsrfMiddlewareMutationTest extends TestCase
         });
         $this->assertTrue($called);
         $this->assertSame(200, $resp->statusCode());
+    }
+
+    public function testGetRequestAlwaysPasses(): void
+    {
+        $mw = new CsrfMiddleware();
+        $req = new Request('GET', '/x');
+        $called = false;
+        $resp = $mw->handle($req, function () use (&$called) {
+            $called = true;
+            return Response::success();
+        });
+        $this->assertTrue($called);
+    }
+
+    public function testHeadRequestAlwaysPasses(): void
+    {
+        $mw = new CsrfMiddleware();
+        $req = new Request('HEAD', '/x');
+        $called = false;
+        $resp = $mw->handle($req, function () use (&$called) {
+            $called = true;
+            return Response::success();
+        });
+        $this->assertTrue($called);
+    }
+
+    public function testOptionsRequestAlwaysPasses(): void
+    {
+        $mw = new CsrfMiddleware();
+        $req = new Request('OPTIONS', '/x');
+        $called = false;
+        $resp = $mw->handle($req, function () use (&$called) {
+            $called = true;
+            return Response::success();
+        });
+        $this->assertTrue($called);
     }
 }

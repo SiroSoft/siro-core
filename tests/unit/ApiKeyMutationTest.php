@@ -330,4 +330,63 @@ final class ApiKeyMutationTest extends TestCase
         $this->assertFalse(ApiKey::hasScope($result['token'], 'admin'));
         $this->assertFalse(ApiKey::hasScope($result['token'], 'delete'));
     }
+
+    public function testCreateWithZeroExpiryIsNull(): void
+    {
+        $result = ApiKey::create('ZeroExp', 'read', 1, 0);
+        $this->assertNull($result['expires_at']);
+    }
+
+    public function testCreateWithOneDayExpiry(): void
+    {
+        $result = ApiKey::create('OneDay', 'read', 1, 1);
+        $this->assertNotNull($result['expires_at']);
+        $expected = strtotime($result['created_at']) + 86400;
+        $this->assertSame($expected, strtotime($result['expires_at']));
+    }
+
+    public function testValidateReturnsNullForNonexistentToken(): void
+    {
+        $this->assertNull(ApiKey::validate('nonexistent-token-value'));
+    }
+
+    public function testRevokeNonexistentTokenReturnsFalse(): void
+    {
+        $this->assertFalse(ApiKey::revoke('nonexistent-token-value'));
+    }
+
+    public function testRevokeAllForUserWithNoKeysReturnsZero(): void
+    {
+        $this->assertSame(0, ApiKey::revokeAllForUser(99999));
+    }
+
+    public function testListForUserEmptyWhenNoKeys(): void
+    {
+        $keys = ApiKey::listForUser(88888);
+        $this->assertIsArray($keys);
+        $this->assertCount(0, $keys);
+    }
+
+    public function testHasScopeReturnsFalseForNonexistentToken(): void
+    {
+        $this->assertFalse(ApiKey::hasScope('nonexistent', 'read'));
+    }
+
+    public function testCreateDefaultScopesIsRead(): void
+    {
+        $result = ApiKey::create('DefaultScopes');
+        $this->assertSame('read', $result['scopes']);
+    }
+
+    public function testValidateUpdatesLastUsedAtTimestamp(): void
+    {
+        $result = ApiKey::create('LastUsed', 'read', 1);
+        $before = time();
+        ApiKey::validate($result['token']);
+        $after = time();
+        $row = Database::select('SELECT last_used_at FROM api_keys WHERE name = ?', ['LastUsed']);
+        $lastUsed = (int) $row[0]['last_used_at'];
+        $this->assertGreaterThanOrEqual($before, $lastUsed);
+        $this->assertLessThanOrEqual($after, $lastUsed);
+    }
 }

@@ -305,4 +305,105 @@ final class AuthGuardMutationTest extends TestCase
         $guard = new AuthGuard();
         $this->assertNull($guard->resolve($request));
     }
+
+    public function testUserReturnsNullWhenNotResolved(): void
+    {
+        $guard = new AuthGuard();
+        $this->assertNull($guard->user());
+    }
+
+    public function testIdReturnsNullWhenNoId(): void
+    {
+        $container = Container::getInstance();
+        $container->instance('auth.resolver', new class {
+            public function __invoke(Request $req): array
+            {
+                return ['name' => 'NoId'];
+            }
+        });
+        $guard = new AuthGuard();
+        $guard->resolve(new Request('GET', '/', [], ['authorization' => 'Bearer x']));
+        $this->assertNull($guard->id());
+    }
+
+    public function testIdReturnsIntegerForStringId(): void
+    {
+        $container = Container::getInstance();
+        $container->instance('auth.resolver', new class {
+            public function __invoke(Request $req): array
+            {
+                return ['id' => '42', 'role' => 'user'];
+            }
+        });
+        $guard = new AuthGuard();
+        $guard->resolve(new Request('GET', '/', [], ['authorization' => 'Bearer x']));
+        $this->assertSame(42, $guard->id());
+    }
+
+    public function testHasRoleWithEmptyRoles(): void
+    {
+        $container = Container::getInstance();
+        $container->instance('auth.resolver', new class {
+            public function __invoke(Request $req): array
+            {
+                return ['id' => 1, 'role' => 'admin'];
+            }
+        });
+        $guard = new AuthGuard();
+        $guard->resolve(new Request('GET', '/', [], ['authorization' => 'Bearer x']));
+        $this->assertFalse($guard->hasRole());
+    }
+
+    public function testGuestReturnsTrueAfterLogout(): void
+    {
+        $container = Container::getInstance();
+        $container->instance('auth.resolver', new class {
+            public function __invoke(Request $req): array
+            {
+                return ['id' => 1, 'role' => 'user'];
+            }
+        });
+        $guard = new AuthGuard();
+        $guard->resolve(new Request('GET', '/', [], ['authorization' => 'Bearer x']));
+        $this->assertFalse($guard->guest());
+        $guard->logout();
+        $this->assertTrue($guard->guest());
+    }
+
+    public function testResolveWithBearerCaseInsensitive(): void
+    {
+        $container = Container::getInstance();
+        $container->instance('auth.resolver', new class {
+            public function __invoke(Request $req): array
+            {
+                return ['id' => 10, 'role' => 'user'];
+            }
+        });
+        $guard = new AuthGuard();
+        $request = new Request('GET', '/', [], ['authorization' => 'bearer dummy']);
+        $user = $guard->resolve($request);
+        $this->assertNotNull($user);
+        $this->assertSame(10, $user['id']);
+    }
+
+    public function testResolveWithNonBearerAuthReturnsNull(): void
+    {
+        $guard = new AuthGuard();
+        $request = new Request('GET', '/', [], ['authorization' => 'Basic dXNlcjpwYXNz']);
+        $this->assertNull($guard->resolve($request));
+    }
+
+    public function testResolveWithEmptyBearerReturnsNull(): void
+    {
+        $guard = new AuthGuard();
+        $request = new Request('GET', '/', [], ['authorization' => 'Bearer ']);
+        $this->assertNull($guard->resolve($request));
+    }
+
+    public function testResolveWithBearerOnlyReturnsNull(): void
+    {
+        $guard = new AuthGuard();
+        $request = new Request('GET', '/', [], ['authorization' => 'Bearer']);
+        $this->assertNull($guard->resolve($request));
+    }
 }

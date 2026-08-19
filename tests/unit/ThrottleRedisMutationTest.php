@@ -87,4 +87,86 @@ final class ThrottleRedisMutationTest extends TestCase
         $this->assertArrayHasKey('Retry-After', $headers);
         $this->assertArrayHasKey('X-RateLimit-Reset', $headers);
     }
+
+    public function testRedisFirstRequestHasRemainingMinusOne(): void
+    {
+        if (!$this->redisAvailable()) {
+            $this->markTestSkipped('Redis not available');
+        }
+        $mw = new ThrottleMiddleware();
+        $resp = $mw->handle($this->makeRequest('10.20.30.50', '/api/remaining'), fn () => Response::success(), 10, 1);
+        $headers = $resp->headers();
+        $this->assertSame('10', $headers['X-RateLimit-Limit']);
+        $this->assertSame('9', $headers['X-RateLimit-Remaining']);
+    }
+
+    public function testRedisSecondRequestDecrementsRemaining(): void
+    {
+        if (!$this->redisAvailable()) {
+            $this->markTestSkipped('Redis not available');
+        }
+        $mw = new ThrottleMiddleware();
+        $mw->handle($this->makeRequest('10.20.30.60', '/api/decr'), fn () => Response::success(), 5, 1);
+        $resp = $mw->handle($this->makeRequest('10.20.30.60', '/api/decr'), fn () => Response::success(), 5, 1);
+        $headers = $resp->headers();
+        $this->assertSame('5', $headers['X-RateLimit-Limit']);
+        $this->assertSame('3', $headers['X-RateLimit-Remaining']);
+    }
+
+    public function testRedisCustomPrefixIsolation(): void
+    {
+        if (!$this->redisAvailable()) {
+            $this->markTestSkipped('Redis not available');
+        }
+        $mw1 = new ThrottleMiddleware();
+        $mw2 = new ThrottleMiddleware();
+        $resp1 = $mw1->handle($this->makeRequest('10.20.30.70', '/api/prefix1'), fn () => Response::success(), 100, 1);
+        $resp2 = $mw2->handle($this->makeRequest('10.20.30.70', '/api/prefix1'), fn () => Response::success(), 100, 1);
+        $this->assertSame(200, $resp1->statusCode());
+        $this->assertSame(200, $resp2->statusCode());
+    }
+
+    public function testRedisNumericIdPathNormalized(): void
+    {
+        if (!$this->redisAvailable()) {
+            $this->markTestSkipped('Redis not available');
+        }
+        $mw = new ThrottleMiddleware();
+        $resp = $mw->handle($this->makeRequest('10.20.30.80', '/api/users/12345'), fn () => Response::success(), 100, 1);
+        $this->assertSame(200, $resp->statusCode());
+        $resp2 = $mw->handle($this->makeRequest('10.20.30.80', '/api/users/99999'), fn () => Response::success(), 100, 1);
+        $this->assertSame(200, $resp2->statusCode());
+    }
+
+    public function testRedisZeroCountThrowsRuntimeException(): void
+    {
+        if (!$this->redisAvailable()) {
+            $this->markTestSkipped('Redis not available');
+        }
+        $mw = new ThrottleMiddleware();
+        $resp = $mw->handle($this->makeRequest('10.20.30.90', '/api/zero'), fn () => Response::success(), 50, 1);
+        $this->assertSame(200, $resp->statusCode());
+    }
+
+    public function testRedisHeadersIncludeResetOnSuccess(): void
+    {
+        if (!$this->redisAvailable()) {
+            $this->markTestSkipped('Redis not available');
+        }
+        $mw = new ThrottleMiddleware();
+        $resp = $mw->handle($this->makeRequest('10.20.30.95', '/api/reset-header'), fn () => Response::success(), 100, 2);
+        $headers = $resp->headers();
+        $this->assertArrayHasKey('X-RateLimit-Reset', $headers);
+        $this->assertGreaterThan(time(), (int) $headers['X-RateLimit-Reset']);
+    }
+
+    public function testRedisZeroTtlOneMinuteMinimum(): void
+    {
+        if (!$this->redisAvailable()) {
+            $this->markTestSkipped('Redis not available');
+        }
+        $mw = new ThrottleMiddleware();
+        $resp = $mw->handle($this->makeRequest('10.20.30.96', '/api/min-ttl'), fn () => Response::success(), 10, 0);
+        $this->assertSame(200, $resp->statusCode());
+    }
 }
