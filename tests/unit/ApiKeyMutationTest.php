@@ -235,4 +235,99 @@ final class ApiKeyMutationTest extends TestCase
             $result['token']
         );
     }
+
+    public function testValidateReturnTypesAreExact(): void
+    {
+        $result = ApiKey::create('TypeTest', 'read', 42);
+        $key = ApiKey::validate($result['token']);
+        $this->assertNotNull($key);
+        $this->assertIsInt($key['id']);
+        $this->assertIsString($key['name']);
+        $this->assertIsString($key['scopes']);
+        $this->assertIsInt($key['user_id']);
+        $this->assertIsString($key['created_at']);
+        $this->assertNull($key['expires_at']);
+        $this->assertSame(42, $key['user_id']);
+    }
+
+    public function testListForUserReturnsExactTypes(): void
+    {
+        ApiKey::create('ListTest', 'read', 5);
+        $keys = ApiKey::listForUser(5);
+        $this->assertCount(1, $keys);
+        $row = $keys[0];
+        $this->assertIsInt($row['id']);
+        $this->assertIsString($row['name']);
+        $this->assertIsString($row['scopes']);
+        $this->assertIsString($row['created_at']);
+        $this->assertIsString($row['expires_at']);
+        $this->assertIsString($row['last_used_at']);
+        $this->assertIsBool($row['is_expired']);
+    }
+
+    public function testListForUserExpiredKeyHasCorrectIsExpired(): void
+    {
+        $result = ApiKey::create('ExpiredKey', 'read', 1);
+        $tokenHash = hash('sha256', $result['token']);
+        Database::execute(
+            'UPDATE api_keys SET expires_at = ? WHERE token_hash = ?',
+            [time() - 100, $tokenHash]
+        );
+        $keys = ApiKey::listForUser(1);
+        $this->assertTrue($keys[0]['is_expired']);
+    }
+
+    public function testListForUserZeroExpiresAtIsNotExpired(): void
+    {
+        ApiKey::create('NoExpiry', 'read', 1);
+        $keys = ApiKey::listForUser(1);
+        $this->assertFalse($keys[0]['is_expired']);
+        $this->assertSame(0, (int) $keys[0]['expires_at']);
+    }
+
+    public function testListForUserFutureExpiresAtIsNotExpired(): void
+    {
+        $result = ApiKey::create('FutureKey', 'read', 1);
+        $tokenHash = hash('sha256', $result['token']);
+        Database::execute(
+            'UPDATE api_keys SET expires_at = ? WHERE token_hash = ?',
+            [time() + 86400, $tokenHash]
+        );
+        $keys = ApiKey::listForUser(1);
+        $this->assertFalse($keys[0]['is_expired']);
+    }
+
+    public function testCreateWithNegativeExpiryIsZero(): void
+    {
+        $result = ApiKey::create('NegExpiry', 'read', 1, -5);
+        $this->assertNull($result['expires_at']);
+    }
+
+    public function testValidateWithEmptyBcryptFallsBackToSha256(): void
+    {
+        $token = 'sha256-only-token-abc';
+        $tokenHash = hash('sha256', $token);
+        Database::execute(
+            'INSERT INTO api_keys (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+             VALUES (?, ?, ?, ?, ?, ?, 0, NULL)',
+            ['ShaOnly', $tokenHash, '', 'read', 1, time()]
+        );
+        $key = ApiKey::validate($token);
+        $this->assertNotNull($key);
+        $this->assertSame('ShaOnly', $key['name']);
+    }
+
+    public function testRevokeAllForUserZeroCount(): void
+    {
+        $this->assertSame(0, ApiKey::revokeAllForUser(999));
+    }
+
+    public function testHasScopeMultipleScopes(): void
+    {
+        $result = ApiKey::create('MultiScope', 'read,write', 1);
+        $this->assertTrue(ApiKey::hasScope($result['token'], 'read'));
+        $this->assertTrue(ApiKey::hasScope($result['token'], 'write'));
+        $this->assertFalse(ApiKey::hasScope($result['token'], 'admin'));
+        $this->assertFalse(ApiKey::hasScope($result['token'], 'delete'));
+    }
 }
