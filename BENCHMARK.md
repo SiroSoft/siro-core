@@ -84,7 +84,7 @@ php scripts/bench-throughput.php
 
 | Metric | SiroPHP | Laravel 11 | Slim 4 | Fastify (Node) | Gin (Go) |
 |--------|:-------:|:----------:|:------:|:--------------:|:--------:|
-| Boot time (cold) | **~0.5ms** | ~60ms | ~5ms | ~5ms | **~0.3ms** |
+| Boot time (cold) | **~0.5ms** (est.) | ~60ms | ~5ms | ~5ms | **~0.3ms** |
 | Memory (framework baseline) | **~4MB** | ~84MB | ~6MB | ~10MB | ~2MB |
 | Route dispatch (static) | **361K ops/s** | ~20K ops/s | ~200K ops/s | ~500K ops/s | ~2M ops/s |
 | Dependencies | **0** | 60+ | 10+ | 15+ | 1 |

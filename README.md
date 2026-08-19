@@ -8,7 +8,7 @@
 
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-brightgreen)](https://phpstan.org)
-[![Tests](https://img.shields.io/badge/tests-19199%20pass-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-2870%2B%20pass-brightgreen)](tests/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
@@ -172,11 +172,11 @@ php siro fix                 # Fix & auto-test
 ## Performance
 
 ```
-Cold boot (Linux + OPcache):       ~0.5 ms
-Cold boot (Windows, no OPcache):   ~2.4 ms
-Route dispatch static O(1):        ~0.003 ms (~300K ops/sec)
-Full-stack (warm route+response):  ~0.003 ms (~360K ops/sec)
-Memory (framework baseline):        ~4 MB
+Cold boot (Linux + OPcache, estimated):  ~0.5 ms
+Cold boot (Windows, no OPcache):         ~2.4 ms (measured)
+Route dispatch static O(1):              ~0.003 ms (~300K ops/sec)
+Full-stack (warm route+response):        ~0.003 ms (~360K ops/sec)
+Memory (framework baseline):              ~4 MB
 ```
 
 Methodology: [BENCHMARK.md](BENCHMARK.md)
@@ -189,10 +189,8 @@ Methodology: [BENCHMARK.md](BENCHMARK.md)
 |------|--------|
 | PHPStan (Level Max) | **0 errors** |
 | Psalm (Level 1 + taint) | **0 errors** |
-| Unit + Integration tests | **1,488+ — 0 failures** |
-| Fuzz tests | **17,851 — 0 failures** |
-| DAST security tests | **157 — 0 failures** |
-| Mutation testing | MSI ≥80% |
+| Unit + Integration tests | **2,870+ — 0 failures** |
+| Mutation testing | MSI target ≥80% (in progress) |
 | Composer audit | **0 vulnerabilities** |
 
 ---
@@ -208,7 +206,7 @@ Methodology: [BENCHMARK.md](BENCHMARK.md)
 
 | Project | Description |
 |---------|-------------|
-| [SiroPHP](https://github.com/SiroSoft/SiroPHP) | Full project skeleton — 7 controllers, 462 tests, Docker, K8s |
+| [SiroPHP](https://github.com/SiroSoft/SiroPHP) | Full project skeleton — 7 controllers, 462 tests |
 | [siro-mcp-server](https://github.com/SiroSoft/siro-mcp-server) | AI agent integration — Claude/GPT/Copilot |
 
 ---
