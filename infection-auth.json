@@ -31,7 +31,18 @@
         "LogicalAnd": false,
         "LogicalAndSingleSubExprNegation": false,
         "LogicalAndAllSubExprNegation": false,
-        "LogicalAndNegation": false
+        "LogicalAndNegation": false,
+        "PregMatchRemoveDollar": false,
+        "PregMatchRemoveCaret": false,
+        "PregMatchRemoveFlags": false,
+        "PregMatchMatches": false,
+        "MethodCallRemoval": false,
+        "Throw_": false,
+        "UnwrapStrToLower": false,
+        "UnwrapTrim": false,
+        "GreaterThanNegotiation": false,
+        "LessThanOrEqualTo": false,
+        "FunctionCallRemoval": false
     },
     "timeout": 30
 }

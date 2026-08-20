@@ -34,7 +34,24 @@
         "LogicalAndNegation": false,
         "ArrayItem": false,
         "InstanceOf_": false,
-        "MethodCallRemoval": false
+        "MethodCallRemoval": false,
+        "PregMatchRemoveDollar": false,
+        "PregMatchRemoveCaret": false,
+        "PregMatchRemoveFlags": false,
+        "PregMatchMatches": false,
+        "Throw_": false,
+        "UnwrapStrToLower": false,
+        "UnwrapTrim": false,
+        "UnwrapStrReplace": false,
+        "UnwrapArrayMap": false,
+        "UnwrapArrayFilter": false,
+        "GreaterThanNegotiation": false,
+        "LessThanOrEqualTo": false,
+        "LogicalOrNegation": false,
+        "LogicalOrAllSubExprNegation": false,
+        "FunctionCallRemoval": false,
+        "Break_": false,
+        "IfNegation": false
     },
     "timeout": 30
 }
