@@ -48,6 +48,7 @@
         "GreaterThanNegotiation": false,
         "LessThanOrEqualTo": false,
         "LogicalOrNegation": false,
+        "Minus": false,
         "LogicalOrAllSubExprNegation": false,
         "FunctionCallRemoval": false,
         "Break_": false,
