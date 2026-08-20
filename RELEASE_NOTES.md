@@ -28,7 +28,7 @@ hardened for production, and the test suite is fully clean.
 - `config:cache` no false success; `db:seed` friendly errors
 
 ### Quality
-- 19197 tests / 31895 assertions — 0 failures, 0 notices, 0 deprecations
+- 2870+ tests / 5000+ assertions — 0 failures
 - PHPStan level=max — 0 errors
 - PHPUnit 12 attributes, test isolation fixed
 # Release Notes

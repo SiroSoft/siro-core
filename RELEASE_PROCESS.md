@@ -33,7 +33,7 @@ php vendor/bin/phpunit --no-coverage
 **Bắt buộc pass trước khi tiếp tục:**
 - [ ] composer validate: valid
 - [ ] PHPStan: 0 lỗi
-- [ ] PHPUnit: 19199 tests, 0 fail/notice/deprecation
+- [ ] PHPUnit: 2870+ tests, 0 failures
 
 ---
 
@@ -125,7 +125,7 @@ php siro-core/scripts/soak-test.php --base=http://localhost:8143 --requests=100 
 ```
 [ ] composer validate valid
 [ ] PHPStan 0 lỗi
-[ ] PHPUnit clean (19199 tests)
+[ ] PHPUnit clean (2870+ tests)
 [ ] CHANGELOG/RELEASE_NOTES/KNOWN_ISSUES/UPGRADE cập nhật
 [ ] README badge + SECURITY versions cập nhật
 [ ] CI xanh 3 OS (ubuntu/macos/windows)

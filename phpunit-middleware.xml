@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="default"
+         beStrictAboutOutputDuringTests="false"
+         failOnRisky="false"
+         failOnWarning="false"
+>
+    <php>
+        <ini name="memory_limit" value="512M"/>
+    </php>
+
+    <testsuites>
+        <testsuite name="Middleware">
+            <file>tests/unit/MiddlewareTest.php</file>
+            <file>tests/unit/MiddlewareZeroMutationTest.php</file>
+            <file>tests/unit/ThrottleMiddlewareTest.php</file>
+            <file>tests/unit/ThrottleMiddlewareMutationTest.php</file>
+            <file>tests/unit/ThrottleRedisMutationTest.php</file>
+            <file>tests/unit/ThrottleFallbackMutationTest.php</file>
+            <file>tests/unit/CsrfMiddlewareTest.php</file>
+            <file>tests/unit/CsrfMiddlewareMutationTest.php</file>
+            <file>tests/unit/AuthMiddlewareTest.php</file>
+            <file>tests/unit/AuthMiddlewareDetailedTest.php</file>
+            <file>tests/unit/AuthMiddlewareMutationTest.php</file>
+            <file>tests/unit/AuthMiddlewareDetailedMutationTest.php</file>
+            <file>tests/unit/IdempotencyMiddlewareDetailedTest.php</file>
+            <file>tests/unit/ServeCsrfAuditMutationTest.php</file>
+            <file>tests/unit/AuditMiddlewareMutationTest.php</file>
+            <file>tests/unit/CorsEtagIdempotencyMutationTest.php</file>
+            <file>tests/unit/SmallMiddlewaresMutationTest.php</file>
+            <file>tests/unit/ConfigSchemaMutationTest.php</file>
+            <file>tests/unit/ApiKeyMutationTest.php</file>
+            <file>tests/unit/LowFilesMutationTest.php</file>
+            <file>tests/unit/MetricsMiddlewareMutationTest.php</file>
+            <file>tests/unit/ControllerZeroMutationTest.php</file>
+            <file>tests/unit/MoreZeroMutationTest.php</file>
+            <file>tests/unit/BatchCursorApiKeyTest.php</file>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory suffix=".php">Middleware</directory>
+        </include>
+        <exclude>
+            <directory>tests</directory>
+            <directory>vendor</directory>
+        </exclude>
+    </source>
+
+    <coverage>
+        <report>
+            <clover outputFile="coverage/middleware-clover.xml"/>
+        </report>
+    </coverage>
+
+</phpunit>

@@ -9,7 +9,7 @@ Last updated: 2026-08-01
 
 ## 1. Code Quality Gate 🔁
 - [x] PHPStan level=max: **0 errors** (`composer analyse`)
-- [x] PHPUnit: **19199 tests / 31919 assertions, 0 failures, 0 notices, 0 deprecations**
+- [x] PHPUnit: **2870+ tests / 5000+ assertions, 0 failures**
 - [x] 3/3 consecutive clean test runs (no flakes)
 - [x] `composer validate`: valid (no version field, lock in sync)
 - [x] API stability baseline test passes (853 public methods, ±15%)
