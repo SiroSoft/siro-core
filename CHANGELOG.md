@@ -42,7 +42,7 @@
 - 76 doc-comment metadata (`@dataProvider`, `@test`) migrated to PHP 8 attributes (`#[DataProvider]`, `#[Test]`)
 - Fixed test-isolation leaks: ConfigTest/SecurityFixesTest/PenetrationTest now restore `$_ENV['APP_KEY']`/`getenv`
 - EnvTest captures the intentional SIRO_ENV notice
-- Result: **19197 tests / 31895 assertions, 0 failures, 0 notices, 0 deprecations** (4/4 consecutive clean runs)
+- Result: **2870+ tests / 5000+ assertions, 0 failures**
 # Changelog — siro-core
 
 ## v0.35.0 (2026-06-07)

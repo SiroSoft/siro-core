@@ -1,0 +1,48 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "Auth"
+        ]
+    },
+    "logs": {
+        "text": "coverage/infection-auth.log",
+        "summary": "coverage/infection-auth-summary.log"
+    },
+    "mutators": {
+        "@default": true,
+        "ArrayItemRemoval": false,
+        "CastString": false,
+        "ConcatOperandRemoval": false,
+        "UnwrapStrToUpper": false,
+        "UnwrapRtrim": false,
+        "BitwiseOr": false,
+        "PublicVisibility": false,
+        "FalseValue": false,
+        "TrueValue": false,
+        "IncrementInteger": false,
+        "DecrementInteger": false,
+        "CastInt": false,
+        "Concat": false,
+        "LogicalOr": false,
+        "MatchArmRemoval": false,
+        "Ternary": false,
+        "Coalesce": false,
+        "LogicalAnd": false,
+        "LogicalAndSingleSubExprNegation": false,
+        "LogicalAndAllSubExprNegation": false,
+        "LogicalAndNegation": false,
+        "PregMatchRemoveDollar": false,
+        "PregMatchRemoveCaret": false,
+        "PregMatchRemoveFlags": false,
+        "PregMatchMatches": false,
+        "MethodCallRemoval": false,
+        "Throw_": false,
+        "UnwrapStrToLower": false,
+        "UnwrapTrim": false,
+        "GreaterThanNegotiation": false,
+        "LessThanOrEqualTo": false,
+        "FunctionCallRemoval": false
+    },
+    "timeout": 30
+}

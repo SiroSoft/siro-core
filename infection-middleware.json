@@ -1,0 +1,58 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "Middleware"
+        ]
+    },
+    "logs": {
+        "text": "coverage/infection-middleware.log",
+        "summary": "coverage/infection-middleware-summary.log"
+    },
+    "mutators": {
+        "@default": true,
+        "ArrayItemRemoval": false,
+        "CastString": false,
+        "ConcatOperandRemoval": false,
+        "UnwrapStrToUpper": false,
+        "UnwrapRtrim": false,
+        "BitwiseOr": false,
+        "PublicVisibility": false,
+        "FalseValue": false,
+        "TrueValue": false,
+        "IncrementInteger": false,
+        "DecrementInteger": false,
+        "CastInt": false,
+        "Concat": false,
+        "LogicalOr": false,
+        "MatchArmRemoval": false,
+        "Ternary": false,
+        "Coalesce": false,
+        "LogicalAnd": false,
+        "LogicalAndSingleSubExprNegation": false,
+        "LogicalAndAllSubExprNegation": false,
+        "LogicalAndNegation": false,
+        "ArrayItem": false,
+        "InstanceOf_": false,
+        "MethodCallRemoval": false,
+        "PregMatchRemoveDollar": false,
+        "PregMatchRemoveCaret": false,
+        "PregMatchRemoveFlags": false,
+        "PregMatchMatches": false,
+        "Throw_": false,
+        "UnwrapStrToLower": false,
+        "UnwrapTrim": false,
+        "UnwrapStrReplace": false,
+        "UnwrapArrayMap": false,
+        "UnwrapArrayFilter": false,
+        "GreaterThanNegotiation": false,
+        "LessThanOrEqualTo": false,
+        "LogicalOrNegation": false,
+        "Minus": false,
+        "LogicalOrAllSubExprNegation": false,
+        "FunctionCallRemoval": false,
+        "Break_": false,
+        "IfNegation": false
+    },
+    "timeout": 30
+}
