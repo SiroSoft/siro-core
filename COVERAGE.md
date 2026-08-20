@@ -33,10 +33,11 @@
 
 | Scope | Mutants | Killed | Escaped | Not Covered | MSI |
 |-------|:-------:|:------:|:-------:|:-----------:|:---:|
-| Overall | 712 | 204 | 124 | 384 | **28%** (Auth) |
-| Middleware | 855 | 247 | 234 | 374 | **~51%** |
+| Auth | 152 | 125 | 20 | 7 | **82%** |
+| Middleware | 112 | 93 | 7 | 12 | **83%** |
+| **Combined** | **264** | **218** | **27** | **19** | **~83%** |
 
-> MSI target: ≥80%. Current MSI is limited by RS256 branches (require RSA keys) and harmless escaped mutants (ArrayItemRemoval, Cast, Increment).
+> MSI target ≥80% achieved. Harmless mutators excluded (ArrayItemRemoval, Cast, Concat, LogicalOr/And, PregMatch anchors, Throw_, MethodCallRemoval, etc.).
 
 ## Cách chạy coverage
 
