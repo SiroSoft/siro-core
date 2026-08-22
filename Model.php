@@ -587,6 +587,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             if ($id !== 0) {
                 $this->setAttribute($key, $id);
                 $this->exists = true;
+                static::$identityMap[static::class] ??= [];
+                static::$identityMap[static::class][$id] = $this;
             }
 
             if ($hasObservers) {
@@ -613,6 +615,17 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                 ->update($data);
 
             if ($affected > 0) {
+                $pkValue = $this->getAttribute($key);
+                $cachedInstance = static::$identityMap[static::class][$pkValue] ?? null;
+                if ($cachedInstance !== null && $cachedInstance !== $this) {
+                    foreach ($data as $attr => $val) {
+                        $cachedInstance->setAttribute($attr, $val);
+                    }
+                    $cachedInstance->syncOriginal();
+                } else {
+                    static::$identityMap[static::class] ??= [];
+                    static::$identityMap[static::class][$pkValue] = $this;
+                }
                 if ($hasObservers) {
                     $this->notifyObservers('updated');
                 }
@@ -663,6 +676,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
         if ($affected > 0) {
             $this->exists = false;
+            unset(static::$identityMap[static::class][$this->getAttribute($key)]);
             $this->notifyObservers('deleted');
             Event::emit("{$table}.deleted", $this);
             return true;
