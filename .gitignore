@@ -1,0 +1,8 @@
+
+/vendor/
+/storage/
+/coverage/
+/_write.php
+/rate_limit/
+/storagerate_limit/
+*.log
