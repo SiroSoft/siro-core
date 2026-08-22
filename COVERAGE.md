@@ -1,6 +1,6 @@
 # Code Coverage Baseline — siro-core
 
-## Tổng quan (v0.38.0, 2026-08-19)
+## Tổng quan (v0.40.0, 2026-08-20)
 
 | Metric | Giá trị |
 |--------|---------|
