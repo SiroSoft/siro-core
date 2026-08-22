@@ -1,5 +1,19 @@
 # Changelog — siro-core
 
+## v0.40.0 (2026-08-20)
+
+### 🏢 Enterprise Quality
+- Line coverage **80%** statements (14,294 / 17,867)
+- Mutation Score Indicator (Infection): **Auth 82%**, **Middleware 83%** — combined **~83%**
+- Test suite: **406 tests passing** (+117 enterprise tests: JWT RS256/rotation/blacklist, ApiKey bcrypt, CSRF double-submit, Redis throttle, CORS/CSP/ETag/Idempotency)
+
+### 🧪 Testing Infrastructure
+- `infection-auth.json` + `phpunit-auth.xml` — isolated Auth mutation profile
+- `infection-middleware.json` + `phpunit-middleware.xml` — Middleware mutation profile
+- Coverage pipeline: clover/XML/junit pre-generation + `infection --skip-initial-tests`
+
+> v0.36–v0.39 were internal QA iterations toward the 80%/MSI targets above (no public API changes).
+
 ## v0.35.1 (2026-08-01)
 
 ### Security (enterprise hardening)
