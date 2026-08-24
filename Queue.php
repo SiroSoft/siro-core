@@ -456,7 +456,7 @@ final class Queue
         }
 
         $remaining = $maxExecTime - time();
-        if ($remaining > 0) {
+        if ($remaining > 0 && (int) ini_get('max_execution_time') !== 0) {
             @set_time_limit($remaining);
         }
 
