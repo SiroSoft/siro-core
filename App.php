@@ -257,6 +257,8 @@ final class App
 
         // Reset & enrich trace data
         TraceData::reset();
+        Http::clearCapturedCalls();
+        Http::setCaptureEnabled(true);
         if ($this->debug) {
             $allHeaders = function_exists('getallheaders') ? getallheaders() : [];
             /** @var array<string, string> $allHeaders */
@@ -404,8 +406,18 @@ final class App
                     }
                 }
 
+                // Merge captured outbound HTTP calls
+                $httpCalls = Http::getCapturedCalls();
+                if ($httpCalls !== []) {
+                    $traceData['outbound_http'] = $httpCalls;
+                }
+
                 Logger::trace($traceId, $traceData);
             }
+
+            // Always reset HTTP capture state — outside debug check
+            Http::clearCapturedCalls();
+            Http::setCaptureEnabled(false);
 
             Model::clearIdentityMap();
             $bootTimeMs = ($this->startedAt > 0) ? (microtime(true) - $this->startedAt) * 1000 : 0;

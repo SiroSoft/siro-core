@@ -197,17 +197,22 @@ Generate unique trace ID for every request and log complete context.
 // Every response includes:
 X-Siro-Trace-Id: siro_a1b2c3d4e5f6g7h8
 
-// Logs include:
+// Trace JSON includes:
 - Request method, path, headers (sanitized)
 - Response status, body
-- SQL queries with bindings
-- Execution time, memory usage
+- SQL queries with timing and row counts
+- Outbound HTTP calls (via Siro\Http only): method, URL, status, duration
+- Queue jobs dispatched: job name, source trace ID
+- Execution time, exception details
 ```
+
+### Replay Safety
+Before replaying, Siro analyzes the trace for side-effect risks (DB writes, outbound HTTP, queue jobs). Risky traces are blocked by default and require `--force` to execute. Siro does not sandbox or isolate side effects — it detects and warns about them.
 
 ### Commands
 ```bash
 php siro log:trace siro_a1b2c3d4e5f6g7h8  # View details
-php siro log:replay siro_a1b2c3d4e5f6g7h8  # Generate curl command
+php siro log:replay siro_a1b2c3d4e5f6g7h8  # Replay request (risk-aware)
 php siro log:export --format=json          # Export traces
 ```
 
