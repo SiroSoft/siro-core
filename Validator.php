@@ -215,10 +215,14 @@ final class Validator
 
             $value = $input[$field] ?? null;
 
-            // Reject arrays for non-file rules (type confusion)
+            // Reject arrays for scalar-only rules (type confusion).
+            // Rules opting into structures ('array', wildcard '.*.') are allowed.
             if (is_array($value) && $value !== []) {
                 $fieldRules = explode('|', $ruleLine);
-                if (!in_array('file', $fieldRules, true)) {
+                $allowsArray = in_array('array', $fieldRules, true)
+                    || in_array('file', $fieldRules, true)
+                    || str_contains($field, '.*.');
+                if (!$allowsArray && !isset($input[$field . '.*'])) {
                     $errors[$field][] = self::msg(self::message('array', 'validation.array'), ['field' => self::label($field)]);
                     continue;
                 }
