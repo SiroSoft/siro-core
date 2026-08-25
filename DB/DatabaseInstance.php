@@ -397,4 +397,69 @@ final class DatabaseInstance implements DatabaseInterface
     {
         return 'db:' . sha1($type . '|' . $sql . '|' . json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
+
+    /** @var array<string, int> */
+    private array $txDepth = [];
+
+    /** @var array<string, array<int, array{sp:?string}>> */
+    private array $txStack = [];
+
+    public function beginNested(string $connName = null): void
+    {
+        $connName ??= $this->defaultConnection;
+        $pdo = $this->connection($connName);
+        $depth = $this->txDepth[$connName] ?? 0;
+
+        if ($depth === 0 && !$pdo->inTransaction()) {
+            $pdo->beginTransaction();
+            $this->txStack[$connName][] = ['sp' => null];
+        } else {
+            $sp = 'siro_sp_' . $connName . '_' . $depth . '_' . bin2hex(random_bytes(3));
+            $pdo->exec('SAVEPOINT ' . $sp);
+            $this->txStack[$connName][] = ['sp' => $sp];
+        }
+        $this->txDepth[$connName] = $depth + 1;
+    }
+
+    public function commitNested(string $connName = null): void
+    {
+        $connName ??= $this->defaultConnection;
+        $depth = $this->txDepth[$connName] ?? 0;
+        if ($depth === 0) return;
+        $pdo = $this->connection($connName);
+        $stack = $this->txStack[$connName] ?? [];
+        $frame = array_pop($stack);
+        $this->txStack[$connName] = $stack;
+        $this->txDepth[$connName] = max(0, $depth - 1);
+
+        if (($frame['sp'] ?? null) === null) {
+            $pdo->commit();
+        } else {
+            $pdo->exec('RELEASE SAVEPOINT ' . $frame['sp']);
+        }
+    }
+
+    public function rollBackNested(string $connName = null): void
+    {
+        $connName ??= $this->defaultConnection;
+        $depth = $this->txDepth[$connName] ?? 0;
+        if ($depth === 0) return;
+        $pdo = $this->connection($connName);
+        $stack = $this->txStack[$connName] ?? [];
+        $frame = array_pop($stack);
+        $this->txStack[$connName] = $stack;
+        $this->txDepth[$connName] = max(0, $depth - 1);
+
+        if (($frame['sp'] ?? null) === null) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+        } else {
+            $pdo->exec('ROLLBACK TO SAVEPOINT ' . $frame['sp']);
+            $pdo->exec('RELEASE SAVEPOINT ' . $frame['sp']);
+        }
+    }
+
+    public function txDepth(string $connName = null): int
+    {
+        return $this->txDepth[$connName ?? $this->defaultConnection] ?? 0;
+    }
 }
