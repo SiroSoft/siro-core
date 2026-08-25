@@ -33,6 +33,9 @@ final class Column
         $this->type = $type;
         $this->name = $name;
         $this->params = $params;
+        $this->allowedValues = isset($params['allowedValues']) && is_array($params['allowedValues'])
+            ? $params['allowedValues']
+            : [];
         $this->blueprint = $blueprint;
     }
 
