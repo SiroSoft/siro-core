@@ -7,7 +7,7 @@ sidebar_label: C LI
 
 # CLI Reference
 
-All 80+ SiroPHP CLI commands, grouped by category.
+All 99 SiroPHP CLI commands, grouped by category.
 
 > Run `php siro list` to see all commands or `php siro <command> --help` for details.
 
@@ -90,7 +90,7 @@ class ServiceProvider
 
 ```bash
 php siro                    # Core workflow overview
-php siro list               # List all 80+ commands grouped by category
+php siro list               # List all 99 commands grouped by category
 php siro <command> --help   # Detailed help for a specific command
 php siro -h                 # Shorthand help overview
 php siro --version          # Show version (0.31.0)
