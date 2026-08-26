@@ -1,5 +1,33 @@
 # Release Notes
 
+## v0.41.0 — Trace/Replay Level-2: Captured Execution Context + Risk-Aware Replay (2026-08-25)
+
+### Trace Capture Enhancements
+- **Outbound HTTP tracing**: All requests through `Siro\Core\Http` are captured in trace JSON with method, sanitized URL, status, duration, and error. URLs are sanitized (query params stripped, auth info removed).
+- **Queue trace correlation**: Jobs dispatched during a traced request include `_source_trace_id` in their data payload, enabling correlation between async work and the originating request.
+- **Trace schema v2**: New optional fields `outbound_http[]` and `queue_jobs[]` in trace JSON. Old traces without these fields continue to work.
+
+### Replay Safety
+- **Side-effect detection**: Before replaying, `log:replay` analyzes captured SQL queries for write operations (INSERT, UPDATE, DELETE, etc.), counts outbound HTTP calls, and counts queued jobs.
+- **Risk-aware guard**: Traces with detected side-effect risks are blocked by default. Users must pass `--force` to execute risky replays. This applies to any HTTP method, not just POST/PUT/DELETE.
+- **Safe-by-default behavior**: GET requests with no detected risks auto-execute (backward compatible). POST/PUT/DELETE/PATCH always require `--force`. Any method with detected risks requires `--force`.
+
+### Trace → PHPUnit Improvements
+- Generated tests now include source trace provenance comments
+- Side-effect warnings embedded in generated test files when trace contains DB writes or outbound HTTP
+- Auth tokens never embedded in generated tests — always uses `$this->authenticate()` abstraction
+
+### Capture Lifecycle Cleanup
+- HTTP capture state (`$captureEnabled`) is now guaranteed to reset in the `finally` block of every request, regardless of debug mode or exceptions
+- Prevents static state leaking between requests in long-running processes
+
+### Important Limitations
+- **No side-effect isolation**: Siro detects and warns about side effects but does not sandbox them. A forced replay may still create DB writes, call external APIs, or dispatch jobs.
+- **Outbound HTTP scope**: Only requests through `Siro\Core\Http` are captured. Native cURL, Guzzle, or other HTTP clients bypass capture.
+- **No deterministic replay**: Time, random values, and external dependencies are not frozen or controlled.
+
+---
+
 ## v0.35.1 — Enterprise Hardening + Killer Feature Complete (2026-08-01)
 
 SiroPHP v0.35.1 is the **release-candidate-quality** baseline: the debug

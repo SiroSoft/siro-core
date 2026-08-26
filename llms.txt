@@ -73,7 +73,7 @@ required, email, numeric, integer, min:N, max:N, confirmed, in:a,b, unique:table
 - `make:crud Name` — Scaffold full CRUD (model+controller+resource+migration+test)
 - `make:auth` — Auth scaffolding
 - `api:test GET /path` — Test endpoint from CLI
-- `replay <trace_id>` — Replay production request
+- `replay <trace_id>` — Replay production request (risk-aware: blocks risky traces, requires --force)
 - `why` — Why last request failed
 - `fix` — Watch + auto-replay on save
 - `benchmark` — Performance benchmarking

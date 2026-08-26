@@ -697,6 +697,15 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             }
         }
 
+        // Pattern 6: raw body reads via ->input('key') for array payloads
+        // (items, payments, serials...). These bypass validate() but are part
+        // of the request contract and should appear in the spec.
+        if (preg_match_all('/->input\s*\(\s*[\'"](\w+)[\'"]\s*\)/', $body, $inMatch)) {
+            foreach (array_unique($inMatch[1]) as $inputField) {
+                $rules[$inputField] ??= ['array', 'required'];
+            }
+        }
+
         // Fix 2: Remove sensitive fields and internal rules from OpenAPI exposure
         foreach ($rules as $field => $fieldRules) {
             if (in_array(strtolower($field), $this->sensitiveFields, true)) {

@@ -32,6 +32,12 @@ final class TraceData
     /** @var array{class:string, message:string}|null */
     private static ?array $exception = null;
 
+    /** @var array<int, array{method: string, url: string, status: int, duration_ms: float, error: string}> */
+    private static array $outboundHttp = [];
+
+    /** @var array<int, array{job: string, source_trace_id: string, dispatched_at: string}> */
+    private static array $queueJobs = [];
+
     public static function reset(): void
     {
         self::$middleware = [];
@@ -42,6 +48,8 @@ final class TraceData
         self::$authHeader = '';
         self::$contentType = '';
         self::$exception = null;
+        self::$outboundHttp = [];
+        self::$queueJobs = [];
     }
 
     public static function addMiddleware(string $name, bool $passed, float $timeMs): void
@@ -88,6 +96,22 @@ final class TraceData
         self::$exception = ['class' => $class, 'message' => $message];
     }
 
+    /**
+     * @param array<int, array{method: string, url: string, status: int, duration_ms: float, error: string}> $calls
+     */
+    public static function setOutboundHttp(array $calls): void
+    {
+        self::$outboundHttp = $calls;
+    }
+
+    /**
+     * @param array<int, array{job: string, source_trace_id: string, dispatched_at: string}> $jobs
+     */
+    public static function setQueueJobs(array $jobs): void
+    {
+        self::$queueJobs = $jobs;
+    }
+
     /** @return array<string, mixed> */
     public static function getAll(): array
     {
@@ -115,6 +139,12 @@ final class TraceData
         }
         if (self::$exception !== null) {
             $data['exception'] = self::$exception;
+        }
+        if (self::$outboundHttp !== []) {
+            $data['outbound_http'] = self::$outboundHttp;
+        }
+        if (self::$queueJobs !== []) {
+            $data['queue_jobs'] = self::$queueJobs;
         }
         return $data;
     }

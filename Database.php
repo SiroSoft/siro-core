@@ -143,4 +143,24 @@ final class Database
     {
         return self::getInstance()->selectCached($sql, $params, $ttl, $cachePrefix, $connection);
     }
+
+    public static function beginNested(?string $name = null): void
+    {
+        self::getInstance()->beginNested($name);
+    }
+
+    public static function commitNested(?string $name = null): void
+    {
+        self::getInstance()->commitNested($name);
+    }
+
+    public static function rollBackNested(?string $name = null): void
+    {
+        self::getInstance()->rollBackNested($name);
+    }
+
+    public static function txDepth(?string $name = null): int
+    {
+        return self::getInstance()->txDepth($name);
+    }
 }

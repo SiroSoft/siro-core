@@ -245,14 +245,46 @@ Automatically sanitizes `request_headers`, `request_body`, `response_body`, and 
 
 Old trace files are removed based on `LOG_RETENTION_DAYS`.
 
+### Trace Schema
+
+Each trace JSON includes:
+
+```json
+{
+  "method": "POST",
+  "path": "/api/checkout",
+  "status": 200,
+  "time_ms": 342.15,
+  "trace_id": "siro_a1b2c3d4e5f6",
+  "middleware": [{"name": "auth", "passed": true, "time_ms": 15.3}],
+  "queries": [{"sql": "INSERT INTO orders ...", "time_ms": 25.4, "rows": 1}],
+  "outbound_http": [{"method": "POST", "url": "https://api.stripe.com/...", "status": 200, "duration_ms": 234.5, "error": ""}],
+  "queue_jobs": [{"job": "SendEmail", "source_trace_id": "siro_abc", "dispatched_at": "..."}],
+  "request_headers": {"authorization": "***REDACTED***"},
+  "auth_header": "***REDACTED***",
+  "exception": {"class": "PDOException", "message": "..."}
+}
+```
+
+**Notes:**
+- `outbound_http` only captures requests made through `Siro\Core\Http`. Native cURL/Guzzle calls are not captured.
+- `queue_jobs` includes `_source_trace_id` for correlating async work back to the originating request.
+- Sensitive headers and body fields are automatically redacted.
+
 ### CLI: Trace Listing & Replay
 
 ```bash
 # List recent traces
 php siro log:trace
 
-# Replay a specific trace
+# Replay a specific trace (auto-blocks risky traces)
 php siro log:replay trace-abc-123
+
+# Replay with --force (bypasses risk guard)
+php siro log:replay trace-abc-123 --force
+
+# Preview replay without executing
+php siro log:replay trace-abc-123 --dry-run
 
 # Replay against a different environment
 php siro log:replay trace-abc-123 --target=https://staging.example.com
@@ -260,6 +292,8 @@ php siro log:replay trace-abc-123 --target=https://staging.example.com
 # Replay with modified headers
 php siro log:replay trace-abc-123 --override="Authorization: Bearer new-token"
 ```
+
+**Replay safety:** Before replaying, Siro analyzes the trace for side-effect risks (DB writes, outbound HTTP, queued jobs). Risky traces are blocked by default. Use `--force` to execute anyway. Siro does not sandbox or isolate side effects — it detects and warns about them.
 
 ---
 

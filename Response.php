@@ -350,6 +350,11 @@ final class Response
         self::$requestStartedAt = $startedAt;
     }
 
+    public static function getRequestTraceId(): string
+    {
+        return self::$requestId;
+    }
+
     public function header(string $name, string $value): self
     {
         $this->extraHeaders[$name] = $value;

@@ -137,7 +137,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('Options:');
             $this->write('  --format=curl     Output as curl (default)');
             $this->write('  --format=httpie   Output as httpie');
-            $this->write('  --force           Execute replay (required for POST/PUT/DELETE)');
+            $this->write('  --force           Execute replay (required for POST/PUT/DELETE or risky traces)');
             $this->write('  --safe            Safe mode: warn on mutating methods (default)');
             $this->write('  --set key=value   Override request field');
             $this->write('  --seed            Seed database from request data');
@@ -431,6 +431,7 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $beforeStatus = is_numeric($beforeStatusVal) ? (int) $beforeStatusVal : 0;
             $beforeBody = $this->safeStr($data['response_body'] ?? '');
 
+            $this->analyzeAndDisplayRisks($traceId, $method, $data);
             $this->auditReplay($traceId, $method, $path, 'diff');
             $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
 
@@ -509,6 +510,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             return 0;
         }
 
+        // Analyze trace for side-effect risks
+        $hasRisks = $this->analyzeAndDisplayRisks($traceId, $method, $data);
+
         // Audit log for execution
         $replayMode = $editMode ? 'edit' : 'replay';
         $this->auditReplay($traceId, $method, $path, $replayMode);
@@ -516,11 +520,14 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         /** @var array<string, string> $headers */
         /** @var array<string, mixed> $data */
 
-        // GET requests are idempotent â€” allow without --force
-        // POST/PUT/DELETE/PATCH require --force or --edit
+        // Guard: require --force when side-effect risks detected or write method
+        // GET + no risks → execute immediately
+        // POST/PUT/DELETE/PATCH → require --force or --edit
+        // Any method + risks detected → require --force
         $isWriteMethod = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+        $needsGuard = $isWriteMethod || $hasRisks;
 
-        if ($force || $editMode || !$isWriteMethod) {
+        if ($force || $editMode || !$needsGuard) {
             $this->write('');
             $this->write('  ðŸ”„ Replaying ' . $method . ' ' . $path . '...');
             $this->write('  ' . str_repeat('=', 40));
@@ -650,6 +657,72 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $this->outputCommand($format, $method, $url, $body, $headers, $auth, $data);
 
         return 0;
+    }
+
+    /**
+     * Analyze trace for potential side effects and display risk summary.
+     * Advisory only — detection is based on captured execution context.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function analyzeAndDisplayRisks(string $traceId, string $method, array $data): bool
+    {
+        $dbWrites = 0;
+        $httpCalls = 0;
+        $queueJobs = 0;
+
+        // Detect DB write operations from captured queries
+        if (isset($data['queries']) && is_array($data['queries'])) {
+            foreach ($data['queries'] as $query) {
+                $sql = strtoupper(is_string($query['sql'] ?? null) ? $query['sql'] : '');
+                if (preg_match('/^\s*(INSERT|UPDATE|DELETE|REPLACE|TRUNCATE|ALTER|DROP|CREATE)\b/', $sql)) {
+                    $dbWrites++;
+                }
+            }
+        }
+
+        // Detect outbound HTTP calls
+        if (isset($data['outbound_http']) && is_array($data['outbound_http'])) {
+            $httpCalls = count($data['outbound_http']);
+        }
+
+        // Detect queue dispatches
+        if (isset($data['queue_jobs']) && is_array($data['queue_jobs'])) {
+            $queueJobs = count($data['queue_jobs']);
+        }
+
+        // Detect destructive HTTP method
+        $destructiveMethod = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+
+        $hasRisks = $dbWrites > 0 || $httpCalls > 0 || $queueJobs > 0 || $destructiveMethod;
+
+        if (!$hasRisks) {
+            return false;
+        }
+
+        $this->write('');
+        $this->write('  Potential replay side effects:');
+        $this->write('  ' . str_repeat('-', 40));
+        if ($dbWrites > 0) {
+            $this->write('  Database writes:   ' . $dbWrites);
+        }
+        if ($httpCalls > 0) {
+            $this->write('  Outbound HTTP:     ' . $httpCalls);
+        }
+        if ($queueJobs > 0) {
+            $this->write('  Queue dispatches:  ' . $queueJobs);
+        }
+        if ($destructiveMethod && $dbWrites === 0 && $httpCalls === 0 && $queueJobs === 0) {
+            $this->write('  Non-idempotent method: ' . $method);
+        }
+        $this->write('  ' . str_repeat('-', 40));
+        $this->write('  WARNING: This command re-executes the request against the target application.');
+        $this->write('  Database writes, external API calls, queued jobs, emails, or other');
+        $this->write('  application side effects may occur again.');
+        $this->write('  Side-effect detection is advisory and based on captured trace context.');
+        $this->write('');
+
+        return true;
     }
 
     private function auditReplay(string $traceId, string $method, string $path, string $mode): void

@@ -23,6 +23,11 @@ final class Http
     /** @var array<string, string> */ private static array $defaultHeaders = [];
     private static bool $ssrfProtectionEnabled = true;
 
+    // --- Execution tracing ---
+    /** @var array<int, array{method: string, url: string, status: int, duration_ms: float, error: string}> */
+    private static array $capturedCalls = [];
+    private static bool $captureEnabled = false;
+
     /** @var array<string> */
     private const BLOCKED_HOSTS = [
         '169.254.169.254',  // AWS/GCP/Azure metadata
@@ -175,6 +180,48 @@ final class Http
         return self::request('DELETE', $url, $data, $headers);
     }
 
+    /**
+     * Enable/disable outbound HTTP call capture for tracing.
+     */
+    public static function setCaptureEnabled(bool $enabled): void
+    {
+        self::$captureEnabled = $enabled;
+    }
+
+    /**
+     * Get captured outbound HTTP calls.
+     *
+     * @return array<int, array{method: string, url: string, status: int, duration_ms: float, error: string}>
+     */
+    public static function getCapturedCalls(): array
+    {
+        return self::$capturedCalls;
+    }
+
+    /**
+     * Clear captured calls.
+     */
+    public static function clearCapturedCalls(): void
+    {
+        self::$capturedCalls = [];
+    }
+
+    /**
+     * Sanitize URL for trace storage: strip query params, keep scheme+host+path.
+     */
+    private static function sanitizeUrl(string $url): string
+    {
+        $parsed = parse_url($url);
+        if ($parsed === false) {
+            return '[invalid]';
+        }
+        $scheme = $parsed['scheme'] ?? 'http';
+        $host = $parsed['host'] ?? '';
+        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+        $path = $parsed['path'] ?? '/';
+        return $scheme . '://' . $host . $port . $path;
+    }
+
     /** @param array<string, string> $headers */ private static function request(string $method, string $url, mixed $data, array $headers): HttpResponse
     {
         if (!function_exists('curl_init')) {
@@ -182,6 +229,7 @@ final class Http
         }
 
         $url = self::validateUrl($url);
+        $startTime = microtime(true);
 
         $ch = curl_init();
         /** @var array<int, mixed> $curlOpts */
@@ -233,8 +281,32 @@ final class Http
         $info = curl_getinfo($ch);
         curl_close($ch);
 
+        $durationMs = (microtime(true) - $startTime) * 1000;
+        $capturedStatus = $info['http_code'];
+
         if ($response === false) {
+            // Capture failed request with error
+            if (self::$captureEnabled) {
+                self::$capturedCalls[] = [
+                    'method' => $method,
+                    'url' => self::sanitizeUrl($url),
+                    'status' => $capturedStatus,
+                    'duration_ms' => round($durationMs, 2),
+                    'error' => $error,
+                ];
+            }
             throw new RuntimeException("HTTP request failed: {$error}");
+        }
+
+        // Capture successful request
+        if (self::$captureEnabled) {
+            self::$capturedCalls[] = [
+                'method' => $method,
+                'url' => self::sanitizeUrl($url),
+                'status' => $capturedStatus,
+                'duration_ms' => round($durationMs, 2),
+                'error' => '',
+            ];
         }
 
         $headerSize = $info['header_size'];

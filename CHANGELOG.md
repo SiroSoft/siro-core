@@ -1,5 +1,20 @@
 # Changelog — siro-core
 
+## v0.41.0 (2026-08-25)
+
+### 🔍 Trace/Replay Level-2: Captured Execution Context + Risk-Aware Replay
+- **Outbound HTTP tracing**: `Http::getCapturedCalls()` captures method, sanitized URL, status, duration, error for all requests through `Siro\Core\Http`
+- **Queue trace correlation**: `Queue::push()` attaches `_source_trace_id` from current request to job data
+- **TraceData**: New `outbound_http[]` and `queue_jobs[]` fields in trace JSON (optional, backward-compatible)
+- **Side-effect detection**: `LogReplayCommand::analyzeAndDisplayRisks()` scans SQL queries for write operations, counts outbound HTTP and queue jobs
+- **Safe-by-default guard**: Risky traces (DB writes, outbound HTTP, queue jobs) require `--force` to replay; non-idempotent methods (POST/PUT/DELETE/PATCH) also require `--force`
+- **Capture lifecycle cleanup**: `Http::setCaptureEnabled(false)` + `Http::clearCapturedCalls()` always run in `finally` block of `App::run()`
+- **MakeTestCommand**: Generated tests include source trace provenance + side-effect warnings; auth always via `$this->authenticate()` abstraction
+- **Response::getRequestTraceId()**: New getter for current request trace ID
+- 48 new tests, 192 assertions, 0 regressions
+
+---
+
 ## v0.40.0 (2026-08-20)
 
 ### 🏢 Enterprise Quality

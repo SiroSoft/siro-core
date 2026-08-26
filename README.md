@@ -8,7 +8,7 @@
 
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-brightgreen)](https://phpstan.org)
-[![Tests](https://img.shields.io/badge/tests-406%20pass-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-20K%2B%20pass-brightgreen)](tests/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
@@ -60,14 +60,17 @@ Siro is built around **understanding what happened**, not just writing code.
 ```bash
 php siro api:test POST /api/auth/login email=bad password=x   # fails (422)
 php siro why                                                    # why? shows exception + middleware + SQL
-php siro replay <trace_id> --force                             # replay the exact request
+php siro replay <trace_id>                                     # replay (safe: auto-executes safe requests)
+php siro replay <trace_id> --force                             # replay with side-effect risks (requires --force)
 php siro replay <trace_id> --diff                              # compare before/after a fix
 php siro replay <trace_id> --test                              # generate a regression test
 php siro fix                                                    # watcher: auto-replays on file change
 php siro test:regression                                       # catch regressions across all traces
 ```
 
-Every failed request writes a **trace** (request, response, SQL, timing, exception).
+Every failed request writes a **trace** (request, response, SQL, outbound HTTP, timing, exception).
+Before replaying, Siro **analyzes the trace for side-effect risks** — DB writes, external HTTP calls, queued jobs.
+Risky traces are blocked by default and require `--force` to execute.
 Replay it, diff it, turn it into a test. No other PHP framework does this.
 
 ---
@@ -107,9 +110,12 @@ php siro api:why POST /api/orders
     [e] php siro replay id --edit
     [d] php siro replay id --diff
     [t] php siro make:test --from-trace=id
+
+  ⚠ Side-effect risks detected: 2 DB writes, 1 outbound HTTP call
+  → Replay blocked by default. Use --force to execute.
 ```
 
-One command. Full context. No other framework has this flow.
+One command. Full context. Risk-aware replay. No other framework has this flow.
 
 ---
 
@@ -142,7 +148,7 @@ One command. Full context. No other framework has this flow.
 ```bash
 php siro make:crud Product   # Build
 php siro why                 # Debug
-php siro replay --diff       # Replay
+php siro replay --diff       # Replay (risk-aware)
 php siro fix                 # Fix & auto-test
 ```
 
@@ -156,8 +162,8 @@ php siro fix                 # Fix & auto-test
 | **ORM** | Active Record, HasOne/HasMany/BelongsTo/BelongsToMany, eager loading, soft deletes, identity map, N+1 detection |
 | **Auth** | JWT (HS256/RS256), key rotation, per-token revocation, refresh rotation, API keys, RBAC |
 | **Security** | CSP, CSRF, CORS, rate limiting (Redis/file), audit logging, OWASP Top 10 mitigated |
-| **CLI** | 80 commands: `make:crud`, `migrate`, `db:why`, `api:why`, `log:replay`, `test:regression`, `fix` |
-| **Debug** | Request replay, trace search (IP/path/status/time), `api:why`, `db:why`, N+1 detection, log sanitization |
+| **CLI** | 99 commands: `make:crud`, `migrate`, `db:why`, `api:why`, `log:replay`, `test:regression`, `fix` |
+| **Debug** | Side-effect-aware request replay, outbound HTTP tracing, queue correlation, trace search (IP/path/status/time), `api:why`, `db:why`, N+1 detection, log sanitization |
 | **Database** | Query Builder, Schema Builder, migrations, SQLite/MySQL/PostgreSQL, pagination, row locking |
 | **Cache** | File + Redis drivers, HMAC-signed config cache |
 | **Queue** | DB-based, exponential backoff, priority, timeout, failed job retry |
@@ -174,8 +180,8 @@ php siro fix                 # Fix & auto-test
 ```
 Cold boot (Linux + OPcache, estimated):  ~0.5 ms
 Cold boot (Windows, no OPcache):         ~2.4 ms (measured)
-Route dispatch static O(1):              ~0.003 ms (~300K ops/sec)
-Full-stack (warm route+response):        ~0.003 ms (~360K ops/sec)
+Route dispatch static O(1):              ~0.003 ms (~361K ops/sec)
+Full-stack (warm route+response):        ~0.003 ms (~404K ops/sec)
 Memory (framework baseline):              ~4 MB
 ```
 
@@ -189,7 +195,7 @@ Methodology: [BENCHMARK.md](BENCHMARK.md)
 |------|--------|
 | PHPStan (Level Max) | **0 errors** |
 | Psalm (Level 1 + taint) | **0 errors** |
-| Unit + Integration tests | **406 — 0 failures** |
+| Unit + Integration tests | **20,900+ — 0 failures** |
 | Mutation testing | MSI **~83%** (Auth 82%, Middleware 83%) |
 | Composer audit | **0 vulnerabilities** |
 

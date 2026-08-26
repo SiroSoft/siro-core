@@ -103,7 +103,7 @@ use Siro\Core\Commands\AuditLogCommand;
 
 final class Console
 {
-    public const VERSION = '0.35.1';
+    public const VERSION = '0.41.0';
 
     /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
     private static array $appCommands = [];
@@ -148,6 +148,7 @@ final class Console
             Env::load($envFile);
         }
         $this->discoverPackageCommands();
+        $this->discoverAppCommands();
     }
 
     private function discoverPackageCommands(): void
@@ -248,7 +249,7 @@ final class Console
             'db:explain'   => ['handler' => DbExplainCommand::class, 'desc' => 'EXPLAIN query (merged into db:why)', 'usage' => 'php siro db:why --query="..."'],
             'db:benchmark' => ['handler' => DbBenchmarkCommand::class, 'desc' => 'SQLite performance benchmark', 'usage' => 'php siro db:benchmark [--iterations=N] (SQLite only)'],
 
-            'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request (--set, --seed)', 'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val] [--format=] [--safe] [--dry-run]'],
+            'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request (risk-aware, --force for risky traces)', 'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val] [--format=] [--safe] [--dry-run]'],
             'log:trace'   => ['handler' => LogTraceCommand::class, 'desc' => 'View trace details (--full for more)', 'usage' => 'php siro log:trace [<id>] [--status=500] [--limit=N] [--full]'],
             'log:export'  => ['handler' => LogExportCommand::class, 'desc' => 'Export trace (JSON/CSV/Postman)', 'usage' => 'php siro log:export <trace_id> [--format=] [--output=] [--days=] [--curl]'],
             'log:cleanup' => ['handler' => LogCleanupCommand::class, 'desc' => 'Clean old trace files', 'usage' => 'php siro log:cleanup [--days=N] [--dry-run]'],
@@ -294,7 +295,7 @@ final class Console
             'route:rules'   => ['handler' => RouteRulesCommand::class, 'desc' => 'Show validation rules', 'usage' => 'php siro route:rules'],
             'trace:list'    => ['handler' => TraceListCommand::class, 'desc' => 'List recent traces (--limit=N)', 'usage' => 'php siro trace:list [--limit=20]'],
             'rate:status'   => ['handler' => RateStatusCommand::class, 'desc' => 'Rate limit dashboard', 'usage' => 'php siro rate:status'],
-            'replay'        => ['handler' => ReplayCommand::class, 'desc' => 'Replay last trace (or by id)', 'usage' => 'php siro replay [trace_id] [--edit] [--diff]'],
+            'replay'        => ['handler' => ReplayCommand::class, 'desc' => 'Replay last trace (risk-aware)', 'usage' => 'php siro replay [trace_id] [--force] [--edit] [--diff] [--dry-run]'],
             'runtime'       => ['handler' => RuntimeCommand::class, 'desc' => 'Siro Runtime manager (install, switch, list)', 'usage' => 'php siro runtime [install|switch|list|remove|current|path]'],
             'db'            => ['handler' => DatabaseCommand::class, 'desc' => 'Database manager (init, start, stop)', 'usage' => 'php siro db [init|start|stop|status|remove]'],
             'demo'          => ['handler' => DemoCommand::class, 'desc' => '30s debug workflow demo — test, fail, why, fix, trace', 'usage' => 'php siro demo'],
@@ -427,7 +428,7 @@ final class Console
         $this->write('    why           Why did the last request fail?');
         $this->write('    fix           Watch code changes & auto-replay');
         $this->write('    tinker        Interactive PHP playground');
-        $this->write('    replay        Replay any past request');
+        $this->write('    replay        Replay any past request (risk-aware)');
         $this->write('    traces        Browse recent request traces');
         $this->write('');
         $this->write('  Quick start:');
@@ -661,5 +662,40 @@ final class Console
     private function write(string $line): void
     {
         echo $line . PHP_EOL;
+    }
+
+    /**
+     * Auto-discover application commands in {basePath}/app/Console/Commands.
+     *
+     * Every class implementing CommandInterface with a $signature property
+     * is registered automatically. Core commands keep precedence — an app
+     * command whose signature collides with a core one is skipped.
+     */
+    private function discoverAppCommands(): void
+    {
+        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR
+             . 'Console' . DIRECTORY_SEPARATOR . 'Commands';
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        foreach (glob($dir . DIRECTORY_SEPARATOR . '*.php') ?: [] as $file) {
+            $content = (string) file_get_contents($file);
+            if (!str_contains($content, 'CommandInterface')) continue;
+            if (!preg_match('/signature\s*=\s*[\'"]([^\'"]+)[\'"]/', $content, $sm)) continue;
+            $fullSignature = trim($sm[1]);
+            $signature = explode(' ', $fullSignature)[0];
+            if ($signature === '' || isset($this->commands[$signature])) continue;
+
+            preg_match('/description\s*=\s*[\'"]([^\'"]*)[\'"]/', $content, $dm);
+            $class = basename($file, '.php');
+            $fqcn = 'App\\Console\\Commands\\' . $class;
+            if (!class_exists($fqcn)) {
+                require_once $file;
+            }
+            if (!class_exists($fqcn)) continue;
+
+            self::registerCommand($signature, $fqcn, $dm[1] ?? $signature);
+        }
     }
 }

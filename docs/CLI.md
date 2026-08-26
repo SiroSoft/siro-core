@@ -7,7 +7,7 @@ sidebar_label: C LI
 
 # CLI Reference
 
-All 80+ SiroPHP CLI commands, grouped by category.
+All 99 SiroPHP CLI commands, grouped by category.
 
 > Run `php siro list` to see all commands or `php siro <command> --help` for details.
 
@@ -90,7 +90,7 @@ class ServiceProvider
 
 ```bash
 php siro                    # Core workflow overview
-php siro list               # List all 80+ commands grouped by category
+php siro list               # List all 99 commands grouped by category
 php siro <command> --help   # Detailed help for a specific command
 php siro -h                 # Shorthand help overview
 php siro --version          # Show version (0.31.0)
@@ -201,12 +201,44 @@ php siro db:show users --schema           # Show table columns & types
 ```bash
 php siro log:tail --type=error -f          # Follow error log in real-time
 php siro log:trace --status=500            # List all failed (500) traces
-php siro log:replay abc123 --force         # Replay a trace in dry-run mode
+php siro log:replay abc123                 # Replay (auto-blocks risky traces)
+php siro log:replay abc123 --force         # Replay with --force (bypasses risk guard)
+php siro log:replay abc123 --dry-run       # Preview curl command without executing
 php siro log:export abc123 --postman       # Export as Postman collection
 php siro log:cleanup --days=7 --dry-run    # Preview cleanup without deleting
 php siro log:slow --min=500                # Requests slower than 500ms
 php siro log:stats --days=30               # Stats for last 30 days
 ```
+
+---
+
+## Replay Safety
+
+Before replaying a trace, Siro analyzes the captured execution context for potential side effects:
+
+- **DB writes**: INSERT, UPDATE, DELETE, REPLACE, TRUNCATE, ALTER, DROP, CREATE detected in SQL queries
+- **Outbound HTTP**: External API calls made through Siro's HTTP client
+- **Queue jobs**: Async jobs dispatched during the request
+
+```
+Potential replay side effects:
+  Database writes:   3
+  Outbound HTTP:     1
+  Queue dispatches:  1
+
+WARNING: This command re-executes the request against the target application.
+Database writes, external API calls, queued jobs, emails, or other
+application side effects may occur again.
+```
+
+**Guard behavior:**
+- GET + no risks → auto-executes (safe)
+- POST/PUT/DELETE/PATCH → requires `--force`
+- Any method + risks detected → requires `--force`
+
+**Important:** Siro detects and warns about side effects. It does **not** sandbox or isolate them. A forced replay of a checkout request may still create database writes, call payment APIs, or dispatch queued jobs.
+
+**Scope:** Outbound HTTP capture works only for requests made through `Siro\Core\Http`. Native `curl_init()`, Guzzle, or other HTTP clients are not captured.
 
 ---
 
@@ -260,7 +292,7 @@ php siro deploy --init                    # First-time deploy setup
 | `route:rules` | Show validation rules for all routes | `php siro route:rules` |
 | `trace:list` | List recent request traces | `php siro trace:list [--limit=20]` |
 | `rate:status` | Rate limiter dashboard | `php siro rate:status` |
-| `replay` | Replay the last trace (or by ID) | `php siro replay [trace_id] [--edit] [--diff]` |
+| `replay` | Replay the last trace (or by ID), risk-aware | `php siro replay [trace_id] [--force] [--edit] [--diff] [--dry-run]` |
 | `test` | Run PHPUnit tests with filter/suite/coverage | `php siro test [--filter=name] [--suite=Unit] [--coverage]` |
 | `schedule:run` | Run all scheduled tasks | `php siro schedule:run` |
 | `debug:health` | Check debug/trace system health | `php siro debug:health` |

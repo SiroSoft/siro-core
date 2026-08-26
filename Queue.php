@@ -192,6 +192,12 @@ final class Queue
     ): void {
         self::ensureBuiltinJobsRegistered();
 
+        // Attach source trace ID if available
+        $traceId = \Siro\Core\Response::getRequestTraceId();
+        if ($traceId !== '' && is_array($data)) {
+            $data['_source_trace_id'] = $traceId;
+        }
+
         if (self::$faked) {
             self::$fakeJobs[] = ['job' => $job, 'data' => $data];
             return;
@@ -456,7 +462,7 @@ final class Queue
         }
 
         $remaining = $maxExecTime - time();
-        if ($remaining > 0) {
+        if ($remaining > 0 && (int) ini_get('max_execution_time') !== 0) {
             @set_time_limit($remaining);
         }
 
