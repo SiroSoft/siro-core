@@ -148,6 +148,7 @@ final class Console
             Env::load($envFile);
         }
         $this->discoverPackageCommands();
+        $this->discoverAppCommands();
     }
 
     private function discoverPackageCommands(): void
@@ -661,5 +662,40 @@ final class Console
     private function write(string $line): void
     {
         echo $line . PHP_EOL;
+    }
+
+    /**
+     * Auto-discover application commands in {basePath}/app/Console/Commands.
+     *
+     * Every class implementing CommandInterface with a $signature property
+     * is registered automatically. Core commands keep precedence — an app
+     * command whose signature collides with a core one is skipped.
+     */
+    private function discoverAppCommands(): void
+    {
+        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR
+             . 'Console' . DIRECTORY_SEPARATOR . 'Commands';
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        foreach (glob($dir . DIRECTORY_SEPARATOR . '*.php') ?: [] as $file) {
+            $content = (string) file_get_contents($file);
+            if (!str_contains($content, 'CommandInterface')) continue;
+            if (!preg_match('/signature\s*=\s*[\'"]([^\'"]+)[\'"]/', $content, $sm)) continue;
+            $fullSignature = trim($sm[1]);
+            $signature = explode(' ', $fullSignature)[0];
+            if ($signature === '' || isset($this->commands[$signature])) continue;
+
+            preg_match('/description\s*=\s*[\'"]([^\'"]*)[\'"]/', $content, $dm);
+            $class = basename($file, '.php');
+            $fqcn = 'App\\Console\\Commands\\' . $class;
+            if (!class_exists($fqcn)) {
+                require_once $file;
+            }
+            if (!class_exists($fqcn)) continue;
+
+            self::registerCommand($signature, $fqcn, $dm[1] ?? $signature);
+        }
     }
 }
