@@ -35,7 +35,7 @@ final class MakeCommandsTest extends TestCase
         file_put_contents($this->tempDir . '/routes/api.php',
             "<?php\n\ndeclare(strict_types=1);\n\$app->router->get('/api/health', function () { return ['success' => true]; });\n");
         file_put_contents($this->tempDir . '/.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_32chars!\n");
+            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_32chars!\n");
 
         putenv('SIRO_BASE_PATH=' . $this->tempDir);
         $this->console = new Console($this->tempDir);
@@ -272,8 +272,7 @@ final class MakeCommandsTest extends TestCase
 
     public function testMakeIdempotencyTable(): void
     {
-        // DB may already be configured by earlier tests (e.g. make:postman)
-        $handler = new \Siro\Core\Commands\MakeIdempotencyTableCommand();
+        $handler = new \Siro\Core\Commands\MakeIdempotencyTableCommand($this->tempDir);
         ob_start();
         $code = $handler->run([]);
         ob_end_clean();
@@ -282,7 +281,7 @@ final class MakeCommandsTest extends TestCase
 
     public function testMakeApikeyTable(): void
     {
-        $handler = new \Siro\Core\Commands\MakeApiKeysTableCommand();
+        $handler = new \Siro\Core\Commands\MakeApiKeysTableCommand($this->tempDir);
         ob_start();
         $code = $handler->run([]);
         ob_end_clean();
@@ -291,7 +290,7 @@ final class MakeCommandsTest extends TestCase
 
     public function testMakeApikey(): void
     {
-        $handler = new \Siro\Core\Commands\MakeApiKeyCommand();
+        $handler = new \Siro\Core\Commands\MakeApiKeyCommand($this->tempDir);
         ob_start();
         $code = $handler->run(['TestKey', 'read,write']);
         ob_end_clean();

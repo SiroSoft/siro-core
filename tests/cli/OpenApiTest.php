@@ -29,7 +29,7 @@ class OpenApiTest extends TestCase
         mkdir($this->tempDir . '/storage/framework', 0777, true);
         mkdir($this->tempDir . '/docs', 0777, true);
 
-        file_put_contents($this->tempDir . '/.env', "APP_ENV=local\nSIRO_OPENAPI_ENABLED=true\n");
+        file_put_contents($this->tempDir . '/.env', "APP_ENV=local\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nSIRO_OPENAPI_ENABLED=true\n");
         file_put_contents($this->tempDir . '/config/database.php', '<?php return ["driver" => "sqlite", "database" => ":memory:"];');
         file_put_contents($this->tempDir . '/config/app.php', '<?php return ["name" => "TestApp", "env" => "local"];');
         file_put_contents($this->tempDir . '/routes/api.php', $this->getTestRoutes());
