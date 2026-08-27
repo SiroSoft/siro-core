@@ -160,7 +160,12 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('');
         $this->write('  🔄 Code changed → replaying ' . ($traceId ?? 'last request') . '...');
         // Run the last api:test through the Siro CLI
-        $cmd = 'php ' . escapeshellarg($this->basePath . DIRECTORY_SEPARATOR . 'siro') . ' ' . $lastTest . ' 2>&1';
+        // Validate command string to prevent shell injection from tampered history file
+        if (!preg_match('/^[a-zA-Z0-9:_\-\/\. =,]+$/', $lastTest)) {
+            $this->write('  ⚠ Skipping replay: history contains unexpected characters.');
+            return;
+        }
+        $cmd = 'php ' . escapeshellarg($this->basePath . DIRECTORY_SEPARATOR . 'siro') . ' ' . escapeshellarg($lastTest) . ' 2>&1';
         $output = shell_exec($cmd);
         if ($output !== null) {
             $lines = explode("\n", (string) $output);

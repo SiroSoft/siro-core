@@ -100,6 +100,10 @@ final class DeployCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  Step 1: Pushing to remote...');
         passthru("cd {$safeRepoDir} && git push {$safeRemote} {$safeBranch} 2>&1", $code1);
 
+        // SECURITY NOTE: post_deploy commands are developer-authored arbitrary
+        // shell execution. They are NOT escaped — this is by design. The deploy.json
+        // file is treated as trusted input (created by the developer, not user-facing).
+        // Treat deploy.json with the same security as a Makefile or CI config.
         $this->write('  Step 2: Running post-deploy commands...');
         foreach ($postDeploy as $cmd) {
             $this->write("    Running: {$cmd}");
