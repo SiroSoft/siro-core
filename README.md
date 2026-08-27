@@ -8,7 +8,7 @@
 
 [![PHP 8.2+](https://img.shields.io/badge/php-%3E%3D8.2-brightgreen.svg)](https://php.net)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-brightgreen)](https://phpstan.org)
-[![Tests](https://img.shields.io/badge/tests-20K%2B%20pass-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-20%2C966%20passing-brightgreen)](tests/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
@@ -165,8 +165,8 @@ php siro fix                 # Fix & auto-test
 | **CLI** | 95 commands: `make:crud`, `migrate`, `db:why`, `api:why`, `log:replay`, `test:regression`, `fix` |
 | **Debug** | Side-effect-aware request replay, outbound HTTP tracing, queue correlation, trace search (IP/path/status/time), `api:why`, `db:why`, N+1 detection, log sanitization |
 | **Database** | Query Builder, Schema Builder, migrations, SQLite/MySQL/PostgreSQL, pagination, row locking |
-| **Cache** | File + Redis drivers, HMAC-signed config cache |
-| **Queue** | DB-based, exponential backoff, priority, timeout, failed job retry |
+| **Cache** | File + Redis drivers, stampede protection, HMAC-signed config cache |
+| **Queue** | DB-based (at-least-once), Redis (at-most-once), exponential backoff, priority, timeout, failed job retry |
 | **Mail** | SMTP (STARTTLS), sendmail, async queue, HTML + attachments |
 | **Validation** | 15+ rules, custom rules + messages, FormRequest |
 | **Storage** | Local filesystem, S3-compatible |
@@ -195,7 +195,7 @@ Methodology: [BENCHMARK.md](BENCHMARK.md)
 |------|--------|
 | PHPStan (Level Max) | **0 errors** |
 | Psalm (Level 1 + taint) | **0 errors** |
-| Unit + Integration tests | **20,900+ — 0 failures** |
+| Unit + Integration tests | **20,966 — 0 failures** |
 | Mutation testing | MSI **~83%** (Auth 82%, Middleware 83%) |
 | Composer audit | **0 vulnerabilities** |
 

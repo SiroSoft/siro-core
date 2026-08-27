@@ -4,9 +4,9 @@
 
 ## Overview
 Siro is a zero-dependency PHP 8.2+ micro-framework for building APIs.
-- 24,870 LOC, 0 external dependencies
+- 44,282 production LOC, 0 external dependencies
 - Namespace: `Siro\Core\`
-- 1,312 tests passing, PHPStan level 7 (0 errors)
+- 20,966 tests passing, PHPStan level Max (0 errors)
 - Sub-millisecond boot, ~4MB RAM per request
 
 ## Key Classes
@@ -19,10 +19,10 @@ Siro is a zero-dependency PHP 8.2+ micro-framework for building APIs.
 - `Response` — JSON response builder with security headers
 - `Validator` — Input validation engine (15+ rules)
 - `Config` — Dot-notation config access
-- `Cache` — File + Redis caching
+- `Cache` — File + Redis caching with stampede protection
 - `Logger` — Structured logging with sanitization
 - `Event` — Simple event emitter
-- `Queue` — Database-backed job queue
+- `Queue` — Database-backed job queue (at-least-once DB, at-most-once Redis)
 - `Metrics` — Prometheus metrics collector
 
 ## Middleware
@@ -73,7 +73,7 @@ required, email, numeric, integer, min:N, max:N, confirmed, in:a,b, unique:table
 - `make:crud Name` — Scaffold full CRUD (model+controller+resource+migration+test)
 - `make:auth` — Auth scaffolding
 - `api:test GET /path` — Test endpoint from CLI
-- `replay <trace_id>` — Replay production request (risk-aware: blocks risky traces, requires --force)
+- `replay <trace_id>` — Replay production request (risk-aware: blocks risky traces, requires --force). Does not sandbox side effects.
 - `why` — Why last request failed
 - `fix` — Watch + auto-replay on save
 - `benchmark` — Performance benchmarking

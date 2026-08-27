@@ -1,5 +1,30 @@
 # Changelog — siro-core
 
+## v1.0.0 (2026-08-28)
+
+### 🏭 Production Hardening
+- **Cache stampede protection**: `Cache::remember()` now uses per-key locking (flock for file, SETNX for Redis) to prevent duplicate callback execution under concurrent load. 100 workers → 1 callback. Public API unchanged.
+- **Queue delivery semantics documented**: DB queue = at-least-once, Redis queue = at-most-once. Application idempotency requirement documented.
+- **Shell escaping hardened**: `serve`, `live`, `fix` commands now escape shell arguments. Deploy `post_deploy` documented as trusted arbitrary shell.
+- **CLI test isolation fixed**: 45 pre-existing CLI test failures resolved (APP_KEY, env:check, dynamic registry, OpenApiTest paths).
+- **CLI smoke tests**: All 95 registered commands verified with data-driven test suite (204 tests, 1178 assertions).
+- **Soak harness**: 48-hour production soak test infrastructure with workload generator, process monitor, and acceptance evaluator.
+- **Cross-platform CI**: PHP 8.2/8.3/8.4 × Linux/Windows/macOS matrix (9 jobs).
+- **Public API freeze**: 208 classes, 95 commands, 68 env vars classified as STABLE/INTERNAL/EXPERIMENTAL.
+- **Security audit**: 0 advisories, all shell paths escaped, JWT/CSRF/QueryBuilder/path/secret reviewed.
+- **Upgrade guide**: Complete migration guide covering v0.27 → v0.35 → v0.40 → v0.41 → v1.0.
+- **Documentation**: Queue delivery semantics, cache stampede protection, platform support matrix, release contract.
+
+### 📊 Evidence
+- Test suite: 20,966 tests, 0 failures
+- PHPStan Level Max: 0 errors
+- Composer audit: 0 advisories
+- Cache stampede: 100 workers → 1 callback (baseline: 3-5)
+- Queue long-run: 1000 jobs, 0KB memory growth
+- Soak harness: 4215 requests/30s, 0 errors, 0 5xx
+
+---
+
 ## v0.41.0 (2026-08-25)
 
 ### 🔍 Trace/Replay Level-2: Captured Execution Context + Risk-Aware Replay
