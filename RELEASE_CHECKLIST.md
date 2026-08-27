@@ -22,8 +22,8 @@ Last updated: 2026-08-27
 - [ ] MSI ≥95% on security/auth/routing/database paths
 - [x] `composer validate`: valid
 
-### A3. CLI Commands (99 commands)
-- [ ] Smoke test all 99 commands (boot, --help, args, exit codes)
+### A3. CLI Commands (95 commands)
+- [ ] Smoke test all 95 commands (boot, --help, args, exit codes)
 - [ ] Production guards verified (--force, --dry-run where needed)
 - [ ] Windows path handling verified
 - [ ] `CLI_AUDIT.md` produced

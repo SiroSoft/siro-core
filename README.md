@@ -162,7 +162,7 @@ php siro fix                 # Fix & auto-test
 | **ORM** | Active Record, HasOne/HasMany/BelongsTo/BelongsToMany, eager loading, soft deletes, identity map, N+1 detection |
 | **Auth** | JWT (HS256/RS256), key rotation, per-token revocation, refresh rotation, API keys, RBAC |
 | **Security** | CSP, CSRF, CORS, rate limiting (Redis/file), audit logging, OWASP Top 10 mitigated |
-| **CLI** | 99 commands: `make:crud`, `migrate`, `db:why`, `api:why`, `log:replay`, `test:regression`, `fix` |
+| **CLI** | 95 commands: `make:crud`, `migrate`, `db:why`, `api:why`, `log:replay`, `test:regression`, `fix` |
 | **Debug** | Side-effect-aware request replay, outbound HTTP tracing, queue correlation, trace search (IP/path/status/time), `api:why`, `db:why`, N+1 detection, log sanitization |
 | **Database** | Query Builder, Schema Builder, migrations, SQLite/MySQL/PostgreSQL, pagination, row locking |
 | **Cache** | File + Redis drivers, HMAC-signed config cache |

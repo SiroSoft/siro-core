@@ -12,7 +12,7 @@ Last updated: 2026-08-27
 
 1. **Freeze features.** From v0.41.0 onward, no new features until v1.0.0 ships.
 2. **Prove, don't add.** Every P0 task is about verifying what exists, not building what's missing.
-3. **API stability > feature richness.** A v1.0 with 99 solid commands beats a v1.0 with 120 half-tested commands.
+3. **API stability > feature richness.** A v1.0 with 95 solid commands beats a v1.0 with 120 half-tested commands.
 4. **Public API freeze is the real v1.0 boundary.** Not test count. Not LOC. Not features.
 
 ---
@@ -72,7 +72,7 @@ Every public CLI command must smoke-pass:
 | Windows path handling | ✅/❌ |
 | Documentation matches behavior | ✅/❌ |
 
-**Output:** `CLI_AUDIT.md` — table of all 99 commands with pass/fail per check.
+**Output:** `CLI_AUDIT.md` — table of all 95 commands with pass/fail per check.
 
 ### A4. Public API Freeze & Inventory
 
@@ -254,7 +254,7 @@ Then classify each item:
 | KNOWN_ISSUES.md | ✅ Current | Update resolved items |
 | UPGRADE.md | ⚠️ Partial | Complete deprecation + support sections |
 | SECURITY.md | ⚠️ Partial | Verify supported versions table |
-| CLI.md | ✅ Updated | Verify 99 commands |
+| CLI.md | ✅ Updated | Verify 95 commands |
 | ARCHITECTURE.md | ✅ Updated | |
 | LOGGER.md | ✅ Updated | |
 | API_SURFACE.md | ❌ New | Create from A4 inventory |
@@ -386,7 +386,7 @@ These are valuable but NOT blockers for v1.0:
 | Soak test reveals memory leak | Delay RC | Phase B early, allocate buffer |
 | `composer audit` has unfixable vuln | Block release | Track upstream, fork if needed |
 | API surface too large to freeze | Scope creep | Strict classification, cut INTERNAL |
-| 99 commands have undiscovered bugs | RC delay | Smoke test all in Phase A |
+| 95 commands have undiscovered bugs | RC delay | Smoke test all in Phase A |
 | Real app dogfood reveals design flaws | Architecture change | Budget 2 weeks for RC fixes |
 
 ---
@@ -395,7 +395,7 @@ These are valuable but NOT blockers for v1.0:
 
 ### Phase A Complete
 - [ ] CI green on 3 OS × 3 PHP
-- [ ] CLI audit complete (99 commands)
+- [ ] CLI audit complete (95 commands)
 - [ ] API surface inventory complete
 - [ ] Backward compatibility verified
 - [ ] Security audit clean
