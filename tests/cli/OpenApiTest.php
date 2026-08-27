@@ -42,7 +42,7 @@ class OpenApiTest extends TestCase
         putenv('APP_ENV=local');
         putenv('SIRO_OPENAPI_ENABLED=true');
         $this->console = new Console($this->tempDir);
-        $this->specFile = $this->tempDir . '/docs/openapi.json';
+        $this->specFile = $this->tempDir . '/docs/openapi/openapi.json';
     }
 
     protected function tearDown(): void
