@@ -1,6 +1,6 @@
 # API Surface — v1.0 Freeze
 
-**Version:** 1.0.0
+**Version:** 1.0.0 (pending release gate)
 **Date:** 2026-08-27
 **Purpose:** Define the public API contract for SemVer compliance from v1.0 onward.
 
