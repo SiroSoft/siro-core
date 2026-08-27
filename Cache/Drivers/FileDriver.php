@@ -96,6 +96,64 @@ final class FileDriver
         return $deleted;
     }
 
+    /** @var array<string, resource> Open lock file handles, keyed by normalized key. */
+    private array $lockHandles = [];
+
+    /**
+     * Acquire a lock for a cache key.
+     *
+     * Uses flock on a dedicated lock file. Returns true if lock acquired,
+     * false if another process holds it. Lock auto-expires via TTL.
+     */
+    public function lock(string $key, int $timeoutMs = 5000): bool
+    {
+        $lockFile = $this->lockPathFor($key);
+        $fp = @fopen($lockFile, 'c');
+        if ($fp === false) {
+            return false;
+        }
+
+        $deadline = microtime(true) + ($timeoutMs / 1000);
+
+        // Try to acquire lock with bounded wait
+        while (microtime(true) < $deadline) {
+            if (flock($fp, LOCK_EX | LOCK_NB)) {
+                // Track this handle so unlock() uses the same one
+                $this->lockHandles[$key] = $fp;
+                return true;
+            }
+            usleep(2000); // 2ms backoff
+        }
+
+        fclose($fp);
+        return false;
+    }
+
+    /**
+     * Release a previously acquired lock using the original handle.
+     */
+    public function unlock(string $key): void
+    {
+        if (!isset($this->lockHandles[$key])) {
+            return;
+        }
+
+        $fp = $this->lockHandles[$key];
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        unset($this->lockHandles[$key]);
+
+        $lockFile = $this->lockPathFor($key);
+        @unlink($lockFile);
+    }
+
+    private function lockPathFor(string $key): string
+    {
+        $safe = (string) preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key);
+        $safe = substr($safe, 0, 200) . '_' . sha1($key);
+        return $this->cachePath . DIRECTORY_SEPARATOR . $safe . '.lock';
+    }
+
     private function pathFor(string $key): string
     {
         $safe = (string) preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key);
