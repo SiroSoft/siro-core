@@ -34,7 +34,7 @@ final class Column
         $this->name = $name;
         $this->params = $params;
         $this->allowedValues = isset($params['allowedValues']) && is_array($params['allowedValues'])
-            ? $params['allowedValues']
+            ? array_values(array_filter($params['allowedValues'], static fn(mixed $v): bool => is_string($v)))
             : [];
         $this->blueprint = $blueprint;
     }

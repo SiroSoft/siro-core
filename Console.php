@@ -685,7 +685,7 @@ final class Console
             if (!preg_match('/signature\s*=\s*[\'"]([^\'"]+)[\'"]/', $content, $sm)) continue;
             $fullSignature = trim($sm[1]);
             $signature = explode(' ', $fullSignature)[0];
-            if ($signature === '' || isset($this->commands[$signature])) continue;
+            if ($signature === '' || isset(self::$appCommands[$signature])) continue;
 
             preg_match('/description\s*=\s*[\'"]([^\'"]*)[\'"]/', $content, $dm);
             $class = basename($file, '.php');

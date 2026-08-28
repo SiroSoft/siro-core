@@ -52,6 +52,18 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
     private const N_PLUS_ONE_THRESHOLD = 2;
 
+    /**
+     * Convert a primary-key value to a string identity-map key.
+     * @phpstan-impure
+     */
+    private static function toIdentityKey(mixed $value): string
+    {
+        if (is_int($value) || is_string($value)) {
+            return (string) $value;
+        }
+        return '';
+    }
+
     /** @param array<string, mixed> $attributes */
     public function __construct(array $attributes = [])
     {
@@ -616,7 +628,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
             if ($affected > 0) {
                 $pkValue = $this->getAttribute($key);
-                $cachedInstance = static::$identityMap[static::class][$pkValue] ?? null;
+                $cachedInstance = static::$identityMap[static::class][self::toIdentityKey($pkValue)] ?? null;
                 if ($cachedInstance !== null && $cachedInstance !== $this) {
                     foreach ($data as $attr => $val) {
                         $cachedInstance->setAttribute($attr, $val);
@@ -624,7 +636,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                     $cachedInstance->syncOriginal();
                 } else {
                     static::$identityMap[static::class] ??= [];
-                    static::$identityMap[static::class][$pkValue] = $this;
+                    static::$identityMap[static::class][self::toIdentityKey($pkValue)] = $this;
                 }
                 if ($hasObservers) {
                     $this->notifyObservers('updated');
@@ -676,7 +688,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
         if ($affected > 0) {
             $this->exists = false;
-            unset(static::$identityMap[static::class][$this->getAttribute($key)]);
+            unset(static::$identityMap[static::class][self::toIdentityKey($this->getAttribute($key))]);
             $this->notifyObservers('deleted');
             Event::emit("{$table}.deleted", $this);
             return true;

@@ -84,7 +84,6 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
 
         $this->write('  Watching for file changes...');
 
-        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
             if ($this->shutdown) {
                 return 0;

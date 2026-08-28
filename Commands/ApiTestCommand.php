@@ -32,8 +32,6 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
     private string $collectionFile;
     /** @var \Closure(string): string|null */
     private ?\Closure $inputProvider;
-    private int $watchMaxIterations = 0;
-
     public function __construct(
         private readonly string $basePath,
         ?\Closure $inputProvider = null,
@@ -287,7 +285,6 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
 
         $maxIterations = (int) getenv('SIRO_API_TEST_WATCH_MAX');
         $iteration = 0;
-        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
             $iteration++;
             if ($maxIterations > 0 && $iteration > $maxIterations) {
@@ -854,7 +851,6 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
         $count = 0;
         $maxIterations = (int) getenv('SIRO_API_TEST_WEBHOOK_MAX');
         $acceptTimeout = (int) getenv('SIRO_API_TEST_WEBHOOK_ACCEPT_TIMEOUT') ?: 5;
-        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
             if ($maxIterations > 0 && $count >= $maxIterations) {
                 break;
