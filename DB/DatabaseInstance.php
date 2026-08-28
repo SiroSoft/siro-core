@@ -404,7 +404,7 @@ final class DatabaseInstance implements DatabaseInterface
     /** @var array<string, array<int, array{sp:?string}>> */
     private array $txStack = [];
 
-    public function beginNested(string $connName = null): void
+    public function beginNested(?string $connName = null): void
     {
         $connName ??= $this->defaultConnection;
         $pdo = $this->connection($connName);
@@ -421,7 +421,7 @@ final class DatabaseInstance implements DatabaseInterface
         $this->txDepth[$connName] = $depth + 1;
     }
 
-    public function commitNested(string $connName = null): void
+    public function commitNested(?string $connName = null): void
     {
         $connName ??= $this->defaultConnection;
         $depth = $this->txDepth[$connName] ?? 0;
@@ -439,7 +439,7 @@ final class DatabaseInstance implements DatabaseInterface
         }
     }
 
-    public function rollBackNested(string $connName = null): void
+    public function rollBackNested(?string $connName = null): void
     {
         $connName ??= $this->defaultConnection;
         $depth = $this->txDepth[$connName] ?? 0;
@@ -458,7 +458,7 @@ final class DatabaseInstance implements DatabaseInterface
         }
     }
 
-    public function txDepth(string $connName = null): int
+    public function txDepth(?string $connName = null): int
     {
         return $this->txDepth[$connName ?? $this->defaultConnection] ?? 0;
     }

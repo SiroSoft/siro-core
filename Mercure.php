@@ -40,7 +40,7 @@ final class Mercure
         return $httpCode === 200;
     }
 
-    public static function topic(string $resource, string|int $id = null): string
+    public static function topic(string $resource, string|int|null $id = null): string
     {
         return $id !== null ? "/api/{$resource}/{$id}" : "/api/{$resource}";
     }
