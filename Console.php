@@ -679,13 +679,14 @@ final class Console
             return;
         }
 
+        $coreCommands = $this->commandRegistry();
         foreach (glob($dir . DIRECTORY_SEPARATOR . '*.php') ?: [] as $file) {
             $content = (string) file_get_contents($file);
             if (!str_contains($content, 'CommandInterface')) continue;
             if (!preg_match('/signature\s*=\s*[\'"]([^\'"]+)[\'"]/', $content, $sm)) continue;
             $fullSignature = trim($sm[1]);
             $signature = explode(' ', $fullSignature)[0];
-            if ($signature === '' || isset(self::$appCommands[$signature])) continue;
+            if ($signature === '' || isset(self::$appCommands[$signature]) || isset($coreCommands[$signature])) continue;
 
             preg_match('/description\s*=\s*[\'"]([^\'"]*)[\'"]/', $content, $dm);
             $class = basename($file, '.php');

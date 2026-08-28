@@ -146,21 +146,29 @@ final class Database
 
     public static function beginNested(?string $name = null): void
     {
-        self::getInstance()->beginNested($name);
+        /** @var DatabaseInstance $instance nested transactions are a DatabaseInstance-specific capability */
+        $instance = self::getInstance();
+        $instance->beginNested($name);
     }
 
     public static function commitNested(?string $name = null): void
     {
-        self::getInstance()->commitNested($name);
+        /** @var DatabaseInstance $instance */
+        $instance = self::getInstance();
+        $instance->commitNested($name);
     }
 
     public static function rollBackNested(?string $name = null): void
     {
-        self::getInstance()->rollBackNested($name);
+        /** @var DatabaseInstance $instance */
+        $instance = self::getInstance();
+        $instance->rollBackNested($name);
     }
 
     public static function txDepth(?string $name = null): int
     {
-        return self::getInstance()->txDepth($name);
+        /** @var DatabaseInstance $instance */
+        $instance = self::getInstance();
+        return $instance->txDepth($name);
     }
 }

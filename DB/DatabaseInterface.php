@@ -49,16 +49,4 @@ interface DatabaseInterface
      * @return array<int, array<string, mixed>>
      */
     public function selectCached(string $sql, array $params, int $ttl, string $cachePrefix = 'qb:default:', ?string $connection = null): array;
-
-    /** Begin a nested (savepoint) transaction. */
-    public function beginNested(?string $name = null): void;
-
-    /** Commit the innermost nested transaction. */
-    public function commitNested(?string $name = null): void;
-
-    /** Roll back the innermost nested transaction. */
-    public function rollBackNested(?string $name = null): void;
-
-    /** Return the current transaction nesting depth. */
-    public function txDepth(?string $name = null): int;
 }
