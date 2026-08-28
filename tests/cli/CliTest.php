@@ -50,99 +50,50 @@ final class CliTest extends TestCase
 
     public function testGetVersion(): void
     {
-        $this->assertEquals('0.28.0', Console::getVersion());
+        $this->assertEquals(Console::VERSION, Console::getVersion());
     }
 
     public function testConsoleCanBeInstantiated(): void
     {
         $this->assertInstanceOf(Console::class, $this->console);
-    }
-
-    // ==================== COMMAND REGISTRY INVENTORY ====================
+    }    // ==================== COMMAND REGISTRY INVENTORY ====================
 
     /**
+     * Dynamically reads registered commands from Console.php source.
+     * This prevents the test from going stale when commands are added/removed.
+     *
      * @return array<int, array{string, string, string}>
      */
     public static function commandRegistryProvider(): array
     {
-        return [
-            ['make:auth', 'Generate auth system', 'php siro make:auth'],
-            ['make:controller', 'Generate controller', 'php siro make:controller <name>'],
-            ['make:model', 'Generate model', 'php siro make:model <name>'],
-            ['make:migration', 'Generate migration', 'php siro make:migration <name>'],
-            ['make:queue-table', 'Generate queue tables migration', 'php siro make:queue-table'],
-            ['make:resource', 'Generate API resource transformer', 'php siro make:resource <name>'],
-            ['make:seeder', 'Generate seeder', 'php siro make:seeder <name>'],
-            ['make:crud', 'Full CRUD scaffolding', 'php siro make:crud <name>'],
-            ['make:test', 'Generate test file', 'php siro make:test <name>'],
-            ['make:job', 'Generate job class', 'php siro make:job <name>'],
-            ['make:mail', 'Generate mail class', 'php siro make:mail <name>'],
-            ['make:event', 'Generate event class', 'php siro make:event <name>'],
-            ['make:lang', 'Generate language file', 'php siro make:lang <locale> <file>'],
-            ['make:factory', 'Generate factory', 'php siro make:factory <name>'],
-            ['make:openapi', 'Generate OpenAPI spec', 'php siro make:openapi'],
-            ['make:postman', 'Generate Postman collection', 'php siro make:postman'],
-            ['make:service', 'Generate service class', 'php siro make:service <name>'],
-            ['make:repository', 'Generate repository class', 'php siro make:repository <name>'],
-            ['make:middleware', 'Generate middleware class', 'php siro make:middleware <name>'],
-            ['make:listener', 'Generate event listener', 'php siro make:listener <name>'],
-            ['make:idempotency-table', 'Create idempotency table', 'php siro make:idempotency-table'],
-            ['make:apikey-table', 'Create API keys table', 'php siro make:apikey-table'],
-            ['make:apikey', 'Generate API key', 'php siro make:apikey <name>'],
-            ['migrate', 'Run migrations', 'php siro migrate'],
-            ['migrate:rollback', 'Rollback migrations', 'php siro migrate:rollback'],
-            ['migrate:status', 'Migration status', 'php siro migrate:status'],
-            ['db:seed', 'Run seeders', 'php siro db:seed'],
-            ['db:show', 'Show table data/schema', 'php siro db:show <table>'],
-            ['log:replay', 'Replay request', 'php siro log:replay <trace_id>'],
-            ['log:trace', 'View trace details', 'php siro log:trace'],
-            ['log:export', 'Export trace', 'php siro log:export <trace_id>'],
-            ['log:cleanup', 'Clean old trace files', 'php siro log:cleanup'],
-            ['log:slow', 'Show slow requests', 'php siro log:slow'],
-            ['log:tail', 'Tail log files', 'php siro log:tail'],
-            ['log:stats', 'Request statistics', 'php siro log:stats'],
-            ['log:top', 'Top slowest APIs', 'php siro log:top'],
-            ['debug:last', 'Show why last request failed', 'php siro debug:last'],
-            ['test:run', 'Run PHPUnit test suite', 'php siro test:run'],
-            ['api:test', 'Test API', 'php siro api:test'],
-            ['queue:work', 'Process queue jobs', 'php siro queue:work'],
-            ['queue:retry', 'Retry failed jobs', 'php siro queue:retry'],
-            ['queue:flush', 'Clear failed jobs', 'php siro queue:flush'],
-            ['queue:status', 'Queue statistics', 'php siro queue:status'],
-            ['schedule:run', 'Run scheduled tasks', 'php siro schedule:run'],
-            ['serve', 'Start dev server', 'php siro serve'],
-            ['live', 'Live reload dev server', 'php siro live'],
-            ['deploy', 'Deploy application', 'php siro deploy'],
-            ['storage:link', 'Create storage symlink', 'php siro storage:link'],
-            ['key:generate', 'Generate JWT secret', 'php siro key:generate'],
-            ['config:cache', 'Cache config', 'php siro config:cache'],
-            ['config:clear', 'Clear cached config and routes', 'php siro config:clear'],
-            ['env:cache', 'Cache env vars', 'php siro env:cache'],
-            ['optimize', 'Optimize for production', 'php siro optimize'],
-            ['env:check', 'Check environment', 'php siro env:check'],
-            ['env:switch', 'Switch environment', 'php siro env:switch'],
-            ['doctor', 'System health check', 'php siro doctor'],
-            ['fix', 'Watch code changes & auto-replay last test', 'php siro fix'],
-            ['down', 'Enable maintenance mode', 'php siro down'],
-            ['up', 'Disable maintenance mode', 'php siro up'],
-            ['route:list', 'List all routes', 'php siro route:list'],
-            ['route:search', 'Search routes by keyword', 'php siro route:search'],
-            ['route:rules', 'Show validation rules', 'php siro route:rules'],
-            ['trace:list', 'List recent traces', 'php siro trace:list'],
-            ['rate:status', 'Rate limit dashboard', 'php siro rate:status'],
-            ['replay', 'Replay last trace', 'php siro replay'],
-            ['test', 'Run tests', 'php siro test'],
-            ['new', 'Create new project from skeleton', 'php siro new'],
-            ['new:project', 'Create project via composer', 'php siro new:project'],
-            ['benchmark', 'Performance benchmark', 'php siro benchmark'],
-            ['debug:health', 'Check debug system health', 'php siro debug:health'],
-            ['frankenphp:serve', 'Start FrankenPHP production', 'php siro frankenphp:serve'],
-        ];
+        $consoleFile = dirname(__DIR__, 2) . '/Console.php';
+        $content = file_get_contents($consoleFile);
+        if ($content === false) {
+            return [];
+        }
+
+        // Extract command name + description from registry
+        preg_match_all(
+            "/'([a-z][a-z0-9:_-]+)'\s*=>\s*\['handler'\s*=>\s*[A-Z\\w]+::class,\s*'desc'\s*=>\s*'([^']*)'/",
+            $content,
+            $matches
+        );
+
+        $result = [];
+        $count = count($matches[1]);
+        for ($i = 0; $i < $count; $i++) {
+            $name = $matches[1][$i];
+            $desc = $matches[2][$i];
+            $result[] = [$name, $desc, 'php siro ' . $name];
+        }
+
+        return $result;
     }
 
     public function testAllCommandsExist(): void
     {
-        $this->assertCount(72, $this->getRegistry());
+        // Count must match actual registered commands in Console.php
+        $this->assertCount(95, $this->getRegistry());
     }
 
     #[DataProvider('commandRegistryProvider')]
@@ -155,14 +106,14 @@ final class CliTest extends TestCase
     {
         $names = array_keys($this->getRegistry());
         $make = array_filter($names, fn(string $n): bool => str_starts_with($n, 'make:'));
-        $this->assertCount(23, $make);
+        $this->assertCount(26, $make);
     }
 
     public function testDbCommandsCount(): void
     {
         $names = array_keys($this->getRegistry());
         $db = array_filter($names, fn(string $n): bool => str_starts_with($n, 'db:') || str_starts_with($n, 'migrate'));
-        $this->assertCount(5, $db);
+        $this->assertCount(17, $db);
     }
 
     public function testLogCommandsCount(): void

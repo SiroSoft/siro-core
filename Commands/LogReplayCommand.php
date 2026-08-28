@@ -674,6 +674,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         // Detect DB write operations from captured queries
         if (isset($data['queries']) && is_array($data['queries'])) {
             foreach ($data['queries'] as $query) {
+                if (!is_array($query)) {
+                    continue;
+                }
                 $sql = strtoupper(is_string($query['sql'] ?? null) ? $query['sql'] : '');
                 if (preg_match('/^\s*(INSERT|UPDATE|DELETE|REPLACE|TRUNCATE|ALTER|DROP|CREATE)\b/', $sql)) {
                     $dbWrites++;

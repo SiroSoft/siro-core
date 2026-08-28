@@ -84,8 +84,8 @@ final class ServeCommand implements \Siro\Core\Commands\CommandInterface {
         $command = sprintf(
             '%s -S %s:%s -t %s %s 2>&1',
             escapeshellarg(PHP_BINARY),
-            $host,
-            $port,
+            escapeshellarg($host),
+            escapeshellarg($port),
             escapeshellarg($publicPath),
             escapeshellarg($routerScript)
         );

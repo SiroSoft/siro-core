@@ -35,7 +35,7 @@ final class MakeCommandsTest extends TestCase
         file_put_contents($this->tempDir . '/routes/api.php',
             "<?php\n\ndeclare(strict_types=1);\n\$app->router->get('/api/health', function () { return ['success' => true]; });\n");
         file_put_contents($this->tempDir . '/.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_32chars!\n");
+            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_32chars!\n");
 
         putenv('SIRO_BASE_PATH=' . $this->tempDir);
         $this->console = new Console($this->tempDir);
@@ -144,7 +144,8 @@ final class MakeCommandsTest extends TestCase
 
         $this->assertFileDoesNotExist($this->tempDir . '/app/Services/TestCrdService.php');
         $this->assertFileDoesNotExist($this->tempDir . '/app/Repositories/TestCrdRepository.php');
-        $this->assertFileDoesNotExist($this->tempDir . '/app/Resources/TestCrdResource.php');
+        // Resource IS generated in simple mode (needed by controller)
+        $this->assertFileExists($this->tempDir . '/app/Resources/TestCrdResource.php');
     }
 
     public function testMakeTest(): void
@@ -212,8 +213,8 @@ final class MakeCommandsTest extends TestCase
         $code = $this->runSilent(['siro', 'make:openapi', '--flow=auth']);
         $this->assertEquals(0, $code);
 
-        // command writes to dirname(basePath/docs/openapi) => docs/openapi.json
-        $f = $this->tempDir . '/docs/openapi.json';
+        // command writes to docs/openapi/openapi.json
+        $f = $this->tempDir . '/docs/openapi/openapi.json';
         $this->assertFileExists($f);
         $this->assertJson(file_get_contents($f));
     }
@@ -272,8 +273,7 @@ final class MakeCommandsTest extends TestCase
 
     public function testMakeIdempotencyTable(): void
     {
-        // DB may already be configured by earlier tests (e.g. make:postman)
-        $handler = new \Siro\Core\Commands\MakeIdempotencyTableCommand();
+        $handler = new \Siro\Core\Commands\MakeIdempotencyTableCommand($this->tempDir);
         ob_start();
         $code = $handler->run([]);
         ob_end_clean();
@@ -282,7 +282,7 @@ final class MakeCommandsTest extends TestCase
 
     public function testMakeApikeyTable(): void
     {
-        $handler = new \Siro\Core\Commands\MakeApiKeysTableCommand();
+        $handler = new \Siro\Core\Commands\MakeApiKeysTableCommand($this->tempDir);
         ob_start();
         $code = $handler->run([]);
         ob_end_clean();
@@ -291,7 +291,7 @@ final class MakeCommandsTest extends TestCase
 
     public function testMakeApikey(): void
     {
-        $handler = new \Siro\Core\Commands\MakeApiKeyCommand();
+        $handler = new \Siro\Core\Commands\MakeApiKeyCommand($this->tempDir);
         ob_start();
         $code = $handler->run(['TestKey', 'read,write']);
         ob_end_clean();
@@ -309,7 +309,7 @@ final class MakeCommandsTest extends TestCase
             'make:migration'      => ['make:migration',      ['create_dp_test_tbl'], 'database/migrations/*dp_test_tbl*'],
             'make:resource'       => ['make:resource',       ['TestDpRes'],          'app/Resources/TestDpResResource.php'],
             'make:seeder'         => ['make:seeder',         ['TestDpSeed'],         'database/seeds/TestDpSeedSeeder.php'],
-            'make:test'           => ['make:test',           ['TestDpTest'],         'tests/Feature/TestDpTestTest.php'],
+            'make:test'           => ['make:test',           ['TestDpTest'],         'tests/Feature/TestDpTest.php'],
             'make:job'            => ['make:job',            ['TestDpJobX'],         'app/Jobs/TestDpJobXJob.php'],
             'make:mail'           => ['make:mail',           ['TestDpMailX'],        'app/Mails/TestDpMailXMail.php'],
             'make:event'          => ['make:event',          ['TestDpEventX'],       'app/Events/TestDpEventXEvent.php'],

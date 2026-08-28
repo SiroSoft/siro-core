@@ -383,6 +383,58 @@ CACHE_DRIVER=file      # Default - no extra setup
 
 ---
 
+## ADR-013: Queue Delivery Semantics
+
+**Date:** 2026-08-27  
+**Status:** Accepted  
+**Context:** Need clear contract for queue job delivery guarantees
+
+### Decision
+
+Document explicit delivery semantics for each queue driver:
+
+| Driver | Semantics | Consequence |
+|--------|-----------|-------------|
+| DB (default) | **At-least-once** | Job may execute more than once if worker crashes after execution but before deletion |
+| Redis | **At-most-once** | Job may be lost if worker crashes during execution (brPop removes before execution) |
+
+### DB Driver Flow
+
+```
+push → available_at=now
+  → SELECT + UPDATE locked_until (reservation)
+  → execute job
+  → DELETE (success)
+  → retry with backoff (failure, attempts < max)
+  → failed_jobs + DELETE (attempts >= max)
+```
+
+If worker dies after `execute()` but before `DELETE`, the lock expires and the job may re-execute.
+
+### Redis Driver Flow
+
+```
+push → lPush to queue list
+  → brPop (atomic removal from queue)
+  → execute job
+  → (success: done) / (failure: re-push with delay)
+```
+
+`brPop` removes the job from the queue before execution. If worker dies during execution, the job is lost.
+
+### Application Responsibility
+
+Jobs involving payments, inventory, emails, or external APIs should be idempotent where duplicate execution is harmful. SiroPHP does not provide built-in job idempotency.
+
+### Evidence
+
+- B4 Queue Production Hardening: 72 tests, 266 assertions, 0 failures
+- Long-run: 1000 jobs processed, 0KB memory growth, 0 state leakages
+- DB at-least-once verified by test: lock → execute → delete pattern
+- Redis at-most-once: designed but NOT VERIFIED in production Redis environment
+
+---
+
 ## Summary
 
 These decisions shape SiroPHP's identity as a fast, simple, and secure micro-framework. Each decision prioritizes:

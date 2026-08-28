@@ -220,8 +220,7 @@ final class Validator
             if (is_array($value) && $value !== []) {
                 $fieldRules = explode('|', $ruleLine);
                 $allowsArray = in_array('array', $fieldRules, true)
-                    || in_array('file', $fieldRules, true)
-                    || str_contains($field, '.*.');
+                    || in_array('file', $fieldRules, true);
                 if (!$allowsArray && !isset($input[$field . '.*'])) {
                     $errors[$field][] = self::msg(self::message('array', 'validation.array'), ['field' => self::label($field)]);
                     continue;

@@ -145,6 +145,9 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface {
         $hasDbWrites = false;
         if (isset($data['queries']) && is_array($data['queries'])) {
             foreach ($data['queries'] as $q) {
+                if (!is_array($q)) {
+                    continue;
+                }
                 $sql = strtoupper(is_string($q['sql'] ?? null) ? $q['sql'] : '');
                 if (preg_match('/^\s*(INSERT|UPDATE|DELETE|REPLACE|TRUNCATE|ALTER|DROP|CREATE)\b/', $sql)) {
                     $hasDbWrites = true;

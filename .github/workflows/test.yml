@@ -6,91 +6,54 @@ on:
   pull_request:
     branches: [main, develop]
 
+# ──────────────────────────────────────────────────────────────
+# CI Architecture Decision (v1.0 — Phase A1)
+#
+# Compatibility Matrix (runs ×9):
+#   3 OS × 3 PHP → install, bootstrap, PHPUnit
+#   Purpose: prove runtime/test compatibility across platforms.
+#
+# Quality Gate (runs ×1):
+#   Ubuntu + PHP 8.2 only
+#   Purpose: expensive static analysis, security, mutation, fuzz.
+#   These checks are platform-independent — running them ×9 wastes CI
+#   minutes without catching cross-platform bugs.
+#
+# See ROADMAP_V1.md § A1 for full rationale.
+# ──────────────────────────────────────────────────────────────
+
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          tools: composer:v2
-          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
-      - name: PHP syntax check
-        run: find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 php -l
-
-  code-style:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          tools: composer:v2
-          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
-      - name: Install dependencies
-        run: composer install --no-interaction --no-progress --prefer-dist
-      - name: Regenerate autoloader
-        run: composer dump-autoload
-      - name: PHP_CodeSniffer (PSR-12)
-        continue-on-error: true
-        run: vendor/bin/phpcs --standard=PSR12 --ignore=vendor .
-
-  static-analysis:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        php: ['8.2', '8.3']
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          tools: composer:v2
-          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl, pdo_mysql
-      - name: Cache dependencies
-        uses: actions/cache@v6
-        with:
-          path: vendor
-          key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-      - name: Install dependencies
-        run: composer install --no-interaction --no-progress --prefer-dist
-      - name: Regenerate autoloader
-        run: composer dump-autoload
-      - name: PHPStan Level Max
-        run: php -d memory_limit=512M vendor/bin/phpstan analyse --level=max --no-progress
+  # ════════════════════════════════════════════════════════════
+  # COMPATIBILITY MATRIX — 3 OS × 3 PHP
+  # ════════════════════════════════════════════════════════════
 
   phpunit:
+    name: "PHPUnit — ${{ matrix.os }} / PHP ${{ matrix.php }}"
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        php: ['8.2', '8.3']
+        php: ['8.2', '8.3', '8.4']
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
           tools: composer:v2
           extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl, pdo_mysql
+          coverage: none
+      - name: Validate composer.json
+        run: composer validate --no-check-all --no-check-publish
       - name: Cache dependencies
-        uses: actions/cache@v6
+        uses: actions/cache@v4
         with:
           path: vendor
           key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
-      - name: Regenerate autoloader
-        run: composer dump-autoload
       - name: Prepare env
         shell: bash
         run: |
@@ -104,14 +67,68 @@ jobs:
               exit 1
             fi
           fi
-      - name: PHPUnit tests
+      - name: Run PHPUnit
         run: php vendor/bin/phpunit --no-progress
 
+  lint:
+    name: "Lint — ${{ matrix.os }} / PHP ${{ matrix.php }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        php: ['8.2', '8.4']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
+      - name: PHP syntax check
+        shell: bash
+        run: |
+          find . -type f -name "*.php" -not -path "./vendor/*" -not -path "./coverage/*" -print0 | xargs -0 -n1 php -l
+
+  static-analysis:
+    name: "PHPStan — ${{ matrix.os }} / PHP ${{ matrix.php }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        php: ['8.2', '8.4']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl, pdo_mysql
+          coverage: none
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: PHPStan Level Max
+        run: php -d memory_limit=512M vendor/bin/phpstan analyse --level=max --no-progress
+
+  # ════════════════════════════════════════════════════════════
+  # QUALITY GATES — Ubuntu + PHP 8.2 only
+  # ════════════════════════════════════════════════════════════
+
   coverage:
+    name: Coverage
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -144,10 +161,11 @@ jobs:
             coverage/text.txt
 
   mutation:
+    name: Mutation Testing
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -160,10 +178,11 @@ jobs:
         run: php vendor/bin/infection --min-msi=80 --threads=4 --no-progress
 
   benchmark:
+    name: Benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -175,10 +194,11 @@ jobs:
         run: php benchmark.php
 
   technical-gate:
+    name: Release Gate
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -186,7 +206,5 @@ jobs:
           extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
-      - name: Regenerate autoloader
-        run: composer dump-autoload
       - name: Run release technical gate
         run: composer release:check

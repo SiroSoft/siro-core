@@ -82,16 +82,49 @@ final class CacheInstance implements CacheInterface
 
     public function remember(string $key, int $ttl, callable $callback): mixed
     {
+        // Fast path: cache hit
         $value = $this->get($key);
         if ($value !== null) {
             return $value;
         }
 
+        // Cache miss: acquire lock to prevent stampede
+        $normalizedKey = $this->normalizeKey($key);
+        $driver = $this->driver();
+
+        if ($driver->lock($normalizedKey, self::LOCK_TIMEOUT_MS)) {
+            try {
+                // Double-check after acquiring lock
+                $value = $this->get($key);
+                if ($value !== null) {
+                    return $value;
+                }
+
+                // Compute and cache
+                $value = $callback();
+                $this->set($key, $value, $ttl);
+
+                return $value;
+            } finally {
+                $driver->unlock($normalizedKey);
+            }
+        }
+
+        // Lock acquisition failed (timeout): another worker is computing.
+        // Retry get in case the value was set while we waited.
+        $value = $this->get($key);
+        if ($value !== null) {
+            return $value;
+        }
+
+        // Last resort: compute without lock (degraded mode)
         $value = $callback();
         $this->set($key, $value, $ttl);
 
         return $value;
     }
+
+    private const LOCK_TIMEOUT_MS = 5000;
 
     public function forget(string $key): bool
     {

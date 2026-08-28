@@ -42,6 +42,7 @@ final class SystemCommandsTest extends TestCase
             'APP_NAME="SiroTest"' . "\n"
             . 'APP_ENV=testing' . "\n"
             . 'APP_DEBUG=true' . "\n"
+            . 'APP_KEY=testing_app_key_for_hmac_32chars!!' . "\n"
             . 'JWT_SECRET=test_jwt_secret_key_for_testing_32chars!!!' . "\n"
             . 'DB_CONNECTION=sqlite' . "\n"
             . 'APP_URL=http://localhost' . "\n"
@@ -131,14 +132,14 @@ final class SystemCommandsTest extends TestCase
     {
         [$exitCode, $output] = $this->runCommand('--version');
         $this->assertSame(0, $exitCode, '--version should exit 0');
-        $this->assertStringContainsString('0.28.0', $output, 'Should show version 0.28.0');
+        $this->assertStringContainsString(Console::VERSION, $output, 'Should show current version');
     }
 
     public function testShortVersionOutput(): void
     {
         [$exitCode, $output] = $this->runCommand('-V');
         $this->assertSame(0, $exitCode, '-V should exit 0');
-        $this->assertStringContainsString('0.28.0', $output, 'Should show version 0.28.0');
+        $this->assertStringContainsString(Console::VERSION, $output, 'Should show current version');
     }
 
     // ==================== HELP ====================
@@ -232,7 +233,8 @@ final class SystemCommandsTest extends TestCase
 
     public function testKeyGenerate(): void
     {
-        [$exitCode, $output] = $this->runCommand('key:generate');
+        // --force needed because .env already has JWT_SECRET set in test setup
+        [$exitCode, $output] = $this->runCommand('key:generate', ['--force']);
         $this->assertSame(0, $exitCode, 'key:generate should exit 0');
         $this->assertStringContainsString('JWT_SECRET', $output);
         $this->assertStringContainsString('generated', $output);
@@ -458,10 +460,11 @@ final class SystemCommandsTest extends TestCase
 
     public function testKeyGenerateIdempotent(): void
     {
-        [$exitCode1, $output1] = $this->runCommand('key:generate');
+        // --force needed because .env already has JWT_SECRET set in test setup
+        [$exitCode1, $output1] = $this->runCommand('key:generate', ['--force']);
         $this->assertSame(0, $exitCode1);
 
-        [$exitCode2, $output2] = $this->runCommand('key:generate');
+        [$exitCode2, $output2] = $this->runCommand('key:generate', ['--force']);
         $this->assertSame(0, $exitCode2);
         $this->assertStringContainsString('JWT_SECRET', $output2, 'Second key:generate should also work');
     }

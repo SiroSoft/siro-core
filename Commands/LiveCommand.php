@@ -69,7 +69,7 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('');
 
         $lastRestart = 0;
-        $serverCmd = "php -S {$this->host}:{$this->port} -t \"{$publicDir}\"";
+        $serverCmd = 'php -S ' . escapeshellarg($this->host) . ':' . escapeshellarg((string) $this->port) . ' -t ' . escapeshellarg($publicDir);
 
         if (is_file($routerFile)) {
             $serverCmd .= " \"{$routerFile}\"";
@@ -84,7 +84,6 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
 
         $this->write('  Watching for file changes...');
 
-        // @phpstan-ignore-next-line while.alwaysTrue
         while (true) {
             if ($this->shutdown) {
                 return 0;
