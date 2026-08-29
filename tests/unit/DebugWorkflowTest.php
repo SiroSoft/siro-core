@@ -133,7 +133,8 @@ PHP;
         if ($this->serverProc !== null) {
             return;
         }
-        $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+        $nul = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
+        $descriptors = [0 => ['pipe', 'r'], 1 => ['file', $nul, 'w'], 2 => ['file', $nul, 'w']];
         $pipes = [];
         $this->serverProc = proc_open([PHP_BINARY, '-S', '127.0.0.1:' . $this->port, $this->routerFile], $descriptors, $pipes);
         $this->serverPipes = $pipes;

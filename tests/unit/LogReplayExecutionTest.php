@@ -124,8 +124,9 @@ PHP;
         $port = random_int(19100, 19999);
         $this->port = $port;
         $cmd = [PHP_BINARY, '-S', '127.0.0.1:' . $this->port, $this->routerFile];
-        $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-        $env = array_merge($_ENV, ['XDEBUG_MODE' => 'off']);
+        $nul = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
+        $descriptors = [0 => ['pipe', 'r'], 1 => ['file', $nul, 'w'], 2 => ['file', $nul, 'w']];
+        $env = array_merge(getenv(), ['XDEBUG_MODE' => 'off']);
         $pipes = [];
         $this->serverProc = proc_open($cmd, $descriptors, $pipes, null, $env);
         $this->serverPipes = $pipes;
@@ -767,7 +768,7 @@ PHP;
             'auth_header' => '',
             'response_body' => '{}',
         ]);
-        [$exit, $output] = $this->runCmd(['editproc', '--edit']);
+        [$exit, $output] = $this->runCmdWithInput(['editproc', '--edit'], "\n");
         $this->assertStringContainsString('Edit request body', $output);
         $this->assertStringContainsString('Updated body', $output);
         $this->assertStringContainsString('Replaying POST', $output);
@@ -780,7 +781,7 @@ PHP;
             'host' => '127.0.0.1:' . $this->port,
             'request_body' => '',
         ]);
-        [$exit, $output] = $this->runCmd(['asempty2', '--as=admin@test.com']);
+        [$exit, $output] = $this->runCmdWithInput(['asempty2', '--as=admin@test.com'], "\n");
         $this->assertSame(1, $exit);
         $this->assertStringContainsString('Password required', $output);
     }
@@ -866,7 +867,7 @@ PHP;
             'response_body' => '{}',
         ]);
         // In-process: empty stdin keeps values (readline returns empty on non-tty).
-        [$exit, $output] = $this->runCmd(['edittypes', '--edit']);
+        [$exit, $output] = $this->runCmdWithInput(['edittypes', '--edit'], "\n\n\n\n");
         $this->assertStringContainsString('Edit request body', $output);
         $this->assertStringContainsString('active', $output);
         $this->assertStringContainsString('nested', $output);
