@@ -68,7 +68,7 @@ jobs:
             fi
           fi
       - name: Run PHPUnit
-        run: php vendor/bin/phpunit --no-progress
+        run: php vendor/bin/phpunit --no-progress --stop-on-failure --no-coverage --verbose
 
   lint:
     name: "Lint — ${{ matrix.os }} / PHP ${{ matrix.php }}"
