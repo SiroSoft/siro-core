@@ -69,7 +69,7 @@ jobs:
           fi
       - name: Run PHPUnit (Unit + Integration)
         shell: bash
-        run: php vendor/bin/phpunit --testsuite=Unit --testsuite=Integration --no-progress 2>&1 | tee phpunit-output.txt; exit ${PIPESTATUS[0]}
+        run: php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress 2>&1 | tee phpunit-output.txt; exit ${PIPESTATUS[0]}
       - name: Upload test output
         if: failure()
         uses: actions/upload-artifact@v4
@@ -112,7 +112,7 @@ jobs:
             fi
           fi
       - name: Run Fuzz + DAST tests
-        run: php vendor/bin/phpunit --testsuite=Fuzz --testsuite=DAST --no-progress
+        run: php vendor/bin/phpunit --testsuite=Fuzz,DAST --no-progress
 
   lint:
     name: "Lint — ${{ matrix.os }} / PHP ${{ matrix.php }}"
