@@ -42,6 +42,17 @@ final class MySQLCommandsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Skip entire class if MySQL is not available
+        try {
+            new \PDO(
+                'mysql:host=' . self::HOST . ';port=' . self::PORT,
+                self::USER,
+                self::pass(),
+                [\PDO::ATTR_TIMEOUT => 3, \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+            );
+        } catch (\Throwable) {
+            $this->markTestSkipped('MySQL server not available on this platform');
+        }
         if (!defined('BASE_PATH')) {
             define('BASE_PATH', dirname(__DIR__, 2));
         }
