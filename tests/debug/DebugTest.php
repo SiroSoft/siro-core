@@ -33,6 +33,7 @@ class DebugTest extends TestCase
             @rmdir($this->logDir);
         }
         Logger::reset();
+        Response::setRequestMeta('', 0);
     }
 
     public function testDebugModeAddsTraceId(): void

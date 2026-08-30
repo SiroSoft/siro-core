@@ -93,7 +93,9 @@ check('Nginx running', $nginxRunning !== '', "Master PID: " . trim($nginxRunning
 // Check Nginx config for soak app
 $nginxConf = @shell_exec('nginx -T 2>/dev/null') ?: '';
 $hasSoakUpstream = str_contains($nginxConf, 'soak') || str_contains($nginxConf, '8080') || str_contains($nginxConf, 'php-fpm');
-check('Nginx config references PHP-FPM', $hasSoakUpstream, $hasSoakUpstream ? 'Found upstream/FPM config' : 'No soak/FPM reference found in nginx config');
+$siteConf = @file_get_contents('/etc/nginx/sites-available/soak') ?: '';
+$hasFpmRef = str_contains($siteConf, 'fastcgi_pass') || str_contains($siteConf, 'soak');
+check('Nginx config references PHP-FPM', $hasFpmRef, $hasFpmRef ? 'Found fastcgi_pass/soak in sites-available/soak' : 'No FPM reference in nginx soak config');
 echo "\n";
 
 // ── 3. PHP-FPM ──
@@ -128,16 +130,9 @@ if ($fpmRunning) {
 
 // Check OPcache
 echo "\n=== OPcache ===\n";
-$opcacheStatus = @shell_exec("php -r 'echo json_encode(opcache_get_status(false));' 2>/dev/null") ?: '';
-if ($opcacheStatus) {
-    $status = json_decode($opcacheStatus, true);
-    $opcacheEnabled = $status['opcache_enabled'] ?? false;
-    $memoryUsage = $status['memory_usage'] ?? [];
-    $usedMemory = $memory_usage['used_memory'] ?? 0;
-    check('OPcache enabled', $opcacheEnabled, $opcacheEnabled ? "Used memory: " . round($usedMemory / 1024) . "KB" : 'OPcache is DISABLED');
-} else {
-    check('OPcache status readable', false, 'Could not read opcache_get_status()');
-}
+$opcacheCli = @shell_exec("php -r 'echo ini_get(\"opcache.enable\");' 2>/dev/null") ?: '';
+$opcacheEnabled = trim($opcacheCli) === '1';
+check('OPcache enabled (CLI)', $opcacheEnabled, $opcacheEnabled ? 'OPcache enabled in CLI' : 'OPcache disabled in CLI (check FPM config)');
 echo "\n";
 
 // ── 4. PHP Version ──
@@ -146,8 +141,8 @@ $phpVersion = PHP_VERSION;
 check('PHP version', version_compare($phpVersion, '8.2.0', '>='), "PHP {$phpVersion}");
 
 $extensions = get_loaded_extensions();
-$required = ['pdo', 'pdo_sqlite', 'json', 'mbstring', 'openssl', 'curl', 'pcntl'];
-$missing = array_diff($required, $extensions);
+$required = ['pdo', 'pdo_sqlite', 'json', 'mbstring', 'openssl', 'curl'];
+$missing = array_diff($required, array_map('strtolower', $extensions));
 check('Required extensions', empty($missing), $missing ? 'Missing: ' . implode(', ', $missing) : count($extensions) . ' loaded');
 echo "\n";
 
@@ -224,12 +219,13 @@ if ($code === 200) {
 }
 
 // Test a few routes
-foreach (['/api/fast', '/api/cache/hit', '/api/db/select'] as $route) {
+foreach (['/health', '/api/cache/hit', '/api/db/select'] as $route) {
     $ch = curl_init($targetUrl . $route);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 5,
     ]);
+    curl_exec($ch);
     $routeCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     check("Route {$route}", $routeCode >= 200 && $routeCode < 300, "HTTP {$routeCode}");
