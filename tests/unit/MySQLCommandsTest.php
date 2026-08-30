@@ -37,7 +37,7 @@ final class MySQLCommandsTest extends TestCase
         return self::$pass;
     }
 
-    private string $basePath;
+    private string $basePath = '';
 
     protected function setUp(): void
     {
@@ -85,7 +85,7 @@ final class MySQLCommandsTest extends TestCase
         Env::reset();
         Cache::reset();
         Database::purgeAll();
-        if (is_dir($this->basePath)) {
+        if ($this->basePath !== '' && is_dir($this->basePath)) {
             $this->rmDir($this->basePath);
         }
         parent::tearDown();
