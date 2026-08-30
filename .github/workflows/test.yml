@@ -68,7 +68,15 @@ jobs:
             fi
           fi
       - name: Run PHPUnit
-        run: php vendor/bin/phpunit --no-progress
+        shell: bash
+        run: php vendor/bin/phpunit --no-progress 2>&1 | tee phpunit-output.txt; exit ${PIPESTATUS[0]}
+      - name: Upload test output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpunit-output-${{ matrix.os }}-${{ matrix.php }}
+          path: phpunit-output.txt
+          retention-days: 7
 
   lint:
     name: "Lint — ${{ matrix.os }} / PHP ${{ matrix.php }}"
