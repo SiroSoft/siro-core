@@ -28,5 +28,15 @@
         </testsuite>
     </testsuites>
 
+    <source>
+        <include>
+            <directory suffix=".php">.</directory>
+        </include>
+        <exclude>
+            <directory>tests</directory>
+            <directory>vendor</directory>
+            <directory>scripts</directory>
+        </exclude>
+    </source>
 
 </phpunit>
