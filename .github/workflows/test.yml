@@ -67,9 +67,9 @@ jobs:
               exit 1
             fi
           fi
-      - name: Run PHPUnit
+      - name: Run PHPUnit (Unit + Integration)
         shell: bash
-        run: php vendor/bin/phpunit --no-progress 2>&1 | tee phpunit-output.txt; exit ${PIPESTATUS[0]}
+        run: php vendor/bin/phpunit --testsuite=Unit --testsuite=Integration --no-progress 2>&1 | tee phpunit-output.txt; exit ${PIPESTATUS[0]}
       - name: Upload test output
         if: failure()
         uses: actions/upload-artifact@v4
@@ -77,6 +77,42 @@ jobs:
           name: phpunit-output-${{ matrix.os }}-${{ matrix.php }}
           path: phpunit-output.txt
           retention-days: 7
+
+  fuzz-dast:
+    name: "Fuzz+DAST — ubuntu / PHP 8.4"
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl, pdo_mysql
+          coverage: none
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php8.4-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Prepare env
+        shell: bash
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.testing ]; then
+              cp .env.testing .env
+            elif [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              echo "ERROR: No .env template found!"
+              exit 1
+            fi
+          fi
+      - name: Run Fuzz + DAST tests
+        run: php vendor/bin/phpunit --testsuite=Fuzz --testsuite=DAST --no-progress
 
   lint:
     name: "Lint — ${{ matrix.os }} / PHP ${{ matrix.php }}"
