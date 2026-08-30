@@ -226,6 +226,19 @@ jobs:
           coverage: xdebug
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Prepare env
+        shell: bash
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.testing ]; then
+              cp .env.testing .env
+            elif [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              echo "ERROR: No .env template found!"
+              exit 1
+            fi
+          fi
       - name: Infection Mutation Testing (min MSI 80%)
         run: php vendor/bin/infection --min-msi=80 --threads=4 --no-progress
 
