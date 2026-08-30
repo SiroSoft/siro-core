@@ -240,7 +240,7 @@ jobs:
             fi
           fi
       - name: Infection Mutation Testing (min MSI 80%)
-        run: php vendor/bin/infection --min-msi=80 --threads=4 --no-progress
+        run: php vendor/bin/infection --test-framework-options="--configuration=phpunit-infection.xml" --min-msi=80 --threads=4 --no-progress
 
   benchmark:
     name: Benchmark
