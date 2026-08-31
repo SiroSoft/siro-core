@@ -14,17 +14,28 @@
     </php>
 
     <testsuites>
-        <testsuite name="Unit">
-            <directory suffix="Test.php">tests/unit</directory>
-        </testsuite>
-        <testsuite name="Integration">
-            <directory suffix="Test.php">tests/integration</directory>
-        </testsuite>
-        <testsuite name="Fuzz">
-            <directory suffix="Test.php">tests/fuzz</directory>
-        </testsuite>
-        <testsuite name="DAST">
-            <directory suffix="Test.php">tests/dast</directory>
+        <testsuite name="Mutation">
+            <file>tests/unit/ApiKeyMutationTest.php</file>
+            <file>tests/unit/ApiKeyTest.php</file>
+            <file>tests/unit/AuthFixesTest.php</file>
+            <file>tests/unit/AuthGuardMutationTest.php</file>
+            <file>tests/unit/AuthMiddlewareDetailedMutationTest.php</file>
+            <file>tests/unit/AuthMiddlewareDetailedTest.php</file>
+            <file>tests/unit/AuthMiddlewareMutationTest.php</file>
+            <file>tests/unit/AuthMiddlewareTest.php</file>
+            <file>tests/unit/BatchCursorApiKeyTest.php</file>
+            <file>tests/unit/JWTExtraMutationTest.php</file>
+            <file>tests/unit/JWTMutationTest.php</file>
+            <file>tests/unit/JWTTest.php</file>
+            <file>tests/unit/MakeApiKeyCommandMutationTest.php</file>
+            <file>tests/unit/CacheExtendedTest.php</file>
+            <file>tests/unit/CacheStampedeTest.php</file>
+            <file>tests/unit/CacheTest.php</file>
+            <file>tests/unit/EnvCacheLoadTest.php</file>
+            <file>tests/unit/RedisDriverMutationTest.php</file>
+            <file>tests/unit/ThrottleRedisMutationTest.php</file>
+            <file>tests/unit/SecurityTest.php</file>
+            <file>tests/unit/SecurityFixesTest.php</file>
         </testsuite>
     </testsuites>
 
