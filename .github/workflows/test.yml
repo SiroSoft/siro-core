@@ -240,7 +240,7 @@ jobs:
             fi
           fi
       - name: Infection Mutation Testing (min MSI 80%)
-        run: php -d memory_limit=512M vendor/bin/infection --min-msi=80 --threads=4 --no-progress --test-framework-options="--testsuite=Mutation"
+        run: php -d memory_limit=512M -d zend_extension=xdebug vendor/bin/infection --min-msi=80 --threads=4 --no-progress
 
   benchmark:
     name: Benchmark
