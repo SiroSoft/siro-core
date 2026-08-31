@@ -48,8 +48,22 @@ final class DebugWorkflowTest extends TestCase
     {
         if ($this->serverProc !== null) {
             $status = proc_get_status($this->serverProc);
-            if ($status['running'] && function_exists('proc_terminate')) {
-                proc_terminate($this->serverProc);
+            if ($status['running']) {
+                // SIGTERM first (graceful)
+                if (function_exists('proc_terminate')) {
+                    proc_terminate($this->serverProc);
+                }
+                // Wait up to 2 seconds for graceful exit
+                for ($i = 0; $i < 20; $i++) {
+                    usleep(100000);
+                    $status = proc_get_status($this->serverProc);
+                    if (!$status['running']) break;
+                }
+                // Force kill if still running (Unix only)
+                if ($status['running'] && function_exists('posix_kill')) {
+                    posix_kill($status['pid'], 9); // SIGKILL
+                    usleep(200000);
+                }
             }
             foreach ($this->serverPipes as $pipe) {
                 if (is_resource($pipe)) {
