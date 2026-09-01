@@ -71,10 +71,20 @@ jobs:
         shell: bash
         run: |
           START=$(date +%s)
-          php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null >phpunit-output.txt 2>&1; CODE=$?
+          # Use timeout to catch hangs — 25 min max for a suite that takes 5 min on Windows
+          timeout 1500 php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null >phpunit-output.txt 2>&1; CODE=$?
           END=$(date +%s)
           echo "PHPUnit duration: $((END - START))s exit=$CODE" >> phpunit-output.txt
+
           cat phpunit-output.txt
+          # timeout exits with 124 if it killed the process
+          if [ $CODE -eq 124 ]; then
+            echo "TIMEOUT: PHPUnit killed after 25 minutes" >> $GITHUB_STEP_SUMMARY
+            echo "Last test output:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -20 phpunit-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
           exit $CODE
       - name: Show test failures
         if: failure()
