@@ -100,6 +100,7 @@ jobs:
           tail -80 phpunit-output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
       - name: Upload test output
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: phpunit-output-${{ matrix.os }}-${{ matrix.php }}
