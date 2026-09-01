@@ -72,7 +72,12 @@ jobs:
         run: |
           START=$(date +%s)
           # Use timeout to catch hangs — 25 min max for a suite that takes 5 min on Windows
-          timeout 1500 php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null >phpunit-output.txt 2>&1; CODE=$?
+          # macOS doesn't have GNU timeout, use perl alarm as fallback
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 1500 php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null >phpunit-output.txt 2>&1; CODE=$?
+          else
+            perl -e 'alarm 1500; exec @ARGV' php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null >phpunit-output.txt 2>&1; CODE=$?
+          fi
           END=$(date +%s)
           echo "PHPUnit duration: $((END - START))s exit=$CODE" >> phpunit-output.txt
 
