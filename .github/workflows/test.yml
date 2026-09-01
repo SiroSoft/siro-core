@@ -71,9 +71,10 @@ jobs:
         shell: bash
         run: |
           START=$(date +%s)
-          php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null 2>&1 | tee phpunit-output.txt; CODE=${PIPESTATUS[0]}
+          php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null >phpunit-output.txt 2>&1; CODE=$?
           END=$(date +%s)
-          echo "PHPUnit duration: $((END - START))s exit=$CODE" | tee -a phpunit-output.txt
+          echo "PHPUnit duration: $((END - START))s exit=$CODE" >> phpunit-output.txt
+          cat phpunit-output.txt
           exit $CODE
       - name: Show test failures
         if: failure()
