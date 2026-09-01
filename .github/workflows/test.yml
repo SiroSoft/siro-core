@@ -71,21 +71,23 @@ jobs:
         shell: bash
         run: |
           START=$(date +%s)
-          # Use timeout to catch hangs — 25 min max for a suite that takes 5 min on Windows
-          # macOS doesn't have GNU timeout, use perl alarm as fallback
-          if command -v timeout >/dev/null 2>&1; then
-            timeout 1500 php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null >phpunit-output.txt 2>&1; CODE=$?
-          else
-            perl -e 'alarm 1500; exec @ARGV' php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null >phpunit-output.txt 2>&1; CODE=$?
-          fi
+          # Run PHPUnit with 25-min timeout (cross-platform)
+          # Use background watchdog to kill if test hangs
+          php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox \
+            < /dev/null >phpunit-output.txt 2>&1 &
+          TEST_PID=$!
+          (sleep 1500; kill -9 $TEST_PID 2>/dev/null) &
+          WATCHDOG_PID=$!
+          wait $TEST_PID 2>/dev/null; CODE=$?
+          kill $WATCHDOG_PID 2>/dev/null; wait $WATCHDOG_PID 2>/dev/null
+          # Map SIGKILL (137) to timeout exit code 124
+          if [ $CODE -eq 137 ]; then CODE=124; fi
           END=$(date +%s)
           echo "PHPUnit duration: $((END - START))s exit=$CODE" >> phpunit-output.txt
-
           cat phpunit-output.txt
-          # timeout exits with 124 if it killed the process
           if [ $CODE -eq 124 ]; then
-            echo "TIMEOUT: PHPUnit killed after 25 minutes" >> $GITHUB_STEP_SUMMARY
-            echo "Last test output:" >> $GITHUB_STEP_SUMMARY
+            echo '## PHPUnit TIMEOUT' >> $GITHUB_STEP_SUMMARY
+            echo 'Suite killed after 25 minutes. Last output:' >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             tail -20 phpunit-output.txt >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
