@@ -69,7 +69,7 @@ jobs:
           fi
       - name: Run PHPUnit (Unit + Integration)
         shell: bash
-        run: php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress 2>&1 | tee phpunit-output.txt; exit ${PIPESTATUS[0]}
+        run: php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress < /dev/null 2>&1 | tee phpunit-output.txt; exit ${PIPESTATUS[0]}
       - name: Show test failures
         if: failure()
         shell: bash
