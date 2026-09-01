@@ -30,6 +30,13 @@ final class TinkerCommand implements CommandInterface
             return 1;
         }
 
+        // Tinker requires an interactive TTY. Exit gracefully when STDIN
+        // is not a terminal (CI runners, piped input, cron, etc.).
+        if (function_exists('posix_isatty') && !posix_isatty(STDIN)) {
+            $this->write('Tinker requires an interactive terminal.');
+            return 0;
+        }
+
         $historyFile = $this->getHistoryFile();
 
         if (function_exists('readline_read_history')) {
