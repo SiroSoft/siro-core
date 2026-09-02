@@ -70,11 +70,27 @@ jobs:
       - name: Run PHPUnit (Unit + Integration)
         shell: bash
         run: |
+          PROGRESS="/tmp/phpunit-progress.txt"
           START=$(date +%s)
-          php vendor/bin/phpunit --testsuite=Unit,Integration --no-progress --testdox < /dev/null >phpunit-output.txt 2>&1; CODE=$?
+          # Launch progress monitor in background
+          chmod +x tests/ci-progress-monitor.sh
+          CI_PROGRESS_FILE="$PROGRESS" bash tests/ci-progress-monitor.sh phpunit-output.txt &
+          MPID=$!
+          # Run PHPUnit
+          php vendor/bin/phpunit \
+            --configuration=phpunit-ci.xml \
+            --testsuite=Unit,Integration \
+            --no-progress --testdox \
+            < /dev/null \
+            >phpunit-output.txt 2>&1; CODE=$?
+          kill $MPID 2>/dev/null 2>&1
           END=$(date +%s)
           echo "PHPUnit duration: $((END - START))s exit=$CODE" >> phpunit-output.txt
           cat phpunit-output.txt
+          echo '## Test Progress' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat "$PROGRESS" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           exit $CODE
       - name: Show test failures
         if: failure()
@@ -84,12 +100,18 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           tail -80 phpunit-output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          echo '## Full Progress Log' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/phpunit-progress.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
       - name: Upload test output
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: phpunit-output-${{ matrix.os }}-${{ matrix.php }}
-          path: phpunit-output.txt
+          path: |
+            phpunit-output.txt
+            /tmp/phpunit-progress.txt
           retention-days: 7
 
   fuzz-dast:
