@@ -81,6 +81,7 @@ jobs:
             --configuration=phpunit-ci.xml \
             --testsuite=Unit,Integration \
             --no-progress --testdox \
+            --log-junit=results.xml \
             < /dev/null \
             >phpunit-output.txt 2>&1; CODE=$?
           kill $MPID 2>/dev/null 2>&1
@@ -112,6 +113,7 @@ jobs:
           path: |
             phpunit-output.txt
             /tmp/phpunit-progress.txt
+            results.xml
           retention-days: 7
 
   fuzz-dast:
