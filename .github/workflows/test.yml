@@ -272,10 +272,18 @@ jobs:
       - name: Infection Mutation Testing (min MSI 80%)
         shell: bash
         run: |
-          php -d memory_limit=512M -d zend_extension=xdebug vendor/bin/infection --min-msi=80 --threads=4 --no-progress 2>&1 | tee mutation-output.txt; CODE=${PIPESTATUS[0]}
+          set +e
+          {
+            echo "PHP: $(php -v 2>&1 | head -1)"
+            echo "xdebug: $(php -d zend_extension=xdebug -r 'echo extension_loaded("xdebug") ? "loaded" : "NOT loaded";' 2>&1)"
+            echo "infection bin: $(ls -la vendor/bin/infection 2>&1 | head -2)"
+            php -d memory_limit=512M -d zend_extension=xdebug vendor/bin/infection --min-msi=80 --threads=4 --no-progress 2>&1
+          } | tee mutation-output.txt
+          CODE=${PIPESTATUS[0]}
+          echo "exit_code=$CODE" >> $GITHUB_STEP_SUMMARY
           echo '## Mutation Output' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -60 mutation-output.txt >> $GITHUB_STEP_SUMMARY
+          tail -80 mutation-output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           exit $CODE
 
