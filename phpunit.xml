@@ -61,6 +61,7 @@
             <file>tests/unit/MutationCoverageTest.php</file>
             <file>tests/unit/IdempotencyDeepMutationTest.php</file>
             <file>tests/unit/AuthGuardDeepMutationTest.php</file>
+            <file>tests/unit/JWTDeepMutationTest.php</file>
         </testsuite>
     </testsuites>
 
