@@ -58,6 +58,9 @@
             <file>tests/unit/SessionTest.php</file>
             <file>tests/unit/SecurityTest.php</file>
             <file>tests/unit/SecurityFixesTest.php</file>
+            <file>tests/unit/MutationCoverageTest.php</file>
+            <file>tests/unit/IdempotencyDeepMutationTest.php</file>
+            <file>tests/unit/AuthGuardDeepMutationTest.php</file>
         </testsuite>
     </testsuites>
 </phpunit>
