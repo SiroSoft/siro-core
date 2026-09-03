@@ -280,11 +280,11 @@ jobs:
             php -d memory_limit=512M -d zend_extension=xdebug vendor/bin/infection --min-msi=80 --threads=4 --no-progress 2>&1
           } | tee mutation-output.txt
           CODE=${PIPESTATUS[0]}
-          echo "exit_code=$CODE" >> $GITHUB_STEP_SUMMARY
-          echo '## Mutation Output' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -80 mutation-output.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          # Emit annotations readable via checks API
+          tail -25 mutation-output.txt | sed 's/::/__/g' | head -25 | while IFS= read -r l; do
+            [ -n "$l" ] && echo "::error::${l:0:300}"
+          done
+          echo "mutation_exit_code=$CODE"
           exit $CODE
 
   benchmark:
