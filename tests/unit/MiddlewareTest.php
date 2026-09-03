@@ -14,6 +14,7 @@ final class MiddlewareTest extends TestCase
 {
     public function testCorsMiddlewareAddsHeaders(): void
     {
+        putenv('CORS_ALLOWED_ORIGINS=*');
         $request = new Request('GET', '/test', [], ['origin' => 'http://localhost']);
         $mw = new CorsMiddleware();
         $response = $mw->handle($request, fn () => Response::success([], 'OK'));

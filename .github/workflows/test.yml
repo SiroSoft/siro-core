@@ -77,10 +77,10 @@ jobs:
           CI_PROGRESS_FILE="$PROGRESS" bash tests/ci-progress-monitor.sh phpunit-output.txt &
           MPID=$!
           # Run PHPUnit
-          php -d output_buffering=0 -d implicit_flush=1 vendor/bin/phpunit \
+          php vendor/bin/phpunit \
             --configuration=phpunit-ci.xml \
             --testsuite=Unit,Integration \
-            --no-progress --testdox --order-by=random \
+            --no-progress --testdox \
             --log-junit=results.xml \
             < /dev/null \
             >phpunit-output.txt 2>&1; CODE=$?
