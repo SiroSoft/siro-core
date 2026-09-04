@@ -71,7 +71,7 @@ final class RedisDriverMutationTest extends TestCase
         $driver = new RedisDriver($this->redis);
         $driver->set('del', 'x', 60);
         $this->assertNotNull($driver->get('del'));
-        $this->assertTrue($driver->delete('del'));
+        $this->assertTrue($driver->forget('del'));
         $this->assertNull($driver->get('del'));
     }
 
