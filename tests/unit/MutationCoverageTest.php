@@ -55,6 +55,9 @@ final class MutationCoverageTest extends TestCase
               $_ENV['JWT_PREVIOUS_SECRET'], $_ENV['APP_URL']);
         JWT::reset();
         Cache::reset();
+        // Fresh container so auth.resolver/auth.provider bindings from other
+        // test classes cannot leak into AuthGuard::resolve()/getUserProvider().
+        Container::setInstance(new Container());
     }
 
     protected function tearDown(): void
@@ -71,6 +74,7 @@ final class MutationCoverageTest extends TestCase
         Env::reset();
         Cache::reset();
         JWT::reset();
+        Container::setInstance(null);
         parent::tearDown();
     }
 

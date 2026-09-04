@@ -34,6 +34,9 @@ final class AuthGuardDeepMutationTest extends TestCase
         unset($_ENV['JWT_SECRET'], $_ENV['JWT_KEY_VERSION'], $_ENV['JWT_ALGORITHM']);
         JWT::reset();
         AuthGuard::setInstance(null);
+        // Fresh container so auth.resolver/auth.provider bindings from other
+        // test classes cannot leak into resolve()/getUserProvider().
+        Container::setInstance(new Container());
     }
 
     protected function tearDown(): void
@@ -44,6 +47,7 @@ final class AuthGuardDeepMutationTest extends TestCase
         Env::reset();
         JWT::reset();
         AuthGuard::setInstance(null);
+        Container::setInstance(null);
         parent::tearDown();
     }
 
@@ -420,6 +424,13 @@ final class AuthGuardDeepMutationTest extends TestCase
 
     public function testGetUserProviderReturnsNullWhenNoProviderBound(): void
     {
+        // Other test files (LogReplayExecutionTest, OpenApiTest) declare
+        // App\Models\User at file scope, which pollutes the process once their
+        // files are loaded. That fallback path is covered there; here we can
+        // only assert the null path while the class is genuinely absent.
+        if (class_exists('App\\Models\\User')) {
+            $this->markTestSkipped('App\Models\User already defined by another test file');
+        }
         AuthGuard::setInstance(null);
         $guard = AuthGuard::instance();
         $ref = new \ReflectionMethod($guard, 'getUserProvider');

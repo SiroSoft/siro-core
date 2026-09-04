@@ -6,6 +6,9 @@
             "Cache"
         ]
     },
+    "phpUnit": {
+        "configDir": "config/mutation"
+    },
     "logs": {
         "text": "coverage/infection.log",
         "summary": "coverage/infection-summary.log"
