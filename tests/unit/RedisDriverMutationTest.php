@@ -80,16 +80,19 @@ final class RedisDriverMutationTest extends TestCase
         $driver = new RedisDriver($this->redis);
         $driver->set('c1', 1, 60);
         $driver->set('c2', 2, 60);
-        $this->assertTrue($driver->clear());
+        $this->assertGreaterThanOrEqual(2, $driver->flush());
         $this->assertNull($driver->get('c1'));
+        $this->assertNull($driver->get('c2'));
     }
 
-    public function testCacheRedisIncrement(): void
+    public function testCacheRedisFlushPrefix(): void
     {
         $driver = new RedisDriver($this->redis);
-        $driver->set('inc', 5, 60);
-        $this->assertIsInt($driver->increment('inc'));
-        $this->assertSame(6, $driver->get('inc'));
+        $driver->set('pre:inc', 5, 60);
+        $driver->set('other', 'x', 60);
+        $this->assertGreaterThanOrEqual(1, $driver->flush('pre:'));
+        $this->assertNull($driver->get('pre:inc'));
+        $this->assertSame('x', $driver->get('other'));
     }
 
     public function testQueueRedisDriver(): void
