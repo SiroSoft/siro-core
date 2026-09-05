@@ -22,13 +22,19 @@ final class RedisDriverMutationTest extends TestCase
             $this->markTestSkipped('ext-redis not available');
         }
         $this->redis = new \Redis();
+        $usable = false;
         try {
-            $ok = $this->redis->connect('127.0.0.1', 6379, 1);
+            if ($this->redis->connect('127.0.0.1', 6379, 1)) {
+                // phpredis >= 6 throws on a refused connection instead of
+                // returning false, and a TCP peer may accept then drop the
+                // first command. PING proves the server is actually usable.
+                $usable = $this->redis->ping() === true || $this->redis->ping() === '+PONG';
+            }
         } catch (\RedisException) {
-            $ok = false; // phpredis >= 6 throws on refused connection instead of returning false
+            $usable = false;
         }
-        if (!$ok) {
-            $this->markTestSkipped('No Redis server at 127.0.0.1:6379');
+        if (!$usable) {
+            $this->markTestSkipped('No usable Redis server at 127.0.0.1:6379');
         }
         $this->redis->flushAll();
     }
@@ -36,7 +42,11 @@ final class RedisDriverMutationTest extends TestCase
     protected function tearDown(): void
     {
         if (isset($this->redis)) {
-            $this->redis->flushAll();
+            try {
+                $this->redis->flushAll();
+            } catch (\RedisException) {
+                // server already gone — nothing to clean up
+            }
         }
         parent::tearDown();
     }
