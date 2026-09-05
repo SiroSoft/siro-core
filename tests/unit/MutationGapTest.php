@@ -19,8 +19,6 @@ use Siro\Core\Env;
  */
 final class MutationGapTest extends TestCase
 {
-    private ?string $token = null;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -329,37 +327,41 @@ final class MutationGapTest extends TestCase
     // JWT — key rotation
     // ================================================================
 
-    public function testTokenEncodedWithOldSecretFailsAfterRotation(): void
+    public function testOldSecretTokenAcceptedDuringRotationGracePeriod(): void
     {
+        // Real rotation semantics: after one rotation JWT_KEY_VERSION becomes 2,
+        // tokens signed with the previous secret remain valid during the grace window.
         $oldSecret = 'old-secret-key-that-is-long-enough-for-32';
-        putenv("JWT_SECRET={$oldSecret}");
-        Env::reset();
-        JWT::reset();
-        $token = JWT::encodeAccess(1, 1, 3600);
-
-        // Rotate to new secret
         $newSecret = 'new-secret-key-that-is-long-enough-for-32';
-        putenv("JWT_SECRET={$newSecret}");
-        putenv('JWT_PREVIOUS_SECRET=' . $oldSecret);
-        Env::reset();
+
+        JWT::reset();
+        $token = null;
+        $this->withEnv('JWT_SECRET', $oldSecret, function () use (&$token): void {
+            $token = JWT::encodeAccess(1, 1, 3600);
+        });
         JWT::reset();
 
-        // Old token should still work with rotation
-        $decoded = JWT::decode($token);
-        $this->assertEquals(1, $decoded['sub']);
+        $this->withEnv('JWT_SECRET', $newSecret, function () use ($oldSecret, $token): void {
+            $this->withEnv('JWT_PREVIOUS_SECRET', $oldSecret, function () use ($token): void {
+                $this->withEnv('JWT_KEY_VERSION', '2', function () use ($token): void {
+                    JWT::reset();
+                    $decoded = JWT::decode($token);
+                    $this->assertSame(1, $decoded['sub']);
+                });
+            });
+        });
     }
 
     public function testTokenWithWrongSecretFails(): void
     {
         JWT::reset();
         $token = JWT::encodeAccess(1, 1, 3600);
-        $this->token = $token;
-
         JWT::reset();
-        $this->withEnv('JWT_SECRET', 'wrong-secret-key-long-enough-for-thirtytwo', function (): void {
-            $this->withEnv('JWT_PREVIOUS_SECRET', null, function (): void {
+
+        $this->withEnv('JWT_SECRET', 'wrong-secret-key-long-enough-for-thirtytwo', function () use ($token): void {
+            $this->withEnv('JWT_PREVIOUS_SECRET', null, function () use ($token): void {
                 $this->expectException(\RuntimeException::class);
-                JWT::decode($this->token);
+                JWT::decode($token);
             });
         });
     }
