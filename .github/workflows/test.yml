@@ -96,6 +96,17 @@ jobs:
           if [ $ALIVE -eq 1 ]; then
             echo "=== INTERNAL TIMEOUT: PHPUnit hung >20min, killing PID $PU_PID ===" >> phpunit-output.txt
             kill $PU_PID 2>/dev/null
+            sleep 10
+            if kill -0 $PU_PID 2>/dev/null; then
+              echo "=== SIGTERM ignored, sending SIGKILL ===" >> phpunit-output.txt
+              kill -9 $PU_PID 2>/dev/null
+            fi
+          fi
+          # Kill orphaned child processes (php -S dev servers etc.) that hold the log pipe
+          CHILDREN=$(pgrep -P $PU_PID 2>/dev/null || true)
+          if [ -n "$CHILDREN" ]; then
+            echo "=== Killing orphaned children: $CHILDREN ===" >> phpunit-output.txt
+            for c in $CHILDREN; do kill -9 $c 2>/dev/null || true; done
           fi
           wait $PU_PID; CODE=$?
           kill $MPID 2>/dev/null 2>&1
