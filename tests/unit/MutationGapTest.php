@@ -770,9 +770,232 @@ final class MutationGapTest extends TestCase
         $this->assertSame(0, ApiKey::revokeAllForUser($userId));
     }
 
-    public function testCreateScopesAreNormalizedToLowerCase(): void
+    // ================================================================
+    // JWT — exact exception messages (kills Concat/ConcatOperandRemoval)
+    // ================================================================
+
+    public function testUnsupportedAlgorithmMessageListsAllowedAlgorithms(): void
     {
-        $created = ApiKey::create('Norm', '  READ , Write  ', null, 0);
+        JWT::reset();
+        $this->withEnv('JWT_ALGORITHM', 'RS512', function (): void {
+            try {
+                JWT::encode(['sub' => 1]);
+                $this->fail('Expected RuntimeException was not thrown');
+            } catch (\RuntimeException $e) {
+                $this->assertSame(
+                    'Unsupported JWT algorithm: RS512. Supported: HS256, RS256.',
+                    $e->getMessage()
+                );
+            }
+        });
+    }
+
+    public function testAlgorithmMismatchMessageStatesBothAlgorithms(): void
+    {
+        // Craft a token whose header declares RS256 while the server is configured HS256
+        $header = self::b64url(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+        $payload = self::b64url(json_encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 60, 'type' => 'access']));
+        $token = $header . '.' . $payload . '.AAAA';
+        try {
+            JWT::decode($token);
+            $this->fail('Expected RuntimeException was not thrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame(
+                'Algorithm mismatch: header declares RS256 but server expects HS256',
+                $e->getMessage()
+            );
+        }
+    }
+
+    public function testMissingSubMessageIsExact(): void
+    {
+        $payload = ['ver' => 1, 'iat' => time(), 'exp' => time() + 60, 'type' => 'access'];
+        try {
+            JWT::decode(self::encodeRaw($payload));
+            $this->fail('Expected RuntimeException was not thrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame(
+                'JWT token missing required "sub" claim (user ID). Token may be malformed or tampered.',
+                $e->getMessage()
+            );
+        }
+    }
+
+    public function testMissingVerMessageIsExact(): void
+    {
+        $payload = ['sub' => 1, 'iat' => time(), 'exp' => time() + 60, 'type' => 'access'];
+        try {
+            JWT::decode(self::encodeRaw($payload));
+            $this->fail('Expected RuntimeException was not thrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame(
+                'JWT token missing required "ver" claim (token version). Token may be from an incompatible system.',
+                $e->getMessage()
+            );
+        }
+    }
+
+    public function testFutureNbfMessageIsExact(): void
+    {
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 60, 'nbf' => time() + 999, 'type' => 'access'];
+        try {
+            JWT::decode(self::encodeRaw($payload));
+            $this->fail('Expected RuntimeException was not thrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Token is not yet valid (nbf).', $e->getMessage());
+        }
+    }
+
+    public function testFutureIatMessageIsExact(): void
+    {
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time() + 999, 'exp' => time() + 7200, 'type' => 'access'];
+        try {
+            JWT::decode(self::encodeRaw($payload));
+            $this->fail('Expected RuntimeException was not thrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Token issued in the future.', $e->getMessage());
+        }
+    }
+
+    public function testInvalidTypeMessageIsExact(): void
+    {
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 60, 'type' => 'admin'];
+        try {
+            JWT::decode(self::encodeRaw($payload));
+            $this->fail('Expected RuntimeException was not thrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Invalid token type.', $e->getMessage());
+        }
+    }
+
+    public function testWeakSecretMessageIsExact(): void
+    {
+        JWT::reset();
+        $this->withEnv('JWT_SECRET', 'short', function (): void {
+            try {
+                JWT::encode(['sub' => 1]);
+                $this->fail('Expected RuntimeException was not thrown');
+            } catch (\RuntimeException $e) {
+                $this->assertSame('JWT_SECRET is too weak. Use at least 32 characters.', $e->getMessage());
+            }
+        });
+    }
+
+    public function testStructureMessageIsExact(): void
+    {
+        try {
+            JWT::decode('only-two-parts');
+            $this->fail('Expected RuntimeException was not thrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Invalid token structure.', $e->getMessage());
+        }
+    }
+
+    /**
+     * Encode a raw payload with the CURRENT secret (no framework helpers for claims).
+     */
+    private static function encodeRaw(array $payload): string
+    {
+        $header = self::b64url(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+        $body = self::b64url(json_encode($payload));
+        $data = $header . '.' . $body;
+        $secret = (string) \Siro\Core\Env::get('JWT_SECRET', '');
+        $sig = self::b64url(hash_hmac('sha256', $data, $secret, true));
+        return $data . '.' . $sig;
+    }
+
+    private static function b64url(string $v): string
+    {
+        return rtrim(strtr(base64_encode($v), '+/', '-_'), '=');
+    }
+
+    // ================================================================
+    // ApiKey — validate shape with STRING numerics from DB
+    // (kills CastInt/CastString/Coalesce mutants that are no-ops on typed data)
+    // ================================================================
+
+    public function testValidateCastsAreObservableWithStringNumericRow(): void
+    {
+        // Insert a row where id/user_id are TEXT-typed strings — sqlite is dynamically typed
+        Database::execute(
+            "INSERT INTO api_keys (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+             VALUES ('Stringy', ?, ?, 'read', '77', '1700000000', '0', NULL)",
+            [hash('sha256', 'stringy-token-abc'), password_hash('stringy-token-abc', PASSWORD_DEFAULT)]
+        );
+        $data = ApiKey::validate('stringy-token-abc');
+        $this->assertNotNull($data);
+        // Casts MUST convert strings to ints / nulls handled
+        $this->assertIsInt($data['id']);
+        $this->assertSame(77, $data['user_id']);
+        $this->assertSame('Stringy', $data['name']);
+        $this->assertSame('read', $data['scopes']);
+        $this->assertNull($data['expires_at']);
+    }
+
+    public function testValidateDefaultCoalesceWhenColumnsNull(): void
+    {
+        // name/scopes have NOT NULL defaults in schema — set empty strings, NULL user_id
+        Database::execute(
+            "INSERT INTO api_keys (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+             VALUES ('', ?, ?, '', NULL, '1700000000', 0, NULL)",
+            [hash('sha256', 'null-cols-token'), password_hash('null-cols-token', PASSWORD_DEFAULT)]
+        );
+        $data = ApiKey::validate('null-cols-token');
+        $this->assertNotNull($data);
+        $this->assertSame('', $data['name']);
+        $this->assertSame('', $data['scopes']);
+        $this->assertSame(0, $data['user_id']);
+        $this->assertIsInt($data['id']);
+        $this->assertGreaterThan(0, $data['id']);
+    }
+
+    public function testHasScopeWithEmptyScopesReturnsFalse(): void
+    {
+        Database::execute(
+            "INSERT INTO api_keys (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+             VALUES ('Empty', ?, ?, '', 0, '1700000000', 0, NULL)",
+            [hash('sha256', 'empty-scope-token'), password_hash('empty-scope-token', PASSWORD_DEFAULT)]
+        );
+        $this->assertFalse(ApiKey::hasScope('empty-scope-token', 'read'));
+    }
+
+    public function testCreateTokenFormatIsExactlyTwoHexGroups(): void
+    {
+        $created = ApiKey::create('Fmt', 'read', null, 0);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{32}-[0-9a-f]{32}$/', $created['token']);
+    }
+
+    public function testCreateReturnsLowercasedTrimmedScopes(): void
+    {
+        $created = ApiKey::create('Trim', "  READ , wrItE  ", null, 0);
         $this->assertSame('read , write', $created['scopes']);
+        // Stored in DB identically
+        $row = Database::select('SELECT scopes FROM api_keys WHERE token_hash = ?', [hash('sha256', $created['token'])]);
+        $this->assertSame('read , write', (string) $row[0]['scopes']);
+    }
+
+    public function testCreateDateFormatIsExact(): void
+    {
+        $before = time();
+        $created = ApiKey::create('DateFmt', 'read', null, 0);
+        $after = time();
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $created['created_at']);
+        $parsed = \DateTime::createFromFormat('Y-m-d H:i:s', $created['created_at']);
+        $this->assertNotFalse($parsed);
+        $ts = $parsed->getTimestamp();
+        $this->assertGreaterThanOrEqual($before, $ts);
+        $this->assertLessThanOrEqual($after, $ts);
+    }
+
+    public function testCreateWithExpiryComputesExactExpirationTimestamp(): void
+    {
+        $before = time();
+        $created = ApiKey::create('Exp', 'read', null, 3);
+        $after = time();
+        $row = Database::select('SELECT expires_at FROM api_keys WHERE token_hash = ?', [hash('sha256', $created['token'])]);
+        $exp = (int) $row[0]['expires_at'];
+        // 3 days = 259200 seconds, must be anchored between before and after
+        $this->assertGreaterThanOrEqual($before + 259200, $exp);
+        $this->assertLessThanOrEqual($after + 259200, $exp);
     }
 }

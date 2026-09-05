@@ -28,6 +28,7 @@
             <file>../../tests/unit/JWTMutationTest.php</file>
             <file>../../tests/unit/JWTTest.php</file>
             <file>../../tests/unit/MutationGapTest.php</file>
+            <file>../../tests/unit/CacheDriverMutationTest.php</file>
             <file>../../tests/unit/MakeApiKeyCommandMutationTest.php</file>
             <file>../../tests/unit/IdempotencyMiddlewareDetailedTest.php</file>
             <file>../../tests/unit/IdempotencyMutationTest.php</file>
@@ -60,6 +61,7 @@
     <coverage>
         <report>
             <clover outputFile="../../coverage/clover.xml"/>
+            <xml outputDirectory="../../coverage/phpunit-xml"/>
         </report>
     </coverage>
 </phpunit>
