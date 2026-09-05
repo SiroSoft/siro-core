@@ -77,13 +77,27 @@ jobs:
           CI_PROGRESS_FILE="$PROGRESS" bash tests/ci-progress-monitor.sh phpunit-output.txt &
           MPID=$!
           # Run PHPUnit
+          # Run PHPUnit in background so we can enforce an internal timeout
           php vendor/bin/phpunit \
             --configuration=phpunit-ci.xml \
             --testsuite=Unit,Integration \
             --no-progress --testdox \
             --log-junit=results.xml \
+            --log-events-text=/tmp/phpunit-events.txt \
             < /dev/null \
-            >phpunit-output.txt 2>&1; CODE=$?
+            >phpunit-output.txt 2>&1 &
+          PU_PID=$!
+          # Poll: if PHPUnit is still alive after 20 min, kill it (hang detection)
+          ALIVE=1
+          for i in $(seq 1 120); do
+            sleep 10
+            if ! kill -0 $PU_PID 2>/dev/null; then ALIVE=0; break; fi
+          done
+          if [ $ALIVE -eq 1 ]; then
+            echo "=== INTERNAL TIMEOUT: PHPUnit hung >20min, killing PID $PU_PID ===" >> phpunit-output.txt
+            kill $PU_PID 2>/dev/null
+          fi
+          wait $PU_PID; CODE=$?
           kill $MPID 2>/dev/null 2>&1
           END=$(date +%s)
           echo "PHPUnit duration: $((END - START))s exit=$CODE" >> phpunit-output.txt
@@ -101,6 +115,10 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           tail -80 phpunit-output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          echo '## Last 15 events (hanging test = last Test\ Started)' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep 'Started' /tmp/phpunit-events.txt 2>/dev/null | tail -15 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           echo '## Full Progress Log' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat /tmp/phpunit-progress.txt >> $GITHUB_STEP_SUMMARY
@@ -113,6 +131,7 @@ jobs:
           path: |
             phpunit-output.txt
             /tmp/phpunit-progress.txt
+            /tmp/phpunit-events.txt
             results.xml
           retention-days: 7
 
