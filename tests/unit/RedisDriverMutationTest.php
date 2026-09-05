@@ -22,7 +22,11 @@ final class RedisDriverMutationTest extends TestCase
             $this->markTestSkipped('ext-redis not available');
         }
         $this->redis = new \Redis();
-        $ok = @$this->redis->connect('127.0.0.1', 6379, 1);
+        try {
+            $ok = $this->redis->connect('127.0.0.1', 6379, 1);
+        } catch (\RedisException) {
+            $ok = false; // phpredis >= 6 throws on refused connection instead of returning false
+        }
         if (!$ok) {
             $this->markTestSkipped('No Redis server at 127.0.0.1:6379');
         }

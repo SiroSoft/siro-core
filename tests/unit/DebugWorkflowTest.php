@@ -620,8 +620,13 @@ PHP;
         $vendorBin = $dir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin';
         mkdir($vendorBin, 0777, true);
         $shim = "#!/usr/bin/env php\n<?php\necho \"PHPUnit (shim) ran with args: \" . implode(' ', array_slice(\$argv, 1)) . \"\\n\";\nexit($exitCode);\n";
-        file_put_contents($vendorBin . DIRECTORY_SEPARATOR . 'phpunit', $shim);
-        // TestRunCommand invokes the file directly (no `php` prefix) — needs a .bat on Windows
+        $shimPath = $vendorBin . DIRECTORY_SEPARATOR . 'phpunit';
+        file_put_contents($shimPath, $shim);
+        // TestRunCommand invokes the file directly (no `php` prefix) — needs exec bit on Unix
+        // and a .bat wrapper on Windows.
+        if (DIRECTORY_SEPARATOR !== '\\') {
+            chmod($shimPath, 0755);
+        }
         $bat = "@echo off\r\nphp \"%~dp0phpunit\" %*\r\nexit /b $exitCode\r\n";
         file_put_contents($vendorBin . DIRECTORY_SEPARATOR . 'phpunit.bat', $bat);
         return $dir;
