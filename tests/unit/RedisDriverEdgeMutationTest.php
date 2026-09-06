@@ -37,9 +37,8 @@ namespace {
         public function expire($key, $ttl) { return false; }
         public function ttl($key) { return false; }
         public function scan(&$iterator, $pattern = null, $count = 0) { return false; }
-        public function dbSize() { return 0; }
-        public function flushDB() { return false; }
-        public function flushAll() { return false; }
+        public function flushDB($async = null) { return false; }
+        public function flushAll($async = null) { return false; }
         public function lPush($key, ...$values) { return false; }
         public function rPush($key, ...$values) { return false; }
         public function lPop($key) { return false; }
