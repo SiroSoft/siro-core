@@ -225,7 +225,7 @@ final class RedisStub extends \Redis
     private int $batchIndex = 0;
 
     /** @param int|null $iterator */
-    public function scan(&$iterator, $pattern = null, $count = 0): array|false
+    public function scan(&$iterator, $pattern = null, $count = 0, $type = null): array|false
     {
         if ($this->batchIndex >= count($this->scanBatches)) {
             $iterator = 0;
