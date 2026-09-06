@@ -7,20 +7,56 @@ namespace Siro\Core\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use Siro\Core\Cache\Drivers\RedisDriver;
 
-// Local dev machines may lack ext-redis; provide an untyped no-op base so the
-// stub below satisfies RedisDriver's \Redis type-hint. CI installs ext-redis,
-// in which case the real extension class is used as the base instead.
+// Local dev machines and CI phpunit cells (which do not install ext-redis)
+// may lack the extension. Provide a faithful "unavailable server" base so the
+// stub below satisfies RedisDriver's \Redis type-hint AND every class_exists()
+// guard in the codebase keeps degrading gracefully: connect() returns false,
+// exactly like a refused TCP connection on a real \Redis instance. CI mutation
+// jobs install the real extension, in which case it is used as the base.
 // @codeCoverageIgnoreStart
 if (!class_exists(\Redis::class)) {
     eval(<<<'PHP'
 namespace {
     class Redis {
-        public function scan(&$iterator, $pattern = null, $count = 0) { return false; }
-        public function del($key, ...$otherKeys) { return 0; }
+        public function connect($host, $port = 6379, $timeout = 0.0) { return false; }
+        public function pconnect($host, $port = 6379, $timeout = 0.0) { return false; }
+        public function auth($credentials) { return true; }
+        public function select($db) { return false; }
+        public function ping($message = null) { return false; }
         public function get($key) { return false; }
+        public function set($key, $value, $opt = null) { return false; }
         public function setex($key, $ttl, $value) { return false; }
+        public function setnx($key, $value) { return false; }
+        public function del($key, ...$otherKeys) { return 0; }
+        public function exists($key, ...$otherKeys) { return 0; }
+        public function keys($pattern) { return []; }
+        public function incr($key) { return false; }
+        public function incrBy($key, $value) { return false; }
+        public function decr($key) { return false; }
+        public function decrBy($key, $value) { return false; }
+        public function expire($key, $ttl) { return false; }
+        public function ttl($key) { return false; }
+        public function scan(&$iterator, $pattern = null, $count = 0) { return false; }
         public function dbSize() { return 0; }
         public function flushDB() { return false; }
+        public function flushAll() { return false; }
+        public function lPush($key, ...$values) { return false; }
+        public function rPush($key, ...$values) { return false; }
+        public function lPop($key) { return false; }
+        public function rPop($key) { return false; }
+        public function blPop($key, $timeout) { return []; }
+        public function brPop($key, $timeout) { return []; }
+        public function lLen($key) { return 0; }
+        public function lRange($key, $start, $end) { return []; }
+        public function lTrim($key, $start, $end) { return false; }
+        public function sAdd($key, ...$values) { return 0; }
+        public function sRem($key, ...$values) { return 0; }
+        public function sMembers($key) { return []; }
+        public function sIsMember($key, $value) { return false; }
+        public function hSet($key, $field, $value) { return 0; }
+        public function hGet($key, $field) { return false; }
+        public function hGetAll($key) { return []; }
+        public function rawCommand($command, ...$args) { return false; }
     }
 }
 PHP);
