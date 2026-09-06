@@ -13,6 +13,9 @@ use Siro\Core\Cache\Drivers\RedisDriver;
 // guard in the codebase keeps degrading gracefully: connect() returns false,
 // exactly like a refused TCP connection on a real \Redis instance. CI mutation
 // jobs install the real extension, in which case it is used as the base.
+// NOTE: the base is declared with UNTYPED signatures, matching how phpredis
+// 5.x ships; RedisStub's overrides below declare their own covariant return
+// types, which is legal against both untyped and typed (6.x) parents.
 // @codeCoverageIgnoreStart
 if (!class_exists(\Redis::class)) {
     eval(<<<'PHP'
@@ -184,11 +187,15 @@ final class RedisDriverEdgeMutationTest extends TestCase
  * working; every method the driver touches is overridden with in-memory
  * behaviour.
  *
- * When the real ext-redis is loaded, its native signatures are inherited
- * verbatim (no overrides beyond the methods below) — signature compatibility
- * is guaranteed by construction on every PHP/ext-redis version, which a
- * hand-written return type is not (phpredis changed Redis::dbSize()'s type
- * between releases and broke CI on exactly that).
+ * Signature-compatibility contract (verified against phpredis 5.3.7 and the
+ * 6.x signature set that broke CI — Redis::dbSize(): Redis|int|false):
+ * - parameters stay UNTYPED: widening/omitting param types is always legal;
+ * - overrides declare their OWN covariant return types, each a subset of the
+ *   strictest (6.x) native union AND a legal addition over 5.x's untyped
+ *   declarations. This survives any phpredis release: a future parent may
+ *   only narrow (child ⊇ parent stays valid) or keep types untyped.
+ * - omitting the return type instead would be fatal whenever the loaded
+ *   parent declares one — exactly the ubuntu CI fatal this file once had.
  *
  * @codeCoverageIgnore
  */
@@ -217,11 +224,8 @@ final class RedisStub extends \Redis
 
     private int $batchIndex = 0;
 
-    /**
-     * @param int|null $iterator
-     * @return array<int, string>|false
-     */
-    public function scan(&$iterator, $pattern = null, $count = 0)
+    /** @param int|null $iterator */
+    public function scan(&$iterator, $pattern = null, $count = 0): array|false
     {
         if ($this->batchIndex >= count($this->scanBatches)) {
             $iterator = 0;
@@ -234,10 +238,8 @@ final class RedisStub extends \Redis
         return $batch;
     }
 
-    /**
-     * @return int|false Number of keys removed (phpredis native signature).
-     */
-    public function del($key, ...$otherKeys)
+    /** Number of keys removed (phpredis native signature). */
+    public function del($key, ...$otherKeys): int|false
     {
         $keys = is_array($key) ? $key : [$key, ...$otherKeys];
         $removed = 0;
@@ -254,15 +256,13 @@ final class RedisStub extends \Redis
         return $removed;
     }
 
-    /**
-     * @return string|false Stored payload or false on miss (phpredis native).
-     */
-    public function get($key)
+    /** Stored payload or false on miss (phpredis native). */
+    public function get($key): string|false
     {
         return $this->store[$key] ?? false;
     }
 
-    public function setex($key, $ttl, $value)
+    public function setex($key, $ttl, $value): bool
     {
         $this->lastSetexTtl = (int) $ttl;
         $this->store[$key] = (string) $value;
@@ -270,12 +270,12 @@ final class RedisStub extends \Redis
         return true;
     }
 
-    public function dbSize()
+    public function dbSize(): int
     {
         return (int) $this->dbSizeValue;
     }
 
-    public function flushDB($async = null)
+    public function flushDB($async = null): bool
     {
         $this->flushDbCalled = true;
         $this->store = [];
