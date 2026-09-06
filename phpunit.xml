@@ -26,40 +26,21 @@
         <testsuite name="DAST">
             <directory suffix="Test.php">tests/dast</directory>
         </testsuite>
-        <testsuite name="Mutation">
-            <file>tests/unit/ApiKeyMutationTest.php</file>
-            <file>tests/unit/ApiKeyTest.php</file>
-            <file>tests/unit/AuthFixesTest.php</file>
-            <file>tests/unit/AuthGuardMutationTest.php</file>
-            <file>tests/unit/AuthMiddlewareDetailedMutationTest.php</file>
-            <file>tests/unit/AuthMiddlewareDetailedTest.php</file>
-            <file>tests/unit/AuthMiddlewareMutationTest.php</file>
-            <file>tests/unit/AuthMiddlewareTest.php</file>
-            <file>tests/unit/BatchCursorApiKeyTest.php</file>
-            <file>tests/unit/JWTExtraMutationTest.php</file>
-            <file>tests/unit/JWTMutationTest.php</file>
-            <file>tests/unit/JWTTest.php</file>
-            <file>tests/unit/MakeApiKeyCommandMutationTest.php</file>
-            <file>tests/unit/IdempotencyMiddlewareDetailedTest.php</file>
-            <file>tests/unit/IdempotencyMutationTest.php</file>
-            <file>tests/unit/IdempotencyTest.php</file>
-            <file>tests/unit/CorsEtagIdempotencyMutationTest.php</file>
-            <file>tests/unit/CacheExtendedTest.php</file>
-            <file>tests/unit/CacheStampedeTest.php</file>
-            <file>tests/unit/CacheTest.php</file>
-            <file>tests/unit/EnvCacheLoadTest.php</file>
-            <file>tests/unit/RedisDriverMutationTest.php</file>
-            <file>tests/unit/ThrottleRedisMutationTest.php</file>
-            <file>tests/unit/EncrypterEdgeCasesTest.php</file>
-            <file>tests/unit/EncrypterTest.php</file>
-            <file>tests/unit/HashTest.php</file>
-            <file>tests/unit/SessionFlashTest.php</file>
-            <file>tests/unit/SessionMutationTest.php</file>
-            <file>tests/unit/SessionTest.php</file>
-            <file>tests/unit/SecurityTest.php</file>
-            <file>tests/unit/SecurityFixesTest.php</file>
-        </testsuite>
     </testsuites>
 
+    <!-- Coverage filter: only present so coverage jobs, which pass
+         coverage flags on the CLI, collect data. Harmless for runs without
+         a coverage driver. -->
+    <source>
+        <include>
+            <directory suffix=".php">.</directory>
+        </include>
+        <exclude>
+            <directory>tests</directory>
+            <directory>vendor</directory>
+            <directory>scripts</directory>
+            <directory>coverage</directory>
+        </exclude>
+    </source>
 
 </phpunit>
