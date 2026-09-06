@@ -160,15 +160,15 @@ Last updated: 2026-08-28
 
 | Gate | Status | Evidence |
 |------|--------|----------|
-| A1: Cross-platform CI | 🟡 Workflow ready / 9× verification pending | GitHub Actions |
+| A1: Cross-platform CI | 🟡 24/33 green; ubuntu cells red (see GitHub run #360) | GitHub Actions |
 | A3: CLI audit | ✅ 95/95 verified | 480 tests, 0 failures |
 | A4: API freeze | ✅ 208 classes frozen | API_SURFACE.md |
 | A6: Security | ✅ Gate passed | 0 advisories, all escaped |
-| B1: Soak infrastructure | ✅ Harness validated | 4215 reqs, 0 errors |
-| B2: 48h soak | 🟡 Harness ready / 48h pending | Needs Linux PHP-FPM |
+| B1: Soak infrastructure | ✅ Harness validated | 17,720 reqs, 0 errors |
+| B2: 48h soak | ✅ PASS — 30.45M req, 0 fatals, flat memory | B2_SOAK_REPORT.md (2026-09-06) |
 | B3: Cache concurrency | ✅ Stampede protected | 100 workers → 1 callback |
 | B4: Queue/worker | ✅ Gate passed | 72 tests, 266 assertions |
-| B5: Production gate | ⏳ After B2 | |
+| B5: Production gate | ⏳ Run `composer release:check` on Linux post-CI-green | |
 | C: Release contract | ✅ Complete | Docs + contracts |
 | D: RC dogfood | ⏳ Pending | |
 
@@ -178,12 +178,12 @@ Last updated: 2026-08-28
 
 | Gate | Date | Status |
 |------|------|--------|
-| A1: Cross-platform CI | 2026-08-27 | 🟡 CI ready / verification pending |
+| A1: Cross-platform CI | 2026-09-06 | 🟡 24/33 green — ubuntu red under investigation |
 | A3: CLI audit | 2026-08-27 | ✅ 95/95 verified |
 | A4: API freeze | 2026-08-27 | ✅ Inventory complete |
 | A6: Security | 2026-08-27 | ✅ Gate passed |
 | B1: Soak infrastructure | 2026-08-28 | ✅ Harness validated |
-| B2: 48h soak | — | 🟡 Pending |
+| B2: 48h soak | 2026-09-06 | ✅ PASS — B2_SOAK_REPORT.md |
 | B3: Cache concurrency | 2026-08-28 | ✅ Stampede protected |
 | B4: Queue/worker | 2026-08-28 | ✅ Gate passed |
 | C: Release contract | 2026-08-28 | ✅ Complete |
