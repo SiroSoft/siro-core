@@ -182,12 +182,21 @@ final class RedisDriverEdgeMutationTest extends TestCase
 
 /**
  * Minimal \Redis stand-in. Extends \Redis so the RedisDriver type-hint keeps
- * working; every touched method is overridden with in-memory behaviour.
+ * working; every method the driver touches is overridden with in-memory
+ * behaviour.
+ *
+ * When the real ext-redis is loaded, its native signatures are inherited
+ * verbatim (no overrides beyond the methods below) — signature compatibility
+ * is guaranteed by construction on every PHP/ext-redis version, which a
+ * hand-written return type is not (phpredis changed Redis::dbSize()'s type
+ * between releases and broke CI on exactly that).
  *
  * @codeCoverageIgnore
  */
 final class RedisStub extends \Redis
 {
+    /** Satisfied natively via inherited signatures when ext-redis is present. */
+    private const NATIVE = true;
     /** @var list<array<int, string>|false> */
     public array $scanBatches = [];
 
@@ -227,8 +236,7 @@ final class RedisStub extends \Redis
     }
 
     /**
-     * @param list<string>|string $key
-     * @return int
+     * @return int|false Number of keys removed (phpredis native signature).
      */
     public function del($key, ...$otherKeys)
     {
@@ -248,14 +256,14 @@ final class RedisStub extends \Redis
     }
 
     /**
-     * @return bool|string
+     * @return string|false Stored payload or false on miss (phpredis native).
      */
     public function get($key)
     {
         return $this->store[$key] ?? false;
     }
 
-    public function setex($key, $ttl, $value): bool
+    public function setex($key, $ttl, $value)
     {
         $this->lastSetexTtl = (int) $ttl;
         $this->store[$key] = (string) $value;
@@ -263,15 +271,12 @@ final class RedisStub extends \Redis
         return true;
     }
 
-    /**
-     * @return int
-     */
     public function dbSize()
     {
         return (int) $this->dbSizeValue;
     }
 
-    public function flushDB(): bool
+    public function flushDB($async = null)
     {
         $this->flushDbCalled = true;
         $this->store = [];
