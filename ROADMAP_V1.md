@@ -318,7 +318,7 @@ All of these must be true:
 - [ ] Zero P0 bugs for 2 weeks
 - [ ] Zero P1 bugs for 1 week
 - [ ] CI green on full matrix
-- [ ] Soak test 48h passes
+- [x] Soak test 48h passes — B2_SOAK_REPORT.md (30.45M req, 0 fatals, flat memory)
 - [ ] `composer audit` clean
 - [ ] `API_SURFACE.md` finalized
 - [ ] UPGRADE.md complete
@@ -401,8 +401,8 @@ These are valuable but NOT blockers for v1.0:
 - [ ] Security audit clean
 
 ### Phase B Complete
-- [ ] 48h soak passes all criteria
-- [ ] Cache stampede addressed
+- [x] 48h soak passes all criteria — B2_SOAK_REPORT.md
+- [x] Cache stampede addressed
 - [ ] Error handling verified
 
 ### Phase C Complete

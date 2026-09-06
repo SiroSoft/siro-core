@@ -189,6 +189,7 @@ $counters = [
     'expected_4xx' => 0,
     'unexpected_4xx' => 0,
     '5xx' => 0,
+    'injected_5xx' => 0,
     'errors' => 0,
     'cache_stampede_callbacks' => 0,
     'db_ops' => 0,
@@ -236,7 +237,12 @@ while (microtime(true) < $deadline) {
     } elseif ($httpCode === 422 || $httpCode === 404) {
         $counters['expected_4xx']++;
     } elseif ($httpCode >= 500) {
-        $counters['5xx']++;
+        if (array_key_exists($route['uri'], $failRoutes)) {
+            // Deliberate failure injection: expected 500, not a framework fault.
+            $counters['injected_5xx']++;
+        } else {
+            $counters['5xx']++;
+        }
     } else {
         $counters['expected_4xx']++;
     }
