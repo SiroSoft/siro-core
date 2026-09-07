@@ -1,0 +1,17 @@
+# Gitleaks configuration.
+#
+# Extends the default rule set. The only local addition is an allowlist for
+# mutation-testing fixtures whose string literals are deliberately fake
+# credentials (they exist to be mutated by Infection, never to authenticate).
+# See D1_SOAK_REPORT.md / release gate notes: these triggered the only
+# gitleaks findings in the repository's full-history scan.
+[extend]
+useDefault = true
+
+[allowlist]
+  description = "Fake credentials in mutation-test fixtures (not real secrets)"
+  paths = [
+    '''tests/unit/JWTDeepMutationTest\.php''',
+    '''tests/unit/MutationGapTest\.php''',
+    '''tests/unit/MutationCoverageTest\.php''',
+  ]
