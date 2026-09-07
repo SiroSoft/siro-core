@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use Siro\Core\Storage;
 
 final class SecurityTest extends TestCase
 {
@@ -292,10 +293,33 @@ final class SecurityTest extends TestCase
 
     public function testPathTraversalPrevention(): void
     {
-        $userPath = '../../../etc/passwd';
-        $normalized = realpath($userPath);
+        // Exercise the engine's real traversal guard (Storage::localPath)
+        // against a sandbox inside the project, so the result does not depend
+        // on the checkout location's depth (a naive realpath('..etc/passwd')
+        // assertion passes only when CWD is deep enough — see D1_SOAK_REPORT).
+        $base = dirname(__DIR__, 2);
+        $storageDir = 'storage/test_trav_' . uniqid();
+        $full = $base . '/' . $storageDir;
+        if (!is_dir($full)) {
+            mkdir($full, 0777, true);
+        }
 
-        $this->assertFalse($normalized);
+        putenv('STORAGE_DRIVER=local');
+        putenv('STORAGE_PATH=' . $storageDir);
+        Storage::reset();
+        Storage::boot();
+
+        try {
+            $inside = Storage::localPath('sub/file.txt');
+            $this->assertStringStartsWith(str_replace('/', DIRECTORY_SEPARATOR, $full), $inside);
+
+            $this->expectException(\RuntimeException::class);
+            Storage::localPath('../outside.txt');
+        } finally {
+            @rmdir($full);
+            putenv('STORAGE_PATH');
+            Storage::reset();
+        }
     }
 
     public function testXmlExternalEntityPrevention(): void

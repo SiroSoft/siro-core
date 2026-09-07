@@ -66,10 +66,13 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
             return 1;
         }
 
-        $targetDir = getcwd() . DIRECTORY_SEPARATOR . $name;
+        // Absolute targets are honored as-is; bare names anchor to CWD.
+        // (Resolve via NewProjectCommand's shared resolver — previously an
+        // absolute path like `siro new /tmp/app` created ./tmp/app instead.)
+        $targetDir = NewProjectCommand::resolveTarget((string) $name);
 
         if (is_dir($targetDir)) {
-            $this->write("Error: Directory '{$name}' already exists.");
+            $this->write("Error: Directory '{$targetDir}' already exists.");
             return 1;
         }
 
@@ -131,7 +134,7 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write("  \033[1;32m✓ Project '{$name}' created successfully!\033[0m");
         $this->write('');
         $this->write('  Next steps:');
-        $this->write("    cd {$name}");
+        $this->write("    cd {$targetDir}");
         $this->write('    composer install');
         $this->write('    php siro serve');
         $this->write('');
