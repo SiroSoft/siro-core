@@ -28,7 +28,10 @@ jobs:
           subject-path: 'storage/sbom/*.json'
       - name: Create Release Artifact
         run: |
-          tar czf siro-core-${GITHUB_REF_NAME}.tar.gz \
+          # Write outside the workspace: tar-ing " ." while placing the
+          # archive inside it makes tar see its own growing output and fail
+          # with "file changed as we read it".
+          tar czf "$RUNNER_TEMP/siro-core-${GITHUB_REF_NAME}.tar.gz" \
             --exclude=vendor \
             --exclude=tests \
             --exclude=.git \
@@ -37,4 +40,4 @@ jobs:
       - name: Attest Release Archive
         uses: actions/attest-build-provenance@v1
         with:
-          subject-path: 'siro-core-*.tar.gz'
+          subject-path: '${{ runner.temp }}/siro-core-*.tar.gz'
