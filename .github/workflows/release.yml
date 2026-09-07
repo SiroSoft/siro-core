@@ -26,7 +26,7 @@ jobs:
         run: composer release:check
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           # Allow attaching to a release that was already created (e.g. via
           # the API). Fails cleanly if the tag does not exist.
