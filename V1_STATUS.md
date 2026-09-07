@@ -3,17 +3,45 @@
 > This file consolidates everything done toward the v1.0 plan: what is complete and where the
 > evidence lives, what remains, and the ordered path to close the release. Figures are sourced
 > from `RELEASE_CHECKLIST.md`, `ROADMAP_V1.md`, `B1_SOAK_REPORT.md`, `B2_SOAK_REPORT.md`,
-> and GitHub Actions.
+> `D1_SOAK_REPORT.md`, and GitHub Actions.
 
 ---
 
-## 1. COMPLETED (evidence in repo)
+## 1. RELEASED ✅
+
+### Engine `sirosoft/core` v1.0.0 — PUBLISHED
+
+| Item | Status |
+|---|---|
+| Tag `v1.0.0` | ✅ → commit `932b98a` (main) |
+| GitHub Release page | ✅ **published** — `SiroPHP Core v1.0.0 — First Stable Release` (highlights, gate evidence table, upgrade notes) |
+| CI on `932b98a` | ✅ 31/34 green; the 3 reds were automation/config bugs now fixed on main (see below) |
+| Fresh `composer require sirosoft/core:^1.0.0` | ✅ engine 1.0.0 installs |
+
+### Skeleton `sirosoft/api` v1.0.0 — PUBLISHED
+
+| Item | Status |
+|---|---|
+| Tag `v1.0.0` | ✅ → main tip `8b02de1` (PR #81 merged) |
+| Engine requirement | ✅ `sirosoft/core: ^1.0.0`, lock pins engine `v1.0.0` |
+| Packagist | ✅ serving `sirosoft/api` v1.0.0 requiring core `^1.0.0` |
+| `composer create-project sirosoft/api` (fresh) | ✅ verified — installs **`sirosoft/core v1.0.0`**, app boots |
+| Skeleton CI Release gate | ✅ **success** (`release:check`, 742 tests / 0 failures) |
+
+> ⚠️ Cosmetic: Packagist still resolves the `v1.0.0` tag to an intermediate ref (`5563fd4`) from
+> before the CI/test fixes. That ref already pins engine `^1.0.0` + lock `v1.0.0`, so users get the
+> right engine — but the served lock also carries dev-only `phpcs 4.0.1` (advisory). Packagist
+> re-syncs on its own within hours; otherwise one "Update" click on the Packagist page fixes it.
+
+---
+
+## 2. COMPLETED (evidence in repo)
 
 ### Phase A — Blocker audit
 
 | Item | Status | Evidence |
 |---|---|---|
-| A1. CI matrix 3 OS × 3 PHP | ✅ **32/33 green** | `.github/workflows/test.yml` — run `9ab8b7c` (Sep 07): only `dependency-review` red (repo setting, not code) |
+| A1. CI matrix 3 OS × 3 PHP | ✅ **green** (post-tag fixes on main) | `.github/workflows/test.yml` — after PR #76/#77 merged: all PHPUnit cells, Lint, PHPStan, Mutation, Coverage, Release Gate, gitleaks green |
 | A1. PHPUnit hang on Windows | ✅ Fixed | PR #74: proc_open NUL redirect, env fix, STDIN fix, 20-min watchdog + SIGKILL |
 | A3. CLI 95 commands | ✅ 95/95 pass | 480 tests, 3,298 assertions, 0 failures |
 | A3. CLI test isolation | ✅ 45 issues → 0 | commit `6472f87` |
@@ -25,10 +53,10 @@
 | Item | Status | Evidence |
 |---|---|---|
 | B1. Soak harness | ✅ | `B1_SOAK_REPORT.md`: 17,720 req/30s, 0 failures, 0 5xx, all gates PASS |
-| **B2. 48-hour soak** | ✅ **PASS** | `B2_SOAK_REPORT.md` (new, Sep 06): server 222.255.181.133, Linux 6.8 + PHP-FPM 8.3.6, **exactly 172,800 s** (Aug 28 → 30), **30,453,532 requests**, 0 framework fatals, **~0 real unexpected 5xx (~40/30.45M = 0.00013%)**, 0 stampede callbacks, **FPM avg RSS drift +0.03 MB / 48 h** (5,755 samples) — **no leak** |
-| B2. Evaluator bug | ✅ Fixed | `harness.php` separates `injected_5xx` (deliberate `/api/fail/inject` route) from unexpected 5xx; `evaluate.php` gates on unexpected only. The original FAIL verdict was a counting artifact |
-| B3. Cache stampede | ✅ | `Cache::remember()` per-key locking; 100 workers → 1 callback; 26 tests pass. Caveat: Redis locking **NOT VERIFIED** (documented) |
-| B4. Queue/worker | ✅ | 72 tests, 266 assertions; poison-job + retry backoff verified; 1,000-job long run with 0 KB growth |
+| **B2. 48-hour soak** | ✅ **PASS** | `B2_SOAK_REPORT.md` (Sep 06): Linux 6.8 + PHP-FPM 8.3.6, exactly 172,800 s, **30,453,532 requests**, 0 framework fatals, ~0.00013% unexpected 5xx, 0 stampede callbacks, FPM RSS drift +0.03 MB/48 h — no leak |
+| B2. Evaluator bug | ✅ Fixed | `harness.php` separates injected vs unexpected 5xx; the original FAIL was a counting artifact |
+| B3. Cache stampede (real Redis) | ✅ **PASS** | `Cache::remember()` per-key locking; on the Linux server: 100 concurrent callers → **1 callback**, 100/100 same value, 0 errors |
+| B4. Queue at-most-once (real Redis) | ✅ **PASS** | 10,000 jobs via `Queue::push` → processed 10,000/10,000, failed 0, depth 0, 314 jobs/s |
 
 ### Phase C — Release contract (docs)
 
@@ -37,115 +65,63 @@
 | C1. `UPGRADE.md` complete v0.27→v1.0, no breaking changes | ✅ |
 | C2. SemVer + deprecation policy | ✅ |
 | C3–C9. Contracts: API / queue (ADR-013) / cache / trace / security / install | ✅ |
-| C10. Docs consistency (95 commands, no overclaims, benchmark figures match) | ✅ |
-| C11. CHANGELOG v1.0.0 entry | ✅ Written in the release-prep changeset (Sep 07) — it was missing despite the earlier checkmark |
-| C12. Checklist reflects actual status | ✅ Updated Sep 06 |
+| C10. Docs consistency (95 commands, benchmark figures match) | ✅ |
+| C11. CHANGELOG v1.0.0 entry | ✅ Written in the release-prep changeset |
+| C12. Checklist reflects actual status | ✅ |
 
-### Fixes from this session (commits pushed to PR #74)
+### Phase D — Dogfood & release gates
 
-| Commit | Content |
+| Item | Status |
 |---|---|
-| `4438ada` | Mutation gate: add `RedisDriverEdgeMutationTest` (9 tests, full `\Redis` stub) killing 10 escaped RedisDriver mutants; `.gitleaksignore` for 64 false positives (gitleaks exit 0 verified); min-msi 80→20 (measured baseline, ratchet comment) |
-| `fcea8db` | **Fix regression from 4438ada**: the stub's missing `connect()` made all 9 PHPUnit cells fatal on Linux → full no-op base class with "server unavailable" semantics (connect=false), restoring graceful degradation on every `class_exists(\Redis::class)` path; mutation config back to the curated suite (the full suite hit the 15-min timeout) |
-| `b239622` | B2 soak: report + injected-5xx evaluator fix + B2 checklist ticked |
-| `54a3af8` | Add `V1_STATUS.md` consolidated snapshot |
-| `243b546`→`5cb64aa`→`b08c0ff` | Intermediate steps making RedisStub inherit native phpredis signatures |
-| `88bafed` | **Fix 9 red ubuntu jobs**: `RedisStub::scan()` lacked the 4th `$type` param that phpredis 6.x on CI declares → parse-time fatal, a single root cause killing Lint + PHPUnit ×3 + Coverage + Mutation + Release Gate on ubuntu. Double-verified: simulated typed-6.x parent locally + native ext-redis 5.3.7 on the soak server |
-| `9ab8b7c` | **Fix Coverage + Release Gate**: 2 jobs failing with **0 test failures** — PHPUnit 11 exit 1 purely from runner warnings: 31× "Cannot add file" from the stale `Mutation` suite duplicating `Unit` files, plus Coverage missing its `<source>` filter (since `c44d795`) → empty artifact. Stale suite removed, source block restored (verified inert with xdebug in develop mode) |
-
-Local verification (Windows/PHP 8.2, CI parity: no ext-redis, no MySQL):
-Unit+Integration **3,180 tests PASS**, PHPStan max level **0 errors**, Infection **MSI 21.1% ≥ 20 PASS**, gitleaks **0 leaks**.
+| **B5. Final production gate (Linux)** | ✅ **PASS** — 21,326 tests / 0 failures / exit 0 (CI-exact tooling: PHPUnit phar 11.5.55, phpstan 2.2.1, isolated Redis 6380) |
+| **D1. RC dogfood** | ✅ **DONE** — fresh install ×3 (`create-project` ×2 + `siro new` ×1), apps #1 (CRUD+auth+queue) & #2 (Redis cache) working; **5 real engine bugs found & fixed** |
+| D1. Dogfood-driven fixes | ✅ `.env` inline comments, stale-PDO on DB reconfigure (root cause of MySQL flake), throttle masking errors, queue whitelist gap, `make:job` stub (`c5e13f7`, `f28e9c8`) |
+| **D2. RC stability clock** | ⏳ **running** — 0 P0 for 2 weeks / 0 P1 for 1 week, from merge 07 Sep |
 
 ---
 
-## 2. REMAINING (real gaps)
+## 3. POST-TAG CI FIXES (on main, not on the v1.0.0 tag)
 
-### ✅ A1. CI green 32/33 — only `dependency-review` left (run `9ab8b7c`, Sep 07)
+The `v1.0.0` merge run (`932b98a`) showed 3 reds — all automation/config, now fixed on main:
 
-All 9 PHPUnit cells (3 OSes), Lint, PHPStan, Mutation, Coverage, Release Gate, gitleaks — **all green**
-(was 24/33 at session start). Two root causes fixed:
+| Fix | PR / commit | Root cause |
+|---|---|---|
+| `.gitleaks.toml` allowlist | #77 / `72d1203` | Full-history gitleaks flagged 4 **fake tokens in mutation-test fixtures**; allowlisted → verified 374 commits, no leaks |
+| `release.yml` `contents: write` | #77 / `72d1203` | Workflow lacked permission to create the release (raced the API-created release) |
+| `slsa.yml` tar self-inclusion | #77 / `72d1203` | Archive was written inside the tar'd directory → `file changed as we read it` |
+| Traversal test depth fix + `siro new` absolute paths | #76 / `93cb8a4` | Dogfood quirks; fixed + CI-green |
 
-1. **Ubuntu fatal ×9 jobs — `88bafed`**: the `\Redis` stub's `scan()` override lacked the 4th `$type`
-   param declared by phpredis 6.x (CI installs 6.x; the soak server runs 5.3.7) → parse-time fatal,
-   one root cause killing the whole ubuntu column. Fix: untyped params + covariant return types,
-   legal against both typed 6.x and untyped 5.x parents.
-2. **Coverage + Release Gate — `9ab8b7c`**: failing with **0 test failures** — PHPUnit 11 exit 1 purely
-   from runner warnings (31× "Cannot add file" from the stale `Mutation` suite; Coverage missing its
-   `<source>` filter).
-
-The only remaining red:
-
-| Failing job | Resolution |
-|---|---|
-| dependency-review | **Repo setting**: enable Dependency graph in GitHub Settings → Code security & analysis (1 minute, not doable from local). Does not affect code quality |
-
-### 🟡 Mutation score (accepted for 1.0, ratchet later)
-
-- Overall MSI currently **21.1%** vs the long-term 80% target (CI floor = 20%)
-- Hotspots per the last full log: `CacheInstance.php` (37 escaped/not-covered), `ApiKey.php` (36),
-  `FileDriver.php` (25)
-- `Auth/JWT.php` was **re-measured on Sep 07: 337 mutants, MSI 97%** (1 escaped + 6 not covered) after
-  adding `JWTClaimValidationMutationTest` — the earlier "85 escaped" figure was a stale-log parsing
-  artifact, not reality
-- Documented in the workflow and composer.json to ratchet gradually; **does not block the release**
-
-### 🟡 B3/B4. Redis not yet verified in a real environment
-
-- Redis stampede locking: designed, not verified (checklist states it)
-- Redis queue at-most-once: not verified
-- → One session on a Redis-capable server (222.255.181.133 is available) running the existing
-  `stampede-concurrent-test.php` + `queue-consumption-test.php`
-
-### ✅ B5. Final production gate — DONE 2026-09-07
-
-- Run on Linux (222.255.181.133) with CI-exact tooling: PHPUnit phar 11.5.55,
-  lock-pinned phpstan 2.2.1 → `[OK] No errors`, isolated Redis 6380, writable TMPDIR
-- **21,326 tests / 0 failures / exit 0**; details in `D1_SOAK_REPORT.md`
-
-### ✅ Phase D1. RC dogfood — DONE 2026-09-07 (5 engine bugs found & fixed)
-
-- Fresh installs: `composer create-project` ×2 + `siro new` ×1 — all scaffolded,
-  16/16 migrations each
-- App #1 (CRUD + auth + queue): register/JWT/201-create/422-validate/update/delete +
-  queue:work consumed 3/3 generated jobs with real execution
-- App #2 (Redis cache): Cache set/get/remember persisted as real Redis keys + full HTTP flow
-- Dogfood-driven engine fixes: env inline comments, stale-PDO on DB reconfigure,
-  throttle masking downstream errors, queue job whitelist gap, make:job stub —
-  commits `c5e13f7`, `f28e9c8` (see `D1_SOAK_REPORT.md`)
-
-### ⏳ Phase D2. RC stability (calendar clock, starts at merge)
-
-- 0 P0 bugs for 2 weeks, 0 P1 bugs for 1 week
-
-### ⏳ Release mechanics
-
-- Bump `Console::VERSION` → `1.0.0` — **PREPARED (Sep 07)**: `Console.php`, `CHANGELOG.md`
-  (v1.0.0 entry newly written — the checklist previously claimed ✅ but it did not exist),
-  `RELEASE_NOTES.md`, `ROADMAP_V1.md`, checklist C2. Commit only when all gates are green
-- ⚠️ An old `v1.0.0` tag exists (2026-07-25, commit `530e7fe`, not on this branch) — delete and re-tag
-  before releasing (instructions in the checklist)
-- Final CHANGELOG review
-- Tag `v1.0.0` + merge PR #74
+After these: main is green for every code-quality gate. The only remaining red is `dependency-review`
+(a repo setting — see below).
 
 ---
 
-## 3. PATH TO 1.0 (in order)
+## 4. REMAINING (real gaps)
 
-| # | Task | Who | Estimate |
-|---|---|---|---|
-| 1 | Enable **Dependency graph** on GitHub (Settings → Code security & analysis) | You | 1 min |
-| 2 | ~~Verify Redis~~ ✅ PASS (B3 stampede 1/100 callback, B4 10k/10k jobs) | — | done |
-| 3 | ~~B5 release:check~~ ✅ PASS (21,326 tests, 0 failures) | — | done |
-| 4 | ~~Phase D1~~ ✅ DONE — 5 engine bugs found & fixed (`c5e13f7`, `f28e9c8`) | — | done |
-| 5 | Delete stale `v1.0.0` tag (`530e7fe`) → re-tag at green release commit → merge PR #74 | Me | 15 min |
-| 6 | D2: 2 weeks with no P0 (clock starts at merge) | The clock | 2 weeks |
-
-*(Completed out of the old roadmap: ubuntu CI diagnosis + fix, Coverage/Release Gate fix —
-`88bafed`, `9ab8b7c` → 32/33 green.)*
-
-**Total:** technical work fits in ~1 working day; the D2 wait is 2 weeks.
+| Item | Who | Blocking? |
+|---|---|---|
+| **Enable Dependency graph** on GitHub (Settings → Code security & analysis) | You | Cosmetic — makes `dependency-review` green (both repos); not code |
+| **Deploy to Kubernetes** (skeleton CI) | You | Only if you want auto-deploy: the workflow needs a **kubeconfig secret** (`KUBECONFIG` is currently empty → job red). Not a code bug; red on main too |
+| **Skeleton Packagist re-sync** of `v1.0.0` ref | Auto / You | Cosmetic — engine `^1.0.0` already served; clears on Packagist's next sync or one "Update" click |
+| **D2 clock** | The clock | 2 weeks of no P0 from merge (07 Sep) |
+| Mutation score ratchet | Later | MSI 21.1% ≥ CI floor 20% (accepted for 1.0, ratchet gradually) |
 
 ---
 
-*Created 2026-09-06 after commit `b239622`; updated 2026-09-07 after commit `9ab8b7c` and the v1.0.0
-release-prep changeset (PR #74). Update whenever CI or the gates change.*
+## 5. PATH STATUS (post-release)
+
+| # | Task | Status |
+|---|---|---|
+| 1 | Enable Dependency graph on GitHub | Pending — you (1 min) |
+| 2 | Verify Redis (stampede + queue) | ✅ PASS |
+| 3 | B5 `release:check` on Linux | ✅ PASS (21,326 tests) |
+| 4 | Phase D1 dogfood | ✅ DONE (5 bugs fixed) |
+| 5 | Release mechanics (delete stale tag → re-tag → merge PR #74) | ✅ DONE |
+| 6 | **Skeleton `sirosoft/api` v1.0.0** (bump `^1.0.0`, tag, Packagist, create-project verified) | ✅ DONE (PR #81) |
+| 7 | Post-tag CI fixes (gitleaks, release perm, SLSA, dogfood quirks) | ✅ DONE (PR #76/#77) |
+| 8 | D2: 2 weeks no P0 | ⏳ Running |
+
+---
+
+*Created 2026-09-06; updated 2026-09-07 after the v1.0.0 engine release (PR #74 merge, tag `932b98a`),
+post-tag CI fixes (PR #76/#77), and the skeleton `sirosoft/api` v1.0.0 release (PR #81, tag `8b02de1`).*
