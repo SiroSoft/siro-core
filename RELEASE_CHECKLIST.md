@@ -88,7 +88,7 @@ Last updated: 2026-08-28
 - [x] Queue delivery semantics: documented, not a breaking change
 
 ### C2. Version/SemVer
-- [x] `Console::VERSION = '1.0.0-rc.1'`
+- [x] `Console::VERSION = '1.0.0'` (bumped from 0.41.0 — release-prep changeset, commit when gates green)
 - [x] SemVer policy: MAJOR/MINOR/PATCH contract
 - [x] Deprecation policy: documented first, one minor version, removed in next major
 
@@ -189,10 +189,14 @@ Last updated: 2026-08-28
 | C: Release contract | 2026-08-28 | ✅ Complete |
 | D: RC dogfood | — | ⏳ Pending |
 
-**Before tagging v1.0.0-rc.1, ALL of these must be ✅:**
+**Before tagging v1.0.0, ALL of these must be ✅:**
 - A1 remote CI 9/9 green
 - B2 48h soak PASS
 - B5 production gate PASS
 - D RC dogfood PASS
+
+**Tag pre-flight:** an old `v1.0.0` tag exists (2026-07-25, commit `530e7fe`, NOT on this branch).
+Before tagging the release commit, delete and re-tag:
+`git tag -d v1.0.0 && git push origin :refs/tags/v1.0.0 && git tag -a v1.0.0 -m "SiroPHP v1.0.0" && git push origin v1.0.0`
 
 **Maintainer sign-off:** __________ **Date:** __________

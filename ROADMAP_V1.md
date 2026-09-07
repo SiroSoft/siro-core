@@ -1,6 +1,6 @@
 # SiroPHP v1.0 Roadmap
 
-**Current version:** v0.41.0
+**Current version:** v1.0.0
 **Target:** v1.0.0
 **Philosophy:** Prove the existing 41.5K LOC is stable, portable, secure, upgradeable, and API-stable. Do NOT add features to "earn" v1.0.
 
@@ -329,7 +329,7 @@ All of these must be true:
 ## Version Plan
 
 ```
-v0.41.0  (current — Trace/Replay Level-2)
+v0.41.0  (previous — Trace/Replay Level-2)
    │
    ├── v0.41.1  bugfixes if needed
    │
@@ -340,7 +340,7 @@ v1.0.0-rc.1  (Phase A+B+C complete)
    │
    ├── v1.0.0-rc.2  (if P0 bugs found)
    │
-   └── v1.0.0       (Phase D complete)
+   └── v1.0.0       (Phase D complete)  ← current
          │
          ▼
 v1.0.1  (if needed)
