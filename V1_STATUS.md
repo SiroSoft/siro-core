@@ -96,14 +96,26 @@ The only remaining red:
 - → One session on a Redis-capable server (222.255.181.133 is available) running the existing
   `stampede-concurrent-test.php` + `queue-consumption-test.php`
 
-### ⏳ B5. Final production gate
+### ✅ B5. Final production gate — DONE 2026-09-07
 
-- `composer release:check` (audit + PHPStan + PHPUnit) on Linux once CI is green — ~5 min
+- Run on Linux (222.255.181.133) with CI-exact tooling: PHPUnit phar 11.5.55,
+  lock-pinned phpstan 2.2.1 → `[OK] No errors`, isolated Redis 6380, writable TMPDIR
+- **21,326 tests / 0 failures / exit 0**; details in `D1_SOAK_REPORT.md`
 
-### ⏳ Phase D. RC dogfood
+### ✅ Phase D1. RC dogfood — DONE 2026-09-07 (5 engine bugs found & fixed)
 
-- Fresh install (`composer create-project` + `siro new`) — 2 trial apps
-- D2: 0 P0 bugs for 2 weeks, 0 P1 bugs for 1 week (calendar time)
+- Fresh installs: `composer create-project` ×2 + `siro new` ×1 — all scaffolded,
+  16/16 migrations each
+- App #1 (CRUD + auth + queue): register/JWT/201-create/422-validate/update/delete +
+  queue:work consumed 3/3 generated jobs with real execution
+- App #2 (Redis cache): Cache set/get/remember persisted as real Redis keys + full HTTP flow
+- Dogfood-driven engine fixes: env inline comments, stale-PDO on DB reconfigure,
+  throttle masking downstream errors, queue job whitelist gap, make:job stub —
+  commits `c5e13f7`, `f28e9c8` (see `D1_SOAK_REPORT.md`)
+
+### ⏳ Phase D2. RC stability (calendar clock, starts at merge)
+
+- 0 P0 bugs for 2 weeks, 0 P1 bugs for 1 week
 
 ### ⏳ Release mechanics
 
@@ -122,11 +134,11 @@ The only remaining red:
 | # | Task | Who | Estimate |
 |---|---|---|---|
 | 1 | Enable **Dependency graph** on GitHub (Settings → Code security & analysis) | You | 1 min |
-| 2 | Verify Redis stampede + queue on server 222.255.181.133 | Me (ssh) + your review | 1–2 h |
-| 3 | B5: run `composer release:check` on Linux | Me (ssh) | 15 min |
-| 4 | Phase D1: fresh install ×2 apps | Me + your review | 2–4 h |
-| 5 | Bump VERSION 1.0.0 (commit prepared changeset) + final CHANGELOG + merge PR #74 + tag | Me | 30 min |
-| 6 | D2: 2 weeks with no P0 (parallelizable with everything above) | The clock | 2 weeks |
+| 2 | ~~Verify Redis~~ ✅ PASS (B3 stampede 1/100 callback, B4 10k/10k jobs) | — | done |
+| 3 | ~~B5 release:check~~ ✅ PASS (21,326 tests, 0 failures) | — | done |
+| 4 | ~~Phase D1~~ ✅ DONE — 5 engine bugs found & fixed (`c5e13f7`, `f28e9c8`) | — | done |
+| 5 | Delete stale `v1.0.0` tag (`530e7fe`) → re-tag at green release commit → merge PR #74 | Me | 15 min |
+| 6 | D2: 2 weeks with no P0 (clock starts at merge) | The clock | 2 weeks |
 
 *(Completed out of the old roadmap: ubuntu CI diagnosis + fix, Coverage/Release Gate fix —
 `88bafed`, `9ab8b7c` → 32/33 green.)*

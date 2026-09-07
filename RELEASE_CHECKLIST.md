@@ -74,7 +74,9 @@ Last updated: 2026-08-28
 - [x] Redis queue: NOT VERIFIED (no Redis env)
 
 ### B5. Production Gate
-- [ ] Final production gate — **PENDING (after B2)**
+- [x] Final production gate — **PASS (2026-09-07, Linux server 222.255.181.133)**
+      Full suite 21,326 tests / 0 failures with CI-exact tooling (PHPUnit phar 11.5.55,
+      lock-pinned phpstan 2.2.1, isolated Redis 6380, writable TMPDIR). Details: `D1_SOAK_REPORT.md`
 
 ---
 
@@ -142,13 +144,18 @@ Last updated: 2026-08-28
 
 ---
 
-## Phase D — RC Dogfood (PENDING)
+## Phase D — RC Dogfood (IN PROGRESS — D1 done, D2 clock)
 
-### D1. Real Application Testing
-- [ ] Fresh install via `composer create-project`
-- [ ] Fresh install via `siro new`
-- [ ] Build API app #1 (CRUD + auth + queue)
-- [ ] Build API app #2 (complex queries + cache)
+### D1. Real Application Testing — **DONE (2026-09-07)**
+- [x] Fresh install via `composer create-project` (×2: dogfood-app1, dogfood-app2)
+- [x] Fresh install via `siro new` (dogfood-app3: scaffold → composer install → 16 migrations)
+- [x] Build API app #1 (CRUD + auth + queue) — register/JWT login/create/update/delete/validate +
+      make:job → Queue::push → queue:work consumed 3/3 with real job execution
+- [x] Build API app #2 (complex queries + cache) — CACHE_DRIVER=redis verified end-to-end
+      (Cache set/get/remember persisted as real Redis keys) + full auth/CRUD HTTP flow
+- [x] Dogfood findings fixed in engine (5 bugs): env inline comments, DB stale-PDO on reconfigure,
+      throttle masking downstream errors, queue job whitelist gap, make:job stub missing
+      QueueInterface — commits `c5e13f7`, `f28e9c8`
 
 ### D2. RC Stability
 - [ ] Zero P0 bugs for 2 weeks
@@ -168,9 +175,9 @@ Last updated: 2026-08-28
 | B2: 48h soak | ✅ PASS — 30.45M req, 0 fatals, flat memory | B2_SOAK_REPORT.md (2026-09-06) |
 | B3: Cache concurrency | ✅ Stampede protected | 100 workers → 1 callback |
 | B4: Queue/worker | ✅ Gate passed | 72 tests, 266 assertions |
-| B5: Production gate | ⏳ Run `composer release:check` on Linux post-CI-green | |
+| B5: Production gate | ✅ PASS on Linux (21,326 tests, 0 failures) | 2026-09-07 |
 | C: Release contract | ✅ Complete | Docs + contracts |
-| D: RC dogfood | ⏳ Pending | |
+| D: RC dogfood | ✅ D1 done — 5 engine bugs found & fixed; D2 clock starts at merge | 2026-09-07 |
 
 ---
 
