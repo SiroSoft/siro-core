@@ -77,7 +77,16 @@ final class EncrypterTest extends TestCase
     public function testDecryptTamperedDataFails(): void
     {
         $encrypted = Encrypter::encrypt('important');
-        $tampered = substr_replace($encrypted, 'x', -5, 1);
+
+        // Flip a bit inside the ciphertext region (after the 32-byte HMAC
+        // and 16-byte IV). Replacing a base64 character is a no-op ~1.5% of
+        // the time (when the original character already equals the
+        // replacement), which made this test flaky on CI.
+        $raw = base64_decode($encrypted, true);
+        $this->assertIsString($raw);
+        $raw[63] = $raw[63] ^ "\x01";
+        $tampered = base64_encode($raw);
+        $this->assertNotSame($encrypted, $tampered);
 
         $this->expectException(\RuntimeException::class);
         Encrypter::decrypt($tampered);

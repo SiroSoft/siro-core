@@ -24,6 +24,16 @@ final class NewProjectCommandTest extends TestCase
         $this->assertSame('C:\\work\\siro-app', NewProjectCommand::resolveTarget('C:\\work\\siro-app'));
     }
 
+    public function testWindowsDrivePathWithForwardSlashesIsUsedAsIs(): void
+    {
+        $this->assertSame('C:/work/siro-app', NewProjectCommand::resolveTarget('C:/work/siro-app'));
+    }
+
+    public function testUncPathIsUsedAsIs(): void
+    {
+        $this->assertSame('\\\\server\\share\\siro-app', NewProjectCommand::resolveTarget('\\\\server\\share\\siro-app'));
+    }
+
     public function testBareNameIsAnchoredToCwd(): void
     {
         $expected = getcwd() . DIRECTORY_SEPARATOR . 'siro-app';

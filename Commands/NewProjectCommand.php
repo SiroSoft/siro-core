@@ -21,9 +21,12 @@ final class NewProjectCommand implements \Siro\Core\Commands\CommandInterface {
      */
     public static function resolveTarget(string $name): string
     {
-        $isAbsolute = DIRECTORY_SEPARATOR === '/'
-            ? str_starts_with($name, '/')
-            : (bool) preg_match('#^[A-Za-z]:[/\\\\]|^[/\\\\]#', $name);
+        // Platform-independent: a drive-letter path is absolute on every OS,
+        // so targets like `siro new C:\work\app` resolve identically on
+        // Windows, macOS and Linux (CI runs all three).
+        $isAbsolute = str_starts_with($name, '/')
+            || str_starts_with($name, '\\')
+            || (strlen($name) >= 3 && $name[1] === ':' && ctype_alpha($name[0]));
 
         if ($isAbsolute) {
             return $name;
