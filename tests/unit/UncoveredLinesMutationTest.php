@@ -51,6 +51,10 @@ final class UncoveredLinesMutationTest extends TestCase
 
     public function testModelUserProviderRetrieveByIdReturnsNullForMissing(): void
     {
+        $container = Container::getInstance();
+        if (!$container->has('db.default')) {
+            $this->markTestSkipped('Database not configured');
+        }
         $provider = new ModelUserProvider('App\\Models\\User');
         if (!class_exists('App\\Models\\User')) {
             $this->markTestSkipped('App\\Models\\User not available');
@@ -61,6 +65,10 @@ final class UncoveredLinesMutationTest extends TestCase
 
     public function testModelUserProviderRetrieveByCredentialsSkipsPassword(): void
     {
+        $container = Container::getInstance();
+        if (!$container->has('db.default')) {
+            $this->markTestSkipped('Database not configured');
+        }
         $provider = new ModelUserProvider('App\\Models\\User');
         if (!class_exists('App\\Models\\User')) {
             $this->markTestSkipped('App\\Models\\User not available');
@@ -71,6 +79,10 @@ final class UncoveredLinesMutationTest extends TestCase
 
     public function testModelUserProviderRetrieveByCredentialsNoPassword(): void
     {
+        $container = Container::getInstance();
+        if (!$container->has('db.default')) {
+            $this->markTestSkipped('Database not configured');
+        }
         $provider = new ModelUserProvider('App\\Models\\User');
         if (!class_exists('App\\Models\\User')) {
             $this->markTestSkipped('App\\Models\\User not available');

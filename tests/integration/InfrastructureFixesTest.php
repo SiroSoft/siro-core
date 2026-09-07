@@ -21,6 +21,13 @@ final class InfrastructureFixesTest extends TestCase
         $this->siroPhpPath = $this->siroSoftPath . '/SiroPHP';
     }
 
+    private function requireSkeleton(): void
+    {
+        if (!is_dir($this->siroPhpPath)) {
+            $this->markTestSkipped('SiroPHP skeleton directory not present — skipping skeleton-structure tests');
+        }
+    }
+
     public function testConsoleVersionIsCurrent(): void
     {
         $this->assertNotEmpty(Console::VERSION);
@@ -28,11 +35,13 @@ final class InfrastructureFixesTest extends TestCase
 
     public function testDockerfileExists(): void
     {
+        $this->requireSkeleton();
         $this->assertFileExists($this->siroPhpPath . '/Dockerfile');
     }
 
     public function testDockerfileIsValid(): void
     {
+        $this->requireSkeleton();
         $content = file_get_contents($this->siroPhpPath . '/Dockerfile');
         $this->assertIsString($content);
         $this->assertStringContainsString('FROM dunglas/frankenphp:', $content);
@@ -52,6 +61,7 @@ final class InfrastructureFixesTest extends TestCase
 
     public function testMiddlewareDuplicatesRemovedFromApp(): void
     {
+        $this->requireSkeleton();
         $this->assertFileDoesNotExist($this->siroPhpPath . '/app/Middleware/ThrottleMiddleware.php');
         $this->assertFileDoesNotExist($this->siroPhpPath . '/app/Middleware/CorsMiddleware.php');
     }
@@ -64,6 +74,7 @@ final class InfrastructureFixesTest extends TestCase
 
     public function testIndexUsesCoreMiddlewareAliases(): void
     {
+        $this->requireSkeleton();
         $content = (string) file_get_contents($this->siroPhpPath . '/public/index.php');
 
         $this->assertStringContainsString(
@@ -82,6 +93,7 @@ final class InfrastructureFixesTest extends TestCase
 
     public function testAppMiddlewareDirectoryHasNoDuplicates(): void
     {
+        $this->requireSkeleton();
         $files = scandir($this->siroPhpPath . '/app/Middleware');
         $this->assertIsArray($files);
         $files = array_values(array_filter($files, fn (string $f): bool => !in_array($f, ['.', '..'], true)));

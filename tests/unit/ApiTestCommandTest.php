@@ -437,14 +437,15 @@ PHP
 
     public function testInteractiveFieldInput(): void
     {
-        // POST without fields triggers interactive ask(); feed via readline is not
-        // possible in-process, so verify the flow starts (asks for field name).
-        // Use a POST route and expect it to enter the field prompt path.
+        // POST without fields triggers interactive ask(); provide an empty-input
+        // provider so we never block on fgets(STDIN) when readline() is unavailable
+        // (CI runners without readline extension).
+        $emptyProvider = fn (string $question): string => '';
         ob_start();
-        $cmd = new ApiTestCommand($this->basePath);
+        $cmd = new ApiTestCommand($this->basePath, $emptyProvider);
         $exit = $cmd->run(['POST', '/echo']);
         $output = ob_get_clean() ?: '';
-        // readline on non-tty returns empty → loop breaks immediately with no fields
+        // Empty provider → field name is empty → loop breaks immediately with no fields
         $this->assertContains($exit, [0, 1]);
     }
 

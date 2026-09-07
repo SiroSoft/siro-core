@@ -28,9 +28,6 @@
         </testsuite>
     </testsuites>
 
-    <!-- Coverage filter: only present so coverage jobs, which pass
-         coverage flags on the CLI, collect data. Harmless for runs without
-         a coverage driver. -->
     <source>
         <include>
             <directory suffix=".php">.</directory>
@@ -39,7 +36,6 @@
             <directory>tests</directory>
             <directory>vendor</directory>
             <directory>scripts</directory>
-            <directory>coverage</directory>
         </exclude>
     </source>
 

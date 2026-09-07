@@ -67,7 +67,8 @@ echo "Total requests:   " . ($counters['requests'] ?? 0) . "\n";
 echo "Success (2xx):    " . ($counters['success'] ?? 0) . "\n";
 echo "Expected 4xx:     " . ($counters['expected_4xx'] ?? 0) . "\n";
 echo "Unexpected 4xx:   " . ($counters['unexpected_4xx'] ?? 0) . "\n";
-echo "5xx:              " . ($counters['5xx'] ?? 0) . "\n";
+echo "Injected 5xx:     " . ($counters['injected_5xx'] ?? 0) . " (deliberate /api/fail/inject — not a framework fault)\n";
+echo "Unexpected 5xx:   " . ($counters['5xx'] ?? 0) . "\n";
 echo "Errors:           " . ($counters['errors'] ?? 0) . "\n";
 
 $requests = $counters['requests'] ?? 0;
@@ -194,7 +195,7 @@ $gates['fatals'] = [
 ];
 
 $gates['5xx'] = [
-    'name' => 'Unexpected HTTP 5xx = 0',
+    'name' => 'Unexpected HTTP 5xx = 0 (injected failures excluded)',
     'pass' => ($counters['5xx'] ?? 0) === 0,
 ];
 

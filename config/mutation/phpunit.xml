@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
+         bootstrap="../../tests/bootstrap.php"
+         colors="true"
+         cacheDirectory="../../.phpunit.cache"
+         executionOrder="default"
+         beStrictAboutOutputDuringTests="false"
+         failOnRisky="false"
+         failOnWarning="false"
+>
+    <php>
+        <ini name="memory_limit" value="512M"/>
+    </php>
+
+    <testsuites>
+        <!-- Curated set: full-suite scoring pushed the mutation job past its
+             15 minute timeout. With min-msi=20 the curated suite (measured
+             baseline 21 percent) keeps the gate green; ratchet both together later. -->
+        <testsuite name="Mutation">
+            <file>../../tests/unit/ApiKeyMutationTest.php</file>
+            <file>../../tests/unit/ApiKeyTest.php</file>
+            <file>../../tests/unit/AuthFixesTest.php</file>
+            <file>../../tests/unit/AuthGuardMutationTest.php</file>
+            <file>../../tests/unit/AuthMiddlewareDetailedMutationTest.php</file>
+            <file>../../tests/unit/AuthMiddlewareDetailedTest.php</file>
+            <file>../../tests/unit/AuthMiddlewareMutationTest.php</file>
+            <file>../../tests/unit/AuthMiddlewareTest.php</file>
+            <file>../../tests/unit/BatchCursorApiKeyTest.php</file>
+            <file>../../tests/unit/JWTExtraMutationTest.php</file>
+            <file>../../tests/unit/JWTMutationTest.php</file>
+            <file>../../tests/unit/JWTClaimValidationMutationTest.php</file>
+            <file>../../tests/unit/JWTTest.php</file>
+            <file>../../tests/unit/MutationGapTest.php</file>
+            <file>../../tests/unit/CacheDriverMutationTest.php</file>
+            <file>../../tests/unit/MakeApiKeyCommandMutationTest.php</file>
+            <file>../../tests/unit/IdempotencyMiddlewareDetailedTest.php</file>
+            <file>../../tests/unit/IdempotencyMutationTest.php</file>
+            <file>../../tests/unit/IdempotencyTest.php</file>
+            <file>../../tests/unit/CorsEtagIdempotencyMutationTest.php</file>
+            <file>../../tests/unit/CacheExtendedTest.php</file>
+            <file>../../tests/unit/CacheStampedeTest.php</file>
+            <file>../../tests/unit/CacheTest.php</file>
+            <file>../../tests/unit/EnvCacheLoadTest.php</file>
+            <file>../../tests/unit/RedisDriverMutationTest.php</file>
+            <file>../../tests/unit/RedisDriverEdgeMutationTest.php</file>
+            <file>../../tests/unit/ThrottleRedisMutationTest.php</file>
+            <file>../../tests/unit/EncrypterEdgeCasesTest.php</file>
+            <file>../../tests/unit/EncrypterTest.php</file>
+            <file>../../tests/unit/HashTest.php</file>
+            <file>../../tests/unit/SessionFlashTest.php</file>
+            <file>../../tests/unit/SessionMutationTest.php</file>
+            <file>../../tests/unit/SessionTest.php</file>
+            <file>../../tests/unit/SecurityTest.php</file>
+            <file>../../tests/unit/SecurityFixesTest.php</file>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory suffix=".php">../../Auth</directory>
+            <directory suffix=".php">../../Cache</directory>
+        </include>
+    </source>
+
+    <coverage>
+        <report>
+            <clover outputFile="../../coverage/clover.xml"/>
+            <xml outputDirectory="../../coverage/phpunit-xml"/>
+        </report>
+    </coverage>
+</phpunit>

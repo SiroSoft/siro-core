@@ -69,6 +69,11 @@ assertChaos('Logger with PII in message', function (): bool {
 });
 
 assertChaos('Encrypter with binary payload', function (): bool {
+    if (!getenv('APP_KEY')) {
+        echo "  SKIP  Encrypter with binary payload — APP_KEY not set\n";
+        $results['skipped']++;
+        return true; // skip is not a failure
+    }
     $original = random_bytes(1024);
     $encrypted = \Siro\Core\Encrypter::encrypt($original);
     $decrypted = \Siro\Core\Encrypter::decrypt($encrypted);

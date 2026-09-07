@@ -37,11 +37,22 @@ final class MySQLCommandsTest extends TestCase
         return self::$pass;
     }
 
-    private string $basePath;
+    private string $basePath = '';
 
     protected function setUp(): void
     {
         parent::setUp();
+        // Skip entire class if MySQL is not available
+        try {
+            new \PDO(
+                'mysql:host=' . self::HOST . ';port=' . self::PORT,
+                self::USER,
+                self::pass(),
+                [\PDO::ATTR_TIMEOUT => 3, \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+            );
+        } catch (\Throwable) {
+            $this->markTestSkipped('MySQL server not available on this platform');
+        }
         if (!defined('BASE_PATH')) {
             define('BASE_PATH', dirname(__DIR__, 2));
         }
@@ -74,7 +85,7 @@ final class MySQLCommandsTest extends TestCase
         Env::reset();
         Cache::reset();
         Database::purgeAll();
-        if (is_dir($this->basePath)) {
+        if ($this->basePath !== '' && is_dir($this->basePath)) {
             $this->rmDir($this->basePath);
         }
         parent::tearDown();
