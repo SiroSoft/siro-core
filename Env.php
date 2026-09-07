@@ -190,6 +190,28 @@ final class Env
                 continue;
             }
 
+            // Strip inline comments: a '#' that starts the value or is preceded by
+            // whitespace begins a comment, unless it appears inside quotes.
+            // This keeps values like "pass#word" or "a#b" intact while supporting
+            // the common "KEY=value # explanation" documentation style.
+            if ($value !== '' && str_contains($value, '#')) {
+                $inSingle = false;
+                $inDouble = false;
+                $length = strlen($value);
+                for ($i = 0; $i < $length; $i++) {
+                    $char = $value[$i];
+                    if ($char === "'" && !$inDouble) {
+                        $inSingle = !$inSingle;
+                    } elseif ($char === '"' && !$inSingle) {
+                        $inDouble = !$inDouble;
+                    } elseif ($char === '#' && !$inSingle && !$inDouble
+                        && ($i === 0 || $value[$i - 1] === ' ' || $value[$i - 1] === "\t")) {
+                        $value = trim(substr($value, 0, $i));
+                        break;
+                    }
+                }
+            }
+
             $useInterpolation = true;
             if (
                 (str_starts_with($value, '"') && str_ends_with($value, '"')) ||

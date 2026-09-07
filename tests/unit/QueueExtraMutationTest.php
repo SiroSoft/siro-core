@@ -59,7 +59,10 @@ final class QueueExtraMutationTest extends TestCase
 
     public function testWorkAllEmptyQueue(): void
     {
-        $processed = Queue::workAll(2);
+        // Use a single worker (drain mode). On pcntl platforms workAll(N>=2)
+        // is the blocking daemon path (queue:work --daemon) and never returns;
+        // only the fallback/drain path (workers<=1 or no pcntl) returns a count.
+        $processed = Queue::workAll(1);
         $this->assertSame(0, $processed);
     }
 

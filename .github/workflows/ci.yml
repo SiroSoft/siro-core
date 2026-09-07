@@ -100,8 +100,25 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
           tools: composer:v2
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Prepare env
+        shell: bash
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.testing ]; then
+              cp .env.testing .env
+            elif [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              echo "ERROR: No .env template found!"
+              exit 1
+            fi
+          fi
       - name: Run DAST tests
-        run: bash scripts/dast.sh
+        # DAST suite is in-process (router-level, no live server needed).
+        # scripts/dast.sh is legacy and requires a public/ dir that only
+        # exists in generated app skeletons, not in the framework checkout.
+        run: php vendor/bin/phpunit --configuration=phpunit-ci.xml --testsuite=DAST --no-progress

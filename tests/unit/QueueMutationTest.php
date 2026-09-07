@@ -84,8 +84,11 @@ final class QueueMutationTest extends TestCase
         Queue::registerJob(QJob::class);
         Queue::push(QJob::class, ['a' => 1]);
         Queue::push(QJob::class, ['b' => 2]);
-        $processed = Queue::workAll(2);
-        $this->assertGreaterThanOrEqual(0, $processed);
+        // Single worker = drain mode. workAll(N>=2) on pcntl platforms is the
+        // blocking daemon path (queue:work --daemon) that never returns, so the
+        // deterministic drain-and-return contract is exercised with workers=1.
+        $processed = Queue::workAll(1);
+        $this->assertSame(2, $processed);
     }
 
     public function testFailedCountAndGet(): void

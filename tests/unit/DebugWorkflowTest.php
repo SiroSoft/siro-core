@@ -48,8 +48,22 @@ final class DebugWorkflowTest extends TestCase
     {
         if ($this->serverProc !== null) {
             $status = proc_get_status($this->serverProc);
-            if ($status['running'] && function_exists('proc_terminate')) {
-                proc_terminate($this->serverProc);
+            if ($status['running']) {
+                // SIGTERM first (graceful)
+                if (function_exists('proc_terminate')) {
+                    proc_terminate($this->serverProc);
+                }
+                // Wait up to 2 seconds for graceful exit
+                for ($i = 0; $i < 20; $i++) {
+                    usleep(100000);
+                    $status = proc_get_status($this->serverProc);
+                    if (!$status['running']) break;
+                }
+                // Force kill if still running (Unix only)
+                if ($status['running'] && function_exists('posix_kill')) {
+                    posix_kill($status['pid'], 9); // SIGKILL
+                    usleep(200000);
+                }
             }
             foreach ($this->serverPipes as $pipe) {
                 if (is_resource($pipe)) {
@@ -133,7 +147,8 @@ PHP;
         if ($this->serverProc !== null) {
             return;
         }
-        $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+        $nul = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
+        $descriptors = [0 => ['pipe', 'r'], 1 => ['file', $nul, 'w'], 2 => ['file', $nul, 'w']];
         $pipes = [];
         $this->serverProc = proc_open([PHP_BINARY, '-S', '127.0.0.1:' . $this->port, $this->routerFile], $descriptors, $pipes);
         $this->serverPipes = $pipes;
@@ -605,8 +620,13 @@ PHP;
         $vendorBin = $dir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin';
         mkdir($vendorBin, 0777, true);
         $shim = "#!/usr/bin/env php\n<?php\necho \"PHPUnit (shim) ran with args: \" . implode(' ', array_slice(\$argv, 1)) . \"\\n\";\nexit($exitCode);\n";
-        file_put_contents($vendorBin . DIRECTORY_SEPARATOR . 'phpunit', $shim);
-        // TestRunCommand invokes the file directly (no `php` prefix) — needs a .bat on Windows
+        $shimPath = $vendorBin . DIRECTORY_SEPARATOR . 'phpunit';
+        file_put_contents($shimPath, $shim);
+        // TestRunCommand invokes the file directly (no `php` prefix) — needs exec bit on Unix
+        // and a .bat wrapper on Windows.
+        if (DIRECTORY_SEPARATOR !== '\\') {
+            chmod($shimPath, 0755);
+        }
         $bat = "@echo off\r\nphp \"%~dp0phpunit\" %*\r\nexit /b $exitCode\r\n";
         file_put_contents($vendorBin . DIRECTORY_SEPARATOR . 'phpunit.bat', $bat);
         return $dir;

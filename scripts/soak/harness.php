@@ -18,8 +18,9 @@ declare(strict_types=1);
 
 $startTime = microtime(true);
 $duration = 48 * 3600; // Default 48 hours
-$mode = 'soak'; // 'soak' or 'monitor-only'
+$mode = 'soak'; // 'soak', 'monitor-only', or 'external'
 $port = 8787;
+$targetUrl = null; // When set, skip server spawn and use external URL
 $basePath = dirname(__DIR__, 2);
 $storageDir = $basePath . '/storage';
 
@@ -31,6 +32,9 @@ foreach ($argv as $arg) {
         $mode = 'monitor-only';
     } elseif (str_starts_with($arg, '--port=')) {
         $port = max(1024, (int) substr($arg, 7));
+    } elseif (str_starts_with($arg, '--target=')) {
+        $targetUrl = rtrim(substr($arg, 9), '/');
+        $mode = 'external';
     }
 }
 
@@ -50,13 +54,26 @@ echo "║ Started:   " . date('Y-m-d H:i:s') . "                       ║\n";
 echo "╚══════════════════════════════════════════════════════════╝\n\n";
 
 // Record environment
+$gitSha = trim(@shell_exec("cd \"{$basePath}\" && git rev-parse --short HEAD 2>&1") ?: 'unknown');
+if (str_contains($gitSha, 'not recognized') || str_contains($gitSha, 'cannot find')) {
+    $gitSha = 'unknown';
+}
+$gitStatusOutput = @shell_exec("cd \"{$basePath}\" && git status --porcelain -u 2>&1") ?: '';
+$workingTreeClean = trim($gitStatusOutput) === '' || str_contains($gitStatusOutput, 'not recognized');
+$expectedShaFile = $storageDir . '/soak_expected_sha.txt';
+$expectedSha = file_exists($expectedShaFile) ? trim(file_get_contents($expectedShaFile)) : null;
+
 $env = [
-    'git_sha' => trim(shell_exec("cd {$basePath} && git rev-parse --short HEAD 2>/dev/null") ?: 'unknown'),
+    'git_sha' => $gitSha,
+    'working_tree_clean' => $workingTreeClean,
+    'expected_sha' => $expectedSha,
+    'sha_matches' => $expectedSha !== null ? $gitSha === $expectedSha : null,
     'php_version' => PHP_VERSION,
     'os' => PHP_OS_FAMILY . ' ' . php_uname('r'),
     'start_time' => date('c'),
     'duration_seconds' => $duration,
     'mode' => $mode,
+    'target_url' => $targetUrl,
     'port' => $port,
 ];
 file_put_contents($storageDir . '/soak_env.json', json_encode($env, JSON_PRETTY_PRINT));
@@ -66,7 +83,9 @@ echo "PHP: {$env['php_version']}\n\n";
 
 // ── Phase 2: Start server (if not monitor-only) ──
 $serverPid = null;
-if ($mode !== 'monitor-only') {
+if ($mode === 'external') {
+    echo "Using external server: {$targetUrl}\n";
+} elseif ($mode !== 'monitor-only') {
     $appScript = __DIR__ . '/app.php';
     if (PHP_OS_FAMILY === 'Windows') {
         // Windows: use proc_open for background server
@@ -170,6 +189,7 @@ $counters = [
     'expected_4xx' => 0,
     'unexpected_4xx' => 0,
     '5xx' => 0,
+    'injected_5xx' => 0,
     'errors' => 0,
     'cache_stampede_callbacks' => 0,
     'db_ops' => 0,
@@ -183,7 +203,7 @@ while (microtime(true) < $deadline) {
     $route = $allRoutes[array_rand($allRoutes)];
 
     // Make request
-    $url = "http://127.0.0.1:{$port}{$route['uri']}";
+    $url = ($targetUrl ?: "http://127.0.0.1:{$port}") . $route['uri'];
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -217,7 +237,12 @@ while (microtime(true) < $deadline) {
     } elseif ($httpCode === 422 || $httpCode === 404) {
         $counters['expected_4xx']++;
     } elseif ($httpCode >= 500) {
-        $counters['5xx']++;
+        if (array_key_exists($route['uri'], $failRoutes)) {
+            // Deliberate failure injection: expected 500, not a framework fault.
+            $counters['injected_5xx']++;
+        } else {
+            $counters['5xx']++;
+        }
     } else {
         $counters['expected_4xx']++;
     }
@@ -249,7 +274,7 @@ while (microtime(true) < $deadline) {
         ];
 
         // Get server metrics
-        $metricsCh = curl_init("http://127.0.0.1:{$port}/metrics");
+        $metricsCh = curl_init(($targetUrl ?: "http://127.0.0.1:{$port}") . '/metrics');
         curl_setopt($metricsCh, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($metricsCh, CURLOPT_TIMEOUT, 5);
         $metricsResp = curl_exec($metricsCh);
@@ -344,13 +369,15 @@ foreach ($criteria as $name => $met) {
 }
 
 // Cleanup server
-if (isset($serverProc) && is_resource($serverProc)) {
-    echo "\nStopping server...\n";
-    proc_terminate($serverProc);
-    proc_close($serverProc);
-} elseif ($serverPid && PHP_OS_FAMILY !== 'Windows') {
-    echo "\nStopping server (PID={$serverPid})...\n";
-    shell_exec("kill {$serverPid} 2>/dev/null");
+if ($mode !== 'external') {
+    if (isset($serverProc) && is_resource($serverProc)) {
+        echo "\nStopping server...\n";
+        proc_terminate($serverProc);
+        proc_close($serverProc);
+    } elseif ($serverPid && PHP_OS_FAMILY !== 'Windows') {
+        echo "\nStopping server (PID={$serverPid})...\n";
+        shell_exec("kill {$serverPid} 2>/dev/null");
+    }
 }
 
 $exitCode = $pass ? 0 : 1;

@@ -1,5 +1,32 @@
 # Release Notes
 
+## v1.0.0 — First Stable Release: API Stability Promise (2026-09-07)
+
+### Highlights
+- **Stable API contract**: 208 public classes frozen and classified STABLE / INTERNAL / EXPERIMENTAL
+(`API_SURFACE.md`), enforced by `ApiStabilityTest`. From this release forward, breaking changes to the
+public API require a major version bump.
+- **Zero migration from v0.41.x**: there are no breaking changes — upgrading is a `composer update`.
+
+### Production Hardening
+- **Cache stampede protection**: `Cache::remember()` executes exactly one callback under concurrent
+cache-miss load (per-key locking).
+- **Proven under a 48-hour production soak**: 30,453,532 requests, 0 framework fatals, ~0.00013% real 5xx,
+flat worker memory (RSS drift +0.03MB). Full evidence in `B2_SOAK_REPORT.md`.
+- **Queue**: poison-job resilience and exponential retry backoff verified; delivery semantics documented
+as a contract (DB = at-least-once, Redis = at-most-once, ADR-013) with the application idempotency
+requirement stated explicitly.
+
+### Quality Gates
+- Cross-platform CI: PHP 8.2/8.3/8.4 × Linux/Windows/macOS; all 95 CLI commands smoke-tested on
+every combination.
+- Mutation testing gate (Infection), dependency audit, secret scanning (gitleaks), PHPStan max level —
+all wired into CI.
+
+See `UPGRADE.md` for the upgrade path and `CHANGELOG.md` for the complete change list.
+
+---
+
 ## v0.41.0 — Trace/Replay Level-2: Captured Execution Context + Risk-Aware Replay (2026-08-25)
 
 ### Trace Capture Enhancements

@@ -22,9 +22,19 @@ final class RedisDriverMutationTest extends TestCase
             $this->markTestSkipped('ext-redis not available');
         }
         $this->redis = new \Redis();
-        $ok = @$this->redis->connect('127.0.0.1', 6379, 1);
-        if (!$ok) {
-            $this->markTestSkipped('No Redis server at 127.0.0.1:6379');
+        $usable = false;
+        try {
+            if ($this->redis->connect('127.0.0.1', 6379, 1)) {
+                // phpredis >= 6 throws on a refused connection instead of
+                // returning false, and a TCP peer may accept then drop the
+                // first command. PING proves the server is actually usable.
+                $usable = $this->redis->ping() === true || $this->redis->ping() === '+PONG';
+            }
+        } catch (\RedisException) {
+            $usable = false;
+        }
+        if (!$usable) {
+            $this->markTestSkipped('No usable Redis server at 127.0.0.1:6379');
         }
         $this->redis->flushAll();
     }
@@ -32,7 +42,11 @@ final class RedisDriverMutationTest extends TestCase
     protected function tearDown(): void
     {
         if (isset($this->redis)) {
-            $this->redis->flushAll();
+            try {
+                $this->redis->flushAll();
+            } catch (\RedisException) {
+                // server already gone — nothing to clean up
+            }
         }
         parent::tearDown();
     }
@@ -71,7 +85,7 @@ final class RedisDriverMutationTest extends TestCase
         $driver = new RedisDriver($this->redis);
         $driver->set('del', 'x', 60);
         $this->assertNotNull($driver->get('del'));
-        $this->assertTrue($driver->delete('del'));
+        $this->assertTrue($driver->forget('del'));
         $this->assertNull($driver->get('del'));
     }
 
@@ -80,16 +94,19 @@ final class RedisDriverMutationTest extends TestCase
         $driver = new RedisDriver($this->redis);
         $driver->set('c1', 1, 60);
         $driver->set('c2', 2, 60);
-        $this->assertTrue($driver->clear());
+        $this->assertGreaterThanOrEqual(2, $driver->flush());
         $this->assertNull($driver->get('c1'));
+        $this->assertNull($driver->get('c2'));
     }
 
-    public function testCacheRedisIncrement(): void
+    public function testCacheRedisFlushPrefix(): void
     {
         $driver = new RedisDriver($this->redis);
-        $driver->set('inc', 5, 60);
-        $this->assertIsInt($driver->increment('inc'));
-        $this->assertSame(6, $driver->get('inc'));
+        $driver->set('pre:inc', 5, 60);
+        $driver->set('other', 'x', 60);
+        $this->assertGreaterThanOrEqual(1, $driver->flush('pre:'));
+        $this->assertNull($driver->get('pre:inc'));
+        $this->assertSame('x', $driver->get('other'));
     }
 
     public function testQueueRedisDriver(): void

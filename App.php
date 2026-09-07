@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Siro\Core;
 
 use RuntimeException;
+use Siro\Core\Queue;
 use Throwable;
 use Siro\Core\Debug\TraceData;
 
@@ -89,6 +90,20 @@ final class App
         Cache::boot($this->basePath);
 
         $this->discoverPackageProviders();
+
+        // Auto-register application job classes so the documented
+        // make:job → Queue::push → queue:work flow works out of the box.
+        // Only classes physically present in <base>/app/Jobs are whitelisted;
+        // unknown classes injected into the queue remain blocked.
+        $jobsDir = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Jobs';
+        if (is_dir($jobsDir)) {
+            foreach (glob($jobsDir . DIRECTORY_SEPARATOR . '*.php') ?: [] as $jobFile) {
+                $jobClass = 'App\\Jobs\\' . basename($jobFile, '.php');
+                if (class_exists($jobClass)) {
+                    Queue::registerJob($jobClass);
+                }
+            }
+        }
 
         // Defer Lang & Storage — they're rarely needed on every request
         // Accessed via __call or explicit boot methods when first used

@@ -27,6 +27,11 @@ final class CorsEtagIdempotencyMutationTest extends TestCase
         }
         Env::reset();
         putenv('APP_ENV=testing');
+        // Clear .env.siro CORS defaults that interfere with wildcard tests
+        unset($_ENV['CORS_ALLOWED_ORIGINS'], $_ENV['CORS_ALLOWED_METHODS'], $_ENV['CORS_ALLOWED_HEADERS']);
+        putenv('CORS_ALLOWED_ORIGINS');
+        putenv('CORS_ALLOWED_METHODS');
+        putenv('CORS_ALLOWED_HEADERS');
         Database::purgeAll();
         Database::configure(['driver' => 'sqlite', 'database' => ':memory:']);
         \Siro\Core\Auth\Idempotency::createTable();
@@ -35,6 +40,7 @@ final class CorsEtagIdempotencyMutationTest extends TestCase
     protected function tearDown(): void
     {
         putenv('APP_ENV');
+        putenv('CORS_ALLOWED_ORIGINS');
         Env::reset();
         Cache::reset();
         Database::purgeAll();

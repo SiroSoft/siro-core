@@ -158,7 +158,7 @@ final class SchemaTest extends TestCase
 
     public function testCompositePrimaryKey(): void
     {
-        $b = new Blueprint('test');
+        $b = new Blueprint('test', 'mysql');
         $b->integer('order_id');
         $b->integer('product_id');
         $b->primary(['order_id', 'product_id']);
@@ -195,7 +195,7 @@ final class SchemaTest extends TestCase
 
     public function testIdNoDuplicatePrimary(): void
     {
-        $b = new Blueprint('test');
+        $b = new Blueprint('test', 'mysql');
         $b->id();
         $sql = $b->compileCreate();
         // 'id' type column already inlines PRIMARY KEY — must not duplicate
@@ -221,7 +221,7 @@ final class SchemaTest extends TestCase
 
     public function testAlterAddColumn(): void
     {
-        $b = new Blueprint('test');
+        $b = new Blueprint('test', 'mysql');
         $b->string('email');
         $sql = $b->compileAlter();
         $this->assertStringContainsString('ADD COLUMN `email` VARCHAR', $sql[0]);

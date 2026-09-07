@@ -11,7 +11,7 @@ use Siro\Core\QueueInterface;
  */
 final class SoakTestJob implements QueueInterface
 {
-    private const LOG_FILE = __DIR__ . '/../storage/soak_queue_log.jsonl';
+    private const LOG_FILE = __DIR__ . '/../../storage/soak_queue_log.jsonl';
 
     public function handle(array $data = []): void
     {

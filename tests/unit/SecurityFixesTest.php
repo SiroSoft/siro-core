@@ -396,7 +396,7 @@ final class SecurityFixesTest extends TestCase
 
         $this->assertStringNotContainsString('..', $cleanPath, 'Traversal sequences should be removed');
         $this->assertStringNotContainsString('//', $cleanPath, 'Double slashes should be normalized');
-        $this->assertStringNotContainsString('etc/passwd', $cleanPath, 'Should not resolve to actual path');
+        $this->assertSame('etc' . $dirSep . 'passwd', $cleanPath, 'Traversal removed, only the relative filename remains');
     }
 
     public function testStorageLocalPathRecursiveSanitizationHandlesNestedPatterns(): void

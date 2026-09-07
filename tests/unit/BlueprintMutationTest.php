@@ -16,8 +16,8 @@ final class BlueprintMutationTest extends TestCase
 {
     public function testDetectDriverWithoutConnection(): void
     {
-        $bp = new Blueprint('users');
-        // default driver fallback is mysql -> id column compiles with mysql type
+        $bp = new Blueprint('users', 'mysql');
+        // explicitly test MySQL id column compiles with AUTO_INCREMENT
         $bp->id();
         $sql = implode("\n", $bp->compileCreate());
         $this->assertStringContainsString('AUTO_INCREMENT', $sql);

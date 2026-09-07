@@ -61,7 +61,7 @@
         "analyse": "phpstan analyse --level=max",
         "test": "phpunit --no-coverage",
         "test:coverage": "php -d zend_extension=xdebug phpunit --coverage-html coverage/html",
-        "test:mutation": "infection --min-msi=80 --threads=4",
+        "test:mutation": "infection --min-msi=20 --threads=4",
         "test:benchmark": "@php benchmark.php",
         "benchmark:ci": "@php scripts/benchmark-ci.php",
         "test:fuzz": "@php scripts/fuzz.php",

@@ -79,7 +79,15 @@ final class ThrottleMiddleware implements MiddlewareInterface
                 }
             }
             return $response;
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            // Only the middleware's own counter-state failure may degrade to the
+            // fallback backend. Any other throwable (bug or downstream error that
+            // happened to surface inside the try) must not be masked as a 429.
+            $isOwnStateError = $e instanceof \RuntimeException
+                && $e->getMessage() === 'Invalid rate limiter counter state.';
+            if (!$isOwnStateError) {
+                throw $e;
+            }
             return $this->handleFallback($request, $next, $limit, $windowMinutes, $ttl);
         }
     }

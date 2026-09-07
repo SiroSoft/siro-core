@@ -23,6 +23,13 @@ final class CodeQualityFixesTest extends TestCase
         Config::reset();
     }
 
+    private function requireSkeleton(): void
+    {
+        if (!is_dir($this->siroPhpDir)) {
+            $this->markTestSkipped('SiroPHP skeleton directory not present — skipping skeleton-structure tests');
+        }
+    }
+
     // ========================================================================
     // Fix 1: PDO persistent connections disabled for MySQL
     // ========================================================================
@@ -43,6 +50,7 @@ final class CodeQualityFixesTest extends TestCase
 
     public function testBaseServiceIsInterfaceNotAbstractClass(): void
     {
+        $this->requireSkeleton();
         $file = $this->siroPhpDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'BaseService.php';
         $this->assertFileExists($file);
         require_once $file;
@@ -54,6 +62,7 @@ final class CodeQualityFixesTest extends TestCase
 
     public function testBaseServiceInterfaceHasRequiredMethods(): void
     {
+        $this->requireSkeleton();
         $file = $this->siroPhpDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'BaseService.php';
         require_once $file;
 
@@ -182,6 +191,7 @@ final class CodeQualityFixesTest extends TestCase
 
     public function testConfigAppUrlUsesEnvGet(): void
     {
+        $this->requireSkeleton();
         $configFile = $this->siroPhpDir . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'app.php';
         $this->assertFileExists($configFile);
         $contents = (string) file_get_contents($configFile);
@@ -193,6 +203,7 @@ final class CodeQualityFixesTest extends TestCase
 
     public function testConfigAppUrlReturnsExpectedDefault(): void
     {
+        $this->requireSkeleton();
         $configFile = $this->siroPhpDir . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'app.php';
         $config = (array) require $configFile;
 

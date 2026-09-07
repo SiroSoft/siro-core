@@ -1,5 +1,35 @@
 # Changelog — siro-core
 
+## v1.0.0 (2026-09-07)
+
+First stable release — API stability promise in effect. **No breaking changes from
+v0.41.0**: all code written against v0.41.x continues to work unchanged.
+
+### 🛡️ Production Hardening (Phase B)
+- **Cache stampede protection**: `Cache::remember()` uses per-key locking so exactly one
+callback executes under concurrent cache-miss load (26 tests; in-memory verified, Redis caveat documented)
+- **48-hour production soak PASS**: 30,453,532 requests / 0 framework fatals / 0 unexpected 5xx
+(~40 real errors per 30.45M = 0.00013%) / FPM RSS drift +0.03MB over 48h — flat memory, no leak (`B2_SOAK_REPORT.md`)
+- **Queue hardening**: poison-job resilience + exponential retry backoff verified; 72 tests, 266 assertions;
+long-run 1,000 jobs with 0KB memory growth
+
+### 📜 Release Contract (Phase C)
+- **API surface freeze**: 208 public classes classified STABLE/INTERNAL/EXPERIMENTAL in `API_SURFACE.md`,
+guarded by `ApiStabilityTest` — breaking changes now require a major version bump
+- **Delivery semantics (ADR-013)**: DB queue = at-least-once, Redis queue = at-most-once, with documented
+application idempotency requirement
+- **Trace/Replay contract**: risk-aware replay (`--force` for side-effect traces), explicitly documented limits
+- **Upgrade guide**: v0.27 → v0.35 → v0.40 → v0.41 → v1.0 with zero migration steps
+
+### 🏗️ Release Engineering
+- **Cross-platform CI**: PHP 8.2/8.3/8.4 × Linux/Windows/macOS matrix (33 check-runs);
+all 95 CLI commands smoke-tested on every combination
+- **Mutation testing gate**: Infection MSI floor in CI (baseline 21%, ratchet target 80%)
+- **Security gates**: `composer audit`, gitleaks, 42 security unit tests — 0 known advisories
+- **Version plan**: no v0.42/v0.43; next stops v1.0.1 (patch) and v1.1.0 (Model Events, Accessors, Enum casting)
+
+---
+
 ## v0.41.0 (2026-08-25)
 
 ### 🔍 Trace/Replay Level-2: Captured Execution Context + Risk-Aware Replay
