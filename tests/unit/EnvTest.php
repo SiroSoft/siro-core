@@ -255,4 +255,58 @@ final class EnvTest extends TestCase
         $this->assertFalse(Env::isLoaded());
         unlink($file);
     }
+
+    public function testInlineCommentAfterValueIsStripped(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'env');
+        file_put_contents($file, 'DB_CONNECTION=sqlite # Database engine: mysql, sqlite');
+        Env::load($file);
+        $this->assertSame('sqlite', Env::get('DB_CONNECTION'));
+        unlink($file);
+    }
+
+    public function testInlineCommentWithTabsIsStripped(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'env');
+        file_put_contents($file, "CACHE_DRIVER=file\t\t# Cache driver: file, redis");
+        Env::load($file);
+        $this->assertSame('file', Env::get('CACHE_DRIVER'));
+        unlink($file);
+    }
+
+    public function testHashInsideUnquotedValueIsPreserved(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'env');
+        file_put_contents($file, 'PASSWORD=pass#word');
+        Env::load($file);
+        $this->assertSame('pass#word', Env::get('PASSWORD'));
+        unlink($file);
+    }
+
+    public function testHashInsideQuotedValueIsPreserved(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'env');
+        file_put_contents($file, 'SECRET="abc#def"');
+        Env::load($file);
+        $this->assertSame('abc#def', Env::get('SECRET'));
+        unlink($file);
+    }
+
+    public function testInlineCommentAfterQuotedValueIsStripped(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'env');
+        file_put_contents($file, 'NAME="Siro API" # app name');
+        Env::load($file);
+        $this->assertSame('Siro API', Env::get('NAME'));
+        unlink($file);
+    }
+
+    public function testHashAtValueStartIsComment(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'env');
+        file_put_contents($file, 'EMPTY=#not-a-value');
+        Env::load($file);
+        $this->assertSame('', Env::get('EMPTY'));
+        unlink($file);
+    }
 }

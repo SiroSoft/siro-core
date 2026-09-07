@@ -30,12 +30,22 @@ final class DatabaseInstance implements DatabaseInterface
     /** @param array<string, mixed> $config */
     public function configure(array $config, string $name = 'default'): void
     {
+        $previous = $this->configs[$name] ?? null;
         $this->configs[$name] = $config;
         $threshold = $config['slow_query_threshold'] ?? 100;
         $this->slowQueryThreshold = max(0, is_numeric($threshold) ? (int) $threshold : 100);
         $this->queryCaptureEnabled = (bool) ($config['capture_queries'] ?? false);
 
-        if ($name === $this->defaultConnection) {
+        // If the connection parameters changed, drop any cached PDO for this
+        // connection (read + write) so the next connection() call rebuilds
+        // from the new config instead of silently reusing the old one.
+        if ($previous !== null && $previous !== $config) {
+            unset($this->pdoInstances[$name], $this->pdoInstances[$name . ':write']);
+            $this->preparedStatements = [];
+            if ($name === $this->defaultConnection) {
+                $this->capturedQueries = [];
+            }
+        } elseif ($name === $this->defaultConnection) {
             $this->capturedQueries = [];
         }
     }
