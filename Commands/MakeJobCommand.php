@@ -56,6 +56,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use Siro\Core\Queue;
+use Siro\Core\QueueInterface;
 
 /**
  * {$className} — generated job class.
@@ -65,7 +66,7 @@ use Siro\Core\Queue;
  *
  * @package App\Jobs
  */
-final class {$className}
+final class {$className} implements QueueInterface
 {
     /**
      * Execute the job.
