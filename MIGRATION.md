@@ -1,10 +1,22 @@
 # Migration Guide
 
-**No breaking changes.** All v0.x versions maintain full backward compatibility.
+**No breaking changes.** All v0.x and v1.x versions maintain full backward compatibility.
 
 ---
 
-## v0.22 → v0.23 (Current)
+## v1.0 (Current)
+
+No migration needed from v0.41.x. Just update:
+
+```bash
+composer update sirosoft/core:^1.0
+```
+
+See `UPGRADE.md` for the full v0.27 → v1.0 guide.
+
+---
+
+## v0.22 → v0.23
 
 No migration needed. Just update:
 

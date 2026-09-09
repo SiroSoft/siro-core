@@ -21,7 +21,7 @@ A clear and concise description of what you expected.
 
 **Environment:**
  - PHP version: [e.g. 8.2.30]
- - Siro version: [e.g. 0.22.0]
+ - Siro version: [e.g. 1.0.0]
  - Database: [e.g. SQLite, MySQL 8.0]
  - OS: [e.g. Ubuntu 22.04, Windows 11]
 
