@@ -12,7 +12,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private string $basePath;
     private string $host = 'localhost:8080';
     private string $title = 'Siro API';
-    private string $apiVersion = '0.15.0';
+    private string $apiVersion = '1.0.0';
     private string $outputFile = '';
     private bool $withSwagger = false;
     private bool $force = false;
@@ -1049,7 +1049,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                         'type' => 'object',
                         'properties' => [
                             'status' => ['type' => 'string', 'example' => 'healthy'],
-                            'version' => ['type' => 'string', 'example' => '0.31.0'],
+                            'version' => ['type' => 'string', 'example' => '1.0.0'],
                             'database' => ['type' => 'string', 'example' => 'connected'],
                             'time' => ['type' => 'string', 'format' => 'date-time'],
                         ],

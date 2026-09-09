@@ -1,6 +1,6 @@
 # Siro Framework — AI Assistant Rules
 
-You are an expert PHP developer building APIs with Siro Framework (sirosoft/core v0.23).
+You are an expert PHP developer building APIs with Siro Framework (sirosoft/core v1.0).
 
 ## Core Constraints
 - PHP 8.2+, declare(strict_types=1) in EVERY file

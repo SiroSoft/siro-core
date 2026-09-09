@@ -29,6 +29,46 @@ if ($withProdDoctor) {
 
 $failures = 0;
 
+// Version-consistency gate: Console::VERSION is the single source of truth.
+// Guards against drift like APP_VERSION=0.28.1 while VERSION=1.0.0.
+$versionGate = function (): bool {
+    $root = dirname(__DIR__);
+    $consoleFile = $root . '/Console.php';
+    $content = is_file($consoleFile) ? (string) file_get_contents($consoleFile) : '';
+    if (!preg_match("/const VERSION = '([^']+)'/", $content, $m)) {
+        fwrite(STDERR, "[FAIL] Version gate: cannot parse Console::VERSION\n");
+        return false;
+    }
+    $version = $m[1];
+    if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
+        fwrite(STDERR, "[FAIL] Version gate: malformed VERSION '{$version}'\n");
+        return false;
+    }
+    $changelog = is_file($root . '/CHANGELOG.md') ? (string) file_get_contents($root . '/CHANGELOG.md') : '';
+    if (!preg_match('/^## v(\d+\.\d+\.\d+)/m', $changelog, $cm) || $cm[1] !== $version) {
+        fwrite(STDERR, "[FAIL] Version gate: CHANGELOG head '" . ($cm[1] ?? '?') . "' != Console::VERSION '{$version}'\n");
+        return false;
+    }
+    foreach (['.env.siro', '.env.bench'] as $envFile) {
+        $path = $root . '/' . $envFile;
+        if (!is_file($path)) {
+            continue;
+        }
+        $env = (string) file_get_contents($path);
+        if (preg_match('/^APP_VERSION=(.+)$/m', $env, $em) && trim($em[1], "\"' ") !== $version) {
+            fwrite(STDERR, "[FAIL] Version gate: {$envFile} APP_VERSION '" . trim($em[1]) . "' != '{$version}'\n");
+            return false;
+        }
+    }
+    fwrite(STDOUT, "[OK] Version gate ({$version})\n");
+    return true;
+};
+
+fwrite(STDOUT, "\n==> Version gate\n");
+if (!$versionGate()) {
+    $failures++;
+}
+
 foreach ($steps as $step) {
     fwrite(STDOUT, "\n==> {$step['name']}\n");
     passthru($step['cmd'], $code);
