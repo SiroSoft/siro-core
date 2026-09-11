@@ -792,9 +792,9 @@ final class Router
             };
         }
 
-        /** @var array<string, string> $reqHeaders */
-        $reqHeaders = function_exists('getallheaders') ? (getallheaders() ?: []) : [];
-        $req = new Request('OPTIONS', $path, $_GET, $reqHeaders, []);
+        // Use Request::parseHeaders() (getallheaders + $_SERVER fallback)
+        // so Origin survives on runtimes like FrankenPHP workers.
+        $req = new Request('OPTIONS', $path, $_GET, Request::parseHeaders(), []);
         return $finalHandler($req);
     }
 

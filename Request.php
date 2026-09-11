@@ -666,8 +666,13 @@ final class Request
         return filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
-    /** @return array<string, string> */
-    private static function parseHeaders(): array
+    /**
+     * Parse incoming HTTP headers with $_SERVER fallback for runtimes
+     * where getallheaders() is missing or incomplete (e.g. FrankenPHP workers).
+     *
+     * @return array<string, string>
+     */
+    public static function parseHeaders(): array
     {
         $headers = [];
 
