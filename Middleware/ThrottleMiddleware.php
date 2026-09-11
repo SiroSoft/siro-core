@@ -202,10 +202,18 @@ final class ThrottleMiddleware implements MiddlewareInterface
                 $response->header('X-RateLimit-Reset', (string) ($now + $remainingTtl));
             }
             return $response;
-        } catch (Throwable) {
+        } catch (Throwable $e) {
             if (isset($fp) && is_resource($fp)) {
                 @flock($fp, LOCK_UN);
                 @fclose($fp);
+            }
+            // Only the middleware's own counter-state failure may degrade to
+            // a 429. Any other throwable (bug or downstream error surfacing
+            // inside the try) must not be masked as rate limiting.
+            $isOwnStateError = $e instanceof \RuntimeException
+                && $e->getMessage() === 'Invalid rate limiter counter state.';
+            if (!$isOwnStateError) {
+                throw $e;
             }
             return Response::error('Too Many Requests', 429, [
                 'throttle' => ['Rate limiter fallback processing failed'],
