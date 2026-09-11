@@ -143,7 +143,7 @@ final class Router
         $path = $request->path();
 
         if ($method === 'OPTIONS') {
-            return $this->handleOptionsRequest($path);
+            return $this->handleOptionsRequest($path, $request);
         }
 
         $route = $this->matcher->match($method, $path);
@@ -773,7 +773,7 @@ final class Router
         $this->delete("/{$name}/{id}", $controller . '@delete', $middleware);
     }
 
-    private function handleOptionsRequest(string $path): Response
+    private function handleOptionsRequest(string $path, Request $request): Response
     {
         if (!$this->matcher->pathExists($path)) {
             return Response::error('Route not found', 404);
@@ -792,10 +792,10 @@ final class Router
             };
         }
 
-        // Use Request::parseHeaders() (getallheaders + $_SERVER fallback)
-        // so Origin survives on runtimes like FrankenPHP workers.
-        $req = new Request('OPTIONS', $path, $_GET, Request::parseHeaders(), []);
-        return $finalHandler($req);
+        // Reuse the already-built request (headers intact) instead of
+        // rebuilding from globals — rebuilding loses headers on runtimes
+        // like FrankenPHP workers, breaking CORS preflight (no ACAO).
+        return $finalHandler($request);
     }
 
     private function findSimilarRoute(string $path): ?string
