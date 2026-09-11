@@ -784,12 +784,18 @@ final class Router
                 ->header('Access-Control-Max-Age', '86400');
         };
 
-        // Preflight must carry CORS headers. Route/group middlewares must
-        // NOT run here: $this->groupMiddleware is empty at dispatch time,
-        // and running auth/throttle would 401/429 without ACAO, breaking
-        // the browser flow. Run only the framework CORS handler.
-        $cors = new Middleware\CorsMiddleware();
-        return $cors->handle($request, $finalHandler);
+        $pipeline = array_reverse($this->groupMiddleware);
+        foreach ($pipeline as $middleware) {
+            $next = $finalHandler;
+            $finalHandler = function (Request $req) use ($middleware, $next): Response {
+                return $this->runMiddleware($middleware, $req, $next);
+            };
+        }
+
+        // Reuse the already-built request (headers intact) instead of
+        // rebuilding from globals — rebuilding loses headers on runtimes
+        // like FrankenPHP workers, breaking CORS preflight (no ACAO).
+        return $finalHandler($request);
     }
 
     private function findSimilarRoute(string $path): ?string
