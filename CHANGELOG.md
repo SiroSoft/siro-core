@@ -1,5 +1,10 @@
 # Changelog — siro-core
 
+## v1.0.6 (2026-09-11)
+
+- Sync version strings with tag (v1.0.4 tag ref was superseded by v1.0.5
+  during the Packagist metadata fight; no code changes).
+
 ## v1.0.4 (2026-09-11)
 
 - ThrottleMiddleware file fallback rethrows downstream errors instead of
