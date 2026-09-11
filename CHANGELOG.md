@@ -1,5 +1,19 @@
 # Changelog — siro-core
 
+## v1.0.4 (2026-09-11)
+
+- ThrottleMiddleware file fallback rethrows downstream errors instead of
+  masking them as `429 Rate limiter fallback processing failed` (same rule
+  the Redis path already had: only own counter-state failures degrade).
+
+## v1.0.3 (2026-09-11)
+
+- OPTIONS preflight runs only `CorsMiddleware` with the already-built request.
+  The group pipeline is empty at dispatch time and returned a bare 204 with
+  no `Access-Control-Allow-Origin` (broke browsers on FrankenPHP).
+- `Request::parseHeaders()` supplements empty `getallheaders()` from
+  `$_SERVER` so `Origin` survives FrankenPHP workers.
+
 ## v1.0.0 (2026-09-07)
 
 First stable release — API stability promise in effect. **No breaking changes from

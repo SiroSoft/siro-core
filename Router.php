@@ -791,7 +791,11 @@ final class Router
         // browser flow. Run only the framework CORS handler, reusing the
         // already-built request (headers intact on FrankenPHP workers).
         $cors = new Middleware\CorsMiddleware();
-        return $cors->handle($request, $finalHandler);
+        $response = $cors->handle($request, $finalHandler);
+        if (!$response instanceof Response) {
+            return $finalHandler($request);
+        }
+        return $response;
     }
 
     private function findSimilarRoute(string $path): ?string

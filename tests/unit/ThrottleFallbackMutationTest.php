@@ -179,6 +179,18 @@ final class ThrottleFallbackMutationTest extends TestCase
         @unlink($file);
     }
 
+    public function testFallbackRethrowsDownstreamErrors(): void
+    {
+        putenv('THROTTLE_FALLBACK=file');
+        $_ENV['THROTTLE_FALLBACK'] = 'file';
+        $mw = new ThrottleMiddleware();
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('downstream boom');
+        $mw->handle($this->makeRequest(), function (): Response {
+            throw new \RuntimeException('downstream boom');
+        }, 5, 1);
+    }
+
     public function testFallbackFileEmptyContent(): void
     {
         putenv('THROTTLE_FALLBACK=file');
