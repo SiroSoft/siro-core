@@ -666,8 +666,13 @@ final class Request
         return filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
-    /** @return array<string, string> */
-    private static function parseHeaders(): array
+    /**
+     * Parse incoming HTTP headers with $_SERVER fallback for runtimes
+     * where getallheaders() is missing or incomplete (e.g. FrankenPHP workers).
+     *
+     * @return array<string, string>
+     */
+    public static function parseHeaders(): array
     {
         $headers = [];
 
@@ -676,7 +681,19 @@ final class Request
             foreach ($allHeaders as $name => $value) {
                 $headers[strtolower((string) $name)] = is_string($value) ? $value : '';
             }
-            return $headers;
+        }
+
+        // Supplement from $_SERVER when getallheaders() is missing OR
+        // incomplete (e.g. FrankenPHP workers may omit Origin).
+        foreach ($_SERVER as $key => $value) {
+            if (!str_starts_with($key, 'HTTP_')) {
+                continue;
+            }
+
+            $name = strtolower(str_replace('_', '-', substr($key, 5)));
+            if (!isset($headers[$name]) || $headers[$name] === '') {
+                $headers[$name] = is_string($value) ? $value : '';
+            }
         }
 
         foreach ($_SERVER as $key => $value) {
