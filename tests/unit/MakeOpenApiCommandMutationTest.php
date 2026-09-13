@@ -180,4 +180,23 @@ final class MakeOpenApiCommandMutationTest extends TestCase
         ob_end_clean();
         $this->assertSame(0, $code);
     }
+
+    public function testLoadsAllRouteFilesInOrder(): void
+    {
+        $this->writeRoutes();
+        file_put_contents(
+            $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'v2.php',
+            "<?php\n\$router->get('/api/v2/health', 'HealthController@ready');\n"
+        );
+        $this->writeControllers();
+        $cmd = new MakeOpenApiCommand($this->basePath);
+        ob_start();
+        $code = $cmd->run([]);
+        ob_end_clean();
+        $this->assertSame(0, $code);
+        $spec = json_decode((string) file_get_contents($this->basePath . '/docs/openapi/openapi.json'), true);
+        $this->assertIsArray($spec);
+        $this->assertArrayHasKey('/api/users', $spec['paths']);
+        $this->assertArrayHasKey('/api/v2/health', $spec['paths']);
+    }
 }

@@ -86,16 +86,17 @@ final class MakeCrudCommandTest extends TestCase
         $this->assertStringContainsString('created successfully', $output);
     }
 
-    public function testSimpleCrudSkipsMigrationServiceRepo(): void
+    public function testSimpleCrudGeneratesCanonicalNotesShape(): void
     {
         [$exit, $output] = $this->runCmd(['book', '--simple']);
         $this->assertSame(0, $exit);
         $this->assertFileExists($this->basePath . '/app/Models/Book.php');
         $this->assertFileExists($this->basePath . '/app/Controllers/BookController.php');
-        $this->assertFileDoesNotExist($this->basePath . '/app/Services/BookService.php');
-        $this->assertFileDoesNotExist($this->basePath . '/app/Repositories/BookRepository.php');
+        $this->assertFileExists($this->basePath . '/app/Services/BookService.php');
+        $this->assertFileExists($this->basePath . '/app/Repositories/BookRepository.php');
         $migrations = glob($this->basePath . '/database/migrations/*book*');
-        $this->assertEmpty($migrations);
+        $this->assertNotEmpty($migrations);
+        $this->assertFileExists($this->basePath . '/tests/Feature/BookTest.php');
         $this->assertStringContainsString('Simple', $output);
     }
 

@@ -127,6 +127,34 @@ final class DBCliCommandsTest extends TestCase
         $this->assertStringContainsString('Nothing to migrate', $output);
     }
 
+    public function testFailedMigrationIsRetriedAndNotRecorded(): void
+    {
+        Env::reset();
+        \Siro\Core\Database::purgeAll();
+        $file = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . '002_resume.php';
+        file_put_contents($file, <<<'PHP'
+<?php
+return new class { public function up(\PDO $pdo): void { $pdo->exec('CREATE TABLE resume_probe (id INTEGER)'); throw new \RuntimeException('half way'); } };
+PHP
+        );
+
+        [$exit] = $this->runCmd(MigrateCommand::class, []);
+        $this->assertSame(1, $exit);
+        $pdo = new \PDO('sqlite:' . $this->dbPath);
+        $count = $pdo->query("SELECT COUNT(*) FROM migrations WHERE migration = '002_resume.php'")->fetchColumn();
+        $this->assertSame(0, (int) $count);
+
+        file_put_contents($file, <<<'PHP'
+<?php
+return new class { public function up(\PDO $pdo): void { $pdo->exec('CREATE TABLE IF NOT EXISTS resume_probe (id INTEGER)'); } };
+PHP
+        );
+        [$retryExit] = $this->runCmd(MigrateCommand::class, []);
+        $this->assertSame(0, $retryExit);
+        $count = $pdo->query("SELECT COUNT(*) FROM migrations WHERE migration = '002_resume.php'")->fetchColumn();
+        $this->assertSame(1, (int) $count);
+    }
+
     public function testMigrateInvalidMigrationSkipped(): void
     {
         Env::reset();

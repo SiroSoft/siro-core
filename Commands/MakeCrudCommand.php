@@ -43,8 +43,10 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
         $resourceClass = $model . 'Resource';
         $table = $this->plural(strtolower($resource));
 
-        $withoutService = $isSimple || in_array('--without-service', $args, true);
-        $withoutRepository = $isSimple || in_array('--without-repository', $args, true);
+        // --simple is the canonical, copy-runnable module. Explicit opt-outs
+        // remain available for genuinely small endpoints.
+        $withoutService = in_array('--without-service', $args, true);
+        $withoutRepository = in_array('--without-repository', $args, true);
 
         $serviceName = str_replace('Resource', 'Service', $resourceClass);
         $repoName = str_replace('Resource', 'Repository', $resourceClass);
@@ -58,10 +60,8 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
         // 1. Model
         if (!$this->generateModel($model, $table)) { $ok = false; }
 
-        // 2. Migration (skip in simple mode)
-        if (!$isSimple) {
-            if (!$this->generateMigration($table, $model)) { $ok = false; }
-        }
+        // 2. Migration
+        if (!$this->generateMigration($table, $model)) { $ok = false; }
 
         // 3. Repository (skip in simple mode)
         if (!$withoutRepository) {
@@ -82,10 +82,8 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
         // 7. Routes
         if (!$this->generateRoutes($resource, $controllerClass)) { $ok = false; }
 
-        // 8. Test (skip in simple mode)
-        if (!$isSimple) {
-            if (!$this->generateTest($resource, $model)) { $ok = false; }
-        }
+        // 8. Feature test
+        if (!$this->generateTest($resource, $model)) { $ok = false; }
 
         $this->write('');
         if ($ok) {
@@ -97,7 +95,7 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
             $this->write('  Next steps:');
             $this->write('');
             $step = 1;
-            if (!$isSimple) {
+            {
                 $this->write('  ' . $step . '. Run migration:');
                 $this->write('     php siro migrate');
                 $this->write('');
