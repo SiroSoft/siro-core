@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.0.8.1 — Contract checker patch (2026-09-14)
+
+- Scheduler-only route files no longer abort `api:contract`.
+
 ## v1.0.8 — Schema and ORM reliability (2026-09-14)
 
 - Added `dropForeignByColumn()` for database-generated constraint names.

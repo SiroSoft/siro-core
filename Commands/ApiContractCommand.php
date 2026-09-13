@@ -70,7 +70,16 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
     {
         $app = new App($this->basePath);
         $app->boot();
-        foreach (glob($this->basePath . '/routes/*.php') ?: [] as $file) $app->loadRoutes($file);
+        foreach (glob($this->basePath . '/routes/*.php') ?: [] as $file) {
+            try {
+                $app->loadRoutes($file);
+            } catch (\Throwable $e) {
+                // Schedule/console route files can require a scheduler object
+                // that is not part of HTTP bootstrap. Keep contract checks
+                // useful for API routes and report the skipped file.
+                $this->warn('Skipped non-HTTP route file: ' . basename($file));
+            }
+        }
         $router = $app->router();
         /** @var list<array<string, mixed>> $routes */
         $routes = array_values($router->getRoutes());

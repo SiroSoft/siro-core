@@ -1,5 +1,11 @@
 # Changelog — siro-core
 
+## v1.0.8.1 (2026-09-14)
+
+### Fixed
+- Contract verification skips scheduler-only route files instead of aborting
+  the API contract check.
+
 ## v1.0.8 (2026-09-14)
 
 ### Added
