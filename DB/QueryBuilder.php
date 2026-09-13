@@ -160,6 +160,11 @@ class QueryBuilder
 
     /**
      * Add a where clause on a date column.
+     *
+     * NOTE: the value binds through a generated *named* placeholder
+     * (:wdate_N). A positional `?` here breaks PDO with HY093
+     * ("mixed named and positional parameters") as soon as any other
+     * where() exists in the same query.
      */
     public function whereDate(string $column, string $operator, ?string $value = null): self
     {
@@ -167,8 +172,9 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
+        $param = 'wdate_' . $this->whereCounter++;
         $safeColumn = $this->compiler->quoteIdentifier($column);
-        return $this->whereRaw("DATE({$safeColumn}) {$operator} ?", [':date_val' => $value]);
+        return $this->whereRaw("DATE({$safeColumn}) {$operator} :{$param}", [$param => $value]);
     }
 
     public function whereMonth(string $column, string $operator, ?string $value = null): self
@@ -177,8 +183,9 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
+        $param = 'wmonth_' . $this->whereCounter++;
         $safeColumn = $this->compiler->quoteIdentifier($column);
-        return $this->whereRaw("MONTH({$safeColumn}) {$operator} ?", [':month_val' => $value]);
+        return $this->whereRaw("MONTH({$safeColumn}) {$operator} :{$param}", [$param => $value]);
     }
 
     public function whereDay(string $column, string $operator, ?string $value = null): self
@@ -187,8 +194,9 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
+        $param = 'wday_' . $this->whereCounter++;
         $safeColumn = $this->compiler->quoteIdentifier($column);
-        return $this->whereRaw("DAY({$safeColumn}) {$operator} ?", [':day_val' => $value]);
+        return $this->whereRaw("DAY({$safeColumn}) {$operator} :{$param}", [$param => $value]);
     }
 
     public function whereYear(string $column, string $operator, ?string $value = null): self
@@ -197,8 +205,9 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
+        $param = 'wyear_' . $this->whereCounter++;
         $safeColumn = $this->compiler->quoteIdentifier($column);
-        return $this->whereRaw("YEAR({$safeColumn}) {$operator} ?", [':year_val' => $value]);
+        return $this->whereRaw("YEAR({$safeColumn}) {$operator} :{$param}", [$param => $value]);
     }
 
     public function whereTime(string $column, string $operator, ?string $value = null): self
@@ -207,8 +216,9 @@ class QueryBuilder
             $value = $operator;
             $operator = '=';
         }
+        $param = 'wtime_' . $this->whereCounter++;
         $safeColumn = $this->compiler->quoteIdentifier($column);
-        return $this->whereRaw("TIME({$safeColumn}) {$operator} ?", [':time_val' => $value]);
+        return $this->whereRaw("TIME({$safeColumn}) {$operator} :{$param}", [$param => $value]);
     }
 
     /**

@@ -54,6 +54,28 @@ final class MiddlewareTest extends TestCase
         $this->assertSame(200, $response->statusCode());
     }
 
+    public function testJsonMiddlewarePassesMultipart(): void
+    {
+        putenv('SIRO_JSON_STRICT');
+        $request = new Request('POST', '/test', [], ['content-type' => 'multipart/form-data; boundary=----x'], []);
+        $mw = new JsonMiddleware();
+        $response = $mw->handle($request, fn () => Response::success([], 'OK'));
+        $this->assertSame(200, $response->statusCode());
+    }
+
+    public function testJsonMiddlewareStrictModeRejectsMultipart(): void
+    {
+        putenv('SIRO_JSON_STRICT=1');
+        try {
+            $request = new Request('POST', '/test', [], ['content-type' => 'multipart/form-data; boundary=----x'], []);
+            $mw = new JsonMiddleware();
+            $response = $mw->handle($request, fn () => Response::success([], 'OK'));
+            $this->assertSame(415, $response->statusCode());
+        } finally {
+            putenv('SIRO_JSON_STRICT');
+        }
+    }
+
     public function testCorsRespectsAllowedOrigins(): void
     {
         putenv('CORS_ALLOWED_ORIGINS=http://example.com');

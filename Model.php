@@ -573,6 +573,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             return true;
         }
 
+        $data = $this->castForDatabase($data);
+
         $table = $this->getTable();
         $isNew = !$this->exists;
         $key = $this->getKeyName();

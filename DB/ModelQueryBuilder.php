@@ -545,6 +545,34 @@ final class ModelQueryBuilder extends QueryBuilder
         return ($clone->get())[0] ?? null;
     }
 
+    /**
+     * Same as first(), but as a plain array.
+     *
+     * Repositories should prefer this: callers that attach new keys or pass
+     * rows to services must not receive Model objects (extra keys are
+     * silently swallowed by $fillable on ArrayAccess writes).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function firstArray(): ?array
+    {
+        $model = $this->first();
+        return $model?->toArray();
+    }
+
+    /**
+     * Same as get(), but as plain arrays.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getArray(): array
+    {
+        return array_map(
+            static fn (Model $model): array => $model->toArray(),
+            $this->get()
+        );
+    }
+
     /** @return array{data: array<int, Model>, meta: array{page:int, per_page:int, total:int, last_page:int}} */
     public function paginate(int $perPage = 20, ?int $page = null): array
     {

@@ -1,5 +1,20 @@
 # Changelog — siro-core
 
+## v1.0.7 (2026-09-13)
+
+Production-hardening batch (found via ERP Lite prod traffic):
+
+- `JsonMiddleware` lets `multipart/form-data` through (file uploads got a
+  blanket 415 before). `SIRO_JSON_STRICT=1` restores the old behavior.
+- `whereDate/whereMonth/whereDay/whereYear/whereTime` bind through generated
+  *named* placeholders — no more HY093 "mixed named and positional
+  parameters" when combined with other `where()` calls.
+- `Model::save()` normalizes `bool`-cast attributes to 0/1 for the driver
+  (PHP `false` binds as `''` and fails MySQL strict mode with 1366).
+- New `ModelQueryBuilder::firstArray()/getArray()` — plain-array variants
+  of `first()/get()` for repositories (extra keys on Model objects are
+  silently swallowed by `$fillable`).
+
 ## v1.0.6 (2026-09-11)
 
 - Sync version strings with tag (v1.0.4 tag ref was superseded by v1.0.5

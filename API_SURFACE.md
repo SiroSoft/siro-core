@@ -295,6 +295,7 @@ These are the primary developer-facing APIs.
 | `DB_SLOW_QUERY_THRESHOLD` | Slow query threshold (ms) |
 | `RATE_LIMIT` | Requests per minute |
 | `SIRO_OPENAPI_ENABLED` | Enable OpenAPI generation |
+| `SIRO_JSON_STRICT` | `1`/`true` restores pre-1.0.7 JsonMiddleware (reject multipart) |
 | `MERCURE_HUB_URL` | Mercure hub URL |
 | `MERCURE_JWT_SECRET` | Mercure JWT secret |
 
