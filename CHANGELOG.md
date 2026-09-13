@@ -1,5 +1,16 @@
 # Changelog — siro-core
 
+## v1.0.8 (2026-09-14)
+
+### Added
+- `Blueprint::dropForeignByColumn()` resolves physical foreign-key names.
+- Query-capture N+1 diagnostics via `Database::getNPlusOneQueries()`.
+
+### Fixed
+- Model `$with` eager loading now applies consistently to `get()`, `paginate()`,
+  and `cursorPaginate()`.
+- Cursor pagination hydrates raw rows before eager loading.
+
 ## v1.0.7 (2026-09-13)
 
 Production-hardening batch (found via ERP Lite prod traffic):

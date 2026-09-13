@@ -84,6 +84,18 @@ final class DatabaseFacadeMutationTest extends TestCase
         Database::enableQueryCapture(false);
     }
 
+    public function testNPlusOneQueryReportGroupsRepeatedSelects(): void
+    {
+        Database::enableQueryCapture(true);
+        Database::select('SELECT * FROM t WHERE id = ?', [1]);
+        Database::select('SELECT * FROM t WHERE id = ?', [2]);
+        Database::select('SELECT * FROM t WHERE name = ?', ['other']);
+        $groups = Database::getNPlusOneQueries();
+        $this->assertCount(1, $groups);
+        $this->assertSame(2, $groups[0]['count']);
+        Database::enableQueryCapture(false);
+    }
+
     public function testConnectionReturnsPdo(): void
     {
         $pdo = Database::connection();

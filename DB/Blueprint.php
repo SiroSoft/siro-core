@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Siro\Core\DB;
 
 use PDO;
+use RuntimeException;
+use Siro\Core\Database;
 
 final class Blueprint
 {
@@ -250,6 +252,15 @@ final class Blueprint
         $this->commands[] = ['type' => 'dropForeign', 'name' => $name];
     }
 
+    /**
+     * Drop the foreign key attached to a column without guessing its physical
+     * database-generated constraint name.
+     */
+    public function dropForeignByColumn(string $column): void
+    {
+        $this->commands[] = ['type' => 'dropForeignByColumn', 'column' => $column];
+    }
+
     /** @return array<int, string> */
     public function compileCreate(): array
     {
@@ -361,10 +372,47 @@ final class Blueprint
             } elseif ($type === 'dropForeign') {
                 $name = is_string($cmd['name'] ?? null) ? $this->quote($cmd['name']) : '';
                 $parts[] = "ALTER TABLE {$tableSql} DROP FOREIGN KEY {$name}";
+            } elseif ($type === 'dropForeignByColumn') {
+                $column = is_string($cmd['column'] ?? null) ? $cmd['column'] : '';
+                if ($this->driver === 'sqlite') {
+                    continue;
+                }
+                $name = $this->resolveForeignKeyName($column);
+                $quotedName = $this->quote($name);
+                $parts[] = $this->driver === 'pgsql'
+                    ? "ALTER TABLE {$tableSql} DROP CONSTRAINT {$quotedName}"
+                    : "ALTER TABLE {$tableSql} DROP FOREIGN KEY {$quotedName}";
             }
         }
 
         return $parts;
+    }
+
+    private function resolveForeignKeyName(string $column): string
+    {
+        if ($column === '') {
+            throw new RuntimeException('Foreign-key column cannot be empty.');
+        }
+        $pdo = Database::connection();
+        if ($this->driver === 'pgsql') {
+            $sql = 'SELECT con.conname FROM pg_constraint con '
+                . 'JOIN pg_class rel ON rel.oid = con.conrelid '
+                . 'JOIN pg_attribute att ON att.attrelid = rel.oid AND att.attnum = ANY(con.conkey) '
+                . 'WHERE con.contype = \'f\' AND rel.relname = :table AND att.attname = :column LIMIT 1';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute(['table' => $this->table, 'column' => $column]);
+        } else {
+            $sql = 'SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE '
+                . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table '
+                . 'AND COLUMN_NAME = :column AND REFERENCED_TABLE_NAME IS NOT NULL LIMIT 1';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute(['table' => $this->table, 'column' => $column]);
+        }
+        $name = $stmt->fetchColumn();
+        if (!is_string($name) || $name === '') {
+            throw new RuntimeException("No foreign key found for {$this->table}.{$column}.");
+        }
+        return $name;
     }
 
     /** @param array<string, mixed> $params */

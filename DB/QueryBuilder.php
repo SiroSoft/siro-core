@@ -504,6 +504,12 @@ class QueryBuilder
     /** @return array<int, array<string, mixed>> */
     public function get(): array
     {
+        return $this->getRawRows();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    protected function getRawRows(): array
+    {
         $lockMode = $this->resolveLockMode();
         [$sql, $bindings] = $this->compiler->buildSelectQuery(
             $this->columns, $this->table, $this->wheres, $this->havings,
@@ -1079,7 +1085,7 @@ class QueryBuilder
             }
         }
 
-        $countRows = $clone->limit($perPage + 1)->get();
+        $countRows = $clone->limit($perPage + 1)->getRawRows();
         $hasMore = count($countRows) > $perPage;
 
         if ($hasMore) {

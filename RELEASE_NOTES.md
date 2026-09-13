@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.8 — Schema and ORM reliability (2026-09-14)
+
+- Added `dropForeignByColumn()` for database-generated constraint names.
+- Added captured-query N+1 diagnostics.
+- Applied model `$with` relations to all model result APIs.
+- Fixed cursor pagination raw-row hydration.
+
 ## v1.0.7 — Uploads, dates, bools, arrays (2026-09-13)
 
 ### Highlights
