@@ -33,7 +33,7 @@ final class RuntimeManagerMutationTest extends TestCase
         Env::reset();
         Cache::reset();
         if (is_dir($this->tmp)) {
-            system('rm -rf ' . escapeshellarg($this->tmp));
+            \Siro\Core\Tests\TestFilesystem::removeDirectory($this->tmp);
         }
         parent::tearDown();
     }

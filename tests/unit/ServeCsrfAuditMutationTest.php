@@ -42,7 +42,7 @@ final class ServeCsrfAuditMutationTest extends TestCase
         $_COOKIE = [];
         $_SERVER = [];
         if (is_dir($this->basePath)) {
-            system('rm -rf ' . escapeshellarg($this->basePath));
+            \Siro\Core\Tests\TestFilesystem::removeDirectory($this->basePath);
         }
         parent::tearDown();
     }

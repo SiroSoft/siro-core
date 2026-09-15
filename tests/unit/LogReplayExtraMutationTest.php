@@ -41,7 +41,7 @@ final class LogReplayExtraMutationTest extends TestCase
         Database::purgeAll();
         Session::setInstance(null);
         if (is_dir($this->basePath)) {
-            system('rm -rf ' . escapeshellarg($this->basePath));
+            \Siro\Core\Tests\TestFilesystem::removeDirectory($this->basePath);
         }
         parent::tearDown();
     }
