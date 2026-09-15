@@ -58,7 +58,7 @@ final class StorageLinkCommand implements \Siro\Core\Commands\CommandInterface {
     private function createSymlink(string $target, string $link): bool
     {
         try {
-            return symlink($link, $target);
+            return @symlink($link, $target);
         } catch (\Throwable) {
             return false;
         }

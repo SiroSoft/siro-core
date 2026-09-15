@@ -236,7 +236,6 @@ final class JWT
 
         $signature = '';
         $result = openssl_sign($data, $signature, $key, OPENSSL_ALGO_SHA256);
-        openssl_free_key($key);
 
         if (!$result || !is_string($signature)) {
             throw new RuntimeException('Failed to sign token with RS256.');
@@ -268,7 +267,6 @@ final class JWT
         }
 
         $result = openssl_verify($data, $signature, $key, OPENSSL_ALGO_SHA256);
-        openssl_free_key($key);
 
         return $result === 1;
     }

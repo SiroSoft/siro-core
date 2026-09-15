@@ -81,7 +81,8 @@ final class App
         // Database config loaded but NO connection opened yet
         $dbConfig = Config::get('database', []);
         if (!is_array($dbConfig) || $dbConfig === []) {
-            $dbConfig = (array) require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+            $databaseConfigPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+            $dbConfig = is_file($databaseConfigPath) ? (array) require $databaseConfigPath : [];
         }
         /** @var array<string, mixed> $dbConfig */
         Database::configure($dbConfig);

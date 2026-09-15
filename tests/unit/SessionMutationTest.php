@@ -137,6 +137,7 @@ final class SessionMutationTest extends TestCase
     {
         putenv('SESSION_IDLE_TIMEOUT=1');
         $session = new Session('file');
+        $session->start();
         $session->set('user_id', 1);
         $session->save();
         $id = $session->getId();

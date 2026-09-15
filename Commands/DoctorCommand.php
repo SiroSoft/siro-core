@@ -173,8 +173,15 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
         // Check Database Connection (required in production)
         $this->write("\nDatabase Connection Test:\n");
         try {
+            $databaseConfigPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+            if (!is_file($databaseConfigPath)) {
+                throw new \RuntimeException('Database configuration file is missing.');
+            }
+            $config = require $databaseConfigPath;
+            if (!is_array($config)) {
+                throw new \RuntimeException('Database configuration must return an array.');
+            }
             /** @var array<string, mixed> $config */
-            $config = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
             \Siro\Core\Database::configure($config);
             $pdo = \Siro\Core\Database::connection();
             $pdo->query('SELECT 1');

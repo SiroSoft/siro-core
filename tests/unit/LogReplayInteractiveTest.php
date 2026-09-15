@@ -191,7 +191,7 @@ final class LogReplayInteractiveTest extends TestCase
     {
         $this->writeTrace('tr-stored', $this->baseTrace('tr-stored'));
         $authPath = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . '.auth';
-        mkdir(dirname($authPath), 0777, true);
+        @mkdir(dirname($authPath), 0777, true);
         file_put_contents($authPath, (string) json_encode(['token' => 'tok1']));
         [$exit] = $this->runCmd(['tr-stored', '--auth']);
         $this->assertContains($exit, [0, 1]);

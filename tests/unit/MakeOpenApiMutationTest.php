@@ -149,6 +149,7 @@ final class MakeOpenApiMutationTest extends TestCase
 
     private function setupResourceAndModel(): void
     {
+        mkdir($this->basePath . '/app/Http/Requests', 0777, true);
         file_put_contents(
             $this->basePath . '/routes/api.php',
             "<?php\n" .
