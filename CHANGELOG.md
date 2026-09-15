@@ -1,5 +1,11 @@
 # Changelog — siro-core
 
+## v1.0.11 (2026-09-15)
+
+### Added
+- Add `TRACE_ENABLED=true` for production trace capture without enabling debug responses.
+- Keep request, response, query, and middleware trace data available to safe replay workflows.
+
 ## v1.0.10 (2026-09-15)
 
 ### Fixed

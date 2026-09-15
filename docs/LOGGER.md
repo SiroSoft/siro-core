@@ -30,6 +30,7 @@ Logger::boot('/var/www/myapp/public'); // custom base path
 |-----------------------------|---------|------------------------------------------------|
 | `LOG_LEVEL`                 | `debug` | Set to `error` to suppress debug logs entirely |
 | `LOG_RETENTION_DAYS`        | `30`    | Days to keep daily log files before cleanup     |
+| `TRACE_ENABLED`             | `false` | Persist redacted request traces in production without debug responses |
 | `LOG_MAX_SIZE_MB`           | `1024`  | Total log size limit (MB); oldest files auto-deleted |
 | `DB_SLOW_QUERY_THRESHOLD`   | `100`   | Query duration in ms above which it is flagged  |
 
