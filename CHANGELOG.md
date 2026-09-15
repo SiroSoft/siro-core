@@ -1,5 +1,20 @@
 # Changelog — siro-core
 
+## v1.0.12 (2026-09-15)
+
+### Added
+- Add `Schema::hasForeignKey()` with MySQL, MariaDB, PostgreSQL, and SQLite support.
+- Make foreign-key introspection reusable by idempotent application migrations.
+
+### Fixed
+- Preserve the official `ThrottleMiddleware` downstream-exception rethrow fix in the 1.0.x release line.
+
+## v1.0.11 (2026-09-15)
+
+### Added
+- Add `TRACE_ENABLED=true` for production trace capture without enabling debug responses.
+- Keep request, response, query, and middleware trace data available to safe replay workflows.
+
 ## v1.0.10 (2026-09-15)
 
 ### Fixed

@@ -12,7 +12,7 @@ use Siro\Core\DB\Blueprint;
 /**
  * Schema database-backed tests — real sqlite.
  * Covers Schema::create/table/drop/dropIfExists/dropColumn/renameColumn/
- * rename/hasTable/getColumnListing/hasColumn/hasDatabase.
+ * rename/hasTable/getColumnListing/hasColumn/hasForeignKey/hasDatabase.
  */
 final class SchemaDatabaseTest extends TestCase
 {
@@ -68,6 +68,23 @@ final class SchemaDatabaseTest extends TestCase
         });
         $this->assertTrue(Schema::hasColumn('widgets', 'name'));
         $this->assertFalse(Schema::hasColumn('widgets', 'missing'));
+    }
+
+    public function testHasForeignKey(): void
+    {
+        Schema::create('users', function (Blueprint $t) {
+            $t->id();
+        });
+        Schema::create('orders', function (Blueprint $t) {
+            $t->id();
+            $t->integer('user_id');
+            $t->foreign('user_id')->references('id')->on('users');
+        });
+
+        $this->assertTrue(Schema::hasForeignKey('orders', 'user_id', 'users'));
+        $this->assertTrue(Schema::hasForeignKey('orders', 'user_id'));
+        $this->assertFalse(Schema::hasForeignKey('orders', 'missing', 'users'));
+        $this->assertFalse(Schema::hasForeignKey('orders', 'user_id', 'other_users'));
     }
 
     public function testDrop(): void
