@@ -24,8 +24,7 @@ final class SessionTest extends TestCase
         parent::tearDown();
         $sessionDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'sessions';
         if (is_dir($sessionDir)) {
-            array_map('unlink', glob($sessionDir . '/*') ?: []);
-            rmdir($sessionDir);
+            \Siro\Core\Tests\TestFilesystem::removeDirectory($sessionDir);
         }
         Session::setInstance(null);
     }

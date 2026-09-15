@@ -1,5 +1,13 @@
 # Changelog — siro-core
 
+## v1.0.10 (2026-09-15)
+
+### Fixed
+- Remove deprecated `openssl_free_key()` calls from RS256 JWT signing and verification.
+- Avoid missing database-config warnings when booting temporary or diagnostic projects.
+- Make storage symlink failures quiet on Windows where symlink privileges are unavailable.
+- Make test fixture cleanup and setup cross-platform and deterministic.
+
 ## v1.0.9 (2026-09-15)
 
 ### Fixed

@@ -28,7 +28,6 @@ final class LogReplayExtraMutationTest extends TestCase
         $this->basePath = sys_get_temp_dir() . '/siro_lre_' . uniqid();
         $this->tracesDir = $this->basePath . '/storage/logs/traces';
         mkdir($this->tracesDir, 0777, true);
-        mkdir($this->basePath . '/storage/logs', 0777, true);
         putenv('APP_ENV=local');
         Env::reset();
     }

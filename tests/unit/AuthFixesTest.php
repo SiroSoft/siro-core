@@ -57,8 +57,7 @@ final class AuthFixesTest extends TestCase
         JWT::setKeyVersion($this->originalJwtKeyVersion ?: '1');
 
         if (is_dir($this->sessionDir)) {
-            array_map('unlink', glob($this->sessionDir . DIRECTORY_SEPARATOR . '*.json') ?: []);
-            rmdir($this->sessionDir);
+            \Siro\Core\Tests\TestFilesystem::removeDirectory($this->sessionDir);
         }
         Session::setInstance(null);
         unset($_COOKIE['siro_session']);
