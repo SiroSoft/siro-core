@@ -158,18 +158,18 @@ jobs:
       mysql:
         image: mysql:8.4
         env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: siro_ci
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: test_siro
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
           --health-interval=10s --health-timeout=5s --health-retries=10
       postgres:
         image: postgres:16
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: siro_ci
+          POSTGRES_DB: test_siro
         ports:
           - 5432:5432
         options: >-
@@ -190,9 +190,9 @@ jobs:
         shell: bash
         run: |
           if [ "$DB_CONNECTION" = "mysql" ]; then
-            php -r '$pdo = new PDO("mysql:host=127.0.0.1;port=3306;dbname=siro_ci", "root", "root"); $pdo->query("SELECT 1");'
+            php -r '$pdo = new PDO("mysql:host=127.0.0.1;port=3306;dbname=test_siro", "root", ""); $pdo->query("SELECT 1");'
           else
-            php -r '$pdo = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=siro_ci", "postgres", "postgres"); $pdo->query("SELECT 1");'
+            php -r '$pdo = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=test_siro", "postgres", "postgres"); $pdo->query("SELECT 1");'
           fi
       - name: Run integration suite
         run: php vendor/bin/phpunit --testsuite=Integration --no-progress
