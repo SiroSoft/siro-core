@@ -1,5 +1,11 @@
 # Changelog — siro-core
 
+## v1.0.9 (2026-09-15)
+
+### Fixed
+- `siro new` no longer copies the framework's `composer.lock` into a new
+  application, avoiding a corrupted lock file after project-name substitution.
+
 ## v1.0.8.1 (2026-09-14)
 
 ### Fixed

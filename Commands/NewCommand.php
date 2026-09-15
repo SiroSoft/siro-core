@@ -157,6 +157,7 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
             "storage{$ds}tests",
             "public{$ds}openapi.json", "public{$ds}postman_collection.json",
             "docs{$ds}openapi.json", "docs{$ds}postman",
+            'composer.lock',
         ];
 
         $dirIterator = new \RecursiveDirectoryIterator($src, \RecursiveDirectoryIterator::SKIP_DOTS);
