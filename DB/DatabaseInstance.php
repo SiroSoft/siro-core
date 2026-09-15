@@ -164,6 +164,22 @@ final class DatabaseInstance implements DatabaseInterface
         return $this->capturedQueries;
     }
 
+    /** @return array<int, array{sql:string,count:int,total_ms:float}> */
+    public function getNPlusOneQueries(int $threshold = 2): array
+    {
+        $groups = [];
+        foreach ($this->capturedQueries as $query) {
+            if (!preg_match('/^\s*SELECT\b/i', $query['sql'])) continue;
+            $shape = preg_replace('/\b(?:\d+(?:\.\d+)?|\'[^\']*\'|"[^"]*")\b/', '?', $query['sql']);
+            $shape = is_string($shape) ? preg_replace('/\s+/', ' ', trim($shape)) : $query['sql'];
+            if (!is_string($shape)) continue;
+            if (!isset($groups[$shape])) $groups[$shape] = ['sql' => $shape, 'count' => 0, 'total_ms' => 0.0];
+            $groups[$shape]['count']++;
+            $groups[$shape]['total_ms'] += $query['time_ms'];
+        }
+        return array_values(array_filter($groups, static fn(array $group): bool => $group['count'] >= max(2, $threshold)));
+    }
+
     public function resetCapturedQueries(): void
     {
         $this->capturedQueries = [];

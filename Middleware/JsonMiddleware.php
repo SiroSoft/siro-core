@@ -6,6 +6,7 @@ namespace Siro\Core\Middleware;
 
 use Siro\Core\Request;
 use Siro\Core\Response;
+use Siro\Core\Env;
 
 final class JsonMiddleware implements MiddlewareInterface
 {
@@ -14,8 +15,14 @@ final class JsonMiddleware implements MiddlewareInterface
         $method = $request->method();
 
         if (in_array($method, ['POST', 'PUT', 'PATCH'], true)) {
-            $contentType = $request->header('content-type', '');
-            if ($contentType !== '' && !str_contains(strtolower(strval($contentType)), 'application/json')) {
+            $contentType = strtolower(strval($request->header('content-type', '')));
+            // File uploads are never JSON — let them through unless strict mode.
+            // (Before: every multipart upload got 415.)
+            if (str_contains($contentType, 'multipart/form-data')
+                && !in_array(strtolower(strval(Env::get('SIRO_JSON_STRICT', ''))), ['1', 'true'], true)) {
+                return $next($request);
+            }
+            if ($contentType !== '' && !str_contains($contentType, 'application/json')) {
                 return Response::error('Content-Type must be application/json', 415);
             }
 

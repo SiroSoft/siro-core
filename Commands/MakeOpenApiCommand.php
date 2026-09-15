@@ -20,6 +20,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private ?string $methodFilter = null;
     private ?string $pathFilter = null;
     private ?string $flowFilter = null;
+    private ?string $routesDir = null;
 
     /** @var array<string, array<string, mixed>> */
     private array $schemas = [];
@@ -152,8 +153,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             if (defined('SIRO_BASE_PATH') || defined('BASE_PATH')) {
                 $app->boot();
             }
-            $routesFile = $this->basePath . '/routes/api.php';
-            if (file_exists($routesFile)) {
+            $routesDir = $this->routesDir !== null
+                ? $this->routesDir
+                : $this->basePath . DIRECTORY_SEPARATOR . 'routes';
+            $routeFiles = glob($routesDir . DIRECTORY_SEPARATOR . '*.php') ?: [];
+            sort($routeFiles);
+            foreach ($routeFiles as $routesFile) {
                 $app->loadRoutes($routesFile);
             }
             $router = $app->router();
@@ -1149,6 +1154,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             elseif (str_starts_with($arg, '--method=')) $this->methodFilter = strtoupper(substr($arg, 8));
             elseif (str_starts_with($arg, '--path=')) $this->pathFilter = substr($arg, 7);
             elseif (str_starts_with($arg, '--flow=')) $this->flowFilter = substr($arg, 7);
+            elseif (str_starts_with($arg, '--routes-dir=')) $this->routesDir = substr($arg, 13);
         }
     }
 

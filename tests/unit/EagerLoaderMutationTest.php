@@ -130,9 +130,22 @@ final class EagerLoaderMutationTest extends TestCase
         $loader->loadBatch($users, ['posts' => ['*'], 'roles' => ['*']]);
         $this->assertCount(2, $users);
     }
+
+    public function testModelWithIsAppliedToGetPaginateAndCursorPaginate(): void
+    {
+        Database::enableQueryCapture(true);
+        $users = ElWithUser::query()->get();
+        $this->assertNotNull($users[0]->getRelation('posts'));
+        $page = ElWithUser::query()->paginate(1, 1);
+        $this->assertNotNull($page['data'][0]->getRelation('posts'));
+        $cursor = ElWithUser::query()->cursorPaginate(1);
+        $this->assertNotNull($cursor['data'][0]->getRelation('posts'));
+        $this->assertLessThanOrEqual(9, count(Database::getCapturedQueries()));
+        Database::enableQueryCapture(false);
+    }
 }
 
-final class ElUser extends Model
+class ElUser extends Model
 {
     protected string $table = 'users';
 
@@ -158,6 +171,12 @@ final class ElUser extends Model
     {
         return $this->belongsToMany(ElRole::class, 'roles_users', 'user_id', 'role_id');
     }
+}
+
+final class ElWithUser extends ElUser
+{
+    /** @var array<int, string> */
+    protected array $with = ['posts'];
 }
 
 final class ElProfile extends Model

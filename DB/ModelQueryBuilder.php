@@ -488,29 +488,7 @@ final class ModelQueryBuilder extends QueryBuilder
         /** @var array<int, Model> $models */
         $models = $this->hydrateModels($rows);
 
-        // Merge model's $with property into query eager loads
-        $allEagerLoads = $this->eagerLoads;
-        $withRelations = [];
-        if ($this->modelClass !== '') {
-            /** @phpstan-ignore argument.type */
-            $ref = new \ReflectionClass($this->modelClass);
-            if ($ref->hasProperty('with')) {
-                $prop = $ref->getProperty('with');
-                $withValues = (array) $prop->getValue($ref->newInstanceWithoutConstructor());
-                foreach ($withValues as $relation) {
-                    $relName = is_string($relation) ? $relation : (is_array($relation) ? key($relation) : '');
-                    if ($relName !== '' && !isset($allEagerLoads[$relName])) {
-                        $allEagerLoads[$relName] = ['*'];
-                    }
-                }
-            }
-        }
-
-        if ($allEagerLoads !== []) {
-            $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
-            /** @var array<string, array<int, string>> $allEagerLoads */
-            $loader->loadBatch($models, $allEagerLoads);
-        }
+        $this->applyEagerLoads($models);
 
         if ($this->withCounts !== []) {
             $this->loadCountsIntoModels($models);
@@ -537,12 +515,65 @@ final class ModelQueryBuilder extends QueryBuilder
         }
     }
 
+    /** @param array<int, Model> $models */
+    private function applyEagerLoads(array $models): void
+    {
+        $allEagerLoads = $this->eagerLoads;
+        if ($this->modelClass !== '') {
+            if (!class_exists($this->modelClass)) return;
+            $ref = new \ReflectionClass($this->modelClass);
+            if ($ref->hasProperty('with')) {
+                $prop = $ref->getProperty('with');
+                $withValues = (array) $prop->getValue($ref->newInstanceWithoutConstructor());
+                foreach ($withValues as $relation) {
+                    $relName = is_string($relation) ? $relation : (is_array($relation) ? (string) key($relation) : '');
+                    if ($relName !== '' && !isset($allEagerLoads[$relName])) {
+                        $allEagerLoads[$relName] = ['*'];
+                    }
+                }
+            }
+        }
+        if ($allEagerLoads !== []) {
+            $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
+            /** @var array<string, array<int, string>> $allEagerLoads */
+            $loader->loadBatch($models, $allEagerLoads);
+        }
+    }
+
     public function first(): ?Model
     {
         $this->applySoftDeleteFilter();
         $clone = clone $this;
         $clone->limit(1);
         return ($clone->get())[0] ?? null;
+    }
+
+    /**
+     * Same as first(), but as a plain array.
+     *
+     * Repositories should prefer this: callers that attach new keys or pass
+     * rows to services must not receive Model objects (extra keys are
+     * silently swallowed by $fillable on ArrayAccess writes).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function firstArray(): ?array
+    {
+        $model = $this->first();
+        return $model?->toArray();
+    }
+
+    /**
+     * Same as get(), but as plain arrays.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getArray(): array
+    {
+        return array_map(
+            static fn (Model $model): array => $model->toArray(),
+            $this->get()
+        );
     }
 
     /** @return array{data: array<int, Model>, meta: array{page:int, per_page:int, total:int, last_page:int}} */
@@ -562,10 +593,7 @@ final class ModelQueryBuilder extends QueryBuilder
 
         $models = $this->hydrateModels($rawRows);
 
-        if ($this->eagerLoads !== []) {
-            $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
-            $loader->loadBatch($models, $this->eagerLoads);
-        }
+        $this->applyEagerLoads($models);
 
         return [
             'data' => $models,
@@ -596,10 +624,7 @@ final class ModelQueryBuilder extends QueryBuilder
         $rawResult = parent::cursorPaginate($perPage, $cursor, $order);
         $models = $this->hydrateModels($rawResult['data']);
 
-        if ($this->eagerLoads !== []) {
-            $loader = new \Siro\Core\DB\EagerLoader($this->modelClass);
-            $loader->loadBatch($models, $this->eagerLoads);
-        }
+        $this->applyEagerLoads($models);
 
         /** @var array<string, mixed> */
         $result = [

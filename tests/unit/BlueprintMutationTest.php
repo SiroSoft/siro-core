@@ -32,6 +32,13 @@ final class BlueprintMutationTest extends TestCase
         $this->assertStringContainsString('INTEGER PRIMARY KEY AUTOINCREMENT', $sql);
     }
 
+    public function testDropForeignByColumnIsSafeForSqliteAlter(): void
+    {
+        $bp = new Blueprint('orders', 'sqlite');
+        $bp->dropForeignByColumn('customer_id');
+        $this->assertSame([], $bp->compileAlter());
+    }
+
     public function testIdColumn(): void
     {
         $bp = new Blueprint('users', 'sqlite');

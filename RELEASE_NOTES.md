@@ -1,5 +1,36 @@
 # Release Notes
 
+## v1.0.8.1 — Contract checker patch (2026-09-14)
+
+- Scheduler-only route files no longer abort `api:contract`.
+
+## v1.0.8 — Schema and ORM reliability (2026-09-14)
+
+- Added `dropForeignByColumn()` for database-generated constraint names.
+- Added captured-query N+1 diagnostics.
+- Applied model `$with` relations to all model result APIs.
+- Fixed cursor pagination raw-row hydration.
+
+## v1.0.7 — Uploads, dates, bools, arrays (2026-09-13)
+
+### Highlights
+- **File uploads work through the JSON guard**: `multipart/form-data`
+  passes `JsonMiddleware` by default (`SIRO_JSON_STRICT=1` opts back into
+  the old reject-everything behavior).
+- **Date wheres compose**: `whereDate()` and siblings now bind via
+  generated named placeholders — chaining them with `where()` no longer
+  throws HY093 on MySQL/Postgres.
+- **Bool casts survive strict mode**: `Model::save()` writes `bool`-cast
+  attributes as 0/1, so `false` no longer becomes `''` (MySQL 1366).
+- **Repository ergonomics**: `firstArray()` / `getArray()` on the model
+  query builder return plain arrays, the safe shape for services that
+  attach computed keys.
+
+### Quality Gates
+- Unit suite green (3178 tests), PHPStan level max clean, new regression
+  tests per fix (`MiddlewareTest`, `WhereDateBindingTest`,
+  `ModelBoolCastTest`, `ModelArrayHelpersTest`).
+
 ## v1.0.0 — First Stable Release: API Stability Promise (2026-09-07)
 
 ### Highlights

@@ -16,6 +16,7 @@ use Siro\Core\Commands\RouteSearchCommand;
 use Siro\Core\Commands\MakeMailCommand;
 use Siro\Core\Commands\MakeEventCommand;
 use Siro\Core\Commands\MakeOpenApiCommand;
+use Siro\Core\Commands\ApiContractCommand;
 use Siro\Core\Commands\MakePostmanCommand;
 use Siro\Core\Commands\MakeAuthCommand;
 use Siro\Core\Commands\MakeControllerCommand;
@@ -103,7 +104,7 @@ use Siro\Core\Commands\AuditLogCommand;
 
 final class Console
 {
-    public const VERSION = '1.0.6';
+    public const VERSION = '1.0.9';
 
     /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
     private static array $appCommands = [];
@@ -218,7 +219,7 @@ final class Console
             'make:event'      => ['handler' => MakeEventCommand::class, 'desc' => 'Generate event class', 'usage' => 'php siro make:event <name>'],
             'make:lang'       => ['handler' => MakeLangCommand::class, 'desc' => 'Generate language file', 'usage' => 'php siro make:lang <locale> <file>'],
             'make:factory'    => ['handler' => MakeFactoryCommand::class, 'desc' => 'Generate factory', 'usage' => 'php siro make:factory <name>'],
-            'make:openapi'    => ['handler' => MakeOpenApiCommand::class, 'desc' => 'Generate OpenAPI spec', 'usage' => 'php siro make:openapi [--with-swagger] [--tag=TAG] [--flow=auth|crud] [--output=] [--force] [--title=]'],
+            'make:openapi'    => ['handler' => MakeOpenApiCommand::class, 'desc' => 'Generate OpenAPI spec', 'usage' => 'php siro make:openapi [--with-swagger] [--routes-dir=] [--tag=TAG] [--flow=auth|crud] [--output=] [--force] [--title=]'],
             'make:postman'    => ['handler' => MakePostmanCommand::class, 'desc' => 'Generate Postman collection', 'usage' => 'php siro make:postman [--flow=crud]'],
             'make:service'    => ['handler' => MakeServiceCommand::class, 'desc' => 'Generate service class', 'usage' => 'php siro make:service <name>'],
             'make:repository' => ['handler' => MakeRepositoryCommand::class, 'desc' => 'Generate repository class', 'usage' => 'php siro make:repository <name>'],
@@ -231,6 +232,7 @@ final class Console
             'make:apikey-table' => ['handler' => MakeApiKeysTableCommand::class, 'desc' => 'Create API keys table', 'usage' => 'php siro make:apikey-table'],
             'make:apikey' => ['handler' => MakeApiKeyCommand::class, 'desc' => 'Generate API key', 'usage' => 'php siro make:apikey <name> [scopes] [expires_days]'],
             'benchmark' => ['handler' => BenchmarkCommand::class, 'desc' => 'Performance benchmark', 'usage' => 'php siro benchmark [--iterations=N] [--json]'],
+            'api:contract' => ['handler' => ApiContractCommand::class, 'desc' => 'Verify OpenAPI against registered routes', 'usage' => 'php siro api:contract [--spec=] [--path=] [--strict]'],
 
             'migrate'          => ['handler' => MigrateCommand::class, 'desc' => 'Run migrations', 'usage' => 'php siro migrate'],
             'migrate:fresh'    => ['handler' => MigrateFreshCommand::class, 'desc' => 'Drop all tables and re-run all migrations', 'usage' => 'php siro migrate:fresh [--seed]'],

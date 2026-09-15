@@ -76,6 +76,12 @@ final class Database
         return self::getInstance()->getCapturedQueries();
     }
 
+    /** @return array<int, array{sql:string,count:int,total_ms:float}> */
+    public static function getNPlusOneQueries(int $threshold = 2): array
+    {
+        return self::getInstance()->getNPlusOneQueries($threshold);
+    }
+
     public static function resetCapturedQueries(): void
     {
         self::getInstance()->resetCapturedQueries();

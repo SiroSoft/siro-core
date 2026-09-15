@@ -19,6 +19,8 @@ interface DatabaseInterface
     public function connections(): array;
     /** @return array<int, array{sql:string,bindings:array<int|string,mixed>,time_ms:float,rows:int,connection:string}> */
     public function getCapturedQueries(): array;
+    /** @return array<int, array{sql:string,count:int,total_ms:float}> */
+    public function getNPlusOneQueries(int $threshold = 2): array;
     public function resetCapturedQueries(): void;
     public function enableQueryCapture(bool $enabled = true): void;
 

@@ -28,7 +28,7 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
  */
     public function run(array $args): int
     {
-        unset($args);
+        $forceRecord = in_array('--force-record', $args, true);
 
         $pdo = $this->setupDatabaseConnection($this->basePath);
         
@@ -104,18 +104,14 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
                 }
 
                 $msg = $e->getMessage();
-                if (str_contains($msg, 'already exists') || str_contains($msg, 'duplicate column')) {
-                    $this->warn('Skipped (already applied): ' . $migrationName);
-                    // Record as migrated to avoid re-running
-                    try {
-                        $stmt = $pdo->prepare('INSERT OR IGNORE INTO migrations (migration, batch) VALUES (:migration, :batch)');
-                        $stmt->execute(['migration' => $migrationName, 'batch' => $batch]);
-                    } catch (Throwable) {}
-                } else {
-                    $this->error('Migration failed: ' . $migrationName);
-                    $this->write($msg);
-                    return 1;
+                $this->error('Migration failed: ' . $migrationName);
+                $this->write($msg);
+                if ($forceRecord) {
+                    $this->warn('--force-record supplied; recording failed migration: ' . $migrationName);
+                    $stmt = $pdo->prepare('INSERT INTO migrations (migration, batch) VALUES (:migration, :batch)');
+                    $stmt->execute(['migration' => $migrationName, 'batch' => $batch]);
                 }
+                return 1;
             }
         }
 
