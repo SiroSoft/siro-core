@@ -1,5 +1,14 @@
 # Changelog — siro-core
 
+## v1.0.12 (2026-09-15)
+
+### Added
+- Add `Schema::hasForeignKey()` with MySQL, MariaDB, PostgreSQL, and SQLite support.
+- Make foreign-key introspection reusable by idempotent application migrations.
+
+### Fixed
+- Preserve the official `ThrottleMiddleware` downstream-exception rethrow fix in the 1.0.x release line.
+
 ## v1.0.11 (2026-09-15)
 
 ### Added
