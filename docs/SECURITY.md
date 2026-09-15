@@ -9,6 +9,16 @@ sidebar_label: S EC UR IT Y
 
 SiroPHP is designed with defense-in-depth. Every layer — from JWT authentication to output encoding, rate limiting, and audit logging — is built to be secure by default.
 
+## AI/MCP Boundary
+
+AI tooling is provided by the optional `sirosoft/mcp-server` package, not by
+the Core runtime itself. Keep MCP on a local or staging control plane. Any
+production diagnostic process must use least-privilege filesystem access,
+operator approval, redacted audit records, and a secret-managed
+`SIRO_MCP_APPROVAL_TOKEN`. Do not expose MCP over a public HTTP route.
+
+See [AI Coding and MCP](AI_MCP.md) for the complete workflow.
+
 > See [JWT.md](JWT.md) for full JWT implementation details.
 
 ---

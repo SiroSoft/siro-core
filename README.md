@@ -171,7 +171,7 @@ php siro fix                 # Fix & auto-test
 | **Validation** | 15+ rules, custom rules + messages, FormRequest |
 | **Storage** | Local filesystem, S3-compatible |
 | **Events** | Pub/sub, wildcards, one-time listeners, model lifecycle hooks |
-| **AI/MCP** | MCP Server built-in — Claude/GPT/Copilot reads your project |
+| **AI/MCP** | Optional `sirosoft/mcp-server` integration — audited AI project context and safe coding workflow |
 
 ---
 
@@ -213,7 +213,7 @@ Methodology: [BENCHMARK.md](BENCHMARK.md)
 | Project | Description |
 |---------|-------------|
 | [SiroPHP](https://github.com/SiroSoft/SiroPHP) | Full project skeleton — 7 controllers, 462 tests |
-| [siro-mcp-server](https://github.com/SiroSoft/siro-mcp-server) | AI agent integration — Claude/GPT/Copilot |
+| [siro-mcp-server](https://github.com/SiroSoft/siro-mcp-server-) | Optional AI agent integration — Claude/GPT/Copilot |
 
 ---
 
