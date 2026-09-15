@@ -15,7 +15,7 @@ All 99 SiroPHP CLI commands, grouped by category.
 
 ## Package Commands & Auto-Discovery
 
-Siro-core **v0.29.2+** can auto-discover CLI commands and HTTP service providers from any installed Composer package. No manual registration needed.
+Siro-core **v1.0.12+** can auto-discover CLI commands and HTTP service providers from any installed Composer package. No manual registration needed.
 
 ### How It Works
 
@@ -93,7 +93,7 @@ php siro                    # Core workflow overview
 php siro list               # List all 99 commands grouped by category
 php siro <command> --help   # Detailed help for a specific command
 php siro -h                 # Shorthand help overview
-php siro --version          # Show version (0.31.0)
+php siro --version          # Show version (1.0.12)
 ```
 
 ---
