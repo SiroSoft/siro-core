@@ -207,6 +207,34 @@ final class Http
     }
 
     /**
+     * Encode a request body according to the declared Content-Type.
+     *
+     * Array bodies are encoded as form-urlencoded by default. When a
+     * Content-Type header is present the declared type wins: JSON media
+     * types produce a JSON string, everything else (including
+     * application/x-www-form-urlencoded) produces an http_build_query string.
+     *
+     * Previously an explicit Content-Type always forced JSON, so calls that
+     * sent a form-urlencoded payload (e.g. Cloudflare Turnstile siteverify)
+     * were rejected with missing-input-secret.
+     *
+     * @param array<string, string> $allHeaders Merged default + request headers.
+     */
+    private static function encodeBody(mixed $data, array $allHeaders): mixed
+    {
+        if (!is_array($data)) {
+            return $data;
+        }
+
+        $contentType = strtolower(trim((string) ($allHeaders['Content-Type'] ?? '')));
+        if (str_contains($contentType, 'json')) {
+            return (string) json_encode($data, JSON_UNESCAPED_UNICODE);
+        }
+
+        return http_build_query($data);
+    }
+
+    /**
      * Sanitize URL for trace storage: strip query params, keep scheme+host+path.
      */
     private static function sanitizeUrl(string $url): string
@@ -257,13 +285,9 @@ final class Http
         }
 
         if ($data !== null) {
-            if (is_array($data) && !isset($allHeaders['Content-Type'])) {
-                $data = http_build_query($data);
-            } elseif (is_array($data)) {
-                $data = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
-            }
+            $data = self::encodeBody($data, $allHeaders);
             if (is_string($data) && $data !== '') {
-                curl_setopt($ch, CURLOPT_POSTFIELDS, (string) $data);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
             }
         }
 

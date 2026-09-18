@@ -1,5 +1,16 @@
 # Changelog — siro-core
 
+## v1.0.14 (2026-09-18)
+
+### Fixed
+- `Http::request()` now honours the declared `Content-Type` when encoding an
+  array body. An explicit `application/x-www-form-urlencoded` previously
+  forced JSON encoding, so form-based integrations (e.g. Cloudflare Turnstile
+  `siteverify`) were rejected with `missing-input-secret`. Encoding rules are
+  extracted to `Http::encodeBody()` and covered by offline unit tests.
+- `HttpEncodeBodyTest` added (4 tests): form-urlencoded default, explicit
+  form Content-Type, JSON Content-Type, and non-array passthrough.
+
 ## v1.0.13 (2026-09-18)
 
 ### Added
