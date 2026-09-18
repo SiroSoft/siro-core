@@ -1,5 +1,19 @@
 # Changelog — siro-core
 
+## v1.0.13 (2026-09-18)
+
+### Added
+- `make:crud --simple` now generates the documented direct Model-to-Controller
+  shape without unused service and repository classes.
+- Full CRUD scaffolding now includes update/delete success and not-found feature
+  test coverage.
+- Added reusable release, diagnostics, and soak tooling under `tools/`.
+
+### Documentation
+- Documented CRUD generation modes and opt-out flags.
+- Added release hygiene checks for secrets and generated artifacts.
+- Refreshed MCP integration and performance documentation.
+
 ## v1.0.12 (2026-09-15)
 
 ### Added

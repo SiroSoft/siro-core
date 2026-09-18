@@ -68,7 +68,7 @@
         "test:chaos": "@php scripts/chaos-test.php",
         "test:property": "@php vendor/bin/phpunit tests/unit/PropertyBasedTest.php --no-coverage",
         "test:all": [
-            "@phpunit --no-coverage",
+            "phpunit --no-coverage",
             "@php scripts/fuzz.php",
             "@php scripts/chaos-test.php"
         ],
@@ -80,8 +80,8 @@
         "docs:generate": "@php scripts/generate-docs.php",
         "sdk:generate": "@php scripts/generate-sdk.php",
         "check": [
-            "@phpstan analyse --level=max --no-progress --memory-limit=512M",
-            "@phpunit --no-coverage",
+            "phpstan analyse --level=max --no-progress --memory-limit=512M",
+            "phpunit --no-coverage",
             "@composer audit --format=table || true",
             "@php scripts/generate-sbom.php"
         ],
@@ -91,6 +91,7 @@
             "echo 'Optimization complete. Run your app to warm caches.'"
         ],
         "release:check": [
+            "@php tools/release/release-hygiene.php",
             "@php scripts/release-check.php"
         ]
     },

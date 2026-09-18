@@ -28,7 +28,7 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
         $resource = trim((string) ($args[0] ?? ''));
 
         if ($resource === '') {
-            $this->write('Usage: php siro make:crud <name> [--seed] [--simple] [--with-rbac]');
+            $this->write('Usage: php siro make:crud <name> [--seed] [--simple] [--with-rbac] [--without-service] [--without-repository]');
             return 1;
         }
 
@@ -45,8 +45,8 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
 
         // --simple is the canonical, copy-runnable module. Explicit opt-outs
         // remain available for genuinely small endpoints.
-        $withoutService = in_array('--without-service', $args, true);
-        $withoutRepository = in_array('--without-repository', $args, true);
+        $withoutService = $isSimple || in_array('--without-service', $args, true);
+        $withoutRepository = $isSimple || in_array('--without-repository', $args, true);
 
         $serviceName = str_replace('Resource', 'Service', $resourceClass);
         $repoName = str_replace('Resource', 'Repository', $resourceClass);
@@ -694,6 +694,30 @@ final class {$className} extends TestCase
     public function testStoreReturns422WithoutRequiredFields(): void
     {
         \$this->post('{$endpoint}', [])->assertValidationError();
+    }
+
+    public function testUpdateReturns200ForExistingRecord(): void
+    {
+        \$response = \$this->post('{$endpoint}', ['name' => 'Test {$model}']);
+        \$id = \$response->json('data.id');
+        \$this->put('{$endpoint}/' . \$id, ['name' => 'Updated {$model}'])->assertOk();
+    }
+
+    public function testUpdateReturns404ForUnknownId(): void
+    {
+        \$this->put('{$endpoint}/999999', ['name' => 'Updated {$model}'])->assertNotFound();
+    }
+
+    public function testDeleteReturns200ForExistingRecord(): void
+    {
+        \$response = \$this->post('{$endpoint}', ['name' => 'Delete {$model}']);
+        \$id = \$response->json('data.id');
+        \$this->delete('{$endpoint}/' . \$id)->assertOk();
+    }
+
+    public function testDeleteReturns404ForUnknownId(): void
+    {
+        \$this->delete('{$endpoint}/999999')->assertNotFound();
     }
 }
 

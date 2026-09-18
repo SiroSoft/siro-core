@@ -15,7 +15,7 @@ All 99 SiroPHP CLI commands, grouped by category.
 
 ## Package Commands & Auto-Discovery
 
-Siro-core **v1.0.12+** can auto-discover CLI commands and HTTP service providers from any installed Composer package. No manual registration needed.
+Siro-core **v1.0.13+** can auto-discover CLI commands and HTTP service providers from any installed Composer package. No manual registration needed.
 
 ### How It Works
 
@@ -93,7 +93,7 @@ php siro                    # Core workflow overview
 php siro list               # List all 99 commands grouped by category
 php siro <command> --help   # Detailed help for a specific command
 php siro -h                 # Shorthand help overview
-php siro --version          # Show version (1.0.12)
+php siro --version          # Show version (1.0.13)
 ```
 
 ---
@@ -106,7 +106,7 @@ php siro --version          # Show version (1.0.12)
 | `make:controller` | Generate controller class | `php siro make:controller <name>` |
 | `make:model` | Generate Eloquent-style model | `php siro make:model <name>` |
 | `make:migration` | Generate database migration | `php siro make:migration <name>` |
-| `make:crud` | Full CRUD scaffolding with controller, model, migration, routes | `php siro make:crud <name> [--simple] [--seed] [--force]` |
+| `make:crud` | Full CRUD with model, migration, repository, service, controller, resource, routes, and feature test | `php siro make:crud <name> [--simple] [--seed] [--force] [--with-rbac] [--without-service] [--without-repository]` |
 | `make:service` | Generate service class | `php siro make:service <name>` |
 | `make:repository` | Generate repository class | `php siro make:repository <name>` |
 | `make:resource` | Generate API resource transformer | `php siro make:resource <name>` |
@@ -129,9 +129,11 @@ php siro --version          # Show version (1.0.12)
 ### Examples
 
 ```bash
-php siro make:crud products                  # Full CRUD with controller, model, migration
-php siro make:crud orders --simple           # CRUD without relations
+php siro make:crud products                  # Full CRUD with repository, service, and feature test
+php siro make:crud orders --simple           # Direct Model -> Controller CRUD, no service/repository
 php siro make:crud orders --seed             # CRUD + seeder
+php siro make:crud orders --with-rbac        # CRUD with admin RBAC on mutations
+php siro make:crud orders --without-service  # Keep repository, skip service layer
 php siro make:auth                           # Generate login/register with JWT
 php siro make:openapi --with-swagger         # Generate Swagger UI docs
 php siro make:apikey "External App" read,write 365

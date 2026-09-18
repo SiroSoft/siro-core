@@ -148,6 +148,29 @@ final class MakeCommandsTest extends TestCase
         $this->assertFileExists($this->tempDir . '/app/Resources/TestCrdResource.php');
     }
 
+    public function testMakeCrudFullGeneratesLayersAndFeatureCoverage(): void
+    {
+        $code = $this->runSilent(['siro', 'make:crud', 'TestFull', '--force']);
+        $this->assertEquals(0, $code);
+
+        foreach ([
+            '/app/Models/TestFull.php',
+            '/app/Repositories/TestFullRepository.php',
+            '/app/Services/TestFullService.php',
+            '/app/Controllers/TestFullController.php',
+            '/app/Resources/TestFullResource.php',
+            '/tests/Feature/TestFullTest.php',
+        ] as $rel) {
+            $file = $this->tempDir . $rel;
+            $this->assertFileExists($file, "Missing $rel");
+            $this->assertValidPhp($file);
+        }
+
+        $featureTest = file_get_contents($this->tempDir . '/tests/Feature/TestFullTest.php');
+        $this->assertStringContainsString('testUpdateReturns200ForExistingRecord', $featureTest ?: '');
+        $this->assertStringContainsString('testDeleteReturns404ForUnknownId', $featureTest ?: '');
+    }
+
     public function testMakeTest(): void
     {
         $code = $this->runSilent(['siro', 'make:test', 'TestUT']);
