@@ -596,13 +596,26 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                 return false;
             }
 
+            $hasProvidedKey = array_key_exists($key, $data) && $data[$key] !== '' && $data[$key] !== null;
             $id = Database::table($table)->insertGetId($data);
-
-            if ($id !== 0) {
+            // For string PKs (CHAR 26) the caller provides the id; lastInsertId is not the real PK.
+            if ($hasProvidedKey) {
+                // keep the provided key (already in attributes via fill), just mark exists
+                $this->exists = true;
+                $provided = $data[$key];
+                static::$identityMap[static::class] ??= [];
+                static::$identityMap[static::class][(string) $provided] = $this;
+                if (is_int($provided) || is_string($provided)) {
+                    static::$identityMap[static::class][$provided] = $this;
+                }
+            } elseif ($id !== 0) {
                 $this->setAttribute($key, $id);
                 $this->exists = true;
                 static::$identityMap[static::class] ??= [];
                 static::$identityMap[static::class][$id] = $this;
+                static::$identityMap[static::class][(string) $id] = $this;
+            } else {
+                $this->exists = true;
             }
 
             if ($hasObservers) {
