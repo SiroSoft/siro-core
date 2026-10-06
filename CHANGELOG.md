@@ -1,5 +1,28 @@
 # Changelog — siro-core
 
+## v1.3.0 (2026-10-07)
+
+### Added
+- Controller attributes (`Siro\Core\Attributes\`): repeatable `Body` /
+  `QueryParam` (OpenAPI requestBody/parameters source), `Middleware`
+  (class + method), `Authorize` (Gate abilities), typed `Throttle` and
+  `CacheResponse`. `Route::registerAttributes()` wires them; existing
+  `RouteAttribute` behavior unchanged.
+- New `Middleware\AuthorizeMiddleware` (`AuthorizeMiddleware::class .
+  ':ability'`) enforcing Gate abilities against `$request->user()` —
+  serializable for route cache, 403 via the existing `AuthorizationException`
+  path.
+- `MakeOpenApiCommand` reads `#[Body]` / `#[QueryParam]` first (explicit
+  type/description win); string-scanning patterns stay as fallback.
+- Testing toolkit (`Siro\Core\Testing\`): seeded zero-dependency `Faker`
+  (Vietnamese names/phones), abstract `Factory` base (`definition()`,
+  `count()`, `with()`, `state()`, `make()`, `create()`), fluent server-less
+  `TestClient` + `TestResponse` (`assertOk`, `assertJsonPath`, …) with the
+  same exception-to-status mapping as `App::run()`.
+- `make:factory` template now extends the `Factory` base with a Faker example.
+- `ModelNotFoundException::toResponse()` (404 `not_found`) for parity with
+  the other framework exceptions.
+
 ## v1.2.0 (2026-10-07)
 
 ### Added

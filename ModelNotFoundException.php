@@ -13,7 +13,12 @@ class ModelNotFoundException extends \RuntimeException
     {
         $this->modelClass = $model;
         $this->id = $id;
-        parent::__construct('Resource not found');
+        parent::__construct('Resource not found', 404);
+    }
+
+    public function toResponse(): Response
+    {
+        return Response::error($this->getMessage(), 404, [], 'not_found');
     }
 }
 

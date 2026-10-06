@@ -54,6 +54,8 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use {$modelClass};
+use Siro\Core\Testing\Factory;
+use Siro\Core\Testing\Faker;
 
 /**
  * Factory for generating {$name} model instances.
@@ -61,49 +63,20 @@ use {$modelClass};
  * Usage:
  *   \$user = {$name}Factory::new()->create();
  *   \$users = {$name}Factory::new()->count(10)->create();
+ *   \$admin = {$name}Factory::new()->with(['role' => 'admin'])->create();
  */
-final class {$name}Factory
+final class {$name}Factory extends Factory
 {
-    private int \$count = 1;
-    /** @var array<string, mixed> */
-    private array \$overrides = [];
-
-    public static function new(): self
-    {
-        return new self();
-    }
-
-    public function count(int \$count): self
-    {
-        \$this->count = max(1, \$count);
-        return \$this;
-    }
-
-    /** @param array<string, mixed> \$data */
-    public function with(array \$data): self
-    {
-        \$this->overrides = \$data;
-        return \$this;
-    }
+    /** @var class-string */
+    protected string \$model = {$modelClass}::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        return [];
-    }
-
-    /** @return {$name}|array<int, {$name}> */
-    public function create(): {$name}|array
-    {
-        if (\$this->count === 1) {
-            return {$name}::create(array_merge(\$this->definition(), \$this->overrides));
-        }
-
-        \$results = [];
-        for (\$i = 0; \$i < \$this->count; \$i++) {
-            \$results[] = {$name}::create(array_merge(\$this->definition(), \$this->overrides));
-        }
-        return \$results;
+        return [
+            'name' => Faker::vnFullName(),
+            'email' => Faker::email(),
+        ];
     }
 }
 

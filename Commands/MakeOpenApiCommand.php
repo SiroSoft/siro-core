@@ -242,6 +242,29 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             $parameters[] = ['name' => 'page', 'in' => 'query', 'schema' => ['type' => 'integer', 'default' => 1]];
             $parameters[] = ['name' => 'per_page', 'in' => 'query', 'schema' => ['type' => 'integer', 'default' => 20]];
         }
+        // #[QueryParam] attributes declare explicit query parameters.
+        $existingNames = [];
+        foreach ($parameters as $existing) {
+            $name = $existing['name'] ?? null;
+            if (is_string($name)) {
+                $existingNames[] = $name;
+            }
+        }
+        foreach ($this->extractAttributeFields($handler)['query'] as $key => $queryMeta) {
+            if (in_array($key, $existingNames, true)) {
+                continue;
+            }
+            $entry = [
+                'name' => $key,
+                'in' => 'query',
+                'required' => $queryMeta['required'],
+                'schema' => ['type' => $this->openApiType($queryMeta['type'])],
+            ];
+            if ($queryMeta['description'] !== '') {
+                $entry['description'] = $queryMeta['description'];
+            }
+            $parameters[] = $entry;
+        }
         if ($parameters !== []) {
             $operation['parameters'] = $parameters;
         }
@@ -434,6 +457,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         if (isset($this->schemas[$schemaName])) return $schemaName;
 
         $rules = $this->extractValidationRules($handler);
+        // Attribute declarations win over scanned patterns. Explicit
+        // #[Body] fields bypass sensitive-field filtering by design.
+        $attrFields = $this->extractAttributeFields($handler);
+        foreach ($attrFields['body'] as $field => $meta) {
+            $rules[$field] = $meta['rules'];
+        }
         if ($rules === []) return null;
 
         $properties = [];
@@ -441,6 +470,13 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         foreach ($rules as $field => $fieldRules) {
             /** @var array<int, string> $fieldRules */
             $properties[$field] = $this->ruleToProperty($field, $fieldRules);
+            $attrMeta = $attrFields['body'][$field] ?? null;
+            if ($attrMeta !== null) {
+                $properties[$field]['type'] = $this->openApiType($attrMeta['type']);
+                if ($attrMeta['description'] !== '') {
+                    $properties[$field]['description'] = $attrMeta['description'];
+                }
+            }
             if ($this->isRequired($fieldRules)) {
                 $required[] = $field;
             }
@@ -633,6 +669,92 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
 
     /** @var array<int, string> Internal validation rules that should not be exposed */
     private array $internalRules = ['unique:', 'exists:', 'confirmed', 'required_if:', 'prohibited_if:', 'prohibited:'];
+
+    /**
+     * Read #[Body] / #[QueryParam] attributes from a controller method.
+     *
+     * Attribute declarations win over source-scanning patterns; the patterns
+     * below remain as fallback for undecorated handlers.
+     *
+     * @return array{body: array<string, array{rules: array<int, string>, type: string, description: string, required: bool}>, query: array<string, array{type: string, description: string, required: bool}>}
+     */
+    private function extractAttributeFields(string $handler): array
+    {
+        $result = ['body' => [], 'query' => []];
+        if (!preg_match('/([\w\\\\]+)@(\w+)/', $handler, $m)) {
+            return $result;
+        }
+        $class = $m[1];
+        $method = $m[2];
+        try {
+            if (!class_exists($class) || !method_exists($class, $method)) {
+                return $result;
+            }
+            $ref = new \ReflectionMethod($class, $method);
+        } catch (\Throwable) {
+            return $result;
+        }
+
+        foreach ($ref->getAttributes(\Siro\Core\Attributes\Body::class) as $attr) {
+            try {
+                /** @var \Siro\Core\Attributes\Body $body */
+                $body = $attr->newInstance();
+            } catch (\Throwable) {
+                continue;
+            }
+            $rules = $body->rules !== '' ? explode('|', $body->rules) : [$this->attributeTypeToRule($body->type)];
+            $rules = array_values(array_filter($rules, static fn ($r): bool => $r !== ''));
+            if ($body->required && !in_array('required', $rules, true) && !in_array('nullable', $rules, true) && !in_array('sometimes', $rules, true)) {
+                array_unshift($rules, 'required');
+            }
+            $result['body'][$body->key] = [
+                'rules' => $rules,
+                'type' => $body->type,
+                'description' => $body->description,
+                'required' => $body->required,
+            ];
+        }
+
+        foreach ($ref->getAttributes(\Siro\Core\Attributes\QueryParam::class) as $attr) {
+            try {
+                /** @var \Siro\Core\Attributes\QueryParam $param */
+                $param = $attr->newInstance();
+            } catch (\Throwable) {
+                continue;
+            }
+            $result['query'][$param->key] = [
+                'type' => $param->type,
+                'description' => $param->description,
+                'required' => $param->required,
+            ];
+        }
+
+        return $result;
+    }
+
+    private function openApiType(string $type): string
+    {
+        return match (strtolower($type)) {
+            'integer', 'int' => 'integer',
+            'number', 'float', 'double' => 'number',
+            'boolean', 'bool' => 'boolean',
+            'array' => 'array',
+            'object', 'json' => 'object',
+            default => 'string',
+        };
+    }
+
+    private function attributeTypeToRule(string $type): string
+    {
+        return match (strtolower($type)) {
+            'integer', 'int' => 'integer',
+            'number', 'float', 'double' => 'numeric',
+            'boolean', 'bool' => 'boolean',
+            'array' => 'array',
+            'object' => 'json',
+            default => 'string',
+        };
+    }
 
     /**
      * @return array<string, array<int, string>>
