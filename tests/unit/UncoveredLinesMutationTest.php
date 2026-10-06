@@ -315,13 +315,13 @@ final class UncoveredLinesMutationTest extends TestCase
         $this->assertContains($r3->statusCode(), [200, 429]);
     }
 
-    public function testThrottleFailClosedAlwaysReturns429(): void
+    public function testThrottleFailClosedAlwaysReturns503(): void
     {
         putenv('THROTTLE_FALLBACK=fail_closed');
         $mw = new ThrottleMiddleware();
         $request = new Request('GET', '/fc-test', [], ['X-Forwarded-For' => '11.11.11.11']);
         $response = $mw->handle($request, fn () => Response::success('ok'), 100, 1);
-        $this->assertContains($response->statusCode(), [200, 429]);
+        $this->assertSame(503, $response->statusCode());
     }
 
     public function testThrottleFailOpenAlwaysPasses(): void

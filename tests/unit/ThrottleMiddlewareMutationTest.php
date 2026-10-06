@@ -47,14 +47,15 @@ final class ThrottleMiddlewareMutationTest extends TestCase
         return new Request($method, $path, [], ['X-Forwarded-For' => $ip], [], $ip);
     }
 
-    public function testFailClosedReturns429(): void
+    public function testFailClosedReturns503(): void
     {
         $_ENV['THROTTLE_FALLBACK'] = 'fail_closed';
         putenv('THROTTLE_FALLBACK=fail_closed');
         $mw = new ThrottleMiddleware();
 
         $response = $mw->handle($this->makeRequest(), fn () => Response::success());
-        $this->assertSame(429, $response->statusCode());
+        $this->assertSame(503, $response->statusCode());
+        $this->assertSame('unavailable', $response->headers()['X-RateLimit-Backend'] ?? null);
     }
 
     public function testFailOpenPassesThrough(): void

@@ -692,6 +692,8 @@ final class Router
             throw new RuntimeException(sprintf('Middleware class %s not found.', $middleware));
         }
 
+        $this->validateMiddlewareParams($middlewareClass, $middleware, $params);
+
         $instance = new $middlewareClass();
         if (!$instance instanceof MiddlewareInterface) {
             throw new RuntimeException(sprintf('Middleware %s must implement MiddlewareInterface.', $middlewareClass));
@@ -702,6 +704,84 @@ final class Router
         }
 
         return $this->normalizeHandlerResult($instance->handle($request, $next, ...$params));
+    }
+
+    /**
+     * Validate route middleware string params against the middleware's
+     * handle() signature using reflection. Catches typos like
+     * 'throttle:abc,1' with a clear error at dispatch instead of silent
+     * runtime coercion. Middleware without extra handle() params skip this.
+     *
+     * @param array<int, mixed> $params
+     */
+    private function validateMiddlewareParams(string $class, string $raw, array $params): void
+    {
+        try {
+            $ref = new \ReflectionMethod($class, 'handle');
+        } catch (\ReflectionException) {
+            return;
+        }
+
+        $declared = array_slice($ref->getParameters(), 2);
+        if ($declared === [] && $params === []) {
+            return;
+        }
+
+        $fail = static fn(string $why): never => throw new RuntimeException(
+            sprintf('Invalid middleware parameters for %s ("%s"): %s', $class, $raw, $why)
+        );
+
+        if ($declared === []) {
+            $fail('this middleware accepts no parameters.');
+        }
+
+        $isVariadic = end($declared)->isVariadic();
+        $required = 0;
+        foreach ($declared as $p) {
+            if (!$p->isVariadic() && !$p->isDefaultValueAvailable() && !$p->allowsNull()) {
+                $required++;
+            }
+        }
+
+        if (!$isVariadic && count($params) > count($declared)) {
+            $fail(sprintf('too many parameters (got %d, expects at most %d).', count($params), count($declared)));
+        }
+        if (count($params) < $required) {
+            $fail(sprintf('missing required parameters (got %d, needs at least %d).', count($params), $required));
+        }
+
+        foreach ($params as $i => $value) {
+            $param = $isVariadic && $i >= count($declared) - 1
+                ? $declared[count($declared) - 1]
+                : ($declared[$i] ?? null);
+            if ($param === null) {
+                continue;
+            }
+            $type = $param->getType();
+            if (!$type instanceof \ReflectionNamedType || $type->getName() === 'mixed') {
+                continue;
+            }
+            $expected = $type->getName();
+            if ($value === null && $param->allowsNull()) {
+                continue;
+            }
+            $ok = match ($expected) {
+                'int' => is_int($value),
+                'float' => is_float($value) || is_int($value),
+                'string' => is_string($value),
+                'bool' => is_bool($value),
+                'array' => is_array($value),
+                default => true, // class types resolve via DI elsewhere; skip here
+            };
+            if (!$ok) {
+                $fail(sprintf(
+                    'parameter $%s expects %s, got %s.',
+                    $param->getName(),
+                    $expected,
+                    is_scalar($value) ? gettype($value) . " ('" . (string) $value . "')" : gettype($value)
+                ));
+            }
+        }
     }
 
     /** @var array<string, string> */
@@ -745,6 +825,18 @@ final class Router
     public static function getMiddlewarePriorities(): array
     {
         return self::$middlewarePriority;
+    }
+
+    /**
+     * Clear static middleware registries (aliases, priorities, reflection
+     * cache). Required for test isolation and long-running workers that
+     * re-register middleware per request cycle.
+     */
+    public static function resetStatic(): void
+    {
+        self::$middlewareAliases = [];
+        self::$middlewarePriority = [];
+        self::$methodParamCache = [];
     }
 
     /** @return array<string, string> */

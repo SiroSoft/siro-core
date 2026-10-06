@@ -274,8 +274,10 @@ final class App
 
         Response::setRequestMeta($traceId, $requestStartedAt);
 
-        // Reset & enrich trace data
+        // Reset per-request state (required for long-running workers where
+        // statics survive across requests: FrankenPHP, FPM workers, RoadRunner)
         TraceData::reset();
+        Request::resetCache();
         Http::clearCapturedCalls();
         Http::setCaptureEnabled(true);
         if ($this->traceEnabled) {
@@ -289,11 +291,11 @@ final class App
             $method = $request->method();
             $path = $request->path();
 
-            // Capture request body for debug AFTER Request::fromGlobals()
-            // php://input is read-once, so we must not consume it before fromGlobals()
+            // Capture request body for debug AFTER Request::fromGlobals().
+            // The body stream is read-once, so it must only be consumed
+            // through Request::rawBody(), never file_get_contents() directly.
             if ($this->traceEnabled) {
-                $rawBody = Request::getRawBodyCache();
-                TraceData::setRequestBody($rawBody ?? '');
+                TraceData::setRequestBody(Request::rawBody());
             }
 
             $maintenance = self::isDown();
@@ -325,6 +327,15 @@ final class App
                      ->header('traceparent', $traceparent);
             $response->send();
         } catch (ValidationException $e) {
+            $this->attachDebugMeta();
+            $errorResponse = $e->toResponse();
+            $status = $errorResponse->statusCode();
+            if ($this->traceEnabled) {
+                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setException($e::class, $e->getMessage());
+            }
+            $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
+        } catch (MalformedBodyException $e) {
             $this->attachDebugMeta();
             $errorResponse = $e->toResponse();
             $status = $errorResponse->statusCode();

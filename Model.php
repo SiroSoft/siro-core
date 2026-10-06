@@ -604,9 +604,9 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                 $this->exists = true;
                 $provided = $data[$key];
                 static::$identityMap[static::class] ??= [];
-                static::$identityMap[static::class][(string) $provided] = $this;
                 if (is_int($provided) || is_string($provided)) {
                     static::$identityMap[static::class][$provided] = $this;
+                    static::$identityMap[static::class][(string) $provided] = $this;
                 }
             } elseif ($id !== 0) {
                 $this->setAttribute($key, $id);

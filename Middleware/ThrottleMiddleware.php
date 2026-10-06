@@ -101,9 +101,16 @@ final class ThrottleMiddleware implements MiddlewareInterface
         }
 
         if ($strategy === self::FALLBACK_FAIL_CLOSED) {
-            return Response::error('Too Many Requests', 429, [
-                'throttle' => ['Rate limiter backend unavailable'],
-            ]);
+            // Fail-closed without a backend is a server-side outage, not a
+            // client rate-limit breach: report 503 (not 429) so it cannot be
+            // mistaken for "limit exceeded". The X-RateLimit-Backend header
+            // lets operators tell the two cases apart at a glance.
+            $response = Response::error('Service Unavailable', 503, [
+                'throttle' => ['Rate limiter backend unavailable (fail closed)'],
+            ], 'throttle_backend_unavailable');
+            $response->header('X-RateLimit-Backend', 'unavailable');
+            $response->header('Retry-After', '30');
+            return $response;
         }
 
         return $this->enforceFileFallback($request, $next, $limit, $windowMinutes, $ttl);

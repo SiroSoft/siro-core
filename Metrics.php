@@ -46,6 +46,19 @@ final class Metrics
         }
     }
 
+    /**
+     * Clear all collected series (counters, histograms, gauges) and the
+     * flush counter. Required for test isolation; never call in production
+     * request paths.
+     */
+    public static function reset(): void
+    {
+        self::$counters = [];
+        self::$histograms = [];
+        self::$gauges = [];
+        self::$opsSinceFlush = 0;
+    }
+
     public static function persistNow(): void
     {
         if (!self::$persist) { return; }

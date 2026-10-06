@@ -5,15 +5,21 @@ declare(strict_types=1);
 namespace Siro\Core;
 
 use RuntimeException;
+use Siro\Core\Mail\MailProvider;
+use Siro\Core\Mail\NullMailProvider;
+use Siro\Core\Mail\SmtpMailProvider;
+use Throwable;
 
 /**
- * Email sender with sendmail and SMTP support.
+ * Email sender with swappable transports (Siro\Core\Mail\MailProvider).
  *
- * Supports sendmail (PHP mail()) and SMTP with STARTTLS and AUTH LOGIN.
+ * Default transport is SMTP with STARTTLS and AUTH LOGIN. Delivery can be
+ * silenced with MAIL_PROVIDER=null, or replaced via Mail::setProvider()
+ * with any MailProvider implementation (e.g. API-based drivers in app code).
  * Can send emails directly or push to the queue for async delivery.
  *
  * Config via .env:
- *   MAIL_DRIVER=sendmail|smtp
+ *   MAIL_PROVIDER=smtp|null
  *   MAIL_HOST=smtp.example.com
  *   MAIL_PORT=587
  *   MAIL_USERNAME=user
@@ -46,6 +52,7 @@ final class Mail
     private static bool $faked = false;
     /** @var array<int, array{to:string,subject:string,body:string}> */
     private static array $fakeMails = [];
+    private static ?MailProvider $provider = null;
     /** Strip SMTP-injection characters (\r\n) from header values */
     private static function sanitizeHeader(string $value): string
     {
@@ -66,6 +73,34 @@ final class Mail
     {
         self::$faked = false;
         self::$fakeMails = [];
+        self::$provider = null;
+    }
+
+    /**
+     * Inject a custom mail transport (e.g. API-based providers in app code).
+     * Pass null to fall back to env-based resolution (MAIL_PROVIDER).
+     */
+    public static function setProvider(?MailProvider $provider): void
+    {
+        self::$provider = $provider;
+    }
+
+    /**
+     * Resolve the active provider: explicit injection first, then the
+     * MAIL_PROVIDER env var ('smtp' default, 'null' for no-op).
+     */
+    public static function resolveProvider(): MailProvider
+    {
+        if (self::$provider !== null) {
+            return self::$provider;
+        }
+
+        $name = strtolower((string) Env::get('MAIL_PROVIDER', 'smtp'));
+        return match ($name) {
+            'smtp', '' => new SmtpMailProvider(),
+            'null', 'noop', 'log' => new NullMailProvider(),
+            default => throw new RuntimeException("Unknown mail provider: {$name} (expected smtp|null)"),
+        };
     }
 
     public static function fake(): void
@@ -222,16 +257,7 @@ final class Mail
         }
 
         if (self::$faked) {
-            self::$fakeMails[] = [
-                'to' => $this->to,
-                'subject' => $this->subject,
-                'body' => $this->body,
-                'content_type' => $this->contentType,
-                'cc' => $this->cc,
-                'bcc' => $this->bcc,
-                'reply_to' => $this->replyTo,
-                'attachments' => $this->attachments,
-            ];
+            self::$fakeMails[] = $this->payload();
             return true;
         }
 
@@ -244,6 +270,49 @@ final class Mail
             Logger::error($e);
             throw $e;
         }
+    }
+
+    /**
+     * Attempt delivery without ever throwing. Returns false when the
+     * message is incomplete or the transport fails. Intended for
+     * non-critical notification paths.
+     */
+    public function trySend(): bool
+    {
+        try {
+            if ($this->to === '' || $this->body === '') {
+                return false;
+            }
+
+            if (self::$faked) {
+                self::$fakeMails[] = $this->payload();
+                return true;
+            }
+
+            $result = self::resolveProvider()->send($this->payload());
+            Logger::request('MAIL', $this->to, $result ? 200 : 500, 0, '', '');
+            return $result;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * @return array{to:string,subject:string,body:string,content_type:string,charset:string,cc:array<int,string>,bcc:array<int,string>,reply_to:string,attachments:array<int,array{path:string,name:string,mime:string}>}
+     */
+    private function payload(): array
+    {
+        return [
+            'to' => $this->to,
+            'subject' => $this->subject,
+            'body' => $this->body,
+            'content_type' => $this->contentType,
+            'charset' => $this->charset,
+            'cc' => $this->cc,
+            'bcc' => $this->bcc,
+            'reply_to' => $this->replyTo,
+            'attachments' => $this->attachments,
+        ];
     }
 
     /**
@@ -279,208 +348,16 @@ final class Mail
     }
 
     /**
-     * Send via PHP's built-in mail() function.
+     * Deliver via the resolved provider. Throws on transport failure,
+     * preserving the historical Mail::send() contract.
      */
     private function sendMail(): bool
     {
-        $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost');
-        $fromName = (string) Env::get('MAIL_FROM_NAME', 'Siro API');
-
-        $safeFromName = self::sanitizeHeader($fromName);
-        $safeFromAddress = self::sanitizeAddress($fromAddress);
-        $headers = [
-            'From: ' . $safeFromName . ' <' . $safeFromAddress . '>',
-            'MIME-Version: 1.0',
-            'Content-Type: ' . $this->contentType . '; charset=' . $this->charset,
-            'Content-Transfer-Encoding: base64',
-            'X-Mailer: SiroPHP/' . self::sanitizeHeader((string) Env::get('APP_VERSION', Console::VERSION)),
-        ];
-
-        if ($this->attachments !== []) {
-            $boundary = 'siro_boundary_' . bin2hex(random_bytes(8));
-            $headers[] = 'Content-Type: multipart/mixed; boundary="' . $boundary . '"';
-            $body = $this->buildMultipartBody($boundary);
-        } else {
-            $body = $this->body;
-        }
-
-        return $this->sendSmtp($this->to, $this->subject, $body, $headers);
-    }
-
-    /**
-     * Send via SMTP using fsockopen with raw SMTP commands.
-     * Supports DSN format: smtp://user:pass@host:port
-     * Supports SSL/TLS via MAIL_ENCRYPTION env var.
-     *
-     * @param array<int, string> $headers
-     */
-    private function sendSmtp(string $to, string $subject, string $body, array $headers): bool
-    {
-        $host = (string) Env::get('MAIL_HOST', '127.0.0.1');
-        $port = (int) Env::get('MAIL_PORT', '587');
-        $username = (string) Env::get('MAIL_USERNAME', '');
-        $password = (string) Env::get('MAIL_PASSWORD', '');
-        $encryption = strtolower((string) Env::get('MAIL_ENCRYPTION', ''));
-
-        $dsn = (string) Env::get('MAIL_DSN', '');
-        if ($dsn !== '') {
-            $parsed = parse_url($dsn);
-            if (is_array($parsed) && isset($parsed['host'])) {
-                $host = $parsed['host'];
-                if (isset($parsed['port'])) {
-                    $port = (int) $parsed['port'];
-                }
-                if (isset($parsed['user'])) {
-                    $username = urldecode($parsed['user']);
-                }
-                if (isset($parsed['pass'])) {
-                    $password = urldecode($parsed['pass']);
-                }
-            }
-        }
-
-        $prefix = $encryption === 'ssl' ? 'ssl://' : '';
-        $errno = 0;
-        $errstr = '';
-        $context = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true]]);
-        $socket = @stream_socket_client($prefix . $host . ':' . $port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
-
-        if ($socket === false) {
-            throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");
-        }
-        stream_set_timeout($socket, 30);
-        $meta = stream_get_meta_data($socket);
-        if ($meta['timed_out']) {
-            throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");
-        }
-
-        try {
-            $this->smtpReadResponse($socket);
-            $this->smtpCommand($socket, "EHLO localhost");
-            $this->smtpReadResponse($socket);
-
-            if ($encryption === 'tls' || $encryption === 'starttls') {
-                $this->smtpCommand($socket, "STARTTLS");
-                $this->smtpReadResponse($socket);
-                $sslContext = stream_context_create(['ssl' => [
-                    'verify_peer' => filter_var(Env::get('MAIL_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
-                    'verify_peer_name' => filter_var(Env::get('MAIL_SSL_VERIFY', 'true'), FILTER_VALIDATE_BOOLEAN),
-                ]]);
-                if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT, $sslContext)) {
-                    throw new RuntimeException('SMTP STARTTLS negotiation failed');
-                }
-                $this->smtpCommand($socket, "EHLO localhost");
-                $this->smtpReadResponse($socket);
-            }
-
-            if ($username !== '' && $password !== '') {
-                $this->smtpCommand($socket, "AUTH LOGIN");
-                $this->smtpReadResponse($socket);
-                $this->smtpCommand($socket, base64_encode($username));
-                $this->smtpReadResponse($socket);
-                $this->smtpCommand($socket, base64_encode($password));
-                $this->smtpReadResponse($socket);
-            }
-
-            $fromAddress = self::sanitizeAddress((string) Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost'));
-            $safeTo = self::sanitizeAddress($to);
-            $safeSubject = self::sanitizeHeader($subject);
-            $this->smtpCommand($socket, "MAIL FROM:<{$fromAddress}>");
-            $this->smtpReadResponse($socket);
-            $this->smtpCommand($socket, "RCPT TO:<{$safeTo}>");
-            $this->smtpReadResponse($socket);
-
-            foreach ($this->cc as $ccAddr) {
-                $sanitizedCc = self::sanitizeAddress($ccAddr);
-                $this->smtpCommand($socket, "RCPT TO:<{$sanitizedCc}>");
-                $this->smtpReadResponse($socket);
-            }
-            foreach ($this->bcc as $bccAddr) {
-                $sanitizedBcc = self::sanitizeAddress($bccAddr);
-                $this->smtpCommand($socket, "RCPT TO:<{$sanitizedBcc}>");
-                $this->smtpReadResponse($socket);
-            }
-
-            $this->smtpCommand($socket, "DATA");
-            $this->smtpReadResponse($socket);
-
-            fwrite($socket, "Subject: {$safeSubject}\r\n");
-            foreach ($headers as $header) {
-                fwrite($socket, $header . "\r\n");
-            }
-            fwrite($socket, "\r\n");
-            $body = str_replace("\r\n.", "\r\n..", $body);
-            fwrite($socket, $body . "\r\n.\r\n");
-
-            $this->smtpReadResponse($socket);
-            $this->smtpCommand($socket, "QUIT");
-            $this->smtpReadResponse($socket);
-        } finally {
-            if (is_resource($socket)) {
-                fclose($socket);
-            }
+        $provider = self::resolveProvider();
+        if (!$provider->send($this->payload())) {
+            throw new RuntimeException('SMTP delivery failed (' . $provider::class . ')');
         }
 
         return true;
-    }
-
-    /**
-     * Build a multipart/mixed body with inline content and attachments.
-     */
-    private function buildMultipartBody(string $boundary): string
-    {
-        $body = "This is a multi-part message in MIME format.\r\n\r\n";
-        $body .= "--{$boundary}\r\n";
-        $body .= "Content-Type: {$this->contentType}; charset={$this->charset}\r\n";
-        $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
-        $body .= chunk_split(base64_encode($this->body), 76, "\r\n") . "\r\n";
-
-        foreach ($this->attachments as $attachment) {
-            $encoded = base64_encode((string) file_get_contents($attachment['path']));
-            $body .= "--{$boundary}\r\n";
-            $body .= "Content-Type: {$attachment['mime']}; name=\"{$attachment['name']}\"\r\n";
-            $body .= "Content-Disposition: attachment; filename=\"{$attachment['name']}\"\r\n";
-            $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
-            $body .= chunk_split($encoded, 76, "\r\n") . "\r\n";
-        }
-
-        $body .= "--{$boundary}--\r\n";
-        return $body;
-    }
-
-    /**
-     * Send an SMTP command.
-     */
-    private function smtpCommand(mixed $socket, string $command): void
-    {
-        if (is_resource($socket)) {
-            fwrite($socket, $command . "\r\n");
-        }
-    }
-
-    /**
-     * Read SMTP response and check for errors.
-     *
-     * @throws RuntimeException on error
-     */
-    private function smtpReadResponse(mixed $socket): string
-    {
-        if (!is_resource($socket)) {
-            throw new \RuntimeException('SMTP socket is not a valid resource');
-        }
-        $response = '';
-        while ($line = fgets($socket, 512)) {
-            $response .= $line;
-            if (isset($line[3]) && $line[3] === ' ') {
-                break;
-            }
-        }
-
-        $code = (int) substr($response, 0, 3);
-        if ($code >= 400) {
-            throw new RuntimeException("SMTP error: {$response}");
-        }
-
-        return $response;
     }
 }

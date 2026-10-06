@@ -84,7 +84,12 @@ final class ThrottleFallbackMutationTest extends TestCase
         $_ENV['THROTTLE_FALLBACK'] = 'fail_closed';
         $mw = new ThrottleMiddleware();
         $resp = $mw->handle($this->makeRequest(), fn () => Response::success());
-        $this->assertSame(429, $resp->statusCode());
+        // Fail-closed without a backend is a server outage, not a client
+        // rate-limit breach: 503 with a distinguishing header, never 429.
+        $this->assertSame(503, $resp->statusCode());
+        $headers = $resp->headers();
+        $this->assertSame('unavailable', $headers['X-RateLimit-Backend'] ?? null);
+        $this->assertArrayNotHasKey('X-RateLimit-Remaining', $headers);
     }
 
     public function testFallbackFailOpen(): void

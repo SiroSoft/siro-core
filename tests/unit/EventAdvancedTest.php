@@ -178,4 +178,55 @@ final class EventAdvancedTest extends TestCase
         Event::emit('test.data', $data);
         $this->assertSame($data, $received);
     }
+
+    public function testOffByHandleKeepsOtherListeners(): void
+    {
+        $core = 0;
+        $module = 0;
+        Event::on('payment.captured', function () use (&$core) { $core++; });
+        $handle = Event::on('payment.captured', function () use (&$module) { $module++; });
+
+        Event::off('payment.captured', $handle);
+        Event::emit('payment.captured');
+
+        $this->assertSame(1, $core);
+        $this->assertSame(0, $module);
+        $this->assertTrue(Event::hasListeners('payment.captured'));
+    }
+
+    public function testOffByCallbackKeepsOtherListeners(): void
+    {
+        $core = 0;
+        $module = 0;
+        Event::on('payment.captured', function () use (&$core) { $core++; });
+        $moduleListener = function () use (&$module) { $module++; };
+        Event::on('payment.captured', $moduleListener);
+
+        Event::off('payment.captured', $moduleListener);
+        Event::emit('payment.captured');
+
+        $this->assertSame(1, $core);
+        $this->assertSame(0, $module);
+    }
+
+    public function testOffWithoutTargetRemovesAll(): void
+    {
+        $count = 0;
+        Event::on('test.clear', function () use (&$count) { $count++; });
+        Event::on('test.clear', function () use (&$count) { $count++; });
+
+        Event::off('test.clear');
+        Event::emit('test.clear');
+
+        $this->assertSame(0, $count);
+        $this->assertFalse(Event::hasListeners('test.clear'));
+    }
+
+    public function testHandlesAreUniqueAcrossEvents(): void
+    {
+        $a = Event::on('event.a', function () {});
+        $b = Event::on('event.b', function () {});
+
+        $this->assertNotSame($a, $b);
+    }
 }

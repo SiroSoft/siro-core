@@ -114,6 +114,15 @@ final class Route
     }
 
     /**
+     * Clear the named-route registry. Required for test isolation when
+     * tests register named routes.
+     */
+    public static function resetNamedRoutes(): void
+    {
+        self::$namedRoutes = [];
+    }
+
+    /**
      * @param array<int, callable|string>|callable|string $middleware
      */
     public function middleware(array|callable|string $middleware): self
