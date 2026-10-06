@@ -142,6 +142,57 @@ final class Schema
         return in_array($column, self::getColumnListing($table), true);
     }
 
+    public static function hasForeignKey(string $table, string $column, ?string $referencedTable = null): bool
+    {
+        $driver = self::driver();
+        $referencedTable ??= '';
+
+        if ($driver === 'sqlite') {
+            $stmt = self::pdo()->query('PRAGMA foreign_key_list(' . self::quoteIdentifier($table) . ')');
+            $foreignKeys = $stmt === false ? [] : $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($foreignKeys as $foreignKey) {
+                if (!is_array($foreignKey)) {
+                    continue;
+                }
+                if (($foreignKey['from'] ?? '') !== $column) {
+                    continue;
+                }
+                if ($referencedTable === '' || ($foreignKey['table'] ?? '') === $referencedTable) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if ($driver === 'pgsql') {
+            $sql = 'SELECT COUNT(*) FROM information_schema.key_column_usage k '
+                . 'JOIN information_schema.constraint_column_usage r '
+                . 'ON r.constraint_name = k.constraint_name '
+                . 'AND r.constraint_schema = k.constraint_schema '
+                . 'WHERE k.table_schema = current_schema() '
+                . 'AND k.table_name = :table AND k.column_name = :column';
+            if ($referencedTable !== '') {
+                $sql .= ' AND r.table_name = :referenced_table';
+            }
+        } else {
+            $sql = 'SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE '
+                . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table '
+                . 'AND COLUMN_NAME = :column AND REFERENCED_TABLE_NAME IS NOT NULL';
+            if ($referencedTable !== '') {
+                $sql .= ' AND REFERENCED_TABLE_NAME = :referenced_table';
+            }
+        }
+
+        $params = ['table' => $table, 'column' => $column];
+        if ($referencedTable !== '') {
+            $params['referenced_table'] = $referencedTable;
+        }
+        $stmt = self::pdo()->prepare($sql);
+        $stmt->execute($params);
+
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
     public static function hasDatabase(string $database): bool
     {
         $driver = self::driver();

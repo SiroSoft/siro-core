@@ -24,6 +24,7 @@ final class App
     private readonly string $basePath;
     public readonly Router $router;
     private bool $debug;
+    private bool $traceEnabled;
     private bool $showDebugTrace;
     private float $startedAt;
     private bool $booted = false;
@@ -33,6 +34,7 @@ final class App
         $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
         $this->router = new Router();
         $this->debug = false;
+        $this->traceEnabled = false;
         $this->showDebugTrace = false;
         $this->startedAt = microtime(true);
     }
@@ -55,13 +57,14 @@ final class App
         $debug = Env::bool('APP_DEBUG', false);
         $appEnv = strtolower((string) Env::get('APP_ENV', 'production'));
         $this->debug = $debug && $appEnv !== 'production';
+        $this->traceEnabled = $this->debug || Env::bool('TRACE_ENABLED', false);
         $this->showDebugTrace = $this->debug;
 
         Logger::boot($this->basePath);
         if ($this->showDebugTrace) {
             ini_set('display_errors', '1');
             error_reporting(E_ALL);
-            if (class_exists(Database::class)) {
+            if ($this->traceEnabled && class_exists(Database::class)) {
                 Database::enableQueryCapture(true);
             }
         }
@@ -275,7 +278,7 @@ final class App
         TraceData::reset();
         Http::clearCapturedCalls();
         Http::setCaptureEnabled(true);
-        if ($this->debug) {
+        if ($this->traceEnabled) {
             $allHeaders = function_exists('getallheaders') ? getallheaders() : [];
             /** @var array<string, string> $allHeaders */
             TraceData::setRequestHeaders($allHeaders);
@@ -288,7 +291,7 @@ final class App
 
             // Capture request body for debug AFTER Request::fromGlobals()
             // php://input is read-once, so we must not consume it before fromGlobals()
-            if ($this->debug) {
+            if ($this->traceEnabled) {
                 $rawBody = Request::getRawBodyCache();
                 TraceData::setRequestBody($rawBody ?? '');
             }
@@ -312,7 +315,7 @@ final class App
             $response = $this->router->dispatch($request);
             $status = $response->statusCode();
             $this->attachDebugMeta();
-            if ($this->debug) {
+            if ($this->traceEnabled) {
                 TraceData::setResponseBody((string) json_encode($response->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
             }
 
@@ -325,7 +328,7 @@ final class App
             $this->attachDebugMeta();
             $errorResponse = $e->toResponse();
             $status = $errorResponse->statusCode();
-            if ($this->debug) {
+            if ($this->traceEnabled) {
                 TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 TraceData::setException($e::class, $e->getMessage());
             }
@@ -334,7 +337,7 @@ final class App
             $this->attachDebugMeta();
             $status = 404;
             $errorResponse = Response::error($e->getMessage(), 404);
-            if ($this->debug) {
+            if ($this->traceEnabled) {
                 TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 TraceData::setException($e::class, $e->getMessage());
             }
@@ -353,7 +356,7 @@ final class App
                 $errorResponse = Response::error('Internal Server Error', 500, $errors);
             }
             $status = $errorResponse->statusCode();
-            if ($this->debug) {
+            if ($this->traceEnabled) {
                 TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 TraceData::setException($e::class, $e->getMessage());
             }
@@ -366,7 +369,7 @@ final class App
             if ($timeMs > 100) { Logger::slowRequest($method, $path, $status, $timeMs); }
 
             // Write trace file for why/replay commands
-            if ($this->debug) {
+            if ($this->traceEnabled) {
                 $host = isset($_SERVER['HTTP_HOST']) && is_string($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost:8080';
                 $traceData = [
                     'method' => $method,

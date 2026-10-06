@@ -1,5 +1,78 @@
 # Changelog — siro-core
 
+## v1.1.0 (2026-10-06)
+
+### Added
+- `Event::on()`/`once()` return an int listener handle; `off($event, $handle)`
+  or `off($event, $callable)` removes only that listener instead of the whole
+  event key. `off($event)` keeps the legacy remove-all behavior.
+- `Request::rawBody()` single read-once-safe body accessor plus
+  `Request::resetCache()` for long-running workers; `App::run()` resets the
+  body cache per request (FrankenPHP/FPM safe).
+- `Router` validates middleware string params against the middleware
+  `handle()` signature via reflection (`throttle:abc,1` now throws a clear
+  error instead of silent coercion).
+- `Siro\Core\Mail\MailProvider` contract with `SmtpMailProvider` (extracted
+  transport, unchanged behavior) and `NullMailProvider`; `Mail::setProvider()`,
+  `MAIL_PROVIDER=smtp|null` env, and never-throw `Mail::trySend()`.
+- Static-registry resets for test isolation: `Router::resetStatic()`,
+  `Route::resetNamedRoutes()`, `Validator::resetCustomizations()`,
+  `Metrics::reset()`, `VersionMiddleware::reset()`.
+- `MalformedBodyException` (400, code `malformed_body`): invalid JSON bodies
+  now report a parse error instead of a misleading "field is required".
+- New `docs/TESTING.md` global-state reset discipline for contributors.
+- `Validator` phone `max` rule validates by string length, not numeric value
+  (carried over from worktree).
+
+### Changed
+- Throttle `fail_closed` fallback without Redis now returns **503** with
+  `X-RateLimit-Backend: unavailable` and code `throttle_backend_unavailable`
+  instead of 429, so backend outages are never mistaken for limit breaches.
+- `Mail::send()` delivers through the resolved provider; transport failure
+  still throws as before.
+- `Model` identity-map write for provided keys only registers int|string keys
+  (also fixes a PHPStan level-max cast error).
+
+## v1.0.14 (2026-09-18)
+
+### Fixed
+- `Http::request()` now honours the declared `Content-Type` when encoding an
+  array body. An explicit `application/x-www-form-urlencoded` previously
+  forced JSON encoding, so form-based integrations (e.g. Cloudflare Turnstile
+  `siteverify`) were rejected with `missing-input-secret`. Encoding rules are
+  extracted to `Http::encodeBody()` and covered by offline unit tests.
+- `HttpEncodeBodyTest` added (4 tests): form-urlencoded default, explicit
+  form Content-Type, JSON Content-Type, and non-array passthrough.
+
+## v1.0.13 (2026-09-18)
+
+### Added
+- `make:crud --simple` now generates the documented direct Model-to-Controller
+  shape without unused service and repository classes.
+- Full CRUD scaffolding now includes update/delete success and not-found feature
+  test coverage.
+- Added reusable release, diagnostics, and soak tooling under `tools/`.
+
+### Documentation
+- Documented CRUD generation modes and opt-out flags.
+- Added release hygiene checks for secrets and generated artifacts.
+- Refreshed MCP integration and performance documentation.
+
+## v1.0.12 (2026-09-15)
+
+### Added
+- Add `Schema::hasForeignKey()` with MySQL, MariaDB, PostgreSQL, and SQLite support.
+- Make foreign-key introspection reusable by idempotent application migrations.
+
+### Fixed
+- Preserve the official `ThrottleMiddleware` downstream-exception rethrow fix in the 1.0.x release line.
+
+## v1.0.11 (2026-09-15)
+
+### Added
+- Add `TRACE_ENABLED=true` for production trace capture without enabling debug responses.
+- Keep request, response, query, and middleware trace data available to safe replay workflows.
+
 ## v1.0.10 (2026-09-15)
 
 ### Fixed

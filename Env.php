@@ -151,13 +151,8 @@ final class Env
 
         self::$loaded = true;
 
-        // If no env file was loaded, log a warning (do not crash)
-        if (!$loadedAny) {
-            trigger_error(
-                'SIRO_ENV: No .env file found. Create .env or .env.local in project root.',
-                E_USER_NOTICE
-            );
-        }
+        // Missing env files are valid for library consumers and diagnostics.
+        // Commands that require configuration report that requirement directly.
     }
 
     /**

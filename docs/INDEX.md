@@ -17,7 +17,7 @@ Welcome to the Siro Core documentation! This index helps you find the right guid
 - **[Architecture Decisions](ARCHITECTURE.md)** — Design choices and ADRs
 - **[Security Guide](SECURITY.md)** — JWT, encryption, best practices
 - **[Performance Optimization](PERFORMANCE.md)** — Benchmarking and tuning
-- **[Documentation Summary](DOCUMENTATION_SUMMARY.md)** — Overview of all docs
+- **[AI Coding and MCP](AI_MCP.md)** — Safe AI-assisted development and audit workflow
 
 ### API References
 - **[Router API](api/Router.md)** — HTTP routing and middleware

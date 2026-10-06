@@ -583,6 +583,11 @@ EXPLAIN SELECT * FROM users WHERE email = 'test@example.com';
 
 ## 📊 Performance Comparison
 
+The comparison table below is retained as a historical reference from the
+v0.28.1 benchmark run. Use the benchmark commands above for current
+SiroPHP v1.0.12 measurements; do not treat these cross-framework values as a
+release gate.
+
 | Framework | Avg Ops/s | Memory | Dependencies | Boot Time |
 |-----------|-----------|--------|--------------|-----------|
 | **SiroPHP v0.28.1** | **864K** | **4KB** | **0** | **<1ms** |

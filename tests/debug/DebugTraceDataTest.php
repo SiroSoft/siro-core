@@ -287,7 +287,8 @@ final class DebugTraceDataTest extends TestCase
         });
 
         $this->assertArrayHasKey('auth_header', $trace);
-        $this->assertSame('Bearer my_test_token', $trace['auth_header']);
+        $this->assertStringContainsString('[REDACTED]', $trace['auth_header']);
+        $this->assertStringNotContainsString('my_test_token', $trace['auth_header']);
         $this->assertArrayHasKey('request_headers', $trace);
     }
 

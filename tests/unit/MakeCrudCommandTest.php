@@ -92,8 +92,8 @@ final class MakeCrudCommandTest extends TestCase
         $this->assertSame(0, $exit);
         $this->assertFileExists($this->basePath . '/app/Models/Book.php');
         $this->assertFileExists($this->basePath . '/app/Controllers/BookController.php');
-        $this->assertFileExists($this->basePath . '/app/Services/BookService.php');
-        $this->assertFileExists($this->basePath . '/app/Repositories/BookRepository.php');
+        $this->assertFileDoesNotExist($this->basePath . '/app/Services/BookService.php');
+        $this->assertFileDoesNotExist($this->basePath . '/app/Repositories/BookRepository.php');
         $migrations = glob($this->basePath . '/database/migrations/*book*');
         $this->assertNotEmpty($migrations);
         $this->assertFileExists($this->basePath . '/tests/Feature/BookTest.php');

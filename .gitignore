@@ -6,3 +6,6 @@
 /rate_limit/
 /storagerate_limit/
 *.log
+/.env
+/tools/**/storage/
+/tools/**/results/

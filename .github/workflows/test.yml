@@ -146,6 +146,57 @@ jobs:
             results.xml
           retention-days: 7
 
+  database-matrix:
+    name: "Database smoke — ${{ matrix.db }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        db: [mysql, pgsql]
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: test_siro
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_siro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d siro_ci"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          extensions: pdo, pdo_mysql, pdo_pgsql, json, mbstring, openssl, fileinfo, curl
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Verify ${{ matrix.db }} connection
+        env:
+          DB_CONNECTION: ${{ matrix.db }}
+        shell: bash
+        run: |
+          if [ "$DB_CONNECTION" = "mysql" ]; then
+            php -r '$pdo = new PDO("mysql:host=127.0.0.1;port=3306;dbname=test_siro", "root", ""); $pdo->query("SELECT 1");'
+          else
+            php -r '$pdo = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=test_siro", "postgres", "postgres"); $pdo->query("SELECT 1");'
+          fi
+      - name: Run integration suite
+        run: php vendor/bin/phpunit --testsuite=Integration --no-progress
+
   fuzz-dast:
     name: "Fuzz+DAST — ubuntu / PHP 8.4"
     runs-on: ubuntu-latest
