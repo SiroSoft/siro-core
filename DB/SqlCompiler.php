@@ -101,6 +101,18 @@ final class SqlCompiler
         return $result;
     }
 
+    /**
+     * Quote a FROM target. Plain tables go through identifier quoting;
+     * parenthesized subqueries (fromSub) pass through untouched.
+     */
+    public function quoteTable(string $table): string
+    {
+        if (str_starts_with(ltrim($table), '(')) {
+            return $table;
+        }
+        return $this->quoteIdentifier($table);
+    }
+
     public function quoteColumnList(string $columns): string
     {
         $parts = explode(',', $columns);
@@ -180,7 +192,7 @@ final class SqlCompiler
             array_shift($quotedColumns);
         }
         $prefix = $distinct ? 'SELECT DISTINCT ' : 'SELECT ';
-        $sql = sprintf('%s%s FROM %s', $prefix, implode(', ', $quotedColumns), $this->quoteIdentifier($table));
+        $sql = sprintf('%s%s FROM %s', $prefix, implode(', ', $quotedColumns), $this->quoteTable($table));
         $sql .= $this->compileJoins($joins);
         $sql .= $whereSql;
         $sql .= $this->compileGroupBy($groups);
@@ -221,12 +233,12 @@ final class SqlCompiler
         [$havingSql, $havingBindings] = $this->compileHaving($havings, $bindings);
 
         if ($groups === []) {
-            $sql = sprintf('SELECT COUNT(*) AS aggregate FROM %s', $this->quoteIdentifier($table));
+            $sql = sprintf('SELECT COUNT(*) AS aggregate FROM %s', $this->quoteTable($table));
             $sql .= $this->compileJoins($joins) . $whereSql . $havingSql;
             return [$sql, [...$whereBindings, ...$havingBindings]];
         }
 
-        $subQuery = sprintf('SELECT 1 FROM %s', $this->quoteIdentifier($table))
+        $subQuery = sprintf('SELECT 1 FROM %s', $this->quoteTable($table))
             . $this->compileJoins($joins)
             . $whereSql
             . $this->compileGroupBy($groups)
@@ -257,12 +269,12 @@ final class SqlCompiler
         [$havingSql, $havingBindings] = $this->compileHaving($havings, $bindings);
 
         if ($groups === []) {
-            $sql = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteIdentifier($table));
+            $sql = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteTable($table));
             $sql .= $this->compileJoins($joins) . $whereSql . $havingSql;
             return [$sql, [...$whereBindings, ...$havingBindings]];
         }
 
-        $subQuery = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteIdentifier($table))
+        $subQuery = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteTable($table))
             . $this->compileJoins($joins)
             . $whereSql
             . $this->compileGroupBy($groups)

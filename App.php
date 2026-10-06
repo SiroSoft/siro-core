@@ -344,6 +344,15 @@ final class App
                 TraceData::setException($e::class, $e->getMessage());
             }
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
+        } catch (AuthorizationException $e) {
+            $this->attachDebugMeta();
+            $errorResponse = $e->toResponse();
+            $status = $errorResponse->statusCode();
+            if ($this->traceEnabled) {
+                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setException($e::class, $e->getMessage());
+            }
+            $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (ModelNotFoundException $e) {
             $this->attachDebugMeta();
             $status = 404;

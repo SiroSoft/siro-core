@@ -170,4 +170,48 @@ final class MassAssignmentTest extends TestCase
         $this->assertSame('First', $model->getAttribute('name'));
         $this->assertSame('second@test.com', $model->getAttribute('email'));
     }
+
+    public function testDiscardWarnsInDebugMode(): void
+    {
+        \Siro\Core\Env::reset();
+        putenv('APP_DEBUG=true');
+        $_ENV['APP_DEBUG'] = 'true';
+        $warnings = [];
+        set_error_handler(static function (int $no, string $msg) use (&$warnings): bool {
+            $warnings[] = $msg;
+            return true;
+        }, E_USER_WARNING);
+        try {
+            $model = new class extends Model {
+                protected array $fillable = ['name'];
+            };
+            $model->fill(['nickname' => 'Ghost']);
+        } finally {
+            restore_error_handler();
+            putenv('APP_DEBUG');
+            unset($_ENV['APP_DEBUG']);
+            \Siro\Core\Env::reset();
+        }
+        $this->assertNotEmpty($warnings);
+        $this->assertStringContainsString('not in $fillable', $warnings[0]);
+        $this->assertNull($model->getAttribute('nickname'));
+    }
+
+    public function testDiscardSilentOutsideDebug(): void
+    {
+        \Siro\Core\Env::reset();
+        putenv('APP_DEBUG=false');
+        $_ENV['APP_DEBUG'] = 'false';
+        try {
+            $model = new class extends Model {
+                protected array $fillable = ['name'];
+            };
+            $model->fill(['nickname' => 'Ghost']);
+            $this->assertNull($model->getAttribute('nickname'));
+        } finally {
+            putenv('APP_DEBUG');
+            unset($_ENV['APP_DEBUG']);
+            \Siro\Core\Env::reset();
+        }
+    }
 }

@@ -113,10 +113,31 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         foreach ($attributes as $key => $value) {
             if ($this->isFillable($key)) {
                 $this->setAttribute($key, $value);
+            } else {
+                $this->warnFillableDiscard((string) $key);
             }
         }
 
         return $this;
+    }
+
+    /**
+     * Warn in debug mode when an attribute is discarded for missing $fillable.
+     * Silent discards are a top source of "lost update" bugs (new column
+     * added but forgotten in $fillable).
+     */
+    private function warnFillableDiscard(string $key): void
+    {
+        if ($key !== '' && \Siro\Core\Env::bool('APP_DEBUG', false)) {
+            trigger_error(
+                sprintf(
+                    'Mass assignment discard on model [%s]: "%s" is not in $fillable and was ignored.',
+                    static::class,
+                    $key
+                ),
+                E_USER_WARNING
+            );
+        }
     }
 
     private function isFillable(string $key): bool
@@ -159,6 +180,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             return;
         }
         if ($this->fillable !== [] && !in_array($key, $this->fillable, true)) {
+            $this->warnFillableDiscard($key);
             return;
         }
         // Check for mutator method first

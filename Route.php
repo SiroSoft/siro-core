@@ -222,6 +222,24 @@ final class Route
     }
 
     /**
+     * Register RESTful routes for a controller (facade).
+     *
+     * @param array<int, callable|string> $middleware
+     * @param array<int, string> $only Register only these actions (empty = all).
+     * @param array<int, string> $except Skip these actions.
+     * @return array<string, self> Registered routes keyed by action name.
+     */
+    public static function resource(string $name, string $controller, array $middleware = [], int $cacheTtl = 0, array $only = [], array $except = []): array
+    {
+        $router = self::$routerInstance;
+        if ($router === null) {
+            $router = new Router();
+            self::$routerInstance = $router;
+        }
+        return $router->resource($name, $controller, $middleware, $cacheTtl, $only, $except);
+    }
+
+    /**
      * Auto-register routes from PHP 8 attributes on controllers.
      * Scans all files in the given directory and registers #[Route] attributes.
      *

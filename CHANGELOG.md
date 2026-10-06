@@ -1,5 +1,31 @@
 # Changelog — siro-core
 
+## v1.2.0 (2026-10-07)
+
+### Added
+- `QueryBuilder::from()` alias for `table()` plus `fromSub()` / `selectSub()`
+  (builder, closure, or raw SQL) with collision-safe binding renames — JOIN
+  and subquery reports without Models. `SqlCompiler::quoteTable()` passes
+  parenthesized subqueries through unquoted (select/count/aggregate paths).
+- `Container::bindValue()` scalar/config registry plus `#[Inject('key')]`
+  constructor attribute. Lookup: bound values, binding closures, then Env
+  (`config.jwt.ttl` → `CONFIG_JWT_TTL`, coerced to int/float/bool). Type
+  mismatches throw a clear error instead of a runtime TypeError.
+- `Router::resource()` / `Route::resource()` are chainable (return
+  action-keyed routes) and accept `only` / `except` action filters, e.g.
+  `$routes['store']->middleware('permission:products.create')`.
+- `Gate` authorization primitive: `define()` / `allows()` / `denies()` /
+  `authorize()` (throws `AuthorizationException` → 403 `forbidden`), `before()`
+  hooks for super-admin bypass, `actingAs()` for tests, `reset()` for
+  isolation. Class-based policies work as plain callables.
+- `Model` warns (E_USER_WARNING, debug mode only) when `fill()` /
+  `setAttribute()` discards a key missing from `$fillable` — no more silent
+  lost updates when a column is added but forgotten in `$fillable`.
+
+### Notes
+- `Siro\Core\DB\SoftDeletes` already exists (since v0.35.0) with automatic
+  `deleted_at IS NULL` filtering — no new trait needed.
+
 ## v1.1.0 (2026-10-06)
 
 ### Added

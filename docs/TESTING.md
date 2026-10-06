@@ -19,6 +19,8 @@ leaks across cases ("green alone, red together").
 | Metrics series | `Metrics::reset()` |
 | API version registry | `VersionMiddleware::reset()` |
 | Mail fake / provider | `Mail::reset()` |
+| Gate abilities / acting user | `Gate::reset()` |
+| Container bindings / values | `$container->clear()` (or `Container::getInstance()->clear()`) |
 | Queue fake | `Queue::reset()` |
 | Cache instance | `Cache::reset()` |
 | Env overrides | `Env::reset()` |
