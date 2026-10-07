@@ -63,6 +63,16 @@ final class VersionMiddleware implements MiddlewareInterface
         return self::$overrides[$key] ?? null;
     }
 
+    /**
+     * Clear registered versions and overrides. Required for test isolation.
+     */
+    public static function reset(): void
+    {
+        self::$versions = [];
+        self::$overrides = [];
+        self::$latestVersion = 1;
+    }
+
     public function handle(Request $request, callable $next): mixed
     {
         $version = self::getVersion($request);

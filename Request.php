@@ -34,12 +34,45 @@ final class Request
     private readonly string $clientIp;
     private int $apiVersion = 1;
     private mixed $versionedHandler = null;
+    private bool $bodyParseFailed = false;
 
     private static ?string $rawBodyCache = null;
 
     public static function getRawBodyCache(): ?string
     {
         return self::$rawBodyCache;
+    }
+
+    /**
+     * Single accessor for the raw request body.
+     *
+     * The php://input stream is read-once per process. This method reads it
+     * at most once per request lifecycle and caches the result, so debug or
+     * logging code must use this accessor instead of reading php://input
+     * directly. Call resetCache() between requests in long-running workers.
+     */
+    public static function rawBody(): string
+    {
+        if (self::$rawBodyCache !== null) {
+            return self::$rawBodyCache;
+        }
+
+        $body = (string) file_get_contents('php://input');
+        if ($body !== '') {
+            self::$rawBodyCache = $body;
+        }
+
+        return $body;
+    }
+
+    /**
+     * Clear the cached raw body. Must be called between requests in
+     * long-running runtimes (FPM workers, FrankenPHP, RoadRunner) to avoid
+     * leaking one request's body into the next.
+     */
+    public static function resetCache(): void
+    {
+        self::$rawBodyCache = null;
     }
 
     /**
@@ -92,15 +125,12 @@ final class Request
 
         // For non-multipart requests, read and validate actual body size
         if (!$isMultipart && in_array($method, ['POST', 'PUT', 'PATCH'], true)) {
-            $body = (string) file_get_contents('php://input');
+            $body = self::rawBody();
             $actualSize = strlen($body);
 
             if ($actualSize > $maxBodySize) {
                 throw new \RuntimeException('Request body too large (max ' . ($maxBodySize / 1024 / 1024) . 'MB)');
             }
-
-            // Cache body for reuse (JsonMiddleware etc.)
-            self::$rawBodyCache = $body !== '' ? $body : null;
         }
 
         $jsonBody = [];
@@ -112,13 +142,17 @@ final class Request
             // For form submissions, use $_POST
             $jsonBody = $_POST;
         } else {
-            // For JSON API requests, use cached body or read from php://input
-            $rawBody = self::$rawBodyCache ?? file_get_contents('php://input') ?: '';
+            // For JSON API requests, use the single body accessor (read-once safe)
+            $rawBody = self::rawBody();
+            $bodyParseFailed = false;
 
             if ($rawBody !== '') {
                 $decoded = json_decode($rawBody, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
+                    // Do not silently swallow: validate() reports malformed_body
+                    // instead of a misleading "field is required" error.
                     $jsonBody = [];
+                    $bodyParseFailed = true;
                 } elseif (is_array($decoded)) {
                     $jsonBody = $decoded;
                 }
@@ -128,6 +162,9 @@ final class Request
         $clientIp = self::resolveClientIp();
         /** @var array<string, mixed> $jsonBody */
         $request = new self($method, $path, $query, $headers, $jsonBody, $clientIp);
+        if ($bodyParseFailed ?? false) {
+            $request->setBodyParseFailed();
+        }
 
         if ($isMultipart) {
             $request->parseUploadedFiles();
@@ -435,16 +472,36 @@ final class Request
     }
 
     /**
+     * @internal Set by fromGlobals() when the raw body is not parseable.
+     */
+    public function setBodyParseFailed(): void
+    {
+        $this->bodyParseFailed = true;
+    }
+
+    public function bodyParseFailed(): bool
+    {
+        return $this->bodyParseFailed;
+    }
+
+    /**
      * Validate request data using Validator.
      * Automatically throws ValidationException on failure (returns 422).
+     * A non-parseable body throws MalformedBodyException (returns 400)
+     * instead of a misleading "field is required" error.
      * Returns only the fields that were validated.
      *
      * @param array<string, string> $rules
      * @return array<string, mixed> Validated data (only fields with rules)
      * @throws ValidationException
+     * @throws MalformedBodyException
      */
     public function validate(array $rules): array
     {
+        if ($this->bodyParseFailed) {
+            throw new MalformedBodyException();
+        }
+
         // Merge body data with uploaded files for validation
         $data = $this->body();
         foreach ($this->uploadedFiles as $key => $file) {

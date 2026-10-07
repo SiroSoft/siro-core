@@ -15,15 +15,19 @@ namespace Siro\Core;
  *   Event::on('user.*', function ($event, $payload) { ... });
  *   Event::emit('user.created', $user);
  *
+ *   $handle = Event::on('payment.captured', $moduleListener);
+ *   Event::off('payment.captured', $handle); // removes only this listener
+ *
  * @package Siro\Core
  */
 final class Event
 {
     private static ?Event $instance = null;
 
-    /** @var array<string, array<int, array{callback: callable, once: bool}>> */
+    /** @var array<string, array<int, array{handle: int, callback: callable, once: bool}>> */
     private array $listeners = [];
     private string $currentEvent = '';
+    private int $nextHandle = 1;
 
     public static function instance(): self
     {
@@ -40,26 +44,36 @@ final class Event
 
     /**
      * Register an event listener.
+     *
+     * @return int Listener handle for selective removal via off().
      */
-    public static function on(string $event, callable $callback): void
+    public static function on(string $event, callable $callback): int
     {
-        self::instance()->addListener($event, $callback, false);
+        return self::instance()->addListener($event, $callback, false);
     }
 
     /**
      * Register a one-time event listener.
+     *
+     * @return int Listener handle for selective removal via off().
      */
-    public static function once(string $event, callable $callback): void
+    public static function once(string $event, callable $callback): int
     {
-        self::instance()->addListener($event, $callback, true);
+        return self::instance()->addListener($event, $callback, true);
     }
 
     /**
-     * Remove all listeners for an event (or use wildcard).
+     * Remove listeners for an event (or use wildcard).
+     *
+     * When $target is null, all listeners for the event are removed (legacy
+     * behavior). Pass a listener handle returned by on()/once() to remove
+     * only that listener, or a callable to remove matching callbacks only.
+     *
+     * @param int|callable|null $target Listener handle, callback, or null for all.
      */
-    public static function off(string $event): void
+    public static function off(string $event, int|callable|null $target = null): void
     {
-        self::instance()->removeListeners($event);
+        self::instance()->removeListeners($event, $target);
     }
 
     /**
@@ -108,32 +122,84 @@ final class Event
         }
     }
 
-    /** @param array<string, array<int, array{callback: callable, once: bool}>> $listeners */
+    /**
+     * Bulk-replace listeners (testing/seeding). Entries without a handle
+     * (legacy shape) are assigned fresh handles automatically.
+     *
+     * @param array<string, array<int, array{handle?: int, callback: callable, once: bool}>> $listeners
+     */
     public static function setListeners(array $listeners): void
     {
-        self::instance()->listeners = $listeners;
+        $instance = self::instance();
+        $normalized = [];
+        foreach ($listeners as $event => $entries) {
+            foreach ($entries as $entry) {
+                $normalized[$event][] = [
+                    'handle' => $entry['handle'] ?? $instance->nextHandle++,
+                    'callback' => $entry['callback'],
+                    'once' => $entry['once'],
+                ];
+            }
+        }
+        $instance->listeners = $normalized;
     }
 
-    private function addListener(string $event, callable $callback, bool $once): void
+    private function addListener(string $event, callable $callback, bool $once): int
     {
+        $handle = $this->nextHandle++;
         $this->listeners[$event][] = [
+            'handle' => $handle,
             'callback' => $callback,
             'once' => $once,
         ];
         $this->wildcardIndex = null;
+        return $handle;
     }
 
-    private function removeListeners(string $event): void
+    /**
+     * @param int|callable|null $target Listener handle, callback, or null for all.
+     */
+    private function removeListeners(string $event, int|callable|null $target = null): void
     {
+        if ($target === null) {
+            if (str_contains($event, '*')) {
+                $pattern = '/^' . str_replace('\\*', '.*', preg_quote($event, '/')) . '$/';
+                foreach (array_keys($this->listeners) as $key) {
+                    if (preg_match($pattern, $key)) {
+                        unset($this->listeners[$key]);
+                    }
+                }
+            } else {
+                unset($this->listeners[$event]);
+            }
+            $this->wildcardIndex = null;
+            return;
+        }
+
+        $keys = [ $event ];
         if (str_contains($event, '*')) {
             $pattern = '/^' . str_replace('\\*', '.*', preg_quote($event, '/')) . '$/';
+            $keys = [];
             foreach (array_keys($this->listeners) as $key) {
                 if (preg_match($pattern, $key)) {
-                    unset($this->listeners[$key]);
+                    $keys[] = $key;
                 }
             }
-        } else {
-            unset($this->listeners[$event]);
+        }
+
+        foreach ($keys as $key) {
+            if (!isset($this->listeners[$key])) {
+                continue;
+            }
+            $this->listeners[$key] = array_values(array_filter(
+                $this->listeners[$key],
+                static fn(array $l): bool => is_int($target)
+                    ? $l['handle'] !== $target
+                    : $l['callback'] !== $target
+            ));
+            if ($this->listeners[$key] === []) {
+                unset($this->listeners[$key]);
+            }
         }
         $this->wildcardIndex = null;
     }
@@ -165,7 +231,7 @@ final class Event
         return true;
     }
 
-    /** @var array<string, array<int, array{callback: callable, once: bool}>>|null */
+    /** @var array<string, array<int, array{handle: int, callback: callable, once: bool}>>|null */
     private ?array $wildcardIndex = null;
 
     private function buildWildcardIndex(): void
@@ -180,7 +246,7 @@ final class Event
         }
     }
 
-    /** @return array<int, array{callback: callable, once: bool}> */
+    /** @return array<int, array{handle: int, callback: callable, once: bool}> */
     private function getListeners(string $event): array
     {
         $matched = $this->listeners[$event] ?? [];

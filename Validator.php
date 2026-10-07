@@ -53,6 +53,18 @@ final class Validator
         }
     }
 
+    /**
+     * Clear test/app customizations (custom rules, custom messages, parsed
+     * rule cache). Built-in strategies rebuild lazily. Call in tearDown
+     * when a test registers custom rules or messages.
+     */
+    public static function resetCustomizations(): void
+    {
+        self::$customRules = [];
+        self::$customMessages = [];
+        self::$parsedRuleCache = [];
+    }
+
     private static function message(string $rule, string $default): string
     {
         return self::$customMessages[$rule] ?? $default;
@@ -154,6 +166,10 @@ final class Validator
             }
 
             if (is_string($value)) {
+                // Phone numbers look numeric but must be validated by length, not numeric value
+                if ($field === 'phone') {
+                    return strlen(trim($value)) > $max ? [self::message('max', 'validation.max'), ['max' => (string) $max]] : null;
+                }
                 if (is_numeric($value)) {
                     return (float) $value > $max ? [self::message('max', 'validation.max'), ['max' => (string) $max]] : null;
                 }
@@ -368,6 +384,7 @@ final class Validator
                 // Some strategies need extra context
                 $result = match ($ruleName) {
                     'confirmed' => $strategy($value, $ruleParam, $input, $field),
+                    'min', 'max' => $strategy($value, $ruleParam, $input, $field),
                     default => $strategy($value, $ruleParam)
                 };
 
