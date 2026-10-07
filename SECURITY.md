@@ -17,9 +17,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### How to Report
 
-**Email:** info@sirophp.com  
-**PGP Key:** Available on request  
-**Response Time:** Within 48 hours
+**Email:** info@sirophp.com
 
 ### What to Include
 
@@ -40,7 +38,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ## Disclosure Process
 
-1. **Report received** - We acknowledge within 48 hours
+1. **Report received** - We acknowledge as soon as possible
 2. **Investigation** - We verify and assess severity
 3. **Fix development** - We create patch privately
 4. **Testing** - We test fix thoroughly
@@ -50,11 +48,10 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### Timeline
 
-- **Acknowledgment**: Within 48 hours
-- **Initial assessment**: Within 1 week
-- **Fix development**: 1-4 weeks (depends on complexity)
+- **Acknowledgment**: As soon as possible
+- **Initial assessment**: After triage
+- **Fix development**: Depends on complexity
 - **Public disclosure**: After patch available
-- **Total process**: Typically 2-6 weeks
 
 ---
 
