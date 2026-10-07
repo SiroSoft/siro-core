@@ -513,4 +513,4 @@ php siro up                            # Restore
 
 ## Reporting Vulnerabilities
 
-Report security issues to **security@sirosoft.com**. Response within 48 hours.
+Report security issues to **info@sirophp.com**. Response within 48 hours.

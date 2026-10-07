@@ -17,7 +17,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### How to Report
 
-**Email:** security@sirosoft.com  
+**Email:** info@sirophp.com  
 **PGP Key:** Available on request  
 **Response Time:** Within 48 hours
 
@@ -212,8 +212,8 @@ php siro log:trace --status=500
 
 ## Contact
 
-**Security Team:** security@sirosoft.com  
-**General Inquiries:** support@sirosoft.com  
+**Security Team:** info@sirophp.com  
+**General Inquiries:** info@sirophp.com  
 **GitHub:** https://github.com/SiroSoft/siro-core
 
 For urgent security issues, email is preferred over public channels.
