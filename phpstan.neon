@@ -6,6 +6,7 @@ parameters:
         - vendor/
         - tests/
         - scripts/
+        - tools/
     scanFiles:
         - vendor/phpunit/phpunit/src/Framework/Assert.php
 includes:

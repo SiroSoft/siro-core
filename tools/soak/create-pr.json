@@ -1,0 +1,6 @@
+{
+  "title": "fix(tests): resolve Windows PHPUnit hangs + CI timeout",
+  "head": "fix/queue-time-limit-and-enum-column",
+  "base": "main",
+  "body": "## Description\n\nResolve Windows PHPUnit test hangs for SiroPHP v1.0 release gate.\n\n## Root Causes Fixed\n\n1. **proc_open pipe buffer overflow** on Windows - 4KB pipe buffer blocks PHP built-in server. Fixed by redirecting stdout/stderr to NUL/dev/null.\n\n2. **Environment variable loss** - `array_merge($_ENV, ['XDEBUG_MODE'=>'off'])` replaces entire env, losing PATH on Windows. Fixed to use `getenv()`.\n\n3. **STDIN blocking** - `fgets(STDIN)` blocks on Windows non-TTY in --edit/--as interactive modes. Switched to `runCmdWithInput()` with explicit empty stdin.\n\n4. **CI timeout** - PHPUnit timeout increased from 20 to 40 minutes.\n\n## Files Changed\n\n- `tests/unit/LogReplayExecutionTest.php` - NUL redirect + env fix + STDIN fixes\n- `tests/unit/DebugWorkflowTest.php` - NUL redirect for proc_open\n- `.github/workflows/test.yml` - PHPUnit timeout 20->40 min\n\n## Verified Locally\n\n- LogReplayExecutionTest: 50/50 pass (16.7s)\n- DebugWorkflowTest+Edge: 112/112 pass\n- PHPStan Level Max: 0 errors\n\n## Checklist\n\n- [x] PSR-12 coding style\n- [x] Tests proven effective\n- [x] All existing tests pass locally\n- [x] PHPStan Level Max 0 errors\n- [x] No breaking public API changes"
+}

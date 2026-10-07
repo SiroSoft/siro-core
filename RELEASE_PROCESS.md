@@ -1,5 +1,9 @@
 # Release Process — Siro (siro-core + SiroPHP)
 
+> Release lien quan nhieu project phai bat dau bang checklist ecosystem:
+> `../RELEASE_ECOSYSTEM_CHECKLIST.md`. Tai lieu nay la quy trinh chi tiet
+> cho core va skeleton; khong thay the checklist cross-product.
+
 Quy trình chuẩn để release một version mới (patch/minor/major). Lặp lại cho
 MỌI lần upgrade. Đọc kỹ trước khi bắt đầu.
 

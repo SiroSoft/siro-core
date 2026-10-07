@@ -1,5 +1,14 @@
 # Release Notes
 
+## v1.0.14 — HTTP body encoding fix (2026-09-18)
+
+- `Http::post()` no longer JSON-encodes an array when a form-urlencoded
+  Content-Type is passed. Form integrations such as Cloudflare Turnstile
+  `siteverify` now verify correctly instead of failing with
+  `missing-input-secret`.
+- New `HttpEncodeBodyTest` locks the encoding rules down without needing
+  network access.
+
 ## v1.0.8.1 — Contract checker patch (2026-09-14)
 
 - Scheduler-only route files no longer abort `api:contract`.

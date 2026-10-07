@@ -1,0 +1,12 @@
+APP_NAME="SiroPHP Soak Test"
+APP_ENV=production
+APP_DEBUG=false
+APP_KEY=soak_test_key_32_chars_long!!
+DB_CONNECTION=sqlite
+DB_DATABASE=/opt/soak-app/storage/soak.sqlite
+CACHE_DRIVER=file
+CACHE_TTL=60
+CACHE_PREFIX=soak:
+SESSION_DRIVER=file
+QUEUE_CONNECTION=database
+LOG_CHANNEL=file
