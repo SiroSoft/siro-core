@@ -1,7 +1,7 @@
 <div align="center">
   <h1>⚡ Siro Core</h1>
   <p><strong>Core engine powering the Siro API Framework.</strong><br>
-  Routing · ORM · CLI · Debug. Zero external dependencies.</p>
+  Routing · ORM · CLI · Debug. Minimal runtime surface.</p>
 </div>
 
 <div align="center">
