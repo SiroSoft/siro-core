@@ -1,5 +1,54 @@
 # Changelog — siro-core
 
+## v1.3.0 (2026-10-07)
+
+### Added
+- Controller attributes (`Siro\Core\Attributes\`): repeatable `Body` /
+  `QueryParam` (OpenAPI requestBody/parameters source), `Middleware`
+  (class + method), `Authorize` (Gate abilities), typed `Throttle` and
+  `CacheResponse`. `Route::registerAttributes()` wires them; existing
+  `RouteAttribute` behavior unchanged.
+- New `Middleware\AuthorizeMiddleware` (`AuthorizeMiddleware::class .
+  ':ability'`) enforcing Gate abilities against `$request->user()` —
+  serializable for route cache, 403 via the existing `AuthorizationException`
+  path.
+- `MakeOpenApiCommand` reads `#[Body]` / `#[QueryParam]` first (explicit
+  type/description win); string-scanning patterns stay as fallback.
+- Testing toolkit (`Siro\Core\Testing\`): seeded zero-dependency `Faker`
+  (Vietnamese names/phones), abstract `Factory` base (`definition()`,
+  `count()`, `with()`, `state()`, `make()`, `create()`), fluent server-less
+  `TestClient` + `TestResponse` (`assertOk`, `assertJsonPath`, …) with the
+  same exception-to-status mapping as `App::run()`.
+- `make:factory` template now extends the `Factory` base with a Faker example.
+- `ModelNotFoundException::toResponse()` (404 `not_found`) for parity with
+  the other framework exceptions.
+
+## v1.2.0 (2026-10-07)
+
+### Added
+- `QueryBuilder::from()` alias for `table()` plus `fromSub()` / `selectSub()`
+  (builder, closure, or raw SQL) with collision-safe binding renames — JOIN
+  and subquery reports without Models. `SqlCompiler::quoteTable()` passes
+  parenthesized subqueries through unquoted (select/count/aggregate paths).
+- `Container::bindValue()` scalar/config registry plus `#[Inject('key')]`
+  constructor attribute. Lookup: bound values, binding closures, then Env
+  (`config.jwt.ttl` → `CONFIG_JWT_TTL`, coerced to int/float/bool). Type
+  mismatches throw a clear error instead of a runtime TypeError.
+- `Router::resource()` / `Route::resource()` are chainable (return
+  action-keyed routes) and accept `only` / `except` action filters, e.g.
+  `$routes['store']->middleware('permission:products.create')`.
+- `Gate` authorization primitive: `define()` / `allows()` / `denies()` /
+  `authorize()` (throws `AuthorizationException` → 403 `forbidden`), `before()`
+  hooks for super-admin bypass, `actingAs()` for tests, `reset()` for
+  isolation. Class-based policies work as plain callables.
+- `Model` warns (E_USER_WARNING, debug mode only) when `fill()` /
+  `setAttribute()` discards a key missing from `$fillable` — no more silent
+  lost updates when a column is added but forgotten in `$fillable`.
+
+### Notes
+- `Siro\Core\DB\SoftDeletes` already exists (since v0.35.0) with automatic
+  `deleted_at IS NULL` filtering — no new trait needed.
+
 ## v1.1.0 (2026-10-06)
 
 ### Added

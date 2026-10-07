@@ -222,6 +222,24 @@ final class Route
     }
 
     /**
+     * Register RESTful routes for a controller (facade).
+     *
+     * @param array<int, callable|string> $middleware
+     * @param array<int, string> $only Register only these actions (empty = all).
+     * @param array<int, string> $except Skip these actions.
+     * @return array<string, self> Registered routes keyed by action name.
+     */
+    public static function resource(string $name, string $controller, array $middleware = [], int $cacheTtl = 0, array $only = [], array $except = []): array
+    {
+        $router = self::$routerInstance;
+        if ($router === null) {
+            $router = new Router();
+            self::$routerInstance = $router;
+        }
+        return $router->resource($name, $controller, $middleware, $cacheTtl, $only, $except);
+    }
+
+    /**
      * Auto-register routes from PHP 8 attributes on controllers.
      * Scans all files in the given directory and registers #[Route] attributes.
      *
@@ -247,6 +265,7 @@ final class Route
             if ($className === null) continue;
 
             $refClass = new \ReflectionClass($className);
+            $classAttrs = self::controllerAttributes($refClass);
 
             foreach ($refClass->getMethods() as $refMethod) {
                 $attributes = $refMethod->getAttributes(RouteAttribute::class);
@@ -256,6 +275,7 @@ final class Route
 
                     $fullPath = $prefix . $route->path;
                     $handler = [$className, $refMethod->getName()];
+                    $methodAttrs = self::controllerAttributes($refMethod);
 
                     foreach ($route->methods as $method) {
                         $lowerMethod = strtolower($method);
@@ -264,13 +284,68 @@ final class Route
                         if ($route->middleware !== []) {
                             $routeObj->middleware([...$globalMiddleware, ...$route->middleware]);
                         }
-                        if ($route->cacheTtl > 0) {
-                            $routeObj->cache($route->cacheTtl);
+                        $extraMiddleware = [
+                            ...$classAttrs['middleware'],
+                            ...$methodAttrs['middleware'],
+                            ...$classAttrs['authorize'],
+                            ...$methodAttrs['authorize'],
+                        ];
+                        $throttle = $methodAttrs['throttle'] ?? $classAttrs['throttle'] ?? null;
+                        if ($throttle !== null) {
+                            $extraMiddleware[] = $throttle;
+                        }
+                        if ($extraMiddleware !== []) {
+                            $routeObj->middleware($extraMiddleware);
+                        }
+                        $cacheTtl = $methodAttrs['cache'] ?? $classAttrs['cache'] ?? $route->cacheTtl;
+                        if ($cacheTtl > 0) {
+                            $routeObj->cache($cacheTtl);
                         }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Collect Siro controller attributes from a class or method reflection.
+     *
+     * @param \ReflectionClass<object>|\ReflectionMethod $ref
+     * @return array{middleware: array<int, callable|string>, authorize: array<int, string>, throttle: string|null, cache: int|null}
+     */
+    private static function controllerAttributes(\ReflectionClass|\ReflectionMethod $ref): array
+    {
+        $collected = ['middleware' => [], 'authorize' => [], 'throttle' => null, 'cache' => null];
+
+        foreach ($ref->getAttributes(Attributes\Middleware::class) as $attr) {
+            /** @var Attributes\Middleware $instance */
+            $instance = $attr->newInstance();
+            foreach ($instance->middleware as $entry) {
+                $collected['middleware'][] = $entry;
+            }
+        }
+
+        foreach ($ref->getAttributes(Attributes\Authorize::class) as $attr) {
+            /** @var Attributes\Authorize $instance */
+            $instance = $attr->newInstance();
+            $collected['authorize'][] = Middleware\AuthorizeMiddleware::class . ':' . $instance->ability;
+        }
+
+        $throttles = $ref->getAttributes(Attributes\Throttle::class);
+        if ($throttles !== []) {
+            /** @var Attributes\Throttle $instance */
+            $instance = $throttles[0]->newInstance();
+            $collected['throttle'] = Middleware\ThrottleMiddleware::class . ':' . $instance->max . ',' . $instance->minutes;
+        }
+
+        $caches = $ref->getAttributes(Attributes\CacheResponse::class);
+        if ($caches !== []) {
+            /** @var Attributes\CacheResponse $instance */
+            $instance = $caches[0]->newInstance();
+            $collected['cache'] = max(0, $instance->ttl);
+        }
+
+        return $collected;
     }
 
     /** @return class-string|null */

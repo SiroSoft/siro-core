@@ -32,6 +32,8 @@ final class Container
     private array $reboundCallbacks = [];
     /** @var array<string, array<string, \Closure>> */
     private array $contextual = [];
+    /** @var array<string, mixed> Scalar/config values for #[Inject] resolution */
+    private array $values = [];
 
     public static function getInstance(): self
     {
@@ -181,6 +183,14 @@ final class Container
         }
     }
 
+    /**
+     * Bind a scalar/config value for #[Inject] resolution.
+     */
+    public function bindValue(string $key, mixed $value): void
+    {
+        $this->values[$key] = $value;
+    }
+
     public function clear(): void
     {
         $this->bindings = [];
@@ -190,6 +200,128 @@ final class Container
         $this->tags = [];
         $this->reboundCallbacks = [];
         $this->contextual = [];
+        $this->values = [];
+    }
+
+    /**
+     * Resolve a #[Inject] parameter. Returns [resolved, value].
+     *
+     * Lookup order: bindValue() entries, contextual/global binding closures,
+     * then Env (dotted keys map to UPPER_SNAKE env names, e.g.
+     * config.jwt.ttl -> CONFIG_JWT_TTL). Env strings coerce to int/float/bool
+     * when representable. A found-but-incompatible value throws; a missing
+     * key falls through to default handling (returning [false, null]).
+     *
+     * @return array{0: bool, 1: mixed}
+     */
+    private function resolveInjected(\ReflectionParameter $param, string $class): array
+    {
+        $attrs = $param->getAttributes(Inject::class);
+        if ($attrs === []) {
+            return [false, null];
+        }
+
+        /** @var Inject $inject */
+        $inject = $attrs[0]->newInstance();
+        $key = $inject->key;
+
+        $found = false;
+        $value = null;
+        if (array_key_exists($key, $this->values)) {
+            $found = true;
+            $value = $this->values[$key];
+        } else {
+            $closure = $this->contextual[$class][$key] ?? $this->bindings[$key] ?? null;
+            if ($closure instanceof \Closure) {
+                $found = true;
+                $value = $closure($this);
+            } elseif (is_string($closure)) {
+                $found = true;
+                $value = $this->make($closure);
+            } else {
+                $envKey = strtoupper(str_replace(['.', '-'], '_', $key));
+                $envValue = Env::get($envKey);
+                if ($envValue === null && $envKey !== $key) {
+                    $envValue = Env::get($key);
+                }
+                if ($envValue !== null) {
+                    $found = true;
+                    $value = $envValue;
+                }
+            }
+        }
+
+        if (!$found) {
+            return [false, null];
+        }
+
+        if ($value === null) {
+            if ($param->allowsNull()) {
+                return [true, null];
+            }
+            if ($param->isDefaultValueAvailable()) {
+                return [true, $param->getDefaultValue()];
+            }
+            throw new RuntimeException(
+                "Cannot inject [{$key}] into {$class}::\${$param->getName()}: null given for non-nullable parameter."
+            );
+        }
+
+        $type = $param->getType();
+        $typeName = $type instanceof ReflectionNamedType ? $type->getName() : null;
+        if ($typeName === null || $typeName === 'mixed') {
+            return [true, $value];
+        }
+
+        if (is_object($value) && !in_array($typeName, ['string', 'int', 'float', 'bool', 'array', 'callable', 'iterable', 'object'], true)) {
+            if ($value instanceof $typeName) {
+                return [true, $value];
+            }
+        } elseif ($typeName === 'object' && is_object($value)) {
+            return [true, $value];
+        }
+
+        if ($typeName === 'string' && is_string($value)) {
+            return [true, $value];
+        }
+        if ($typeName === 'int' && is_int($value)) {
+            return [true, $value];
+        }
+        if ($typeName === 'float' && (is_float($value) || is_int($value))) {
+            return [true, (float) $value];
+        }
+        if ($typeName === 'bool' && is_bool($value)) {
+            return [true, $value];
+        }
+        if ($typeName === 'array' && is_array($value)) {
+            return [true, $value];
+        }
+
+        // Env-sourced strings coerce when representable.
+        if (is_string($value)) {
+            if ($typeName === 'int' && preg_match('/^-?\d+$/', $value) === 1) {
+                return [true, (int) $value];
+            }
+            if ($typeName === 'float' && is_numeric($value)) {
+                return [true, (float) $value];
+            }
+            if ($typeName === 'bool') {
+                $coerced = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                if ($coerced !== null) {
+                    return [true, $coerced];
+                }
+            }
+        }
+
+        if (!$type->allowsNull()) {
+            throw new RuntimeException(
+                "Cannot inject [{$key}] into {$class}::\${$param->getName()}: expected {$typeName}, got " . gettype($value) . '.'
+            );
+        }
+        if ($param->isDefaultValueAvailable()) {
+            return [true, $param->getDefaultValue()];
+        }
+        return [true, null];
     }
 
     /** @param class-string $class */
@@ -232,6 +364,12 @@ final class Container
 
             $deps = [];
             foreach ($constructorParams as $param) {
+                $injected = $this->resolveInjected($param, $class);
+                if ($injected[0]) {
+                    $deps[] = $injected[1];
+                    continue;
+                }
+
                 $type = $param->getType();
 
                 if ($type === null) {

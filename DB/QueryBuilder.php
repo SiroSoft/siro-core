@@ -22,7 +22,7 @@ use Siro\Core\DB\RawExpression;
 class QueryBuilder
 {
     protected string $table = '';
-    /** @var array<int, string> */
+    /** @var array<int, string|RawExpression> */
     protected array $columns = ['*'];
     /** @var array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}> */
     protected array $wheres = [];
@@ -43,6 +43,9 @@ class QueryBuilder
     protected int $whereCounter = 0;
     protected int $havingCounter = 0;
     protected int $inCounter = 0;
+    protected int $subCounter = 0;
+    /** @var array<int|string, mixed> Subquery bindings (placeholders live in FROM/columns, unseen by where/having compilers) */
+    protected array $subBindings = [];
     protected int $cacheTtl = 0;
     protected string $cacheTable = '';
     protected ?string $connectionName = null;
@@ -74,6 +77,131 @@ class QueryBuilder
         $this->cacheTable = $this->compiler->detectTableName($this->table);
         $this->compiler->setTable($this->table);
         return $this;
+    }
+
+    /**
+     * Set the FROM target. Alias of table() for Laravel familiarity.
+     */
+    public function from(string $table): self
+    {
+        return $this->table($table);
+    }
+
+    /**
+     * Set the FROM target to a subquery, no Model required.
+     *
+     *   DB::table('orders')->fromSub(
+     *       fn ($q) => $q->from('orders')->where('status', 'paid'),
+     *       'paid_orders'
+     *   )->get();
+     *
+     * @param QueryBuilder|Closure(QueryBuilder):void|string $query Builder,
+     *        closure receiving a fresh builder (must call from() inside),
+     *        or a raw SQL string (no bindings).
+     */
+    public function fromSub(QueryBuilder|Closure|string $query, string $alias): self
+    {
+        [$sql, $bindings] = $this->compileSubQuery($query);
+        $alias = trim($alias);
+        if ($alias === '') {
+            throw new RuntimeException('Subquery alias cannot be empty.');
+        }
+        $this->table = '(' . $sql . ') AS ' . $this->compiler->quoteIdentifier($alias);
+        $this->compiler->setTable($this->table);
+        $this->cacheTable = $alias;
+        $this->mergeSubBindings($bindings);
+        return $this;
+    }
+
+    /**
+     * Add a subquery column: SELECT *, (SELECT MAX(...) ...) AS alias.
+     *
+     * @param QueryBuilder|Closure(QueryBuilder):void|string $query
+     */
+    public function selectSub(QueryBuilder|Closure|string $query, string $alias): self
+    {
+        [$sql, $bindings] = $this->compileSubQuery($query);
+        $alias = trim($alias);
+        if ($alias === '') {
+            throw new RuntimeException('Subquery alias cannot be empty.');
+        }
+        $this->columns[] = '(' . $sql . ') AS ' . $this->compiler->quoteIdentifier($alias);
+        $this->mergeSubBindings($bindings);
+        return $this;
+    }
+
+    /**
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
+    private function compileSubQuery(QueryBuilder|Closure|string $query): array
+    {
+        if ($query instanceof Closure) {
+            $inner = new self('siro_subquery_placeholder');
+            $query($inner);
+            if ($inner->table === 'siro_subquery_placeholder') {
+                throw new RuntimeException('Subquery closure must define its own table via from().');
+            }
+            $query = $inner;
+        }
+
+        if ($query instanceof self) {
+            return $query->toCompiled();
+        }
+
+        $sql = trim($query);
+        if ($sql === '') {
+            throw new RuntimeException('Subquery SQL cannot be empty.');
+        }
+        return [$sql, []];
+    }
+
+    /**
+     * Merge inner bindings under unique names. Builders use per-instance
+     * counters (w_0, wi_0_0, ...), so two builders collide without renaming.
+     * Renamed bindings go to $subBindings (merged into results by
+     * withSubBindings()), because where/having compilers only return
+     * bindings for placeholders they compiled themselves.
+     *
+     * @param array<int|string, mixed> $bindings
+     */
+    private function mergeSubBindings(array $bindings): void
+    {
+        if ($bindings === []) {
+            return;
+        }
+        $prefix = 'sub' . $this->subCounter++ . '_';
+        foreach ($bindings as $key => $value) {
+            if (is_int($key)) {
+                // Positional bindings cannot be renamed reliably; append as-is
+                // (same limitation as whereRaw passthrough).
+                $this->subBindings[] = $value;
+                continue;
+            }
+            $new = $prefix . $key;
+            $pattern = '/:' . preg_quote($key, '/') . '(?![A-Za-z0-9_])/';
+            $this->table = (string) preg_replace($pattern, ':' . $new, $this->table);
+            foreach ($this->columns as $i => $column) {
+                if ($column instanceof RawExpression) {
+                    continue;
+                }
+                $this->columns[$i] = (string) preg_replace($pattern, ':' . $new, $column);
+            }
+            $this->subBindings[$new] = $value;
+        }
+    }
+
+    /**
+     * Append subquery bindings to compiler-produced bindings.
+     *
+     * @param array<int|string, mixed> $compiled
+     * @return array<int|string, mixed>
+     */
+    private function withSubBindings(array $compiled): array
+    {
+        if ($this->subBindings === []) {
+            return $compiled;
+        }
+        return [...$this->subBindings, ...$compiled];
     }
 
     /** @param string|array<int, string> ...$columns */
@@ -517,7 +645,7 @@ class QueryBuilder
             $this->limitValue, $this->offsetValue, $this->bindings,
             $lockMode
         );
-        return $this->runSelect($sql, $bindings);
+        return $this->runSelect($sql, $this->withSubBindings($bindings));
     }
 
     /**
@@ -538,6 +666,7 @@ class QueryBuilder
             $this->limitValue, $this->offsetValue, $this->bindings,
             $lockMode
         );
+        $bindings = $this->withSubBindings($bindings);
 
         $stmt = Database::connection($this->connectionName)->prepare($sql);
         $stmt->execute($bindings);
@@ -757,6 +886,7 @@ class QueryBuilder
             $this->joins, $this->groups, $this->orders,
             $this->limitValue, $this->offsetValue, $this->bindings
         );
+        $bindings = $this->withSubBindings($bindings);
         echo PHP_EOL . 'SQL: ' . $sql . PHP_EOL;
         echo 'Bindings: ' . json_encode($bindings, JSON_UNESCAPED_UNICODE) . PHP_EOL . PHP_EOL;
         return $this;
@@ -788,6 +918,7 @@ class QueryBuilder
             $this->joins, $this->groups, $this->orders,
             $this->limitValue, $this->offsetValue, $this->bindings
         );
+        $bindings = $this->withSubBindings($bindings);
         /** @var array<int|string, mixed> $bindings */
         return [$sql, $bindings];
     }
@@ -823,7 +954,7 @@ class QueryBuilder
             $function, $column, $this->table, $this->wheres, $this->havings,
             $this->joins, $this->groups, $this->bindings
         );
-        $rows = $this->runSelect($sql, $bindings);
+        $rows = $this->runSelect($sql, $this->withSubBindings($bindings));
         $value = $rows[0]['aggregate'] ?? 0;
 
         if (is_numeric($value)) {
@@ -1132,7 +1263,7 @@ class QueryBuilder
             $this->table, $this->wheres, $this->havings,
             $this->joins, $this->groups, $this->bindings
         );
-        $countRows = $this->runSelect($countSql, $countBindings);
+        $countRows = $this->runSelect($countSql, $this->withSubBindings($countBindings));
         /** @var int|string $aggregate */
         $aggregate = $countRows[0]['aggregate'] ?? 0;
         $total = intval($aggregate);

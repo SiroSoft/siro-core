@@ -851,18 +851,53 @@ final class Router
         return self::$middlewareAliases[$normalized] ?? $name;
     }
 
+    /** RESTful actions registered by resource(). */
+    public const RESOURCE_ACTIONS = ['index', 'show', 'store', 'update', 'delete'];
+
     /**
+     * Register RESTful routes for a controller.
+     *
+     * Returns the registered routes keyed by action so callers can chain
+     * per-action configuration (e.g. per-action permission middleware):
+     *   $routes = $router->resource('products', ProductController::class, ['auth'], 0, except: ['delete']);
+     *   $routes['store']->middleware('permission:products.create');
+     *
      * @param array<int, callable|string> $middleware
+     * @param array<int, string> $only Register only these actions (empty = all).
+     * @param array<int, string> $except Skip these actions.
+     * @return array<string, Route> Registered routes keyed by action name.
      */
-    public function resource(string $name, string $controller, array $middleware = [], int $cacheTtl = 0): void
+    public function resource(string $name, string $controller, array $middleware = [], int $cacheTtl = 0, array $only = [], array $except = []): array
     {
-        $route = $this->get("/{$name}", $controller . '@index', $middleware);
-        if ($cacheTtl > 0) { $route->cache($cacheTtl); }
-        $route = $this->get("/{$name}/{id}", $controller . '@show', $middleware);
-        if ($cacheTtl > 0) { $route->cache($cacheTtl); }
-        $this->post("/{$name}", $controller . '@store', [...$middleware, JsonMiddleware::class]);
-        $this->put("/{$name}/{id}", $controller . '@update', [...$middleware, JsonMiddleware::class]);
-        $this->delete("/{$name}/{id}", $controller . '@delete', $middleware);
+        $actions = self::RESOURCE_ACTIONS;
+        if ($only !== []) {
+            $actions = array_values(array_intersect($actions, $only));
+        }
+        if ($except !== []) {
+            $actions = array_values(array_diff($actions, $except));
+        }
+
+        $routes = [];
+        if (in_array('index', $actions, true)) {
+            $route = $this->get("/{$name}", $controller . '@index', $middleware);
+            if ($cacheTtl > 0) { $route->cache($cacheTtl); }
+            $routes['index'] = $route;
+        }
+        if (in_array('show', $actions, true)) {
+            $route = $this->get("/{$name}/{id}", $controller . '@show', $middleware);
+            if ($cacheTtl > 0) { $route->cache($cacheTtl); }
+            $routes['show'] = $route;
+        }
+        if (in_array('store', $actions, true)) {
+            $routes['store'] = $this->post("/{$name}", $controller . '@store', [...$middleware, JsonMiddleware::class]);
+        }
+        if (in_array('update', $actions, true)) {
+            $routes['update'] = $this->put("/{$name}/{id}", $controller . '@update', [...$middleware, JsonMiddleware::class]);
+        }
+        if (in_array('delete', $actions, true)) {
+            $routes['delete'] = $this->delete("/{$name}/{id}", $controller . '@delete', $middleware);
+        }
+        return $routes;
     }
 
     private function handleOptionsRequest(string $path, Request $request): Response
