@@ -547,7 +547,7 @@ Links, screenshots, mockups, etc.
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: Questions and general discussion
 - **Discord**: Real-time chat (link in README)
-- **Email**: maintainers@sirosoft.com
+- **Email**: founder@sirophp.com
 
 ### Response Times
 - Bug reports: Within 48 hours

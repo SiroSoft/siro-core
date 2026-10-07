@@ -63,7 +63,7 @@ representative at an online or offline event.
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement at:
 
-**Email:** conduct@sirosoft.com
+**Email:** info@sirophp.com
 
 All complaints will be reviewed and investigated promptly and fairly.
 
@@ -139,8 +139,8 @@ https://www.contributor-covenant.org/translations.
 
 ## Contact Information
 
-**Code of Conduct Reports:** conduct@sirosoft.com  
-**General Questions:** support@sirosoft.com  
+**Code of Conduct Reports:** info@sirophp.com  
+**General Questions:** info@sirophp.com  
 **GitHub:** https://github.com/SiroSoft/siro-core
 
 All reports are handled confidentially and with care.
