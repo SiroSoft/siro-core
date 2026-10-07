@@ -106,20 +106,19 @@ final class Schema
     public static function hasTable(string $table): bool
     {
         $driver = self::driver();
+        // NOTE: MySQL does not accept bound parameters in SHOW statements
+        // under native prepares (PDO::ATTR_EMULATE_PREPARES => false yields
+        // SQLSTATE 42000 near '?'), so the MySQL branch queries
+        // information_schema with an exact = comparison instead of
+        // SHOW TABLES LIKE. Exact match also removes LIKE wildcard concerns
+        // for names containing % or _ (e.g. temp_tbl).
         $sql = match ($driver) {
             'pgsql' => "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = :table)",
             'sqlite' => "SELECT name FROM sqlite_master WHERE type='table' AND name=:table",
-            default => "SHOW TABLES LIKE :table",
+            default => "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table",
         };
         $stmt = self::pdo()->prepare($sql);
-        $param = $table;
-        // Only MySQL's LIKE branch needs wildcard escaping; pgsql/sqlite use
-        // exact = comparison where backslash-escaping would break names with
-        // underscores (e.g. temp_tbl).
-        if ($driver !== 'sqlite' && $driver !== 'pgsql') {
-            $param = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $table);
-        }
-        $stmt->execute([':table' => $param]);
+        $stmt->execute([':table' => $table]);
         return (bool) $stmt->fetch(PDO::FETCH_COLUMN);
     }
 
@@ -127,10 +126,14 @@ final class Schema
     public static function getColumnListing(string $table): array
     {
         $driver = self::driver();
+        // NOTE: same native-prepare constraint as hasTable(): the MySQL
+        // branch must not mix a placeholder-free SHOW statement with bound
+        // parameters (PDO MySQL raises HY093 invalid parameter number), so
+        // it reads information_schema instead.
         $sql = match ($driver) {
             'pgsql' => "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = :table",
             'sqlite' => "SELECT name FROM pragma_table_info(:table)",
-            default => "SHOW COLUMNS FROM " . self::quoteIdentifier($table),
+            default => "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = :table ORDER BY ordinal_position",
         };
         $stmt = self::pdo()->prepare($sql);
         $stmt->execute([':table' => $table]);
