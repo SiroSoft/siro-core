@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\DB;
 
+use Closure;
 use RuntimeException;
 use Siro\Core\Database;
 use Siro\Core\Model;
@@ -140,13 +141,69 @@ final class ModelQueryBuilder extends QueryBuilder
         return $this;
     }
 
-    public function where(string $column, mixed $operatorOrValue, mixed $value = null): static
+    public function where(string|Closure $column, mixed $operatorOrValue = null, mixed $value = null): static
     {
-        if (func_num_args() === 2) {
+        $args = func_num_args();
+        if ($args === 1) {
+            parent::where($column);
+        } elseif ($args === 2) {
             parent::where($column, $operatorOrValue);
         } else {
             parent::where($column, $operatorOrValue, $value);
         }
+        return $this;
+    }
+
+    /**
+     * Explicit whereIn/orWhereIn/whereNotIn so IDEs and static analysis
+     * can see them (the runtime already worked through __call proxying
+     * to the parent QueryBuilder). Fluent calls stay typed as this
+     * model builder instead of falling back to the base builder.
+     *
+     * @param array<int|string, mixed> $values
+     */
+    public function whereIn(string $column, array $values): static
+    {
+        parent::whereIn($column, $values);
+        return $this;
+    }
+
+    /** @param array<int|string, mixed> $values */
+    public function orWhereIn(string $column, array $values): static
+    {
+        parent::orWhereIn($column, $values);
+        return $this;
+    }
+
+    /** @param array<int|string, mixed> $values */
+    public function whereNotIn(string $column, array $values): static
+    {
+        parent::whereNotIn($column, $values);
+        return $this;
+    }
+
+    /**
+     * Nested builder for grouped where() closures: same model class,
+     * so whereHas() and scopes keep working inside a group.
+     */
+    protected function createNestedBuilder(): static
+    {
+        return new static($this->table, $this->modelClass);
+    }
+
+    /**
+     * Set the FROM target to a subquery.
+     *
+     * Results are still hydrated into models — for multi-table
+     * reports use toBase()->fromSub(...) to get plain arrays instead:
+     *
+     *   Order::query()->toBase()->fromSub(...)->get(); // plain arrays
+     *
+     * @param QueryBuilder|Closure(QueryBuilder):void|string $query
+     */
+    public function fromSub(QueryBuilder|Closure|string $query, string $alias): static
+    {
+        parent::fromSub($query, $alias);
         return $this;
     }
 

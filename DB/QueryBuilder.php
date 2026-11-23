@@ -24,7 +24,7 @@ class QueryBuilder
     protected string $table = '';
     /** @var array<int, string|RawExpression> */
     protected array $columns = ['*'];
-    /** @var array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}> */
+    /** @var array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}|array{type:'nested', boolean:string, query:QueryBuilder}> */
     protected array $wheres = [];
     /** @var array<int, array{boolean:string, column:string, operator:string, param:string}> */
     protected array $havings = [];
@@ -32,7 +32,7 @@ class QueryBuilder
     protected array $joins = [];
     /** @var array<int, string|RawExpression> */
     protected array $groups = [];
-    /** @var array<int, array{column:string,direction:string}> */
+    /** @var array<int, array{column:string,direction:string,raw?:bool}> */
     protected array $orders = [];
     /** @var array<string, mixed> */
     protected array $bindings = [];
@@ -239,14 +239,39 @@ class QueryBuilder
         return $this;
     }
 
-    public function where(string $column, mixed $operatorOrValue, mixed $value = null): self
+    /**
+     * Add a WHERE condition, or a grouped set of conditions.
+     *
+     *   ->where(fn ($q) => $q->where('a', 1)->orWhere('b', 2))
+     *   // ... WHERE (a = :w_0 OR b = :w_1)
+     *
+     * A grouped where() takes only the closure — no operator or value.
+     */
+    public function where(string|Closure $column, mixed $operatorOrValue = null, mixed $value = null): self
     {
+        if ($column instanceof Closure) {
+            if (func_num_args() > 1) {
+                throw new RuntimeException('Grouped where() does not accept an operator or value.');
+            }
+            return $this->addNestedWhere('AND', $column);
+        }
         $hasExplicitValue = func_num_args() >= 3;
         return $this->addWhere('AND', $column, $operatorOrValue, $value, $hasExplicitValue);
     }
 
-    public function orWhere(string $column, mixed $operatorOrValue, mixed $value = null): self
+    /**
+     * Add an OR WHERE condition, or a grouped set of conditions.
+     *
+     *   ->orWhere(fn ($q) => $q->where('a', 1)->where('b', 2))
+     */
+    public function orWhere(string|Closure $column, mixed $operatorOrValue = null, mixed $value = null): self
     {
+        if ($column instanceof Closure) {
+            if (func_num_args() > 1) {
+                throw new RuntimeException('Grouped orWhere() does not accept an operator or value.');
+            }
+            return $this->addNestedWhere('OR', $column);
+        }
         $hasExplicitValue = func_num_args() >= 3;
         return $this->addWhere('OR', $column, $operatorOrValue, $value, $hasExplicitValue);
     }
@@ -535,9 +560,18 @@ class QueryBuilder
         return $this;
     }
 
-    public function orderByRaw(string $expression, string $direction = 'asc'): self
+    /**
+     * Add a raw ORDER BY expression.
+     *
+     * The direction is optional: when the expression already ends with
+     * ASC/DESC (e.g. orderByRaw('COALESCE(x, y) DESC')), the expression
+     * wins and no extra direction is appended. Passing null explicitly
+     * means "the expression carries its own direction" — nothing is
+     * appended. Omitting the direction keeps the historic default ASC.
+     */
+    public function orderByRaw(string $expression, ?string $direction = 'asc'): self
     {
-        $dir = strtoupper(trim($direction)) === 'DESC' ? 'DESC' : 'ASC';
+        $dir = $direction === null ? '' : (strtoupper(trim($direction)) === 'DESC' ? 'DESC' : 'ASC');
         $this->orders[] = ['column' => trim($expression), 'direction' => $dir, 'raw' => true];
         return $this;
     }
@@ -906,6 +940,61 @@ class QueryBuilder
             $this->limitValue, $this->offsetValue, $this->bindings
         );
         return $sql;
+    }
+
+    /**
+     * Compile only the WHERE fragment (no leading ' WHERE ').
+     *
+     * Used by the SQL compiler for grouped (nested) where clauses.
+     *
+     * @return array{0: string, 1: array<int|string, mixed>}
+     */
+    public function compileWhereClause(): array
+    {
+        return $this->compiler->compileWhereFragment($this->wheres, $this->bindings);
+    }
+
+    /**
+     * Return a plain base query builder carrying this builder's
+     * query state (conditions, orders, limits, bindings, ...).
+     *
+     * Model builders use this to run multi-table reports safely:
+     * a model builder hydrates every row into a model and applies
+     * the soft-delete filter, which is wrong for report queries
+     * that join or aggregate across tables. toBase() drops the
+     * model layer — results come back as plain arrays.
+     *
+     *   Order::query()->toBase()->fromSub(...)->get(); // plain arrays
+     */
+    public function toBase(): QueryBuilder
+    {
+        $base = $this->newBaseBuilder();
+        $base->connection($this->connectionName);
+        $base->columns = $this->columns;
+        $base->wheres = $this->wheres;
+        $base->havings = $this->havings;
+        $base->joins = $this->joins;
+        $base->groups = $this->groups;
+        $base->orders = $this->orders;
+        $base->bindings = $this->bindings;
+        $base->limitValue = $this->limitValue;
+        $base->offsetValue = $this->offsetValue;
+        $base->lockForUpdate = $this->lockForUpdate;
+        $base->sharedLock = $this->sharedLock;
+        $base->whereCounter = $this->whereCounter;
+        $base->havingCounter = $this->havingCounter;
+        $base->inCounter = $this->inCounter;
+        $base->subCounter = $this->subCounter;
+        $base->subBindings = $this->subBindings;
+        $base->cacheTtl = $this->cacheTtl;
+        $base->cacheTable = $this->cacheTable;
+        $base->primaryKey = $this->primaryKey;
+        return $base;
+    }
+
+    protected function newBaseBuilder(): QueryBuilder
+    {
+        return new QueryBuilder($this->table);
     }
 
     /**
@@ -1311,6 +1400,54 @@ class QueryBuilder
         $this->bindings[$param] = $resolvedValue;
 
         return $this;
+    }
+
+    /**
+     * Run a closure against a fresh builder sharing this builder's
+     * placeholder counters, and store the result as a grouped
+     * (parenthesised) where clause.
+     */
+    private function addNestedWhere(string $boolean, Closure $callback): self
+    {
+        $nested = $this->newNestedBuilder();
+        $callback($nested);
+        // Sync the shared placeholder counters back so conditions added
+        // after the group never reuse a placeholder name.
+        $this->whereCounter = $nested->whereCounter;
+        $this->havingCounter = $nested->havingCounter;
+        $this->inCounter = $nested->inCounter;
+        $this->subCounter = $nested->subCounter;
+        $this->wheres[] = [
+            'type' => 'nested',
+            'boolean' => $boolean,
+            'query' => $nested,
+        ];
+        return $this;
+    }
+
+    /**
+     * Create the builder a grouped where() closure runs against.
+     * It shares this builder's table, connection and placeholder
+     * counters, so placeholders stay unique across the group.
+     */
+    protected function newNestedBuilder(): self
+    {
+        $nested = $this->createNestedBuilder();
+        $nested->connection($this->connectionName);
+        $nested->whereCounter = $this->whereCounter;
+        $nested->havingCounter = $this->havingCounter;
+        $nested->inCounter = $this->inCounter;
+        $nested->subCounter = $this->subCounter;
+        return $nested;
+    }
+
+    protected function createNestedBuilder(): self
+    {
+        // `new self` is deliberate: the only subclass (ModelQueryBuilder,
+        // final) overrides this method, so the parent never needs
+        // late static binding here. `new static` would trip PHPStan's
+        // unsafe-static check on this non-final class.
+        return new self($this->table);
     }
 
     /** @param array<int|string, mixed> $values */

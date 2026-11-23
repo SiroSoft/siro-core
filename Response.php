@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core;
 
+use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -34,10 +35,23 @@ final class Response
     private string $rawContent = '';
 
     /**
+     * JSON-envelope constructor.
+     *
+     * Use this for JSON API responses. For raw (non-JSON) content such as
+     * CSV, PDF or HTML, use {@see Response::raw()} (or `file()` /
+     * `download()`) instead of passing a string payload here.
+     *
      * @param array<string, mixed> $payload
      */
     public function __construct(array $payload, int $statusCode = 200)
     {
+        if ($statusCode < 100 || $statusCode > 599) {
+            throw new InvalidArgumentException(
+                'Response status code must be between 100 and 599, got ' . $statusCode . '. '
+                . 'If you meant to send raw content, use Response::raw($content, $contentType, $statusCode) '
+                . 'instead of new Response(...).'
+            );
+        }
         $this->payload = $payload;
         $this->statusCode = $statusCode;
     }
@@ -147,15 +161,18 @@ final class Response
 
     /**
      * Create a raw response with custom content type.
+     *
+     * When no content type is given, the type is auto-detected from the
+     * content (valid JSON, XML, or HTML). A content type passed explicitly
+     * is always respected and never overwritten by detection — use it for
+     * non-JSON file exports such as `Response::raw($csv, 'text/csv')`.
      */
-    public static function raw(string $content, string $contentType = 'text/plain', int $statusCode = 200): self
+    public static function raw(string $content, ?string $contentType = null, int $statusCode = 200): self
     {
-        // Auto-detect content-type from content if not explicitly set
-        if (func_num_args() < 2 || $contentType === 'text/plain') {
-            $detected = self::detectMimeType($content);
-            if ($detected !== null) {
-                $contentType = $detected;
-            }
+        // Auto-detect content-type from content only when the caller did
+        // not pass one explicitly.
+        if ($contentType === null) {
+            $contentType = self::detectMimeType($content) ?? 'text/plain';
         }
 
         $response = new self([], $statusCode);
@@ -189,6 +206,40 @@ final class Response
         }
 
         return null;
+    }
+
+    /**
+     * Security headers shared by the JSON, raw and file response branches.
+     *
+     * @return array<string, string>
+     */
+    private static function securityHeaders(): array
+    {
+        return [
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Frame-Options' => 'DENY',
+            'Content-Security-Policy' => "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+                . "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
+                . "frame-ancestors 'none'; form-action 'self'; base-uri 'self'",
+        ];
+    }
+
+    /**
+     * Merge the shared security headers into extraHeaders, without
+     * overriding any header the caller set explicitly (matched
+     * case-insensitively, e.g. a custom Content-Security-Policy wins).
+     */
+    private function applySecurityHeaders(): void
+    {
+        $existing = [];
+        foreach (array_keys($this->extraHeaders) as $name) {
+            $existing[strtolower($name)] = true;
+        }
+        foreach (self::securityHeaders() as $name => $value) {
+            if (!isset($existing[strtolower($name)])) {
+                $this->extraHeaders[$name] = $value;
+            }
+        }
     }
 
     /**
@@ -408,12 +459,14 @@ final class Response
             $this->payload['debug'] = self::$debugMeta;
         }
 
+        // Merged before the SAPI check so the headers are also visible via
+        // headers()/getHeaders() in CLI (e.g. in tests); the loop below
+        // emits them in non-CLI mode.
+        $this->applySecurityHeaders();
+
         if (!$isCli) {
             http_response_code($this->statusCode);
             header('Content-Type: application/json; charset=utf-8');
-            header('X-Content-Type-Options: nosniff');
-            header('X-Frame-Options: DENY');
-            header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
 
             if (self::$requestId !== '') {
                 header('X-Request-Id: ' . self::$requestId);
@@ -433,6 +486,7 @@ final class Response
         $encoded = json_encode(
             $this->payload,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
         );
 
         if ($encoded === false) {
@@ -457,6 +511,10 @@ final class Response
 
     private function sendFile(bool $isCli): void
     {
+        // Merged before the SAPI check so the headers are also visible via
+        // headers()/getHeaders() in CLI (e.g. in tests).
+        $this->applySecurityHeaders();
+
         if (!$isCli) {
             http_response_code($this->statusCode);
 
@@ -467,7 +525,9 @@ final class Response
             }
 
             foreach ($this->extraHeaders as $name => $value) {
-                header($name . ': ' . $value);
+                $safeName = str_replace(["\r", "\n", "\0"], '', $name);
+                $safeValue = str_replace(["\r", "\n", "\0"], '', $value);
+                header($safeName . ': ' . $safeValue);
             }
 
             if ($canGzip) {
@@ -509,6 +569,10 @@ final class Response
 
     private function sendRaw(bool $isCli): void
     {
+        // Merged before the SAPI check so the headers are also visible via
+        // headers()/getHeaders() in CLI (e.g. in tests).
+        $this->applySecurityHeaders();
+
         if (!$isCli) {
             http_response_code($this->statusCode);
 
@@ -524,7 +588,9 @@ final class Response
             }
 
             foreach ($this->extraHeaders as $name => $value) {
-                header($name . ': ' . $value);
+                $safeName = str_replace(["\r", "\n", "\0"], '', $name);
+                $safeValue = str_replace(["\r", "\n", "\0"], '', $value);
+                header($safeName . ': ' . $safeValue);
             }
 
             if ($canGzip) {

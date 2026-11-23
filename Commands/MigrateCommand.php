@@ -28,7 +28,9 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
  */
     public function run(array $args): int
     {
-        $forceRecord = in_array('--force-record', $args, true);
+        if (in_array('--force-record', $args, true)) {
+            $this->warn('The --force-record flag was removed in v1.4.0: failed migrations are never recorded as applied. Fix the migration and re-run.');
+        }
 
         $pdo = $this->setupDatabaseConnection($this->basePath);
         
@@ -83,6 +85,7 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
                 } catch (Throwable $te) {
                     // Transaction not supported, continue without it
                     $canTransaction = false;
+                    $this->warn('Transactions are not supported by this driver; running migration without a transaction: ' . $migrationName);
                 }
 
                 $instance->up($pdo);
@@ -106,52 +109,12 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
                 $msg = $e->getMessage();
                 $this->error('Migration failed: ' . $migrationName);
                 $this->write($msg);
-                if ($forceRecord) {
-                    $this->warn('--force-record supplied; recording failed migration: ' . $migrationName);
-                    $stmt = $pdo->prepare('INSERT INTO migrations (migration, batch) VALUES (:migration, :batch)');
-                    $stmt->execute(['migration' => $migrationName, 'batch' => $batch]);
-                }
                 return 1;
             }
         }
 
         $this->write('Migration completed. Ran ' . $ran . ' migration(s).');
         return 0;
-    }
-
-    private function ensureMigrationTable(PDO $pdo): void
-    {
-        $driverAttr = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
-
-        $sql = match ($driver) {
-            'pgsql' => 'CREATE TABLE IF NOT EXISTS migrations (id BIGSERIAL PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
-            default => 'CREATE TABLE IF NOT EXISTS migrations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
-        };
-
-        $pdo->exec($sql);
-
-        // Check if batch column already exists before trying to add it
-        $driverAttr = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
-        $hasBatch = false;
-        try {
-            $columns = $pdo->query('SELECT batch FROM migrations LIMIT 0');
-            $hasBatch = $columns !== false;
-        } catch (Throwable) {
-            $hasBatch = false;
-        }
-
-        if (!$hasBatch) {
-            try {
-                $alterSql = $driver === 'pgsql'
-                    ? 'ALTER TABLE migrations ADD COLUMN IF NOT EXISTS batch INT NOT NULL DEFAULT 1'
-                    : 'ALTER TABLE migrations ADD COLUMN batch INT NOT NULL DEFAULT 1';
-                $pdo->exec($alterSql);
-            } catch (Throwable) {
-                // column already exists
-            }
-        }
     }
 
     /** @return array<string, true> */

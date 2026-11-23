@@ -10,7 +10,7 @@ use Siro\Core\Env;
 use Throwable;
 
 final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface {
-    use CommandSupport;
+    use MigrationBaseCommand;
 
     public function __construct(private readonly string $basePath)
     {
@@ -19,9 +19,13 @@ final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface 
     /**
      * Drop all tables and re-run all migrations.
      *
-     * Drops every user table, clears the migrations log, then runs
-     * all migration files from scratch. With --seed, also runs the
-     * database seeder afterwards.
+     * Drops every user table, then runs all migration files from
+     * scratch and rebuilds the migrations log from the beginning
+     * (all entries recorded with batch 1). With --seed, also runs
+     * the database seeder afterwards.
+     *
+     * Running in production requires --force, or an interactive
+     * confirmation (typing 'yes').
      *
      * @package Siro\Core\Commands
      * @param array<int, string> $args
@@ -33,6 +37,27 @@ final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface 
         Env::load($this->basePath . DIRECTORY_SEPARATOR . '.env');
 
         $this->checkRequiredExtensions();
+
+        // Destructive command: refuse to run in production without an
+        // explicit --force flag or an interactive confirmation.
+        $isProduction = strtolower((string) Env::get('APP_ENV', 'local')) === 'production';
+        $force = in_array('--force', $args, true);
+        if ($isProduction && !$force) {
+            if (stream_isatty(STDIN)) {
+                fwrite(STDOUT, "You are about to DROP ALL TABLES in production. Type 'yes' to continue: ");
+                $answer = fgets(STDIN);
+                if ($answer === false || strtolower(trim($answer)) !== 'yes') {
+                    $this->write('Aborted. Use --force to run migrate:fresh in production.');
+                    return 1;
+                }
+            } else {
+                $this->write('Refusing to run migrate:fresh in production without --force (non-interactive session).');
+                return 1;
+            }
+        }
+        if ($isProduction && $force) {
+            $this->write('WARNING: Dropping all tables in production (--force).');
+        }
 
         /** @var array<string, mixed> $config */
         $config = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
@@ -91,6 +116,10 @@ final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface 
 
         $this->info('All tables dropped.');
 
+        // Rebuild the migrations log from scratch (fresh starts a new
+        // history, so every entry is recorded with batch 1).
+        $this->ensureMigrationTable($pdo);
+
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
         if (!is_dir($migrationDir)) {
             mkdir($migrationDir, 0775, true);
@@ -116,9 +145,15 @@ final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface 
                     $pdo->beginTransaction();
                 } catch (Throwable) {
                     $canTransaction = false;
+                    $this->warn('Transactions are not supported by this driver; running migration without a transaction: ' . $migrationName);
                 }
 
                 $instance->up($pdo);
+                $stmt = $pdo->prepare('INSERT INTO migrations (migration, batch) VALUES (:migration, :batch)');
+                $stmt->execute([
+                    'migration' => $migrationName,
+                    'batch' => 1,
+                ]);
 
                 if ($canTransaction && $pdo->inTransaction()) {
                     $pdo->commit();
@@ -150,34 +185,5 @@ final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface 
         }
 
         return 0;
-    }
-
-    private function checkRequiredExtensions(): void
-    {
-        $required = ['pdo', 'json'];
-        $missing = [];
-
-        foreach ($required as $ext) {
-            if (!extension_loaded($ext)) {
-                $missing[] = $ext;
-            }
-        }
-
-        $dbConnection = strtolower((string) Env::get('DB_CONNECTION', 'mysql'));
-        $pdoDriver = match ($dbConnection) {
-            'pgsql' => 'pdo_pgsql',
-            'sqlite' => 'pdo_sqlite',
-            default => 'pdo_mysql',
-        };
-
-        if (!extension_loaded($pdoDriver)) {
-            $missing[] = $pdoDriver . " (for {$dbConnection})";
-        }
-
-        if ($missing !== []) {
-            fwrite(STDERR, "Error: Missing required PHP extensions: " . implode(', ', $missing) . PHP_EOL);
-            fwrite(STDERR, "Please install them or update your php.ini configuration." . PHP_EOL);
-            exit(1);
-        }
     }
 }

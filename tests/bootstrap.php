@@ -19,10 +19,10 @@ date_default_timezone_set('UTC');
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-// Set required env for tests
-$_ENV['APP_KEY'] = 'test_app_key_for_encryption_tests_32chars!!';
+// Set required env for tests (placeholders only — never real secrets).
+$_ENV['APP_KEY'] = 'placeholder_app_key_for_tests_only_0000';
 putenv('APP_KEY=' . $_ENV['APP_KEY']);
-$_ENV['JWT_SECRET'] = 'test_jwt_secret_key_for_unit_tests_only_32chars!!';
+$_ENV['JWT_SECRET'] = 'placeholder_jwt_secret_for_tests_only_0000';
 putenv('JWT_SECRET=' . $_ENV['JWT_SECRET']);
 $_ENV['APP_ENV'] = 'testing';
 putenv('APP_ENV=testing');

@@ -11,6 +11,9 @@ use Siro\Core\ModelNotFoundException;
 /**
  * @implements \ArrayAccess<string, mixed>
  * @property int $id
+ * @method static \Siro\Core\DB\ModelQueryBuilder whereIn(string $column, array<int, mixed> $values)
+ * @method static \Siro\Core\DB\ModelQueryBuilder orWhereIn(string $column, array<int, mixed> $values)
+ * @method static \Siro\Core\DB\ModelQueryBuilder whereNotIn(string $column, array<int, mixed> $values)
  */
 abstract class Model implements \JsonSerializable, \ArrayAccess
 {

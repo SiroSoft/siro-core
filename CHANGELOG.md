@@ -1,5 +1,21 @@
 # Changelog — siro-core
 
+## v1.3.1 (2026-10-07)
+
+### Fixed
+- `Schema` MySQL native prepares: `hasTable()` / `getColumnListing()` now
+  query `information_schema` with an exact `=` comparison instead of
+  `SHOW` statements. `SHOW` does not accept bound parameters under native
+  prepares (`PDO::ATTR_EMULATE_PREPARES => false`): SQLSTATE 42000 near
+  `?`. Querying `information_schema` also removes `LIKE` wildcard
+  concerns. `getColumnListing()` had the same disease via HY093
+  (placeholder-free `SHOW` executed with bound params).
+
+### Changed
+- Docs wording unified to "Minimal runtime surface".
+- Contact emails pointed to info@sirophp.com and founder@sirophp.com.
+- Dropped PGP/SLA promises that had no process behind them.
+
 ## v1.3.0 (2026-10-07)
 
 ### Added

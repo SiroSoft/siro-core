@@ -125,7 +125,8 @@ trait ModelSerialization
      * Cast an attribute to a native PHP type.
      */
     private function castAttribute(string $key, mixed $value): mixed
-    {        if ($value === null) {
+    {
+        if ($value === null) {
             return null;
         }
 
@@ -142,6 +143,7 @@ trait ModelSerialization
             'bool', 'boolean' => (bool) $value,
             'array' => is_array($value) ? $value : (is_string($value) ? json_decode($value, true) ?? [] : []),
             'object' => is_object($value) ? $value : (is_string($value) ? json_decode($value) : null),
+            'json' => is_array($value) ? $value : (is_string($value) ? json_decode($value, true) ?? [] : $value),
             'datetime', 'date' => $value instanceof \DateTimeInterface
                 ? $value->format('Y-m-d H:i:s')
                 : (is_string($value) ? new \DateTime($value) : $value),
@@ -156,16 +158,25 @@ trait ModelSerialization
      * (1366) on boolean/tinyint columns — so `bool` casts become 0/1 here
      * instead of forcing every app to normalize by hand.
      *
+     * `json` casts are encoded the same way: an array/object value becomes
+     * a JSON string before binding (a string value is already JSON and is
+     * left untouched; `null` stays `null`).
+     *
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
     private function castForDatabase(array $data): array
     {
         foreach ($data as $key => $value) {
-            if (($this->casts[$key] ?? '') === 'bool' || ($this->casts[$key] ?? '') === 'boolean') {
+            $cast = $this->casts[$key] ?? '';
+            if ($cast === 'bool' || $cast === 'boolean') {
                 if ($value !== null) {
                     $data[$key] = !empty($value) ? 1 : 0;
                 }
+            }
+            if ($cast === 'json' && (is_array($value) || is_object($value))) {
+                $encoded = json_encode($value);
+                $data[$key] = $encoded === false ? '[]' : $encoded;
             }
         }
         return $data;
