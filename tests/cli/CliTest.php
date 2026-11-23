@@ -93,7 +93,7 @@ final class CliTest extends TestCase
     public function testAllCommandsExist(): void
     {
         // Count must match actual registered commands in Console.php
-        $this->assertCount(95, $this->getRegistry());
+        $this->assertCount(96, $this->getRegistry());
     }
 
     #[DataProvider('commandRegistryProvider')]

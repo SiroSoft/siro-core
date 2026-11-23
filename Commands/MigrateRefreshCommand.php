@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Siro\Core\Commands;
 
 use PDO;
-use Siro\Core\Database;
-use Siro\Core\Env;
 use Throwable;
 
 final class MigrateRefreshCommand implements \Siro\Core\Commands\CommandInterface
 {
-    use CommandSupport;
+    use MigrationBaseCommand;
 
     public function __construct(private readonly string $basePath)
     {
@@ -35,8 +33,8 @@ final class MigrateRefreshCommand implements \Siro\Core\Commands\CommandInterfac
         $this->write('');
         $this->write('Re-running all migrations...');
 
-        $pdo = $this->setupConnection();
-        $this->ensureTable($pdo);
+        $pdo = $this->setupDatabaseConnection($this->basePath);
+        $this->ensureMigrationTable($pdo);
 
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
         if (!is_dir($migrationDir)) {
@@ -64,6 +62,7 @@ final class MigrateRefreshCommand implements \Siro\Core\Commands\CommandInterfac
                     $pdo->beginTransaction();
                 } catch (Throwable) {
                     $canTransaction = false;
+                    $this->warn('Transactions are not supported by this driver; running migration without a transaction: ' . $migrationName);
                 }
 
                 $instance->up($pdo);
@@ -102,35 +101,6 @@ final class MigrateRefreshCommand implements \Siro\Core\Commands\CommandInterfac
         }
 
         return 0;
-    }
-
-    private function setupConnection(): PDO
-    {
-        Env::load($this->basePath . DIRECTORY_SEPARATOR . '.env');
-        /** @var array<string, mixed> $config */
-        $config = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
-        Database::configure($config);
-
-        try {
-            return Database::connection();
-        } catch (\PDOException $e) {
-            fwrite(STDERR, "Error: Cannot connect to database\n");
-            fwrite(STDERR, "Details: " . $e->getMessage() . "\n");
-            exit(1);
-        }
-    }
-
-    private function ensureTable(PDO $pdo): void
-    {
-        $driverAttr = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
-
-        $sql = match ($driver) {
-            'pgsql' => 'CREATE TABLE IF NOT EXISTS migrations (id BIGSERIAL PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
-            default => 'CREATE TABLE IF NOT EXISTS migrations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
-        };
-
-        $pdo->exec($sql);
     }
 
     private function nextBatch(PDO $pdo): int

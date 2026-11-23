@@ -7,5 +7,7 @@
 /storagerate_limit/
 *.log
 /.env
+/test_output.txt
+/.next/
 /tools/**/storage/
 /tools/**/results/

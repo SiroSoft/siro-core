@@ -16,6 +16,7 @@ abstract class TestCase extends BaseTestCase
     protected function tearDown(): void
     {
         \Siro\Core\Response::setRequestMeta('', 0);
+        \Siro\Core\Response::enableDebug(false);
         parent::tearDown();
     }
 
