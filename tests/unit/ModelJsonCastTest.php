@@ -87,12 +87,12 @@ final class ModelJsonCastTest extends TestCase
         $this->assertSame('{"n":2}', $raw);
     }
 
-    public function testInvalidJsonStringReadsAsEmptyArray(): void
+    public function testInvalidJsonStringReadsAsString(): void
     {
         $item = JsonCastModel::create(['name' => 'E', 'meta' => 'not-json{']);
         $found = JsonCastModel::find($item->id);
         $this->assertNotNull($found);
-        $this->assertSame([], $found->meta);
+        $this->assertSame('not-json{', $found->meta);
     }
 
     public function testToArrayReturnsArrayForJsonCast(): void

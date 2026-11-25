@@ -143,12 +143,35 @@ trait ModelSerialization
             'bool', 'boolean' => (bool) $value,
             'array' => is_array($value) ? $value : (is_string($value) ? json_decode($value, true) ?? [] : []),
             'object' => is_object($value) ? $value : (is_string($value) ? json_decode($value) : null),
-            'json' => is_array($value) ? $value : (is_string($value) ? json_decode($value, true) ?? [] : $value),
+            'json' => is_array($value) ? $value : (is_string($value) ? $this->decodeJsonCast($value) : $value),
             'datetime', 'date' => $value instanceof \DateTimeInterface
                 ? $value->format('Y-m-d H:i:s')
                 : (is_string($value) ? new \DateTime($value) : $value),
             default => $value,
         };
+    }
+
+    /**
+     * Decode a stored `'json'` cast value.
+     *
+     * Valid JSON decodes to its native value (including `null` for the
+     * literal `'null'` and scalars for `'"x"'`/`'123'`/`'true'`). A string
+     * that is not valid JSON is returned untouched — it must never be
+     * silently swallowed into `[]` (legacy rows may hold plain text).
+     */
+    private function decodeJsonCast(string $value): mixed
+    {
+        $decoded = json_decode($value, true);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+    }
+
+    /**
+     * Check whether a string is valid JSON (decode error state only).
+     */
+    private function isJsonString(string $value): bool
+    {
+        json_decode($value);
+        return json_last_error() === JSON_ERROR_NONE;
     }
 
     /**
@@ -159,8 +182,10 @@ trait ModelSerialization
      * instead of forcing every app to normalize by hand.
      *
      * `json` casts are encoded the same way: an array/object value becomes
-     * a JSON string before binding (a string value is already JSON and is
-     * left untouched; `null` stays `null`).
+     * a JSON string before binding; a string that is already valid JSON is
+     * left untouched, a string that is not valid JSON is encoded as a JSON
+     * scalar (so it round-trips back to the same string on read);
+     * `null` stays `null`.
      *
      * @param array<string, mixed> $data
      * @return array<string, mixed>
@@ -174,7 +199,14 @@ trait ModelSerialization
                     $data[$key] = !empty($value) ? 1 : 0;
                 }
             }
-            if ($cast === 'json' && (is_array($value) || is_object($value))) {
+            if ($cast === 'json' && is_string($value)) {
+                if (!$this->isJsonString($value)) {
+                    $encoded = json_encode($value);
+                    if ($encoded !== false) {
+                        $data[$key] = $encoded;
+                    }
+                }
+            } elseif ($cast === 'json' && (is_array($value) || is_object($value))) {
                 $encoded = json_encode($value);
                 $data[$key] = $encoded === false ? '[]' : $encoded;
             }
