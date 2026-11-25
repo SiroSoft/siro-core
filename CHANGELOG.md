@@ -1,5 +1,53 @@
 # Changelog — siro-core
 
+## v1.4.0 (2026-11-25)
+
+### Security
+- `Response::send()` escapes JSON with all 4 `JSON_HEX_*` flags (was missing
+  `JSON_HEX_TAG`, allowing `</script>` breakout in JSON API responses).
+
+### Fixed
+- `orderByRaw()` no longer appends a direction blindly (was MySQL 1064).
+- `migrate:fresh` re-records migrations in batch 1 (was dropping the table
+  without re-inserting, leaving the migrations table empty).
+- `json` cast: added the missing `case 'json'` in `ModelSerialization`
+  (was falling through, so declared `json` casts never ran).
+- `json` cast hardening: reading a non-JSON string now returns the string
+  itself instead of silently swallowing it as `[]`; writing a plain string
+  now encodes it as a JSON scalar so the value round-trips. Reading the
+  string `'null'` now returns `null`.
+
+### Added
+- `Seeder` base class with `insertIgnore()` (skips only 1062 / PG 23505 /
+  SQLite UNIQUE) and a rewritten `seed` command.
+- Grouped `WHERE` support (`where(function ($q) { ... })`; empty group
+  compiles to `(1 = 1)`).
+- Explicit `QueryBuilder::whereIn()` and `QueryBuilder::toBase()`.
+
+### Changed
+- Removed `--force-record` from migrations (it recorded FAILED migrations
+  as successful).
+- `migrate:fresh` now refuses to run in production without an explicit
+  confirmation guard.
+- `Response::raw()` only sniffs the content type when none was set, and
+  `sendRaw()` / `sendFile()` now share the standard security headers.
+- `Response` constructor guards the status code to 100–599.
+- `TestCase::tearDown()` resets the static debug state (was leaking
+  `Response::enableDebug(true)` between tests).
+- Command registry grew to 96 commands (`api:contract` added).
+
+### Behaviour changes
+- `json` cast read of a non-JSON string returns the string (was `[]`).
+- `json` cast write of a plain string stores it JSON-encoded (was raw,
+  which read back as `[]`).
+- `orderByRaw()` with an explicit direction inside the expression wins
+  over the appended direction.
+- `Response::raw()` no longer overrides an explicitly set content type.
+
+### Tests
+- Full suite: 21,504 tests / 36,034 assertions, 0 failures; PHPStan max
+  clean. Includes 25 new `ModelJsonCast` compatibility tests.
+
 ## v1.3.1 (2026-10-07)
 
 ### Fixed
