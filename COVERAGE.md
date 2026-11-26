@@ -1,6 +1,9 @@
 # Code Coverage Baseline — siro-core
 
-## Tổng quan (v0.40.0, 2026-08-20)
+## Tổng quan (v1.4.1, 2026-11-25)
+
+> Các số dưới đây là baseline đo lần cuối ở v0.40.0 (2026-08-20), chưa đo lại
+> trong v1.4.1 — patch này không đổi code đo coverage, chỉ sửa lỗi nhỏ + test mới.
 
 | Metric | Giá trị |
 |--------|---------|

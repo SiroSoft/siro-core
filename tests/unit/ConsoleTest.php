@@ -182,4 +182,62 @@ final class ConsoleTest extends TestCase
         $code = $this->console->run(['siro', 'tink']);
         $this->assertContains($code, [0, 1]);
     }
+
+    /**
+     * v1.4.1 (item 5): `new Console('')` used to poison every file-based
+     * command — route:rules looked for "/routes/api.php" and exited 1
+     * (the pre-existing skeleton testRouteRules failure). An empty
+     * basePath now resolves from SIRO_BASE_PATH (env) first.
+     */
+    public function testEmptyBasePathResolvesFromSiroBasePathEnv(): void
+    {
+        $tmp = sys_get_temp_dir() . '/siro_console_base_' . uniqid('', true);
+        mkdir($tmp . '/routes', 0777, true);
+        file_put_contents(
+            $tmp . '/routes/api.php',
+            "<?php\n\$router->get('/products', fn () => ['ok' => true]);\n"
+        );
+        $previous = getenv('SIRO_BASE_PATH');
+        putenv('SIRO_BASE_PATH=' . $tmp);
+        try {
+            $console = new Console('');
+            ob_start();
+            try {
+                $exit = $console->run(['siro', 'route:rules']);
+            } finally {
+                ob_end_clean();
+            }
+            $this->assertSame(0, $exit);
+        } finally {
+            if ($previous === false) {
+                putenv('SIRO_BASE_PATH');
+            } else {
+                putenv('SIRO_BASE_PATH=' . $previous);
+            }
+            @unlink($tmp . '/routes/api.php');
+            @rmdir($tmp . '/routes');
+            @rmdir($tmp);
+        }
+    }
+
+    /**
+     * With no SIRO_BASE_PATH anywhere, an empty basePath falls back to
+     * the working directory (same convention as Response/Storage/App).
+     */
+    public function testEmptyBasePathFallsBackToWorkingDirectory(): void
+    {
+        $previous = getenv('SIRO_BASE_PATH');
+        putenv('SIRO_BASE_PATH');
+        try {
+            $console = new Console('');
+            $ref = new \ReflectionProperty(Console::class, 'basePath');
+            $this->assertSame((string) getcwd(), $ref->getValue($console));
+        } finally {
+            if ($previous === false) {
+                putenv('SIRO_BASE_PATH');
+            } else {
+                putenv('SIRO_BASE_PATH=' . $previous);
+            }
+        }
+    }
 }

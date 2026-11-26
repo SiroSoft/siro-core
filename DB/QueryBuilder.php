@@ -246,6 +246,10 @@ class QueryBuilder
      *   // ... WHERE (a = :w_0 OR b = :w_1)
      *
      * A grouped where() takes only the closure — no operator or value.
+     *
+     * A bare single-argument call, ->where('col'), throws: it used to
+     * silently become `col IS NULL`, which hid typos and logic errors.
+     * Use ->where('col', null) explicitly when IS NULL is what you mean.
      */
     public function where(string|Closure $column, mixed $operatorOrValue = null, mixed $value = null): self
     {
@@ -255,6 +259,9 @@ class QueryBuilder
             }
             return $this->addNestedWhere('AND', $column);
         }
+        if (func_num_args() === 1) {
+            throw new RuntimeException("where() requires a value: use where('col', \$value) or where('col', '=', \$value). A bare where('col') would silently become IS NULL.");
+        }
         $hasExplicitValue = func_num_args() >= 3;
         return $this->addWhere('AND', $column, $operatorOrValue, $value, $hasExplicitValue);
     }
@@ -263,6 +270,9 @@ class QueryBuilder
      * Add an OR WHERE condition, or a grouped set of conditions.
      *
      *   ->orWhere(fn ($q) => $q->where('a', 1)->where('b', 2))
+     *
+     * Like where(), a bare single-argument call ->orWhere('col') throws
+     * instead of silently becoming `col IS NULL`.
      */
     public function orWhere(string|Closure $column, mixed $operatorOrValue = null, mixed $value = null): self
     {
@@ -271,6 +281,9 @@ class QueryBuilder
                 throw new RuntimeException('Grouped orWhere() does not accept an operator or value.');
             }
             return $this->addNestedWhere('OR', $column);
+        }
+        if (func_num_args() === 1) {
+            throw new RuntimeException("orWhere() requires a value: use orWhere('col', \$value) or orWhere('col', '=', \$value). A bare orWhere('col') would silently become IS NULL.");
         }
         $hasExplicitValue = func_num_args() >= 3;
         return $this->addWhere('OR', $column, $operatorOrValue, $value, $hasExplicitValue);
@@ -568,6 +581,16 @@ class QueryBuilder
      * wins and no extra direction is appended. Passing null explicitly
      * means "the expression carries its own direction" — nothing is
      * appended. Omitting the direction keeps the historic default ASC.
+     */
+    /**
+     * Add a raw ORDER BY expression.
+     *
+     * Direction precedence (F2, v1.4.1): when the expression already ends
+     * with ASC/DESC, that direction wins and $direction is ignored, so
+     * orderByRaw('x DESC', 'asc') compiles to `ORDER BY x DESC` — never
+     * to the invalid `x DESC ASC` (MySQL 1064). Pass null as $direction
+     * when the expression carries its own direction, or omit $direction
+     * (defaults to 'asc') for a bare expression.
      */
     public function orderByRaw(string $expression, ?string $direction = 'asc'): self
     {

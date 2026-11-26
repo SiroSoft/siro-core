@@ -1,5 +1,36 @@
 # Changelog — siro-core
 
+## v1.4.1 (2026-11-25)
+
+### Security
+- `Response::download()` / `stream()` no longer leak the requested file
+  path in the JSON 404 body (was `File not found: <full path>`; now the
+  generic `File not found`, matching `downloadFromStorage()`).
+
+### Fixed
+- `QueryBuilder::where('col')` with a single argument no longer silently
+  becomes `IS NULL` — bare 1-arg `where()` / `orWhere()` now throw a
+  `RuntimeException` with a clear message. Explicit `where('col', null)`
+  still means IS NULL.
+- `new Console('')` no longer poisons file-based commands: an empty
+  basePath now resolves from `SIRO_BASE_PATH` (constant, then env var),
+  then the working directory. This was the root cause of the pre-existing
+  skeleton `testRouteRules` failure (`route:rules` looked for
+  `/routes/api.php` and exited 1).
+- Hardcoded `NUL` proc descriptor in `ApiTestCommandTest` (watch-mode
+  test) failed on Linux, so the deleter never ran; now platform-aware
+  (`/dev/null` on Linux, `NUL` on Windows).
+- `symfony/filesystem` bumped v7.4.11 → v7.4.24 (dev-only, CVE-2026-135803);
+  `composer audit` is clean, so the release-check audit step passes.
+
+### Changed
+- `orderByRaw()` direction precedence documented: an ASC/DESC carried by
+  the expression wins over the explicit `$direction` argument (the
+  compiler already behaved this way); tests lock it.
+- Docs: `KNOWN_ISSUES.md` and `COVERAGE.md` version headers updated to
+  v1.4.1; `docs/ADVANTAGE_PLAN_2026-09.md` no longer references the
+  removed `--force-record` flag.
+
 ## v1.4.0 (2026-11-25)
 
 ### Security

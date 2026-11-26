@@ -197,4 +197,31 @@ final class QueryBuilderTest extends TestCase
     {
         $this->assertTrue(method_exists(QueryBuilder::class, 'toSql'));
     }
+
+    /**
+     * F1 (v1.4.1): a bare where('col') used to silently become
+     * `col IS NULL`. It must now throw so typos can't hide.
+     */
+    public function testBareWhereThrowsInsteadOfSilentlyBecomingIsNull(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/requires a value/');
+        (new QueryBuilder('users'))->where('deleted_at');
+    }
+
+    public function testBareOrWhereThrowsInsteadOfSilentlyBecomingIsNull(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/requires a value/');
+        (new QueryBuilder('users'))->where('id', 1)->orWhere('deleted_at');
+    }
+
+    /**
+     * Explicit null still means IS NULL — only the silent 1-arg form throws.
+     */
+    public function testWhereWithExplicitNullStillMeansIsNull(): void
+    {
+        $sql = (new QueryBuilder('users'))->where('deleted_at', null)->toSql();
+        $this->assertStringContainsString('IS NULL', $sql);
+    }
 }

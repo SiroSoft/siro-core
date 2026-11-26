@@ -698,7 +698,11 @@ PHP
         putenv('SIRO_API_TEST_WATCH_MAX=3');
         $deleter = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_del_' . uniqid('', true) . '.php';
         file_put_contents($deleter, "<?php sleep(1); @unlink(\$argv[1]);");
-        $descriptors = [0 => ['file', 'NUL', 'r'], 1 => ['file', 'NUL', 'w'], 2 => ['file', 'NUL', 'w']];
+        // 'NUL' is a Windows-only device; on Linux it must be /dev/null
+        // (v1.4.1: the hardcoded 'NUL' made proc_open fail here, so the
+        // deleter never ran and the deleted branch was never exercised).
+        $nul = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
+        $descriptors = [0 => ['file', $nul, 'r'], 1 => ['file', $nul, 'w'], 2 => ['file', $nul, 'w']];
         $proc = proc_open([PHP_BINARY, $deleter, $file], $descriptors, $pipes);
         ob_start();
         $cmd = new ApiTestCommand($this->basePath);
