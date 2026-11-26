@@ -202,8 +202,15 @@ final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface {
 
     private function findMysqldump(): ?string
     {
+        // `where` is a Windows-only command and `2>NUL` a Windows-only
+        // redirect; on Linux an unguarded call created a literal file
+        // named NUL in the working directory (v1.4.2). `command -v` is
+        // the POSIX equivalent of `where` for the existence check.
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
         foreach (['mysqldump', 'mysqldump.exe', 'C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe', 'C:\\xampp\\mysql\\bin\\mysqldump.exe'] as $candidate) {
-            $which = shell_exec('where ' . escapeshellarg($candidate) . ' 2>NUL');
+            $which = $isWindows
+                ? shell_exec('where ' . escapeshellarg($candidate) . ' 2>NUL')
+                : shell_exec('command -v ' . escapeshellarg($candidate) . ' 2>/dev/null');
             if (is_string($which) && trim($which) !== '') {
                 return $candidate;
             }

@@ -558,13 +558,16 @@ final class RuntimeManager
         }
 
         // Try `mysql --version`
-        $ver = shell_exec('mysql --version 2>NUL');
+        // 'NUL' is a Windows-only device; an unguarded `2>NUL` on Linux
+        // creates a literal file named NUL in the working directory (v1.4.2).
+        $nullDev = PHP_OS_FAMILY === 'Windows' ? '2>NUL' : '2>/dev/null';
+        $ver = shell_exec('mysql --version ' . $nullDev);
         if (is_string($ver) && stripos($ver, 'mysql') !== false) {
             return 3306;
         }
 
         // Try `mysqld --version`
-        $ver = shell_exec('mysqld --version 2>NUL');
+        $ver = shell_exec('mysqld --version ' . $nullDev);
         if (is_string($ver) && stripos($ver, 'mysql') !== false) {
             return 3306;
         }
