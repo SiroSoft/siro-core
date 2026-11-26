@@ -2,7 +2,10 @@
 <?php
 declare(strict_types=1);
 
-$output = shell_exec('composer audit --format=json 2>NUL');
+// 'NUL' is a Windows-only device; an unguarded `2>NUL` on Linux creates a
+// literal file named NUL in the working directory (v1.4.2).
+$nullDev = PHP_OS_FAMILY === 'Windows' ? '2>NUL' : '2>/dev/null';
+$output = shell_exec('composer audit --format=json ' . $nullDev);
 if ($output === null) {
     fwrite(STDERR, "Failed to run composer audit\n");
     exit(2);

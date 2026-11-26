@@ -1,5 +1,20 @@
 # Changelog — siro-core
 
+## v1.4.2 (2026-11-26)
+
+### Fixed
+- Windows-only `2>NUL` shell redirects no longer create a literal file named
+  `NUL` in the working directory on Linux: `RuntimeManager::detectExistingMySQL()`
+  (`mysql`/`mysqld --version`), `DbBackupCommand::findMysqldump()` and
+  `scripts/audit-supply-chain.php` (`composer audit`) now redirect to
+  `/dev/null` on Linux/macOS and keep `NUL` on Windows. `findMysqldump()`
+  also uses `command -v` instead of the Windows-only `where` on non-Windows
+  systems. (`LiveCommand`, `RuntimeManager::stopMariaDB()` and
+  `FrankenphpServeCommand` were already OS-guarded — no change needed.)
+- New `tests/unit/NullDeviceTest.php` locks the behaviour: each former
+  `NUL` source runs from a temp cwd and asserts no literal `NUL` file
+  appears.
+
 ## v1.4.1 (2026-11-25)
 
 ### Security
