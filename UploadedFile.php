@@ -129,7 +129,9 @@ final class UploadedFile
             return Storage::url($path);
         }
 
-        $basePath = defined('BASE_PATH') && is_string(BASE_PATH) ? BASE_PATH : (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : dirname(__DIR__, 2));
+        $basePath = defined('BASE_PATH') && is_string(BASE_PATH)
+            ? BASE_PATH
+            : (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : dirname(__DIR__, 2));
         $storagePublicRoot = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'public';
         $realStoragePublicRoot = realpath($storagePublicRoot);
         if ($realStoragePublicRoot === false) {
@@ -251,7 +253,9 @@ final class UploadedFile
     private static function parseIniSize(string $value): int
     {
         $value = trim((string) $value);
-        if ($value === '') return 0;
+        if ($value === '') {
+            return 0;
+        }
         $unit = strtolower(substr($value, -1));
         $size = (int) $value;
         return match ($unit) {

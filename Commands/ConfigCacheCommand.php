@@ -6,7 +6,8 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\Env;
 
-final class ConfigCacheCommand implements \Siro\Core\Commands\CommandInterface {
+final class ConfigCacheCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -36,7 +37,9 @@ final class ConfigCacheCommand implements \Siro\Core\Commands\CommandInterface {
         $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';
         if (is_file($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            if ($lines === false) { $lines = []; }
+            if ($lines === false) {
+                $lines = [];
+            }
             foreach ($lines as $line) {
                 $line = trim($line);
                 if ($line === '' || str_starts_with($line, '#')) {

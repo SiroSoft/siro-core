@@ -14,7 +14,10 @@
     </rule>
 
     <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace"/>
-    <rule ref="Generic.Classes.OpeningBraceSameLine"/>
+    <!-- NOTE (v1.5.0 G1): Generic.Classes.OpeningBraceSameLine was removed:
+         it directly contradicts PSR12, which requires the class opening brace
+         on its own line. Keeping both rules made ~475 files fail no matter
+         which style they used. PSR12 is the authority for brace placement. -->
     <rule ref="Generic.Formatting.DisallowMultipleStatements"/>
     <rule ref="Generic.PHP.DisallowShortOpenTag"/>
     <rule ref="Generic.PHP.DeprecatedFunctions"/>

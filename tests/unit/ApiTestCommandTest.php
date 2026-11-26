@@ -570,8 +570,25 @@ PHP
         $errFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_wh_err_' . uniqid('', true) . '.txt';
         $descriptors = [0 => ['file', $nul, 'r'], 1 => ['file', $nul, 'w'], 2 => ['file', $errFile, 'w']];
         $proc = proc_open([PHP_BINARY, $script], $descriptors, $pipes);
-        // Wait for server to bind, then send two webhook POSTs
-        usleep(900000);
+        // Poll until the child listener has bound the port instead of a
+        // fixed sleep: the child bind takes ~917 ms on this VM (PHP startup
+        // + autoload, no OPcache CLI), so the old fixed 900 ms sleep raced
+        // it and the POSTs were silently lost. A probe that connects and
+        // closes immediately reads '' on the server side and does NOT
+        // consume one of the MAX=2 webhook slots (see listenWebhook).
+        $bound = false;
+        $bindDeadline = microtime(true) + 10.0;
+        while (microtime(true) < $bindDeadline) {
+            $probe = @fsockopen('127.0.0.1', $whPort, $errno, $errstr, 1);
+            if ($probe !== false) {
+                fclose($probe);
+                $bound = true;
+                break;
+            }
+            usleep(100000);
+        }
+        $this->assertTrue($bound, 'Webhook listener did not bind port ' . $whPort . ' within 10s');
+        // Send two webhook POSTs
         for ($i = 0; $i < 2; $i++) {
             $errno = 0;
             $errstr = '';

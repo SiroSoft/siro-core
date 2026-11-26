@@ -36,8 +36,9 @@ These are the primary developer-facing APIs.
 |-------|-----------|---------------|----------------|
 | `Request` | `Siro\Core` | 42 | STABLE |
 | `Response` | `Siro\Core` | 28 | STABLE |
-| `Router` | `Siro\Core` | 26 | STABLE |
+| `Router` | `Siro\Core` | 27 | STABLE |
 | `Route` | `Siro\Core` | — | STABLE |
+| `ApiCrudController` | `Siro\Core` | 8 | EXPERIMENTAL (v1.5.0: runtime auto-CRUD) |
 | `FormRequest` | `Siro\Core` | — | STABLE |
 | `UploadedFile` | `Siro\Core` | — | STABLE |
 | `Http` | `Siro\Core` | — | STABLE |
@@ -50,6 +51,7 @@ These are the primary developer-facing APIs.
 | `DB` | `Siro\Core` | — | STABLE |
 | `Model` | `Siro\Core` | — | STABLE |
 | `QueryBuilder` | `Siro\Core` | — | STABLE |
+| `ApiQueryFilter` | `Siro\Core\DB` | 3 | EXPERIMENTAL (v1.5.0: auto-CRUD query params) |
 | `Schema` | `Siro\Core` | — | STABLE |
 | `Collection` | `Siro\Core` | — | STABLE |
 | `Resource` | `Siro\Core` | — | STABLE |
@@ -60,6 +62,14 @@ These are the primary developer-facing APIs.
 |-------|-----------|---------------|----------------|
 | `Auth` | `Siro\Core\Auth` | — | STABLE |
 | `JWT` | `Siro\Core\Auth` | — | STABLE |
+| `AuthorizationServer` | `Siro\Core\Auth\OAuth2` | — | STABLE |
+| `OAuthClient` | `Siro\Core\Auth\OAuth2` | — | STABLE |
+| `ClientRepository` | `Siro\Core\Auth\OAuth2` | — | STABLE |
+| `ScopeRepository` | `Siro\Core\Auth\OAuth2` | — | STABLE |
+| `AccessTokenRepository` | `Siro\Core\Auth\OAuth2` | — | STABLE |
+| `RefreshTokenRepository` | `Siro\Core\Auth\OAuth2` | — | STABLE |
+| `AuthCodeRepository` | `Siro\Core\Auth\OAuth2` | — | STABLE |
+| `ClientEntity` / `ScopeEntity` / `AccessTokenEntity` / `RefreshTokenEntity` / `AuthCodeEntity` / `UserEntity` | `Siro\Core\Auth\OAuth2\Entities` | — | STABLE |
 | `Encrypter` | `Siro\Core` | — | STABLE |
 | `Hash` | `Siro\Core` | — | STABLE |
 
@@ -130,17 +140,17 @@ These are the primary developer-facing APIs.
 
 ---
 
-## 4. CLI Commands (95 total)
+## 4. CLI Commands (97 total)
 
 ### Classification
 
 | Type | Count | Examples |
 |------|-------|---------|
-| STABLE | 85 | All `make:*`, `migrate*`, `db:*`, `log:*`, `test*`, `route:*`, `queue:*`, `config:*`, `env:*`, `serve`, `test` |
+| STABLE | 87 | All `make:*`, `migrate*`, `db:*`, `log:*`, `test*`, `route:*`, `queue:*`, `config:*`, `env:*`, `serve`, `test` |
 | EXPERIMENTAL | 5 | `tinker`, `demo`, `mercure:subscribe`, `runtime`, `db` |
 | INTERNAL | 5 | `debug:health`, `fix`, `optimize`, `doctor`, `new:project` |
 
-### All 95 Commands
+### All 97 Commands
 
 | # | Command | Classification |
 |---|---------|----------------|
@@ -200,45 +210,47 @@ These are the primary developer-facing APIs.
 | 54 | `make:migration` | STABLE |
 | 55 | `make:model` | STABLE |
 | 56 | `make:observer` | STABLE |
-| 57 | `make:openapi` | STABLE |
-| 58 | `make:postman` | STABLE |
-| 59 | `make:queue-table` | STABLE |
-| 60 | `make:repository` | STABLE |
-| 61 | `make:request` | STABLE |
-| 62 | `make:resource` | STABLE |
-| 63 | `make:rule` | STABLE |
-| 64 | `make:seeder` | STABLE |
-| 65 | `make:service` | STABLE |
-| 66 | `make:test` | STABLE |
-| 67 | `mercure:subscribe` | EXPERIMENTAL |
-| 68 | `migrate` | STABLE |
-| 69 | `migrate:fresh` | STABLE |
-| 70 | `migrate:refresh` | STABLE |
-| 71 | `migrate:reset` | STABLE |
-| 72 | `migrate:rollback` | STABLE |
-| 73 | `migrate:status` | STABLE |
-| 74 | `new` | STABLE |
-| 75 | `new:project` | INTERNAL |
-| 76 | `optimize` | INTERNAL |
-| 77 | `queue:flush` | STABLE |
-| 78 | `queue:retry` | STABLE |
-| 79 | `queue:status` | STABLE |
-| 80 | `queue:work` | STABLE |
-| 81 | `rate:status` | STABLE |
-| 82 | `replay` | STABLE |
-| 83 | `route:list` | STABLE |
-| 84 | `route:rules` | STABLE |
-| 85 | `route:search` | STABLE |
-| 86 | `runtime` | EXPERIMENTAL |
-| 87 | `schedule:run` | STABLE |
-| 88 | `serve` | STABLE |
-| 89 | `storage:link` | STABLE |
-| 90 | `test` | STABLE |
-| 91 | `test:regression` | STABLE |
-| 92 | `test:run` | STABLE |
-| 93 | `tinker` | EXPERIMENTAL |
-| 94 | `trace:list` | STABLE |
-| 95 | `up` | STABLE |
+| 57 | `make:oauth-client` | STABLE |
+| 58 | `make:oauth-keys` | STABLE |
+| 59 | `make:openapi` | STABLE |
+| 60 | `make:postman` | STABLE |
+| 61 | `make:queue-table` | STABLE |
+| 62 | `make:repository` | STABLE |
+| 63 | `make:request` | STABLE |
+| 64 | `make:resource` | STABLE |
+| 65 | `make:rule` | STABLE |
+| 66 | `make:seeder` | STABLE |
+| 67 | `make:service` | STABLE |
+| 68 | `make:test` | STABLE |
+| 69 | `mercure:subscribe` | EXPERIMENTAL |
+| 70 | `migrate` | STABLE |
+| 71 | `migrate:fresh` | STABLE |
+| 72 | `migrate:refresh` | STABLE |
+| 73 | `migrate:reset` | STABLE |
+| 74 | `migrate:rollback` | STABLE |
+| 75 | `migrate:status` | STABLE |
+| 76 | `new` | STABLE |
+| 77 | `new:project` | INTERNAL |
+| 78 | `optimize` | INTERNAL |
+| 79 | `queue:flush` | STABLE |
+| 80 | `queue:retry` | STABLE |
+| 81 | `queue:status` | STABLE |
+| 82 | `queue:work` | STABLE |
+| 83 | `rate:status` | STABLE |
+| 84 | `replay` | STABLE |
+| 85 | `route:list` | STABLE |
+| 86 | `route:rules` | STABLE |
+| 87 | `route:search` | STABLE |
+| 88 | `runtime` | EXPERIMENTAL |
+| 89 | `schedule:run` | STABLE |
+| 90 | `serve` | STABLE |
+| 91 | `storage:link` | STABLE |
+| 92 | `test` | STABLE |
+| 93 | `test:regression` | STABLE |
+| 94 | `test:run` | STABLE |
+| 95 | `tinker` | EXPERIMENTAL |
+| 96 | `trace:list` | STABLE |
+| 97 | `up` | STABLE |
 
 ### Aliases (7)
 
@@ -254,7 +266,7 @@ These are the primary developer-facing APIs.
 
 ---
 
-## 5. Environment Variables (68)
+## 5. Environment Variables (71)
 
 ### STABLE (application config)
 
@@ -298,6 +310,9 @@ These are the primary developer-facing APIs.
 | `SIRO_JSON_STRICT` | `1`/`true` restores pre-1.0.7 JsonMiddleware (reject multipart) |
 | `MERCURE_HUB_URL` | Mercure hub URL |
 | `MERCURE_JWT_SECRET` | Mercure JWT secret |
+| `OAUTH_PRIVATE_KEY_PATH` | OAuth2 RSA private key path |
+| `OAUTH_PUBLIC_KEY_PATH` | OAuth2 RSA public key path |
+| `OAUTH_ENCRYPTION_KEY` | OAuth2 defuse encryption key |
 
 ### INTERNAL (framework config)
 
@@ -321,6 +336,7 @@ These are the primary developer-facing APIs.
 | `config/session.php` | STABLE |
 | `config/logging.php` | STABLE |
 | `routes/api.php` | STABLE |
+| `config/oauth.php` | STABLE |
 
 ---
 
@@ -335,6 +351,7 @@ These are the primary developer-facing APIs.
 | `JsonMiddleware` | STABLE |
 | `MaintenanceMiddleware` | STABLE |
 | `IdempotencyMiddleware` | STABLE |
+| `OAuthScopeMiddleware` | STABLE |
 
 ---
 
@@ -342,14 +359,14 @@ These are the primary developer-facing APIs.
 
 | Category | Count | STABLE | INTERNAL | EXPERIMENTAL |
 |----------|-------|--------|----------|--------------|
-| Classes | 208 | ~180 | ~20 | ~8 |
+| Classes | 224 | ~196 | ~20 | ~8 |
 | Interfaces | 9 | 9 | 0 | 0 |
 | Traits | 6 | 0 | 6 | 0 |
-| CLI Commands | 95 | 85 | 5 | 5 |
+| CLI Commands | 97 | 87 | 5 | 5 |
 | Aliases | 7 | 7 | 0 | 0 |
-| Env Variables | 68 | ~40 | ~28 | 0 |
-| Config Files | 8 | 8 | 0 | 0 |
-| Middleware | 7 | 7 | 0 | 0 |
+| Env Variables | 71 | ~43 | ~28 | 0 |
+| Config Files | 9 | 9 | 0 | 0 |
+| Middleware | 8 | 8 | 0 | 0 |
 
 ---
 

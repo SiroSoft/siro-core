@@ -12,7 +12,8 @@ use Siro\Core\Database;
  *
  * Usage: php siro db:benchmark [--iterations=1000]
  */
-final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
+final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -116,13 +117,17 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  DELETE:  ' . number_format($deletePerSec) . ' ops/sec (' . round($deleteTime, 1) . 'ms total)');
 
         // Real-world benchmark: SELECT against actual app tables
-        $realTables = $this->fetchAll($pdo, "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_bench_%' ORDER BY name");
+        $sql = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'" .
+            " AND name NOT LIKE '_bench_%' ORDER BY name";
+        $realTables = $this->fetchAll($pdo, $sql);
         if ($realTables !== []) {
             $largestTable = '';
             $largestCount = 0;
             foreach ($realTables as $rt) {
                 $tblName = is_string($rt['name'] ?? null) ? $rt['name'] : '';
-                if ($tblName === '') continue;
+                if ($tblName === '') {
+                    continue;
+                }
                 $countVal = $this->safeQuery($pdo, "SELECT COUNT(*) FROM \"" . str_replace('"', '""', $tblName) . '"') ?? 0;
                 $cnt = is_numeric($countVal) ? (int) $countVal : 0;
                 if ($cnt > $largestCount) {
@@ -151,7 +156,9 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
                 $start = microtime(true);
                 for ($i = 0; $i < $limitIter; $i++) {
                     $qStmt = $pdo->query("SELECT COUNT(*) FROM \"" . str_replace('"', '""', $largestTable) . '"');
-                    if ($qStmt !== false) $qStmt->fetchColumn();
+                    if ($qStmt !== false) {
+                        $qStmt->fetchColumn();
+                    }
                 }
                 $countTime = (microtime(true) - $start) * 1000;
                 $countPerSec = $countTime > 0 ? round($limitIter / ($countTime / 1000), 0) : 0;
@@ -167,7 +174,11 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
         $deleteStmt = null;
         $realSelect = null;
 
-        try { $pdo->exec('DROP TABLE IF EXISTS _bench_'); } catch (\Throwable) { /* ignore cleanup errors */ }
+        try {
+            $pdo->exec('DROP TABLE IF EXISTS _bench_');
+        } catch (\Throwable) {
+        /* ignore cleanup errors */
+        }
 
         $this->write('');
         $this->write('  ' . str_repeat('-', 50));
@@ -186,7 +197,9 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
     {
         try {
             $stmt = $pdo->query($sql);
-            if ($stmt === false) return null;
+            if ($stmt === false) {
+                return null;
+            }
             return $stmt->fetchColumn();
         } catch (\Throwable) {
             return null;
@@ -198,7 +211,9 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
     {
         try {
             $stmt = $pdo->query($sql);
-            if ($stmt === false) return [];
+            if ($stmt === false) {
+                return [];
+            }
             /** @var array<int, array<string, mixed>> $result */
             $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             return $result;

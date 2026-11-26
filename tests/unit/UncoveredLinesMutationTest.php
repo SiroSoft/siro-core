@@ -28,6 +28,12 @@ final class UncoveredLinesMutationTest extends TestCase
         }
         Env::reset();
         JWT::reset();
+        // Fresh container + guard so auth.resolver bindings made by tests in
+        // this class cannot leak into later test classes (same leak as
+        // EscapedMutantsTest; broke PenetrationTest once the Security suite
+        // joined the default phpunit run in v1.5.0 G2).
+        Container::setInstance(new Container());
+        AuthGuard::setInstance(null);
         putenv('APP_ENV=testing');
     }
 
@@ -41,6 +47,8 @@ final class UncoveredLinesMutationTest extends TestCase
         putenv('THROTTLE_FALLBACK');
         Env::reset();
         JWT::reset();
+        Container::setInstance(null);
+        AuthGuard::setInstance(null);
         Cache::reset();
         $_COOKIE = [];
         $_ENV = [];

@@ -14,7 +14,8 @@ use Siro\Core\Lite\LiteConfig;
  *
  * Usage: php siro db:health
  */
-final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface {
+final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -107,13 +108,17 @@ final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('');
 
             // DB size from information_schema
-            $sizeStmt = $pdo->query("SELECT ROUND(SUM(data_length + index_length) / 1048576, 2) AS size_mb FROM information_schema.TABLES WHERE table_schema = " . $pdo->quote($database));
+            $sizeSql = "SELECT ROUND(SUM(data_length + index_length) / 1048576, 2) AS size_mb" .
+                " FROM information_schema.TABLES WHERE table_schema = ";
+            $sizeStmt = $pdo->query($sizeSql . $pdo->quote($database));
             $sizeRow = $sizeStmt !== false ? $sizeStmt->fetch(PDO::FETCH_ASSOC) : false;
             $sizeMb = is_array($sizeRow) && is_scalar($sizeRow['size_mb'] ?? null) ? (float) $sizeRow['size_mb'] : 0;
             $this->write('  Size:     ' . number_format($sizeMb, 2) . ' MB');
 
             // Table count
-            $tblStmt = $pdo->query("SELECT COUNT(*) AS c FROM information_schema.TABLES WHERE table_schema = " . $pdo->quote($database) . " AND table_type = 'BASE TABLE'");
+            $tblSql = "SELECT COUNT(*) AS c FROM information_schema.TABLES WHERE table_schema = " . $pdo->quote($database);
+            $tblSql .= " AND table_type = 'BASE TABLE'";
+            $tblStmt = $pdo->query($tblSql);
             $tblRow = $tblStmt !== false ? $tblStmt->fetch(PDO::FETCH_ASSOC) : false;
             $tables = is_array($tblRow) && is_scalar($tblRow['c'] ?? null) ? (int) $tblRow['c'] : 0;
             $this->write('  Tables:   ' . $tables);
@@ -125,13 +130,18 @@ final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  Indexes:  ' . $indexes);
 
             // Top 5 largest tables
-            $bigStmt = $pdo->query("SELECT table_name AS t, ROUND((data_length + index_length) / 1048576, 2) AS mb FROM information_schema.TABLES WHERE table_schema = " . $pdo->quote($database) . " ORDER BY (data_length + index_length) DESC LIMIT 5");
+            $bigSql = "SELECT table_name AS t, ROUND((data_length + index_length) / 1048576, 2) AS mb" .
+                " FROM information_schema.TABLES WHERE table_schema = " . $pdo->quote($database);
+            $bigSql .= " ORDER BY (data_length + index_length) DESC LIMIT 5";
+            $bigStmt = $pdo->query($bigSql);
             if ($bigStmt !== false) {
                 $this->write('');
                 $this->write('  Largest tables:');
                 $bigRows = $bigStmt->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($bigRows as $row) {
-                    if (!is_array($row)) continue;
+                    if (!is_array($row)) {
+                        continue;
+                    }
                     $name = is_scalar($row['t'] ?? null) ? (string) $row['t'] : '?';
                     $mb = is_scalar($row['mb'] ?? null) ? (float) $row['mb'] : 0;
                     $this->write('    ' . str_pad($name, 28, ' ') . number_format($mb, 2) . ' MB');

@@ -12,7 +12,8 @@ use Siro\Core\Database;
  *
  * Usage: php siro db:stats
  */
-final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface {
+final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -86,7 +87,9 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface {
             if ($statStmt !== false) {
                 $stats = $statStmt->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($stats as $s) {
-                    if (!is_array($s)) continue;
+                    if (!is_array($s)) {
+                        continue;
+                    }
                     $tbl = is_string($s['tbl'] ?? null) ? $s['tbl'] : '';
                     $stat = is_string($s['stat'] ?? null) ? $s['stat'] : '';
                     if ($tbl !== '' && $stat !== '') {
@@ -112,7 +115,9 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface {
                 $countVal = $this->safeQuery($pdo, "SELECT COUNT(*) FROM \"" . str_replace('"', '""', $name) . '"') ?? 0;
                 $count = is_numeric($countVal) ? (int) $countVal : 0;
             }
-            $indexCountVal = $this->safeQuery($pdo, "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND tbl_name='" . str_replace("'", "''", $name) . "' AND name NOT LIKE 'sqlite_%'") ?? 0;
+            $indexSql = "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND tbl_name='"
+                . str_replace("'", "''", $name) . "' AND name NOT LIKE 'sqlite_%'";
+            $indexCountVal = $this->safeQuery($pdo, $indexSql) ?? 0;
             $indexCount = is_numeric($indexCountVal) ? (int) $indexCountVal : 0;
             $label = isset($rowEstimates[$name]) ? 'est' : 'exact';
             $rows[] = [$name, number_format($count), (string) $indexCount, $label];
@@ -169,7 +174,9 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('');
 
         // Database size
-        $sizeStmt = $pdo->query("SELECT ROUND(SUM(data_length + index_length) / 1048576, 1) AS mb FROM information_schema.TABLES WHERE table_schema = DATABASE()");
+        $sizeSql = 'SELECT ROUND(SUM(data_length + index_length) / 1048576, 1) AS mb '
+            . 'FROM information_schema.TABLES WHERE table_schema = DATABASE()';
+        $sizeStmt = $pdo->query($sizeSql);
         $sizeRow = $sizeStmt !== false ? $sizeStmt->fetch(PDO::FETCH_ASSOC) : false;
         $totalMb = is_array($sizeRow) && is_scalar($sizeRow['mb'] ?? null) ? (float) $sizeRow['mb'] : 0;
         $dataStmt = $pdo->query("SELECT ROUND(SUM(data_length) / 1048576, 1) AS mb FROM information_schema.TABLES WHERE table_schema = DATABASE()");
@@ -186,11 +193,15 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('');
 
         // Tables with row counts
-        $tblStmt = $pdo->query("SELECT table_name AS t, table_rows AS r, ROUND((data_length + index_length) / 1048576, 2) AS mb FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' ORDER BY table_name");
+        $tblSql = 'SELECT table_name AS t, table_rows AS r, ROUND((data_length + index_length) / 1048576, 2) AS mb '
+            . 'FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_type = \'BASE TABLE\' ORDER BY table_name';
+        $tblStmt = $pdo->query($tblSql);
         $rows = [];
         if ($tblStmt !== false) {
             foreach ($tblStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                if (!is_array($row)) continue;
+                if (!is_array($row)) {
+                    continue;
+                }
                 $name = is_scalar($row['t'] ?? null) ? (string) $row['t'] : '';
                 $count = is_scalar($row['r'] ?? null) ? (string) $row['r'] : '0';
                 $mb = is_scalar($row['mb'] ?? null) ? (float) $row['mb'] : 0;

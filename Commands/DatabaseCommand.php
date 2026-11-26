@@ -10,9 +10,12 @@ final class DatabaseCommand implements CommandInterface
 {
     use CommandSupport;
 
+    /** @phpstan-ignore property.onlyWritten */
+    private string $basePath;
+
     public function __construct(string $basePath = '')
     {
-        $basePath = '';
+        $this->basePath = $basePath;
     }
 
     /** @param array<int, string> $args */

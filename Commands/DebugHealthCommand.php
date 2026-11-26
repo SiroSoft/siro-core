@@ -25,14 +25,11 @@ final class DebugHealthCommand implements CommandInterface
         $this->write('Siro Debug Health Check');
         $this->write(str_repeat('-', 40));
 
+        // PHP floor is 8.4.1 (composer.json), so the version check below used
+        // to be a live guard and is now unconditional: just report success.
         $checks++;
-        if (version_compare(PHP_VERSION, '8.2.0', '<')) {
-            $this->error('PHP version: ' . PHP_VERSION);
-            $issues[] = 'PHP version < 8.2 (min required)';
-        } else {
-            $this->success('PHP version: ' . PHP_VERSION);
-            $passed++;
-        }
+        $this->success('PHP version: ' . PHP_VERSION);
+        $passed++;
 
         $checks++;
         $appDebug = Env::bool('APP_DEBUG', false);

@@ -42,7 +42,7 @@ final class Hash
     public static function info(string $hash): array
     {
         $info = password_get_info($hash);
-        /** @var array{algoName: string, options: array{cost: int}} $info */
+        /** @var array{algo: string|null, algoName: string, options: array{cost: int}} $info */
         return [
             'algo' => $info['algoName'],
             'cost' => $info['options']['cost'],

@@ -12,7 +12,8 @@ use Siro\Core\Lite\BackupManager;
  *
  * Usage: php siro db:restore <backup_file>
  */
-final class DbRestoreCommand implements \Siro\Core\Commands\CommandInterface {
+final class DbRestoreCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

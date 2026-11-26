@@ -6,7 +6,8 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\App;
 
-final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
+final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     private string $basePath;
@@ -67,7 +68,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
 
         $paths = [];
         foreach ($routes as $route) {
-            if (!$this->passesFilter($route)) continue;
+            if (!$this->passesFilter($route)) {
+                continue;
+            }
             $this->addRouteToPaths($paths, $route);
         }
 
@@ -133,12 +136,17 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         }
         $this->write('Generated: ' . $outputFile . ' (' . count($paths) . ' endpoints)');
 
-        // Always copy to public for Swagger UI access
-        $this->copyToPublic($outputFile);
-
+        // Generate the Swagger UI BEFORE copying to public: copyToPublic
+        // reads docs/openapi/swagger/index.html, and before this fix it
+        // ran first — so the UI was never copied on a fresh run (only on
+        // a second run, when the file from the previous run already
+        // existed).
         if ($this->withSwagger) {
             $this->generateSwaggerUi($outputDir);
         }
+
+        // Always copy to public for Swagger UI access
+        $this->copyToPublic($outputFile);
         return 0;
     }
 
@@ -193,7 +201,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
 
     private function resolveHandler(mixed $handler): string
     {
-        if (is_string($handler)) return $handler;
+        if (is_string($handler)) {
+            return $handler;
+        }
         if (is_array($handler) && count($handler) >= 2) {
             $first = $handler[0];
             $second = $handler[1];
@@ -202,7 +212,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             }
             return $this->safeStr($first) . '@' . $this->safeStr($second);
         }
-        if ($handler instanceof \Closure) return 'Closure';
+        if ($handler instanceof \Closure) {
+            return 'Closure';
+        }
         return 'unknown';
     }
 
@@ -292,8 +304,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
 
     private function deriveTag(string $handler, string $path): string
     {
-        if (str_contains($path, '/auth/')) return 'Auth';
-        if (str_contains($path, '/health') || $path === '/') return 'System';
+        if (str_contains($path, '/auth/')) {
+            return 'Auth';
+        }
+        if (str_contains($path, '/health') || $path === '/') {
+            return 'System';
+        }
 
         // Closure / anonymous handlers
         if ($handler === 'Closure' || $handler === 'unknown') {
@@ -445,8 +461,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         foreach ($middleware as $m) {
             $mStr = $m;
             // Fix 4: Normalize auth detection - handle auth:api, auth:sanctum, custom auth middleware
-            if (preg_match('/\bauth\b/i', $mStr)) return true;
-            if (str_contains($mStr, 'AuthMiddleware') || str_contains($mStr, 'Auth:')) return true;
+            if (preg_match('/\bauth\b/i', $mStr)) {
+                return true;
+            }
+            if (str_contains($mStr, 'AuthMiddleware') || str_contains($mStr, 'Auth:')) {
+                return true;
+            }
         }
         return false;
     }
@@ -454,7 +474,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private function buildRequestSchema(string $handler, string $method): ?string
     {
         $schemaName = $this->schemaName($handler, $method, 'Request');
-        if (isset($this->schemas[$schemaName])) return $schemaName;
+        if (isset($this->schemas[$schemaName])) {
+            return $schemaName;
+        }
 
         $rules = $this->extractValidationRules($handler);
         // Attribute declarations win over scanned patterns. Explicit
@@ -463,7 +485,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         foreach ($attrFields['body'] as $field => $meta) {
             $rules[$field] = $meta['rules'];
         }
-        if ($rules === []) return null;
+        if ($rules === []) {
+            return null;
+        }
 
         $properties = [];
         $required = [];
@@ -500,7 +524,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $suffix = $isList ? 'ListResponse' : 'Response';
         $schemaName = $this->schemaName($handler, $method, $suffix);
 
-        if (isset($this->schemas[$schemaName])) return $schemaName;
+        if (isset($this->schemas[$schemaName])) {
+            return $schemaName;
+        }
 
         // Auth 'me' endpoint uses User schema
         if (str_contains($path, '/auth/me')) {
@@ -555,14 +581,17 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /** @var array<int, string> Internal model fields that should never appear in API docs */
-    private array $internalModelFields = ['password', 'token_version', 'verification_token', 'password_reset_token', 'password_reset_expires_at', 'email_verified_at', 'deleted_at', 'remember_token'];
+    private array $internalModelFields = ['password', 'token_version', 'verification_token',
+        'password_reset_token', 'password_reset_expires_at', 'email_verified_at', 'deleted_at', 'remember_token'];
 
     /**
      * @return array<string, mixed>|null
      */
     private function extractDataSchema(string $handler): ?array
     {
-        if (!preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) return null;
+        if (!preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) {
+            return null;
+        }
 
         // Fix 3: Prefer Resource::toArray() over Model
         $resourceName = $m[1] . 'Resource';
@@ -665,7 +694,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /** @var array<int, string> Sensitive fields that should not be exposed in OpenAPI */
-    private array $sensitiveFields = ['is_admin', 'role', 'permissions', 'balance', 'credit', 'token_version', 'verification_token', 'password_reset_token', 'password_reset_expires_at', 'email_verified_at', 'deleted_at'];
+    private array $sensitiveFields = ['is_admin', 'role', 'permissions', 'balance', 'credit', 'token_version',
+        'verification_token', 'password_reset_token', 'password_reset_expires_at', 'email_verified_at', 'deleted_at'];
 
     /** @var array<int, string> Internal validation rules that should not be exposed */
     private array $internalRules = ['unique:', 'exists:', 'confirmed', 'required_if:', 'prohibited_if:', 'prohibited:'];
@@ -676,7 +706,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
      * Attribute declarations win over source-scanning patterns; the patterns
      * below remain as fallback for undecorated handlers.
      *
-     * @return array{body: array<string, array{rules: array<int, string>, type: string, description: string, required: bool}>, query: array<string, array{type: string, description: string, required: bool}>}
+     * @return array{body: array<string, array{rules: array<int, string>, type: string, description: string, required: bool}>,
+     * query: array<string, array{type: string, description: string, required: bool}>}
      */
     private function extractAttributeFields(string $handler): array
     {
@@ -761,18 +792,26 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
      */
     private function extractValidationRules(string $handler): array
     {
-        if (!preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) return [];
+        if (!preg_match('/(\w+)Controller@(\w+)/', $handler, $m)) {
+            return [];
+        }
 
         $controllerFile = $this->basePath . '/app/Controllers/' . $m[1] . 'Controller.php';
-        if (!file_exists($controllerFile)) return [];
+        if (!file_exists($controllerFile)) {
+            return [];
+        }
 
         $content = (string) file_get_contents($controllerFile);
 
         $method = $m[2];
-        if (!preg_match('/function\s+' . preg_quote($method, '/') . '\s*\([^)]*\)\s*(?::\s*[^{]+)?\{/', $content, $methodMatch, PREG_OFFSET_CAPTURE)) return [];
+        if (!preg_match('/function\s+' . preg_quote($method, '/') . '\s*\([^)]*\)\s*(?::\s*[^{]+)?\{/', $content, $methodMatch, PREG_OFFSET_CAPTURE)) {
+            return [];
+        }
         $startPos = $methodMatch[0][1];
         $body = $this->extractMethodBody($content, $startPos);
-        if ($body === '') return [];
+        if ($body === '') {
+            return [];
+        }
 
         $rules = [];
 
@@ -842,7 +881,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             // Strip internal-only validation rules (don't expose logic through OpenAPI)
             $rules[$field] = array_values(array_filter($fieldRules, function ($rule) {
                 foreach ($this->internalRules as $internal) {
-                    if (str_starts_with($rule, $internal)) return false;
+                    if (str_starts_with($rule, $internal)) {
+                        return false;
+                    }
                 }
                 return true;
             }));
@@ -880,9 +921,16 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         for ($i = $startPos; $i < $len; $i++) {
             $ch = $content[$i];
             $body .= $ch;
-            if ($ch === '{') { $depth++; $entered = true; }
-            if ($ch === '}') $depth--;
-            if ($entered && $depth === 0) break;
+            if ($ch === '{') {
+                $depth++;
+                $entered = true;
+            }
+            if ($ch === '}') {
+                $depth--;
+            }
+            if ($entered && $depth === 0) {
+                break;
+            }
         }
         return $body;
     }
@@ -926,20 +974,32 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         // Extract min/max for strings
         if ($type === 'string') {
             foreach ($rules as $rule) {
-                if (str_starts_with($rule, 'min:')) $prop['minLength'] = (int) substr($rule, 4);
-                if (str_starts_with($rule, 'max:')) $prop['maxLength'] = (int) substr($rule, 4);
+                if (str_starts_with($rule, 'min:')) {
+                    $prop['minLength'] = (int) substr($rule, 4);
+                }
+                if (str_starts_with($rule, 'max:')) {
+                    $prop['maxLength'] = (int) substr($rule, 4);
+                }
             }
         }
         if ($type === 'number' || $type === 'integer') {
             foreach ($rules as $rule) {
-                if (str_starts_with($rule, 'min:')) $prop['minimum'] = (float) substr($rule, 4);
-                if (str_starts_with($rule, 'max:')) $prop['maximum'] = (float) substr($rule, 4);
+                if (str_starts_with($rule, 'min:')) {
+                    $prop['minimum'] = (float) substr($rule, 4);
+                }
+                if (str_starts_with($rule, 'max:')) {
+                    $prop['maximum'] = (float) substr($rule, 4);
+                }
             }
         }
 
         // Formats
-        if (in_array('email', $rules, true)) $prop['format'] = 'email';
-        if (in_array('url', $rules, true)) $prop['format'] = 'uri';
+        if (in_array('email', $rules, true)) {
+            $prop['format'] = 'email';
+        }
+        if (in_array('url', $rules, true)) {
+            $prop['format'] = 'uri';
+        }
 
         if ($nullable) {
             $prop['nullable'] = true;
@@ -998,7 +1058,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
                 'put', 'patch' => $resource . ' updated successfully',
                 default => ($method === 'get' && str_contains($path, '{') ? $resource . ' details' : 'List of ' . $resource),
             };
-            $responses[$successCode] = ['description' => $desc, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' . $responseSchema]]]];
+            $responses[$successCode] = ['description' => $desc,
+                'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' . $responseSchema]]]];
         } else {
             $responses[$successCode] = ['description' => 'Successful operation'];
         }
@@ -1007,7 +1068,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             $responses['404'] = ['description' => $resource . ' not found'];
         }
         if (in_array($method, ['post', 'put', 'patch'])) {
-            $responses['422'] = ['description' => 'Validation error', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ValidationErrorResponse']]]];
+            $responses['422'] = ['description' => 'Validation error',
+                'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ValidationErrorResponse']]]];
         }
         $responses['401'] = ['description' => 'Unauthorized — missing or invalid JWT token'];
         $responses['403'] = ['description' => 'Forbidden — insufficient permissions'];
@@ -1033,7 +1095,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         }
 
         // Health paths
-        if (str_contains($path, '/health')) return 'System';
+        if (str_contains($path, '/health')) {
+            return 'System';
+        }
 
         $parts = array_values(array_filter(explode('/', $path)));
         // Find the resource segment (skip 'api', path params)
@@ -1057,7 +1121,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
             str_contains($key, 'id') || str_contains($key, 'count') || str_contains($key, 'stock') => 'integer',
             str_contains($key, 'price') || str_contains($key, 'amount') || str_contains($key, 'total') => 'number',
             str_contains($key, 'email') => ['type' => 'string', 'format' => 'email', 'example' => 'user@example.com'],
-            str_contains($key, 'created_at') || str_contains($key, 'updated_at') || str_contains($key, 'deleted_at') => ['type' => 'string', 'format' => 'date-time'],
+            str_contains($key, 'created_at') || str_contains($key, 'updated_at') || str_contains($key, 'deleted_at')
+                => ['type' => 'string', 'format' => 'date-time'],
             str_contains($key, 'status') || str_contains($key, 'name') || str_contains($key, 'slug') => 'string',
             default => 'string',
         };
@@ -1215,14 +1280,26 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $method = $this->safeStr($route['method'] ?? 'GET');
         $tag = $this->deriveTag($this->safeStr($route['handler'] ?? ''), $path);
 
-        if ($method === 'OPTIONS') return false;
-        if ($this->tagFilter !== null && !str_contains(strtolower($tag), strtolower($this->tagFilter))) return false;
-        if ($this->methodFilter !== null && strtoupper($method) !== strtoupper($this->methodFilter)) return false;
-        if ($this->pathFilter !== null && !str_contains($path, $this->pathFilter)) return false;
+        if ($method === 'OPTIONS') {
+            return false;
+        }
+        if ($this->tagFilter !== null && !str_contains(strtolower($tag), strtolower($this->tagFilter))) {
+            return false;
+        }
+        if ($this->methodFilter !== null && strtoupper($method) !== strtoupper($this->methodFilter)) {
+            return false;
+        }
+        if ($this->pathFilter !== null && !str_contains($path, $this->pathFilter)) {
+            return false;
+        }
         if ($this->flowFilter !== null) {
             $flow = strtolower($this->flowFilter);
-            if ($flow === 'auth' && !str_contains($path, '/auth/')) return false;
-            if ($flow === 'crud' && !str_contains($path, '/api/')) return false;
+            if ($flow === 'auth' && !str_contains($path, '/auth/')) {
+                return false;
+            }
+            if ($flow === 'crud' && !str_contains($path, '/api/')) {
+                return false;
+            }
         }
         return true;
     }
@@ -1241,7 +1318,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('');
         $routes = [];
         $controllerDir = $this->basePath . '/app/Controllers';
-        if (!is_dir($controllerDir)) return $routes;
+        if (!is_dir($controllerDir)) {
+            return $routes;
+        }
 
         $httpMethods = [
             'index' => 'GET', 'show' => 'GET', 'store' => 'POST',
@@ -1266,39 +1345,70 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
     private function parseArgs(array $args): void
     {
         foreach ($args as $arg) {
-            if ($arg === '--with-swagger') $this->withSwagger = true;
-            elseif ($arg === '--force') $this->force = true;
-            elseif (str_starts_with($arg, '--output=')) $this->outputFile = substr($arg, 9);
-            elseif (str_starts_with($arg, '--title=')) $this->title = substr($arg, 8);
-            elseif (str_starts_with($arg, '--version=')) $this->apiVersion = substr($arg, 10);
-            elseif (str_starts_with($arg, '--host=')) $this->host = substr($arg, 7);
-            elseif (str_starts_with($arg, '--tag=')) $this->tagFilter = substr($arg, 6);
-            elseif (str_starts_with($arg, '--method=')) $this->methodFilter = strtoupper(substr($arg, 8));
-            elseif (str_starts_with($arg, '--path=')) $this->pathFilter = substr($arg, 7);
-            elseif (str_starts_with($arg, '--flow=')) $this->flowFilter = substr($arg, 7);
-            elseif (str_starts_with($arg, '--routes-dir=')) $this->routesDir = substr($arg, 13);
+            if ($arg === '--with-swagger') {
+                $this->withSwagger = true;
+            } elseif ($arg === '--force') {
+                $this->force = true;
+            } elseif (str_starts_with($arg, '--output=')) {
+                $this->outputFile = substr($arg, 9);
+            } elseif (str_starts_with($arg, '--title=')) {
+                $this->title = substr($arg, 8);
+            } elseif (str_starts_with($arg, '--version=')) {
+                $this->apiVersion = substr($arg, 10);
+            } elseif (str_starts_with($arg, '--host=')) {
+                $this->host = substr($arg, 7);
+            } elseif (str_starts_with($arg, '--tag=')) {
+                $this->tagFilter = substr($arg, 6);
+            } elseif (str_starts_with($arg, '--method=')) {
+                $this->methodFilter = strtoupper(substr($arg, 8));
+            } elseif (str_starts_with($arg, '--path=')) {
+                $this->pathFilter = substr($arg, 7);
+            } elseif (str_starts_with($arg, '--flow=')) {
+                $this->flowFilter = substr($arg, 7);
+            } elseif (str_starts_with($arg, '--routes-dir=')) {
+                $this->routesDir = substr($arg, 13);
+            }
         }
     }
 
     private function generateSwaggerUi(string $outputDir): void
     {
         $swaggerDir = $outputDir . DIRECTORY_SEPARATOR . 'swagger';
-        if (!is_dir($swaggerDir)) mkdir($swaggerDir, 0775, true);
+        if (!is_dir($swaggerDir)) {
+            mkdir($swaggerDir, 0775, true);
+        }
 
-        file_put_contents($swaggerDir . DIRECTORY_SEPARATOR . 'index.html', '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Siro API Docs</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css"></head><body><div id="swagger-ui"></div><script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script><script>SwaggerUIBundle({url:"/openapi.json",dom_id:"#swagger-ui",deepLinking:true,presets:[SwaggerUIBundle.presets.apis,SwaggerUIBundle.SwaggerUIStandalonePreset],layout:"BaseLayout",docExpansion:"list"})</script></body></html>');
+        $swaggerHtml = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' .
+            '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Siro API Docs</title>' .
+            '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css"></head>' .
+            '<body><div id="swagger-ui"></div><script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>' .
+            '<script>SwaggerUIBundle({url:"/openapi.json",dom_id:"#swagger-ui",deepLinking:true,' .
+            'presets:[SwaggerUIBundle.presets.apis,SwaggerUIBundle.SwaggerUIStandalonePreset],' .
+            'layout:"BaseLayout",docExpansion:"list"})</script></body></html>';
+        file_put_contents($swaggerDir . DIRECTORY_SEPARATOR . 'index.html', $swaggerHtml);
         $this->write('Generated: ' . $swaggerDir . DIRECTORY_SEPARATOR . 'index.html');
     }
 
     private function copyToPublic(string $outputFile): void
     {
         $publicDir = $this->basePath . DIRECTORY_SEPARATOR . 'public';
-        if (!is_dir($publicDir)) mkdir($publicDir, 0775, true);
+        if (!is_dir($publicDir)) {
+            mkdir($publicDir, 0775, true);
+        }
         if (is_file($outputFile)) {
             copy($outputFile, $publicDir . DIRECTORY_SEPARATOR . 'openapi.json');
         }
         $swaggerUi = dirname($outputFile) . DIRECTORY_SEPARATOR . 'swagger' . DIRECTORY_SEPARATOR . 'index.html';
         if (is_file($swaggerUi)) {
             copy($swaggerUi, $publicDir . DIRECTORY_SEPARATOR . 'docs.html');
+            // Serve the same UI at /docs as well (php -S -t public serves
+            // public/docs/index.html by default) — docs.html stays for
+            // backwards compatibility.
+            $docsDir = $publicDir . DIRECTORY_SEPARATOR . 'docs';
+            if (!is_dir($docsDir)) {
+                mkdir($docsDir, 0775, true);
+            }
+            copy($swaggerUi, $docsDir . DIRECTORY_SEPARATOR . 'index.html');
         }
         $isProd = in_array(strtolower((string) getenv('APP_ENV')), ['production', 'prod', 'staging'], true);
         if ($isProd) {
@@ -1311,6 +1421,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface {
 
         $host = $this->host;
         $this->write("  Swagger UI: http://{$host}/docs.html");
+        $this->write("  Swagger UI: http://{$host}/docs");
         $this->write("  OpenAPI:    http://{$host}/openapi.json");
     }
 }

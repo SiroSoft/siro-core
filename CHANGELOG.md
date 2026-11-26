@@ -1,5 +1,122 @@
 # Changelog — siro-core
 
+## Unreleased
+
+> NOTE: the first `## vX.Y.Z` heading below must stay the released version
+> (VersionDriftTest + release-check enforce `CHANGELOG head ===
+> Console::VERSION`). The v1.5.0 version bump happens at release time.
+
+### Added
+- OAuth2 partner authentication (G2, v1.5.0): optional bridge over
+  `league/oauth2-server` 9.x (`suggest` + `require-dev`, `class_exists`
+  guard — apps without OAuth2 ship zero extra vendor code). Grants:
+  `authorization_code` (+PKCE), `client_credentials`, `refresh_token`
+  (rotation). New: `Auth/OAuth2/` bridge (`AuthorizationServer`,
+  `OAuthClient`, `ClientRepository`, `ScopeRepository`,
+  `AccessTokenRepository`, `RefreshTokenRepository`, `AuthCodeRepository`,
+  `Entities/*`), `Middleware/OAuthScopeMiddleware.php` (401 `invalid_token` /
+  403 `insufficient_scope` per RFC 6750 §3.1),
+  `Commands/MakeOAuthClientCommand.php` (`make:oauth-client`),
+  `Commands/MakeOAuthKeysCommand.php` (`make:oauth-keys`),
+  `config/oauth.php`, `docs/OAUTH2.md`. `Auth/JWT.php` gains a `scope` claim
+  (`encodeAccess()`/`encodeRefresh()` param) plus `scopes()`/`hasScope()`
+  helpers that understand both core `scope` strings and League `scopes`
+  arrays; `Auth/AuthGuard.php` validates OAuth2 Bearer tokens first when the
+  bridge is enabled (core JWT flow unchanged otherwise). 53 new tests:
+  `tests/unit/AuthOAuth2Test.php` (28), `tests/security/OAuth2PenTest.php`
+  (16), `tests/integration/OAuth2E2eTest.php` (9, real HTTP via fixture
+  `tests/fixtures/oauth2-app`).
+- RFC 7807 Problem Details (G4, opt-in, no BC break): `App::run()` returns a
+  problem-details body when the client sends `Accept: application/problem+json`,
+  when the app registers API version 2, or when config
+  `api.problem_details_default` / env `SIRO_PROBLEM_DETAILS_DEFAULT` enables
+  it. Stable `type` URIs under `https://siro.dev/problems/` for validation
+  (422), not-found (404), forbidden (403), malformed body (400) and internal
+  error (500); validation errors ride in the `errors` extension. The legacy
+  `success`/`error` envelope stays the default. `Response::problem()` accepts
+  an optional `$extensions` array, and `Response::send()` emits
+  `Content-Type: application/problem+json` for problem responses.
+- Throttle tiers (G6, opt-in, no BC break): `ThrottleMiddleware::define()`
+  registers named limiters (e.g. `pos` 600/min, `partner` 60/min, `public`
+  10/min) with key strategies `ip` / `user` / `api_key` / callable, usable as
+  `->middleware(['throttle:pos'])`; `definePlan()` maps API-key plans to
+  limiters. 429 and success responses now always carry `X-RateLimit-Limit`,
+  `X-RateLimit-Remaining`, `X-RateLimit-Reset` and `Retry-After`. `rate:status`
+  lists defined tiers and shows each entry's tier. The flat
+  `throttle:60,1` call keeps working unchanged.
+### Added (G5 — signed webhooks + retry)
+- Signed webhook delivery: new `Webhook\WebhookSigner` (HMAC-SHA256,
+  `X-Siro-Signature: t={ts},v1={hmac}`, 5-minute replay window,
+  fail-closed verification), `Webhook\WebhookDeliveryJob` and
+  `Webhook\WebhookDispatcher` (endpoint/secret/event config in
+  `config/webhooks.php`, queue-based delivery with exponential backoff
+  5/10/20/40/80/160s capped at 300s, dead-letter to `failed_jobs` after
+  `max_attempts`). Reuses the existing `Queue`/`QueueInterface` — no
+  change to queue internals. SiroERP can replace its app-level
+  `WebhookRetryCommand` with this mechanism (see UPGRADE.md).
+- New commands: `make:webhook <Name>` (scaffolds a webhook listener) and
+  `webhook:test <event>` (queues one test delivery).
+- New tests: `tests/unit/WebhookSignerTest.php` (16 tests),
+  `tests/integration/WebhookDeliveryTest.php` (11 tests, incl. a real
+  end-to-end delivery against a local receiver that verifies the
+  signature, and retry-then-dead-letter).
+
+### Added (G7 — OpenAPI source-of-truth in CI + Swagger UI)
+- `api:contract` gains `--coverage`: fails when a registered route has no
+  operation in the spec (reverse direction). `--strict` alone only checks
+  spec→routes — a spec that omits routes used to pass silently.
+- The committed contract fixture app (`tests/fixtures/contract-app/`)
+  now includes a G3 `apiResource()` route (`ContractWidget`, autoloadable
+  trial model in `tests/Integration/ContractWidget.php`), and its spec
+  is the output of `make:openapi` itself — no hand edits. `ApiStabilityTest`
+  asserts spec ↔ routes, and new `tests/unit/ApiContractStrictTest.php`
+  (6 tests) covers the strict/coverage/regeneration/`/docs` cases.
+- CI gates: `test.yml` runs `api:contract --strict --coverage` plus a
+  regenerate-and-diff step on every push/PR; `contract.yml` (previously
+  dead in core — its path triggers and spec path never matched this repo)
+  now runs the same two checks on PRs touching the fixture or the
+  contract commands.
+- `make:openapi --with-swagger` now copies the UI to
+  `public/docs/index.html` as well as `public/docs.html`, so
+  `php -S -t public` serves Swagger UI at `/docs` by default.
+- Fixed a pre-existing ordering bug in `MakeOpenApiCommand`: `copyToPublic()`
+  ran BEFORE `generateSwaggerUi()`, so on a fresh run the UI file did not
+  exist yet and was never copied to `public/` (only a second run copied
+  the stale file from the previous run).
+
+### Added (G3 — auto-CRUD + filter/sort)
+- `Router::apiResource(Model::class, $options)` generates the 5 standard
+  REST endpoints (index/show/store/update/destroy) from one line — no
+  controller file, no scaffold. The routes are plain Router routes, so they
+  appear in `getRoutes()`, the route cache, `api:contract` and
+  `make:openapi` with no special-casing. Options: `filterable` /
+  `sortable` / `includable` / `fields` whitelists, `resource` (Resource
+  class), `request` (FormRequest for store/update), `abilities` (Gate
+  override), `per_page`, `only` / `except` (limit actions; options win over
+  the separate parameters, which are also accepted for parity with
+  `resource()`).
+- Query params on index: `?filter[field][op]` (ops `eq`/`ne`/`lt`/`lte`/
+  `gt`/`gte`/`like`/`in`/`nin`), `?sort` (`-` = DESC, comma-separated),
+  `?include` (eager-load, no nested includes in v1), `?fields` (sparse
+  fieldset), `?page`/`?per_page` (1–100, default 15). Whitelist is
+  mandatory — anything not listed returns 400, never 500, never leaked
+  data; values are always bound parameters, so there is no SQL injection
+  through filters. The index response reuses `paginate()` and adds the
+  applied query to `meta`.
+- Authorization defaults to DENY: every action calls
+  `Gate::authorize('{table}.{verb}')` before touching the database; an
+  ability never defined denies the request (403). Store/update bodies
+  always pass through `$fillable` (mass-assignment safe) and validate via
+  FormRequest (422).
+- New tests: `tests/unit/ApiQueryFilterTest.php` (23),
+  `tests/unit/ApiCrudTest.php` (34), `tests/integration/ApiCrudE2eTest.php`
+  (4) — 61 tests / 130 assertions; independent security probe 50/50 PASS
+  (bad filter/sort/include/fields/page → 400, injection → 0 rows, default
+  DENY 403 on all 5 verbs).
+- Also fixed: `Resource::makeWithFields()` dropped computed fields (e.g.
+  `label`) when `?fields=` was used — it now serializes via
+  `Resource::toArray()` first, then intersects.
+
 ## v1.4.2 (2026-11-26)
 
 ### Fixed

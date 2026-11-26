@@ -49,7 +49,9 @@ final class CorsMiddleware implements MiddlewareInterface
     private function resolveOrigin(string $origin, string $allowedOrigins): string
     {
         $origins = array_filter(array_map('trim', explode(',', $allowedOrigins)));
-        if ($origin === '' || $origin === 'null') return '';
+        if ($origin === '' || $origin === 'null') {
+            return '';
+        }
         return in_array($origin, $origins, true) ? $origin : '';
     }
 }

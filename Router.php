@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Siro\Core;
 
 use Closure;
+use InvalidArgumentException;
 use RuntimeException;
+use Siro\Core\DB\ApiQueryFilter;
 use Siro\Core\Middleware\JsonMiddleware;
 use Siro\Core\Middleware\MiddlewareInterface;
-
 
 final class Router
 {
@@ -171,7 +172,7 @@ final class Router
             $cacheKey = 'route:' . $request->cacheKey();
             $cached = Cache::get($cacheKey);
 
-                if (is_array($cached) && isset($cached['payload'], $cached['status'], $cached['headers'])) {
+            if (is_array($cached) && isset($cached['payload'], $cached['status'], $cached['headers'])) {
                 /** @var int $status */
                 $status = $cached['status'];
                 /** @var array<string, mixed> $payload */
@@ -250,11 +251,15 @@ final class Router
         $json = ltrim(substr($content, strlen($prefix)));
         /** @var mixed $data */
         $data = json_decode($json, true);
-        if (!is_array($data)) { return false; }
+        if (!is_array($data)) {
+            return false;
+        }
         $staticData = is_array($data['static'] ?? null) ? $data['static'] : [];
         $dynamicData = is_array($data['dynamic'] ?? null) ? $data['dynamic'] : [];
         $storedHmac = is_string($data['hmac'] ?? null) ? $data['hmac'] : '';
-        if ($storedHmac === '') { return false; }
+        if ($storedHmac === '') {
+            return false;
+        }
 
         $secret = (string) Env::get('APP_KEY', '');
         $hmacCheck = hash_hmac('sha256', json_encode($staticData) . json_encode($dynamicData), $secret);
@@ -679,9 +684,15 @@ final class Router
                     return str_contains($p, '.') ? (float) $p : (int) $p;
                 }
                 $lower = strtolower($p);
-                if ($lower === 'true') return true;
-                if ($lower === 'false') return false;
-                if ($lower === 'null') return null;
+                if ($lower === 'true') {
+                    return true;
+                }
+                if ($lower === 'false') {
+                    return false;
+                }
+                if ($lower === 'null') {
+                    return null;
+                }
                 return $p;
             }, $rawParams);
         } else {
@@ -880,12 +891,16 @@ final class Router
         $routes = [];
         if (in_array('index', $actions, true)) {
             $route = $this->get("/{$name}", $controller . '@index', $middleware);
-            if ($cacheTtl > 0) { $route->cache($cacheTtl); }
+            if ($cacheTtl > 0) {
+                $route->cache($cacheTtl);
+            }
             $routes['index'] = $route;
         }
         if (in_array('show', $actions, true)) {
             $route = $this->get("/{$name}/{id}", $controller . '@show', $middleware);
-            if ($cacheTtl > 0) { $route->cache($cacheTtl); }
+            if ($cacheTtl > 0) {
+                $route->cache($cacheTtl);
+            }
             $routes['show'] = $route;
         }
         if (in_array('store', $actions, true)) {
@@ -898,6 +913,218 @@ final class Router
             $routes['delete'] = $this->delete("/{$name}/{id}", $controller . '@delete', $middleware);
         }
         return $routes;
+    }
+
+    /**
+     * Register runtime auto-CRUD routes for a model (G3, v1.5.0).
+     *
+     * Unlike `resource()` (hand-written controller) and `MakeCrudCommand`
+     * (scaffold generator that writes static controller files), this registers
+     * 5 routes pointing at the shared runtime `ApiCrudController` — no files
+     * are generated. One line per model:
+     *
+     *   $router->apiResource(Product::class, [
+     *       'filterable' => ['status', 'category_id'],
+     *       'sortable'   => ['created_at', 'price'],
+     *       'includable' => ['category'],
+     *       'fields'     => ['id', 'name', 'price', 'status'],
+     *       'resource'   => ProductResource::class, // optional
+     *       'request'    => ProductRequest::class,  // optional FormRequest
+     *       'abilities'  => ['index' => 'products.view'], // optional override
+     *       'per_page'   => 15,
+     *   ]);
+     *
+     * The URI defaults to the model's table name (`Product` → `/products`);
+     * override with the `uri` option. Routes are plain Router routes (same
+     * table as `resource()`), so they are visible to `getRoutes()`,
+     * `exportRoutes()`, the route cache, `api:contract` and `make:openapi`
+     * with no special-casing.
+     *
+     * Authorization defaults to DENY: every action checks a Gate ability
+     * (`{table}.{verb}` unless `abilities` overrides it); an ability that
+     * was never defined denies the request (403). See `ApiCrudController`.
+     *
+     * `only` / `except` limit the actions, like `resource()` — pass them
+     * inside `$options` (they win over the separate parameters when both
+     * are given) or as the 4th/5th parameters for parity with `resource()`.
+     *
+     * @param class-string<Model> $modelClass
+     * @param array<string, mixed> $options
+     * @param array<int, callable|string> $middleware
+     * @param array<int, string> $only Register only these actions (empty = all).
+     *   Overridden by `$options['only']` when that key is present.
+     * @param array<int, string> $except Skip these actions.
+     *   Overridden by `$options['except']` when that key is present.
+     * @return array<string, Route> Registered routes keyed by action name.
+     */
+    public function apiResource(
+        string $modelClass,
+        array $options = [],
+        array $middleware = [],
+        array $only = [],
+        array $except = []
+    ): array {
+        if (!class_exists($modelClass) || !is_subclass_of($modelClass, Model::class)) {
+            throw new InvalidArgumentException(
+                sprintf('apiResource() requires a Model class, "%s" given.', $modelClass)
+            );
+        }
+        $ref = new \ReflectionClass($modelClass);
+        if ($ref->isAbstract()) {
+            throw new InvalidArgumentException(
+                sprintf('apiResource() requires a concrete Model class, "%s" is abstract.', $modelClass)
+            );
+        }
+
+        // 'only'/'except' may be given inside $options (the spec, REPORT §1.1)
+        // or as separate params (parity with resource()); options keys win.
+        $only = $this->resolveApiResourceActionList($options['only'] ?? null, $only, 'only');
+        $except = $this->resolveApiResourceActionList($options['except'] ?? null, $except, 'except');
+
+        $options = $this->normalizeApiResourceOptions($options, $only, $except);
+
+        $name = isset($options['uri']) && is_string($options['uri'])
+            ? $options['uri']
+            : ApiCrudController::tableFor($modelClass);
+        $basePath = RouteMatcher::normalizePath($this->groupPrefix . '/' . trim($name, '/'));
+        ApiCrudController::register($basePath, $modelClass, $options);
+
+        $actions = self::RESOURCE_ACTIONS;
+        if ($only !== []) {
+            $actions = array_values(array_intersect($actions, $only));
+        }
+        if ($except !== []) {
+            $actions = array_values(array_diff($actions, $except));
+        }
+
+        $routes = [];
+        if (in_array('index', $actions, true)) {
+            $routes['index'] = $this->get("/{$name}", [ApiCrudController::class, 'index'], $middleware);
+        }
+        if (in_array('show', $actions, true)) {
+            $routes['show'] = $this->get("/{$name}/{id}", [ApiCrudController::class, 'show'], $middleware);
+        }
+        if (in_array('store', $actions, true)) {
+            $routes['store'] = $this->post(
+                "/{$name}",
+                [ApiCrudController::class, 'store'],
+                [...$middleware, JsonMiddleware::class]
+            );
+        }
+        if (in_array('update', $actions, true)) {
+            $routes['update'] = $this->put(
+                "/{$name}/{id}",
+                [ApiCrudController::class, 'update'],
+                [...$middleware, JsonMiddleware::class]
+            );
+        }
+        if (in_array('delete', $actions, true)) {
+            $routes['delete'] = $this->delete("/{$name}/{id}", [ApiCrudController::class, 'destroy'], $middleware);
+        }
+        return $routes;
+    }
+
+    /**
+     * Resolve an 'only'/'except' action list for apiResource(): the options
+     * key wins when present (null = absent), otherwise the separate param.
+     * Validates shape fail-fast; unknown action names are rejected by
+     * normalizeApiResourceOptions().
+     *
+     * @param mixed $value
+     * @param array<int, string> $fallback
+     * @return array<int, string>
+     */
+    private function resolveApiResourceActionList(mixed $value, array $fallback, string $key): array
+    {
+        if ($value === null) {
+            return $fallback;
+        }
+        if (!is_array($value)) {
+            throw new InvalidArgumentException(
+                sprintf("apiResource() option '%s' must be an array of action names.", $key)
+            );
+        }
+        $list = [];
+        foreach ($value as $action) {
+            if (!is_string($action)) {
+                throw new InvalidArgumentException(
+                    sprintf("apiResource() option '%s' must be an array of action names.", $key)
+                );
+            }
+            $list[] = $action;
+        }
+        return $list;
+    }
+
+    /**
+     * Validate apiResource() options fail-fast (at registration, not on the
+     * first request). Unknown option keys are ignored (forward compatibility).
+     *
+     * @param array<string, mixed> $options
+     * @param array<int, string> $only
+     * @param array<int, string> $except
+     * @return array<string, mixed>
+     */
+    private function normalizeApiResourceOptions(array $options, array $only, array $except): array
+    {
+        ApiQueryFilter::validateConfig($options);
+
+        if (isset($options['uri'])) {
+            if (!is_string($options['uri']) || trim($options['uri']) === '') {
+                throw new InvalidArgumentException("apiResource() option 'uri' must be a non-empty string.");
+            }
+            foreach (explode('/', trim($options['uri'], '/')) as $segment) {
+                if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9_-]*$/', $segment)) {
+                    throw new InvalidArgumentException(
+                        sprintf("apiResource() option 'uri' has an invalid segment '%s'.", $segment)
+                    );
+                }
+            }
+        }
+
+        if (isset($options['resource'])) {
+            $resource = $options['resource'];
+            if (!is_string($resource) || !class_exists($resource) || !is_subclass_of($resource, Resource::class)) {
+                throw new InvalidArgumentException("apiResource() option 'resource' must be a Resource class.");
+            }
+        }
+
+        if (isset($options['request'])) {
+            $request = $options['request'];
+            if (!is_string($request) || !class_exists($request) || !is_subclass_of($request, FormRequest::class)) {
+                throw new InvalidArgumentException("apiResource() option 'request' must be a FormRequest class.");
+            }
+        }
+
+        if (isset($options['abilities'])) {
+            if (!is_array($options['abilities'])) {
+                throw new InvalidArgumentException(
+                    "apiResource() option 'abilities' must be an array keyed by action."
+                );
+            }
+            foreach ($options['abilities'] as $action => $ability) {
+                if (!in_array($action, self::RESOURCE_ACTIONS, true) || !is_string($ability) || $ability === '') {
+                    throw new InvalidArgumentException(
+                        sprintf(
+                            "apiResource() option 'abilities' has an invalid entry for action '%s'.",
+                            (string) $action
+                        )
+                    );
+                }
+            }
+        }
+
+        foreach (['only' => $only, 'except' => $except] as $key => $list) {
+            foreach ($list as $action) {
+                if (!in_array($action, self::RESOURCE_ACTIONS, true)) {
+                    throw new InvalidArgumentException(
+                        sprintf("apiResource() '%s' has an unknown action '%s'.", $key, (string) $action)
+                    );
+                }
+            }
+        }
+
+        return $options;
     }
 
     private function handleOptionsRequest(string $path, Request $request): Response

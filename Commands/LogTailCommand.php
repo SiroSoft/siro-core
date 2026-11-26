@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class LogTailCommand implements \Siro\Core\Commands\CommandInterface {
+final class LogTailCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -84,7 +85,9 @@ final class LogTailCommand implements \Siro\Core\Commands\CommandInterface {
     private function printLine(string $line): void
     {
         $line = rtrim($line);
-        if ($line === '') return;
+        if ($line === '') {
+            return;
+        }
 
         // Color by status code
         if (preg_match('/\b(\d{3})\b/', $line, $m)) {

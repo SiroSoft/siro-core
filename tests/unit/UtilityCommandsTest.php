@@ -328,6 +328,31 @@ final class UtilityCommandsTest extends TestCase
         $this->assertSame(0, $exit, $output);
     }
 
+    public function testRateStatusShowsDefinedTiers(): void
+    {
+        \Siro\Core\Middleware\ThrottleMiddleware::define('partner', 60, 1, 'api_key');
+        \Siro\Core\Middleware\ThrottleMiddleware::define('pos', 600, 1, 'user');
+        \Siro\Core\Middleware\ThrottleMiddleware::definePlan('partner', 'partner');
+        try {
+            $dir = $this->basePath . '/storage/rate_limit';
+            mkdir($dir, 0777, true);
+            file_put_contents(
+                $dir . '/hash1.json',
+                json_encode(['count' => 61, 'expires_at' => time() + 3600, 'limiter' => 'partner', 'limit' => 60])
+            );
+            [$exit, $output] = $this->runCmd(\Siro\Core\Commands\RateStatusCommand::class, []);
+            $this->assertSame(0, $exit, $output);
+            $this->assertStringContainsString('partner: 60 req / 1 min (key: api_key) [plans: partner]', $output);
+            $this->assertStringContainsString('pos: 600 req / 1 min (key: user)', $output);
+            // The entry is over its own tier limit (61 > 60) → BLOCKED, and
+            // the tier name shows in the table.
+            $this->assertStringContainsString('BLOCKED', $output);
+            $this->assertStringContainsString('partner', $output);
+        } finally {
+            \Siro\Core\Middleware\ThrottleMiddleware::reset();
+        }
+    }
+
     public function testLogTop(): void
     {
         $this->writeTrace('ltop', ['method' => 'GET', 'path' => '/api/x', 'status' => 200, 'time_ms' => 500, 'queries' => []]);

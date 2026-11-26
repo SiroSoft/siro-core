@@ -16,7 +16,8 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-final class MakeLangCommand implements \Siro\Core\Commands\CommandInterface {
+final class MakeLangCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

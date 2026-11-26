@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Siro\Core\Tests\Security;
 
 use PHPUnit\Framework\TestCase;
+use Siro\Core\Auth\AuthGuard;
 use Siro\Core\Auth\JWT;
+use Siro\Core\Container;
 use Siro\Core\Database;
 use Siro\Core\Encrypter;
 use Siro\Core\Env;
@@ -29,11 +31,17 @@ final class PenetrationTest extends TestCase
         $this->tmpDir = sys_get_temp_dir() . '/siro_pentest_' . bin2hex(random_bytes(8));
         Database::purgeAll();
         Storage::fake();
+        // Fresh container + guard: security tests must not inherit
+        // auth.resolver/auth.provider bindings leaked by other test classes.
+        Container::setInstance(new Container());
+        AuthGuard::setInstance(null);
     }
 
     protected function tearDown(): void
     {
         Database::purgeAll();
+        Container::setInstance(null);
+        AuthGuard::setInstance(null);
         if (is_dir($this->tmpDir)) {
             $this->removeDir($this->tmpDir);
         }

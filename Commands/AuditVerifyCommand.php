@@ -18,12 +18,16 @@ use Siro\Core\Audit;
  *
  * @package Siro\Core\Commands
  */
-final class AuditVerifyCommand implements \Siro\Core\Commands\CommandInterface {
+final class AuditVerifyCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
+
+    /** @phpstan-ignore property.onlyWritten */
+    private string $basePath;
 
     public function __construct(string $basePath)
     {
-        unset($basePath);
+        $this->basePath = $basePath;
     }
 
     /** @param array<int, string> $args */

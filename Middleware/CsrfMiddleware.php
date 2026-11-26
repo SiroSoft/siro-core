@@ -69,17 +69,14 @@ final class CsrfMiddleware implements MiddlewareInterface
             ], 419);
         }
 
-        // Rotate token after successful validation with grace period
-        $rotatedAt = 0;
-        if ($session instanceof Session) {
-            $rotatedAt = $session->get('_csrf_rotated_at', 0);
-        }
+        // Rotate token after successful validation with grace period.
+        // $session is a started Session here: the stateless branch above
+        // already returned when no session could be started.
+        $rotatedAt = $session->get('_csrf_rotated_at', 0);
         if (is_numeric($rotatedAt) && (time() - (int) $rotatedAt) > 5) {
             $newToken = self::generateToken();
-        if ($session instanceof Session) {
             $session->set('_csrf_token', $newToken);
             $session->set('_csrf_rotated_at', time());
-        }
         }
 
         return $next($request);

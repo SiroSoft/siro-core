@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class RateStatusCommand implements \Siro\Core\Commands\CommandInterface {
+use Siro\Core\Middleware\ThrottleMiddleware;
+
+final class RateStatusCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -14,6 +17,8 @@ final class RateStatusCommand implements \Siro\Core\Commands\CommandInterface {
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
+        $this->writeTiers();
+
         $rateDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'rate_limit';
 
         if (!is_dir($rateDir)) {
@@ -47,17 +52,25 @@ final class RateStatusCommand implements \Siro\Core\Commands\CommandInterface {
             $expiresAt = is_numeric($expiresVal) ? (int) $expiresVal : 0;
             $remaining = max(0, $expiresAt - $now);
             $hash = basename($file, '.json');
+            // Files written before G6 have no limiter/limit fields.
+            $limiterField = $data['limiter'] ?? '';
+            $tierName = is_string($limiterField) && $limiterField !== '' ? $limiterField : 'default';
+            $limitVal = $data['limit'] ?? 60;
+            $entryLimit = is_numeric($limitVal) ? max(1, (int) $limitVal) : 60;
 
             if ($remaining > 0) {
                 $active++;
             }
 
-            $status = $remaining > 0 ? ($count > 60 ? "\033[31mBLOCKED\033[0m" : "\033[32mOK\033[0m") : "\033[90mEXPIRED\033[0m";
+            $status = $remaining > 0
+                ? ($count > $entryLimit ? "\033[31mBLOCKED\033[0m" : "\033[32mOK\033[0m")
+                : "\033[90mEXPIRED\033[0m";
 
             $rows[] = [
                 substr($hash, 0, 16) . '...',
                 (string) $count,
                 $remaining > 0 ? ($remaining . 's') : '-',
+                $tierName,
                 $status,
             ];
         }
@@ -68,12 +81,41 @@ final class RateStatusCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('');
 
         if ($rows !== []) {
-            $this->table(['Key', 'Count', 'TTL', 'Status'], $rows);
+            $this->table(['Key', 'Count', 'TTL', 'Tier', 'Status'], $rows);
         }
 
         $this->write('');
         $this->write('Clear all: rm -rf ' . $rateDir . '/*.json');
 
         return 0;
+    }
+
+    /** List the named limiters defined via ThrottleMiddleware::define(). */
+    private function writeTiers(): void
+    {
+        $limiters = ThrottleMiddleware::limiters();
+        $planMap = ThrottleMiddleware::planLimiters();
+
+        if ($limiters === [] && $planMap === []) {
+            return;
+        }
+
+        $this->write('Defined limiters:');
+        foreach ($limiters as $name => $limiter) {
+            $key = is_string($limiter['key']) ? $limiter['key'] : 'callable';
+            $plans = [];
+            foreach ($planMap as $plan => $mapped) {
+                if ($mapped === $name) {
+                    $plans[] = $plan;
+                }
+            }
+            $line = '  ' . $name . ': ' . $limiter['limit'] . ' req / '
+                . $limiter['minutes'] . ' min (key: ' . $key . ')';
+            if ($plans !== []) {
+                $line .= ' [plans: ' . implode(', ', $plans) . ']';
+            }
+            $this->write($line);
+        }
+        $this->write('');
     }
 }

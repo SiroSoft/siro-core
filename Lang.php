@@ -249,5 +249,3 @@ final class Lang
         return str_replace('{count}', (string) $count, $form);
     }
 }
-
-

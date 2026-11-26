@@ -51,7 +51,9 @@ final class Session
 
     public function start(?string $sessionId = null): void
     {
-        if ($this->started) return;
+        if ($this->started) {
+            return;
+        }
 
         // Use explicitly set ID, then cookie, then parameter, then generate new
         $cookieSession = isset($_COOKIE['siro_session']) && is_string($_COOKIE['siro_session']) ? $_COOKIE['siro_session'] : null;
@@ -103,7 +105,9 @@ final class Session
 
     public function save(): void
     {
-        if (!$this->started) return;
+        if (!$this->started) {
+            return;
+        }
 
         // Move flash_next to flash for next request
         $this->data['_flash'] = $this->data['_flash_next'] ?? [];
@@ -395,9 +399,13 @@ final class Session
 
     private function getRedis(): ?\Redis
     {
-        if (!class_exists(\Redis::class)) return null;
+        if (!class_exists(\Redis::class)) {
+            return null;
+        }
 
-        if (self::$redisInstance !== null) return self::$redisInstance;
+        if (self::$redisInstance !== null) {
+            return self::$redisInstance;
+        }
 
         try {
             $redis = new \Redis();
@@ -406,10 +414,14 @@ final class Session
                 (int) Env::get('REDIS_PORT', '6379'),
                 (float) Env::get('REDIS_TIMEOUT', '0.2')
             );
-            if (!$connected) return null;
+            if (!$connected) {
+                return null;
+            }
 
             $password = (string) Env::get('REDIS_PASSWORD', '');
-            if ($password !== '') $redis->auth($password);
+            if ($password !== '') {
+                $redis->auth($password);
+            }
 
             self::$redisInstance = $redis;
             return $redis;

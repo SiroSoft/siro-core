@@ -6,7 +6,8 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\App;
 
-final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
+final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -242,7 +243,8 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
         $this->write('  public/postman_collection.json');
         if ($hasAuth) {
             $this->write('  - Auth: Bearer token auto-fetched via pre-request script');
-            $this->write('  - Auth endpoint: ' . ((string) ($authEndpoint['method'] ?? 'POST')) . ' ' . ((string) ($authEndpoint['path'] ?? '/api/auth/login')));
+            $this->write('  - Auth endpoint: ' . ((string) ($authEndpoint['method'] ?? 'POST')) . ' '
+                . ((string) ($authEndpoint['path'] ?? '/api/auth/login')));
         }
 
         return 0;
@@ -371,10 +373,14 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
             $resourceName = $m[1];
         }
 
-        if ($resourceName === null) return null;
+        if ($resourceName === null) {
+            return null;
+        }
 
         $resourceFile = $this->basePath . '/app/Resources/' . $resourceName . 'Resource.php';
-        if (!file_exists($resourceFile)) return null;
+        if (!file_exists($resourceFile)) {
+            return null;
+        }
 
         $content = (string) file_get_contents($resourceFile);
         $properties = [];
@@ -382,7 +388,9 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface {
         if (preg_match('/function\s+toArray\s*\(\)\s*:\s*array\s*\{([^}]+)\}/s', $content, $rm)) {
             preg_match_all('/\'(\w+)\'\s*=>/', $rm[1], $keys);
             foreach ($keys[1] as $key) {
-                if (str_contains($key, 'password') || str_contains($key, 'token') || $key === 'secret') continue;
+                if (str_contains($key, 'password') || str_contains($key, 'token') || $key === 'secret') {
+                    continue;
+                }
                 $properties[$key] = $this->ruleToExample($key, []);
             }
         }

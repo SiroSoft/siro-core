@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
+final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -152,8 +153,12 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface {
         if (is_array($requestHeaders)) {
             foreach ($requestHeaders as $k => $v) {
                 $lk = strtolower($this->safeStr($k));
-                if ($lk === 'host') continue;
-                if ($lk === 'authorization') $hasAuth = true;
+                if ($lk === 'host') {
+                    continue;
+                }
+                if ($lk === 'authorization') {
+                    $hasAuth = true;
+                }
                 $safeV = str_replace("'", "'\\''", $this->safeStr($v));
                 $headers[] = "-H '" . $this->safeStr($k) . ": " . $safeV . "'";
             }

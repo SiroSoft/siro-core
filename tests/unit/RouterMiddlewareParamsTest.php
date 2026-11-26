@@ -28,12 +28,25 @@ final class RouterMiddlewareParamsTest extends TestCase
         return $router->dispatch(new Request('GET', '/probe'));
     }
 
-    public function testInvalidIntParamThrowsClearError(): void
+    /**
+     * G6 changed the meaning of a string first param to ThrottleMiddleware:
+     * it is now a named limiter (e.g. 'throttle:partner'), not a type error.
+     * An undefined limiter name still fails fast with a clear error.
+     */
+    public function testUndefinedLimiterNameThrowsClearError(): void
     {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessageMatches('/ThrottleMiddleware.*maxRequests.*expects int.*got string/s');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches("/Throttle limiter 'abc' is not defined/");
 
         $this->dispatchWith(ThrottleMiddleware::class . ':abc,1');
+    }
+
+    public function testInvalidMinutesParamThrowsClearError(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/ThrottleMiddleware.*minutes.*expects int.*got string/s');
+
+        $this->dispatchWith(ThrottleMiddleware::class . ':60,abc');
     }
 
     public function testTooManyParamsThrow(): void

@@ -16,8 +16,14 @@ final class RuntimeManager
         $this->binDir = $home . DIRECTORY_SEPARATOR . '.siro' . DIRECTORY_SEPARATOR . 'bin';
     }
 
-    public function runtimeDir(): string { return $this->runtimeDir; }
-    public function binDir(): string { return $this->binDir; }
+    public function runtimeDir(): string
+    {
+        return $this->runtimeDir;
+    }
+    public function binDir(): string
+    {
+        return $this->binDir;
+    }
 
     /** @return array{success: bool, message: string, dir?: string} */
     public function install(string $version): array
@@ -81,7 +87,9 @@ final class RuntimeManager
         $active = $this->getActive();
         $versions = [];
         $dirs = glob($this->runtimeDir . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR);
-        if ($dirs === false) return [];
+        if ($dirs === false) {
+            return [];
+        }
 
         foreach ($dirs as $dir) {
             $dir = (string) $dir;
@@ -182,7 +190,9 @@ final class RuntimeManager
                 break;
             }
         }
-        if ($phpSrc === null) return;
+        if ($phpSrc === null) {
+            return;
+        }
 
         $this->createSiroWrapper();
         $this->createPhpWrapper($phpSrc);
@@ -236,10 +246,15 @@ final class RuntimeManager
         $maxAttempts = 3;
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
             $fp = fopen($dest, 'w+');
-            if ($fp === false) return false;
+            if ($fp === false) {
+                return false;
+            }
 
             $ch = curl_init($url);
-            if ($ch === false) { fclose($fp); return false; }
+            if ($ch === false) {
+                fclose($fp);
+                return false;
+            }
 
             curl_setopt_array($ch, [
                 CURLOPT_FILE => $fp,
@@ -252,7 +267,9 @@ final class RuntimeManager
             curl_close($ch);
             fclose($fp);
 
-            if ($httpCode === 200) return true;
+            if ($httpCode === 200) {
+                return true;
+            }
 
             if ($attempt < $maxAttempts) {
                 echo " retry {$attempt}/{$maxAttempts}...";
@@ -266,7 +283,9 @@ final class RuntimeManager
     private static function extract(string $zipFile, string $targetDir): bool
     {
         $zip = new \ZipArchive();
-        if ($zip->open($zipFile) !== true) return false;
+        if ($zip->open($zipFile) !== true) {
+            return false;
+        }
 
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
@@ -304,15 +323,22 @@ final class RuntimeManager
 
     private static function rmdirRecursive(string $dir): void
     {
-        if (!is_dir($dir)) return;
+        if (!is_dir($dir)) {
+            return;
+        }
         /** @var \RecursiveDirectoryIterator $it */
         $it = new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS);
         /** @var \RecursiveIteratorIterator<\RecursiveDirectoryIterator> $files */
         $files = new \RecursiveIteratorIterator($it, \RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($files as $file) {
-            if (!$file instanceof \SplFileInfo) continue;
-            if ($file->isDir()) { rmdir($file->getRealPath()); }
-            else { unlink($file->getRealPath()); }
+            if (!$file instanceof \SplFileInfo) {
+                continue;
+            }
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+            } else {
+                unlink($file->getRealPath());
+            }
         }
         rmdir($dir);
     }
@@ -395,12 +421,18 @@ final class RuntimeManager
             $entryCount = $zip->count();
             for ($i = 0; $i < $entryCount; $i++) {
                 $name = $zip->getNameIndex($i);
-                if ($name === false) continue;
+                if ($name === false) {
+                    continue;
+                }
                 $relative = substr($name, strlen($rootInZip) + 1);
-                if ($relative === '') continue;
+                if ($relative === '') {
+                    continue;
+                }
                 $dest = $targetDir . DIRECTORY_SEPARATOR . $relative;
                 if (str_ends_with($name, '/')) {
-                    if (!is_dir($dest)) mkdir($dest, 0755, true);
+                    if (!is_dir($dest)) {
+                        mkdir($dest, 0755, true);
+                    }
                 } else {
                     copy("zip://{$zipFile}#{$name}", $dest);
                 }
@@ -413,7 +445,8 @@ final class RuntimeManager
             $dataDir = $targetDir . DIRECTORY_SEPARATOR . 'data';
             $binDir = $targetDir . DIRECTORY_SEPARATOR . 'bin';
 
-            $initCmd = escapeshellarg($binDir . DIRECTORY_SEPARATOR . 'mysqld.exe') . ' --initialize-insecure --datadir=' . escapeshellarg($dataDir) . ' --console 2>&1';
+            $initCmd = escapeshellarg($binDir . DIRECTORY_SEPARATOR . 'mysqld.exe')
+                . ' --initialize-insecure --datadir=' . escapeshellarg($dataDir) . ' --console 2>&1';
             shell_exec($initCmd);
 
             if (!is_dir($dataDir)) {
@@ -498,7 +531,9 @@ final class RuntimeManager
         $pidFile = $dataDir . DIRECTORY_SEPARATOR . 'mysql.pid';
         $logFile = $dataDir . DIRECTORY_SEPARATOR . 'mysql.log';
 
-        $cmd = escapeshellarg($mysqldPath) . ' --port=' . escapeshellarg((string) $port) . ' --datadir=' . escapeshellarg($dataDir) . ' --pid-file=' . escapeshellarg($pidFile) . ' --log-error=' . escapeshellarg($logFile);
+        $cmd = escapeshellarg($mysqldPath) . ' --port=' . escapeshellarg((string) $port)
+            . ' --datadir=' . escapeshellarg($dataDir) . ' --pid-file=' . escapeshellarg($pidFile)
+            . ' --log-error=' . escapeshellarg($logFile);
         if (PHP_OS_FAMILY === 'Windows') {
             $cmd = "start /B {$cmd}";
         } else {
@@ -526,7 +561,8 @@ final class RuntimeManager
         if (!is_file($mysqlCli)) {
             $mysqlCli = 'mysql';
         }
-        $cmd = escapeshellarg($mysqlCli) . ' -u root --port=' . escapeshellarg((string) $port) . ' --protocol=tcp -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1';
+        $cmd = escapeshellarg($mysqlCli) . ' -u root --port=' . escapeshellarg((string) $port)
+            . ' --protocol=tcp -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1';
         shell_exec($cmd);
     }
 
@@ -622,7 +658,9 @@ final class RuntimeManager
             // Initialize database
             echo " Initializing...";
             $dataDir = $targetDir . DIRECTORY_SEPARATOR . 'data';
-            if (!is_dir($dataDir)) mkdir($dataDir, 0755, true);
+            if (!is_dir($dataDir)) {
+                mkdir($dataDir, 0755, true);
+            }
 
             $installCmd = escapeshellarg((string) self::findMariaBin($targetDir, 'mysql_install_db')) . ' --datadir=' . escapeshellarg($dataDir) . ' 2>&1';
             shell_exec($installCmd);
@@ -756,7 +794,8 @@ final class RuntimeManager
         $pidFile = $dataDir . DIRECTORY_SEPARATOR . 'siro.pid';
         $logFile = $dataDir . DIRECTORY_SEPARATOR . 'siro.log';
 
-        $cmd = escapeshellarg($binPath) . ' --defaults-file=' . escapeshellarg($iniPath) . ' --pid-file=' . escapeshellarg($pidFile) . ' --log-error=' . escapeshellarg($logFile);
+        $cmd = escapeshellarg($binPath) . ' --defaults-file=' . escapeshellarg($iniPath)
+            . ' --pid-file=' . escapeshellarg($pidFile) . ' --log-error=' . escapeshellarg($logFile);
         if (PHP_OS_FAMILY === 'Windows') {
             $cmd = "start /B {$cmd}";
         } else {
@@ -782,7 +821,9 @@ final class RuntimeManager
     private function createDatabase(string $targetDir, int $port): void
     {
         $bin = self::findMariaBin($targetDir, 'mysql');
-        if ($bin === null) return;
+        if ($bin === null) {
+            return;
+        }
 
         $cmd = escapeshellarg($bin) . ' -h 127.0.0.1 -P ' . escapeshellarg((string) $port) . ' -u root -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1';
         shell_exec($cmd);
@@ -806,13 +847,19 @@ final class RuntimeManager
     private function readDbActive(): ?array
     {
         $file = $this->dbActiveFile();
-        if (!is_file($file)) return null;
+        if (!is_file($file)) {
+            return null;
+        }
 
         $content = file_get_contents($file);
-        if ($content === false) return null;
+        if ($content === false) {
+            return null;
+        }
 
         $decoded = json_decode($content, true);
-        if (!is_array($decoded)) return null;
+        if (!is_array($decoded)) {
+            return null;
+        }
         /** @var array<string, mixed> $data */
         $data = $decoded;
 
@@ -845,12 +892,16 @@ final class RuntimeManager
     private static function extractMariaZip(string $zipFile, string $targetDir): bool
     {
         $zip = new \ZipArchive();
-        if ($zip->open($zipFile) !== true) return false;
+        if ($zip->open($zipFile) !== true) {
+            return false;
+        }
 
         // MariaDB ZIP has a top-level dir like "mariadb-11.4.2-winx64/"
         // We extract and rename to our target
         $tmpDir = dirname($targetDir) . DIRECTORY_SEPARATOR . '.mariadb_tmp';
-        if (is_dir($tmpDir)) self::rmdirRecursive($tmpDir);
+        if (is_dir($tmpDir)) {
+            self::rmdirRecursive($tmpDir);
+        }
         mkdir($tmpDir, 0755, true);
 
         $zip->extractTo($tmpDir);
@@ -858,10 +909,15 @@ final class RuntimeManager
 
         // Find the extracted dir
         $items = scandir($tmpDir);
-        if ($items === false) { self::rmdirRecursive($tmpDir); return false; }
+        if ($items === false) {
+            self::rmdirRecursive($tmpDir);
+            return false;
+        }
 
         foreach ($items as $item) {
-            if ($item === '.' || $item === '..') continue;
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
             $extractedDir = $tmpDir . DIRECTORY_SEPARATOR . $item;
             if (is_dir($extractedDir)) {
                 rename($extractedDir, $targetDir);

@@ -181,7 +181,9 @@ final class Config
         // Serialize config to a JSON + HMAC payload for tamper-proof caching.
         // The HMAC is verified on load (see load() method) to ensure cache integrity.
         $json = json_encode(self::$items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($json === false) { return null; }
+        if ($json === false) {
+            return null;
+        }
         $hmac = hash_hmac('sha256', $json, $secret);
         $content = '<?php exit; ?>' . $json . '.hmac.' . $hmac . PHP_EOL;
 

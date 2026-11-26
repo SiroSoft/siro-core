@@ -12,7 +12,8 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-final class MakeModelCommand implements \Siro\Core\Commands\CommandInterface {
+final class MakeModelCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -34,7 +35,7 @@ final class MakeModelCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('Model name must contain letters. Example: php siro make:model User');
             return 1;
         }
-        
+
         $modelPath = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR . $name . '.php';
 
         if (!is_dir(dirname($modelPath))) {

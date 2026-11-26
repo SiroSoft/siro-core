@@ -75,11 +75,13 @@ abstract class Resource
      */
     private static function makeWithFields(array|Model $item, array $fields): array
     {
-        if (is_array($item)) {
-            $data = $item;
-        } else {
-            $data = $item->toArray();
-        }
+        // Use the resource's own toArray() — not the raw model array — so
+        // computed/renamed fields defined by the resource (e.g. a `label`
+        // derived from `name`) survive sparse fieldsets. Before this fix,
+        // `make($model, ['id', 'label'])` silently dropped `label` because
+        // the model itself has no such attribute (G3 auto-CRUD `?fields=`).
+        /** @phpstan-ignore new.static */
+        $data = (new static($item))->toArray();
 
         $result = [];
         foreach ($fields as $field) {

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
+final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -120,7 +121,8 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             if ($full) {
                 $formatted = json_decode($displayBody, true);
                 if (is_array($formatted)) {
-                    foreach (explode("\n", $this->safeStr(json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))) as $line) {
+                    $prettyJson = $this->safeStr(json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    foreach (explode("\n", $prettyJson) as $line) {
                         $this->write('    ' . $line);
                     }
                 } else {
@@ -139,7 +141,8 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             if ($full) {
                 $formatted = json_decode($displayBody, true);
                 if (is_array($formatted)) {
-                    foreach (explode("\n", $this->safeStr(json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))) as $line) {
+                    $prettyJson = $this->safeStr(json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    foreach (explode("\n", $prettyJson) as $line) {
                         $this->write('    ' . $line);
                     }
                 } else {
@@ -185,7 +188,8 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
                 $queryMs = $q['time_ms'] ?? 0;
                 $this->write(sprintf(
                     '    %d. %s [%d rows, %.2fms]',
-                    $i + 1, $sql,
+                    $i + 1,
+                    $sql,
                     is_numeric($rowsCount) ? (int) $rowsCount : 0,
                     is_numeric($queryMs) ? (float) $queryMs : 0
                 ));
@@ -204,8 +208,17 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
         return 0;
     }
 
-    private function listTraces(?int $status, ?string $method, bool $slow, int $limit, int $days = 0, ?string $ip = null, ?string $path = null, ?string $error = null, int $since = 0): int
-    {
+    private function listTraces(
+        ?int $status,
+        ?string $method,
+        bool $slow,
+        int $limit,
+        int $days = 0,
+        ?string $ip = null,
+        ?string $path = null,
+        ?string $error = null,
+        int $since = 0,
+    ): int {
         $tracesDir = $this->getTracesDir($this->basePath);
 
         $files = $this->findTraceFiles($tracesDir);
@@ -269,7 +282,11 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface {
             $sNum = is_numeric($statusRaw) ? (int) $statusRaw : 0;
             $t = $this->safeStr($data['time_ms'] ?? '?') . 'ms';
             $p = $this->safeStr($data['path'] ?? '?');
-            $sColored = $sNum >= 500 ? $this->colorize($s, 'red') : ($sNum >= 400 ? $this->colorize($s, 'yellow') : ($sNum >= 200 ? $this->colorize($s, 'green') : $s));
+            $sColored = $sNum >= 500
+                ? $this->colorize($s, 'red')
+                : ($sNum >= 400
+                    ? $this->colorize($s, 'yellow')
+                    : ($sNum >= 200 ? $this->colorize($s, 'green') : $s));
 
             $this->write(str_pad(substr($id, 0, 20), 20) . ' ' . str_pad($m, 8) . ' ' . str_pad($sColored, 7) . ' ' . str_pad($t, 8) . ' ' . $p);
             $count++;

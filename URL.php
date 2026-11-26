@@ -33,17 +33,23 @@ final class URL
         $secret = self::secret();
         $expected = hash_hmac('sha256', $payload, $secret);
         if (!hash_equals($expected, $signature)) {
-            if ($throw) throw new RuntimeException('Invalid signature.');
+            if ($throw) {
+                throw new RuntimeException('Invalid signature.');
+            }
             return null;
         }
         /** @var array<string, mixed>|null $data */
         $data = json_decode(self::base64UrlDecode($payload), true);
         if (!is_array($data)) {
-            if ($throw) throw new RuntimeException('Invalid payload.');
+            if ($throw) {
+                throw new RuntimeException('Invalid payload.');
+            }
             return null;
         }
         if (isset($data['expires']) && is_numeric($data['expires']) && (int) $data['expires'] < time()) {
-            if ($throw) throw new RuntimeException('Signed URL has expired.');
+            if ($throw) {
+                throw new RuntimeException('Signed URL has expired.');
+            }
             return null;
         }
         return $data;
@@ -55,7 +61,9 @@ final class URL
         $payload = $request->queryString('payload');
         $signature = $request->queryString('signature');
         if ($payload === '' || $signature === '') {
-            if ($throw) throw new RuntimeException('Missing signature parameters.');
+            if ($throw) {
+                throw new RuntimeException('Missing signature parameters.');
+            }
             return null;
         }
         return self::validate($payload, $signature, $throw);

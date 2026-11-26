@@ -13,6 +13,13 @@ use Siro\Core\Database;
  * Provides simple token-based auth without JWT complexity.
  * Keys are stored in database with metadata.
  *
+ * ApiKey vs OAuth2 (v1.5.0): use ApiKey for trusted server-to-server calls
+ * where one static key with a fixed scope set is enough. Use OAuth2
+ * (`docs/OAUTH2.md`) when opening the API to third-party partners: it adds
+ * the standard authorization_code (+PKCE), client_credentials and
+ * refresh_token grants, per-client scopes, token expiry and revocation.
+ * The two mechanisms coexist — existing ApiKey code is unchanged.
+ *
  * Usage:
  *   $apiKey = new ApiKey();
  *   $apiKey->create('External Partner', 'read,write');

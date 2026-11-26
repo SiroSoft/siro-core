@@ -828,7 +828,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             self::$relationAccessCount[$class . '::' . $name] = (self::$relationAccessCount[$class . '::' . $name] ?? 0) + 1;
             if (self::$relationAccessCount[$class . '::' . $name] >= self::N_PLUS_ONE_THRESHOLD) {
                 self::$nPlusOneWarned = true;
-                $msg = "N+1 detected: {$class}::{$name} accessed " . self::$relationAccessCount[$class . '::' . $name] . " times without eager loading. Use Model::with('{$name}') to prevent N+1.";
+                $msg = "N+1 detected: {$class}::{$name} accessed " . self::$relationAccessCount[$class . '::' . $name]
+                    . " times without eager loading. Use Model::with('{$name}') to prevent N+1.";
                 \Siro\Core\Logger::debug($msg);
             }
         }

@@ -624,4 +624,3 @@ final class Blueprint
         return $char . $identifier . $char;
     }
 }
-

@@ -27,11 +27,26 @@ final class ScheduleTask
         return $this;
     }
 
-    public function everyMinute(): self     { return $this->cron('* * * * *'); }
-    public function hourly(): self           { return $this->cron('0 * * * *'); }
-    public function daily(): self            { return $this->cron('0 0 * * *'); }
-    public function weekly(): self           { return $this->cron('0 0 * * 0'); }
-    public function monthly(): self          { return $this->cron('0 0 1 * *'); }
+    public function everyMinute(): self
+    {
+        return $this->cron('* * * * *');
+    }
+    public function hourly(): self
+    {
+        return $this->cron('0 * * * *');
+    }
+    public function daily(): self
+    {
+        return $this->cron('0 0 * * *');
+    }
+    public function weekly(): self
+    {
+        return $this->cron('0 0 * * 0');
+    }
+    public function monthly(): self
+    {
+        return $this->cron('0 0 1 * *');
+    }
 
     public function dailyAt(string $time): self
     {
@@ -48,7 +63,10 @@ final class ScheduleTask
     {
         $this->withoutOverlapping = true;
         $this->mutexExpires = $expires;
-        $this->mutexKey = 'schedule:' . sha1($this->expression . '_' . ($this->task instanceof \Closure ? spl_object_id($this->task) : (is_string($this->task) ? $this->task : (is_object($this->task) ? get_class($this->task) : ''))));
+        $taskId = $this->task instanceof \Closure
+            ? spl_object_id($this->task)
+            : (is_string($this->task) ? $this->task : (is_object($this->task) ? get_class($this->task) : ''));
+        $this->mutexKey = 'schedule:' . sha1($this->expression . '_' . $taskId);
         return $this;
     }
 
@@ -78,7 +96,9 @@ final class ScheduleTask
     private function matchesCron(int $now): bool
     {
         $parts = explode(' ', $this->expression);
-        if (count($parts) !== 5) return false;
+        if (count($parts) !== 5) {
+            return false;
+        }
 
         return $this->cronMatch((int) date('i', $now), $parts[0])
             && $this->cronMatch((int) date('G', $now), $parts[1])
@@ -89,7 +109,9 @@ final class ScheduleTask
 
     private function cronMatch(int $value, string $pattern): bool
     {
-        if ($pattern === '*') return true;
+        if ($pattern === '*') {
+            return true;
+        }
 
         if (str_contains($pattern, ',')) {
             $parts = explode(',', $pattern);

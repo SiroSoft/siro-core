@@ -6,7 +6,8 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\Console;
 
-final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
+final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     /** @phpstan-ignore property.onlyWritten */
@@ -149,7 +150,9 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface {
         for ($i = 0; $i < $this->iterations; $i++) {
             $str->random(16);
             $str->slug('Hello World');
-            $str->limit('Lorem ipsum dolor sit amet', 20);
+            // Result intentionally discarded: this loop measures call cost.
+            $limited = $str->limit('Lorem ipsum dolor sit amet', 20);
+            unset($limited);
         }
         $end = hrtime(true);
 

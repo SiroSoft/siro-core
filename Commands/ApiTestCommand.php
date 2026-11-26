@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Siro\Core\Commands;
 
 use Siro\Core\App;
+use Siro\Core\Request;
+use Siro\Core\Response;
+use Siro\Core\Router;
+use Siro\Core\Lang;
+use Siro\Core\ValidationException;
 
 /**
  * Test API endpoints from the command line.
@@ -16,13 +21,8 @@ use Siro\Core\App;
  *
  * @package Siro\Core\Commands
  */
-use Siro\Core\Request;
-use Siro\Core\Response;
-use Siro\Core\Router;
-use Siro\Core\Lang;
-use Siro\Core\ValidationException;
-
-final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
+final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport {
         ask as protected traitAsk;
     }
@@ -184,9 +184,13 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             $loginRole = $as ?? 'default';
 
             $this->write("  \033[33mLogging in as '{$loginRole}'...\033[0m");
-            $loginCode = $this->sendInternal('POST', '/api/auth/login',
+            $loginCode = $this->sendInternal(
+                'POST',
+                '/api/auth/login',
                 ['email' => $loginEmail, 'password' => $loginPassword],
-                [], 'json', $loginRole
+                [],
+                'json',
+                $loginRole
             );
 
             if ($loginCode !== 0) {
@@ -533,11 +537,21 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             ob_start();
 
             $aliases = [];
-            if (class_exists(\App\Middleware\AuthMiddleware::class)) $aliases['auth'] = \App\Middleware\AuthMiddleware::class;
-            if (class_exists(\App\Middleware\ThrottleMiddleware::class)) $aliases['throttle'] = \App\Middleware\ThrottleMiddleware::class;
-            if (class_exists(\App\Middleware\CorsMiddleware::class)) $aliases['cors'] = \App\Middleware\CorsMiddleware::class;
-            if (class_exists(\App\Middleware\JsonMiddleware::class)) $aliases['json'] = \App\Middleware\JsonMiddleware::class;
-            if ($aliases !== []) Router::setMiddlewareAliases($aliases);
+            if (class_exists(\App\Middleware\AuthMiddleware::class)) {
+                $aliases['auth'] = \App\Middleware\AuthMiddleware::class;
+            }
+            if (class_exists(\App\Middleware\ThrottleMiddleware::class)) {
+                $aliases['throttle'] = \App\Middleware\ThrottleMiddleware::class;
+            }
+            if (class_exists(\App\Middleware\CorsMiddleware::class)) {
+                $aliases['cors'] = \App\Middleware\CorsMiddleware::class;
+            }
+            if (class_exists(\App\Middleware\JsonMiddleware::class)) {
+                $aliases['json'] = \App\Middleware\JsonMiddleware::class;
+            }
+            if ($aliases !== []) {
+                Router::setMiddlewareAliases($aliases);
+            }
 
             $app = new App($this->basePath);
             $app->boot();
@@ -621,7 +635,6 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
 
             /** @var array<int, string> $customHeaders */
             $this->saveHistory($method, $pathOnly, $fields, $customHeaders, $statusCode, $duration, $memory, $as);
-
         } catch (\Throwable $e) {
             ob_end_clean();
             $duration = (microtime(true) - $start) * 1000;
@@ -803,7 +816,14 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
             'fields' => [], 'headers' => ['origin' => 'http://localhost:3000', 'access-control-request-method' => $method],
             'content_type' => 'json', 'as' => null,
         ];
-        $code1 = $this->sendInternal($opts['method'], $opts['path'], $opts['fields'], ['Origin: http://localhost:3000', 'Access-Control-Request-Method: ' . $method], $opts['content_type'], $opts['as']);
+        $code1 = $this->sendInternal(
+            $opts['method'],
+            $opts['path'],
+            $opts['fields'],
+            ['Origin: http://localhost:3000', 'Access-Control-Request-Method: ' . $method],
+            $opts['content_type'],
+            $opts['as'],
+        );
 
         // Test 2: Request with Origin
         $this->write("  \033[1;90m[2/3] Request with Origin header...\033[0m");
@@ -940,8 +960,14 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface {
      * Write a request trace so the Why/Replay/Fix workflow can consume api:test
      * requests even though they are dispatched in-process (not via HTTP server).
      */
-    private function writeInternalTrace(string $method, string $path, int $status, float $durationMs, \Siro\Core\Request $request, \Siro\Core\Response $response): void
-    {
+    private function writeInternalTrace(
+        string $method,
+        string $path,
+        int $status,
+        float $durationMs,
+        \Siro\Core\Request $request,
+        \Siro\Core\Response $response,
+    ): void {
         try {
             if (!\Siro\Core\Env::bool('APP_DEBUG', false)) {
                 return;

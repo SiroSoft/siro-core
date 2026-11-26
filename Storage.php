@@ -479,7 +479,9 @@ final class Storage
             \Siro\Core\Logger::error('S3 HEAD operation failed: ' . $e->getMessage());
             $result = false;
         }
-        if ($result === false) return false;
+        if ($result === false) {
+            return false;
+        }
         $statusLine = $result[0] ?? '';
         preg_match('/\s(\d{3})\s/', $statusLine, $matches);
         $statusCode = (int) ($matches[1] ?? 0);

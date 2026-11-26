@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class NewCommand implements \Siro\Core\Commands\CommandInterface {
+final class NewCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     private const SKELETON_DIRS = [
@@ -177,7 +178,9 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
                     break;
                 }
             }
-            if ($skip) continue;
+            if ($skip) {
+                continue;
+            }
 
             if ($item->isDir()) {
                 if (!is_dir($target)) {
@@ -185,7 +188,9 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface {
                 }
             } elseif ($item->isFile()) {
                 $content = file_get_contents((string) $pathname);
-                if ($content === false) continue;
+                if ($content === false) {
+                    continue;
+                }
                 $relativeLower = strtolower($relative);
                 if ($relativeLower === 'composer.json') {
                     // Keep the composer package name valid (vendor/name). Only

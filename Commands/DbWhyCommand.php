@@ -77,13 +77,19 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
 
         foreach ($traceFiles as $file) {
             $data = json_decode((string) file_get_contents($file), true);
-            if (!is_array($data)) continue;
+            if (!is_array($data)) {
+                continue;
+            }
 
             $queries = $data['queries'] ?? [];
-            if (!is_array($queries)) continue;
+            if (!is_array($queries)) {
+                continue;
+            }
 
             foreach ($queries as $q) {
-                if (!is_array($q)) continue;
+                if (!is_array($q)) {
+                    continue;
+                }
                 $sql = is_string($q['sql'] ?? null) ? $q['sql'] : '';
                 $hash = substr(sha1($sql), 0, 8);
                 if ($hash === $queryHash) {
@@ -121,13 +127,19 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
 
         foreach ($traceFiles as $file) {
             $data = json_decode((string) file_get_contents($file), true);
-            if (!is_array($data)) continue;
+            if (!is_array($data)) {
+                continue;
+            }
 
             $queries = $data['queries'] ?? [];
-            if (!is_array($queries)) continue;
+            if (!is_array($queries)) {
+                continue;
+            }
 
             foreach ($queries as $q) {
-                if (!is_array($q)) continue;
+                if (!is_array($q)) {
+                    continue;
+                }
                 $timeMs = is_numeric($q['time_ms'] ?? null) ? (float) $q['time_ms'] : 0.0;
                 if ($timeMs >= self::SLOW_THRESHOLD_MS) {
                     $sql = is_string($q['sql'] ?? null) ? $q['sql'] : '';
@@ -159,7 +171,10 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
             /** @var array{hash: string, time_ms: float|int, sql: string, trace_id: string, method: string, path: string} $q */
             $timeColor = $q['time_ms'] > 500 ? self::RED : self::YELLOW;
             $sqlShort = strlen($q['sql']) > 60 ? substr($q['sql'], 0, 57) . '...' : $q['sql'];
-            $this->write('  ' . self::CYAN . $q['hash'] . self::RESET . ' ' . $timeColor . sprintf('%5.0fms', $q['time_ms']) . self::RESET . ' ' . self::GRAY . $sqlShort . self::RESET);
+            $this->write(
+                '  ' . self::CYAN . $q['hash'] . self::RESET . ' ' . $timeColor
+                . sprintf('%5.0fms', $q['time_ms']) . self::RESET . ' ' . self::GRAY . $sqlShort . self::RESET,
+            );
             $this->write('  ' . self::GRAY . '    Trace: ' . $q['method'] . ' ' . $q['path'] . ' (' . $q['trace_id'] . ')' . self::RESET);
             $this->write('    ' . self::CYAN . 'php siro db:why ' . $q['hash'] . self::RESET);
         }
@@ -275,7 +290,9 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
             $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
             $explainSql = (is_string($driver) && $driver === 'sqlite') ? 'EXPLAIN QUERY PLAN ' . $normalized : 'EXPLAIN ' . $normalized;
             $stmt = $pdo->query($explainSql);
-            if ($stmt === false) return null;
+            if ($stmt === false) {
+                return null;
+            }
             /** @var array<int, array<string, mixed>> $rows */
             $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             return $rows;
@@ -319,7 +336,12 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
                 }
             }
 
-            if (str_contains($extra, 'using filesort') || str_contains($extra, 'using temporary') || str_contains($detail, 'temp b-tree for order by') || str_contains($detail, 'using filesort')) {
+            if (
+                str_contains($extra, 'using filesort')
+                || str_contains($extra, 'using temporary')
+                || str_contains($detail, 'temp b-tree for order by')
+                || str_contains($detail, 'using filesort')
+            ) {
                 $suggestions[] = 'Using filesort/temporary — add composite index covering ORDER BY columns';
             }
 
@@ -350,7 +372,8 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
     {
         $cols = [];
         if (preg_match_all('/\bWHERE\s+(.*?)(?:\s+ORDER\s|\s+LIMIT|\s+GROUP\s|$)/is', $sql, $matches)) {
-            $whereClause = $matches[1][0] ?? '';
+            // preg_match_all matched, so $matches[1][0] always exists.
+            $whereClause = $matches[1][0];
             if (preg_match_all('/`?(\w+)`?\s*[=<>!]+\s*(?:\?|:\w+|\d+)/', $whereClause, $colMatches)) {
                 foreach ($colMatches[1] as $col) {
                     $lower = strtolower($col);

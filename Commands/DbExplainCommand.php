@@ -9,7 +9,8 @@ namespace Siro\Core\Commands;
  *
  * @deprecated Use `php siro db:why --explain` instead.
  */
-final class DbExplainCommand implements \Siro\Core\Commands\CommandInterface {
+final class DbExplainCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

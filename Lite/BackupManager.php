@@ -60,7 +60,9 @@ final class BackupManager
                 }
                 while (!feof($fp)) {
                     $chunk = fread($fp, 8192);
-                    if ($chunk === false) break;
+                    if ($chunk === false) {
+                        break;
+                    }
                     gzwrite($gz, $chunk);
                 }
                 fclose($fp);
@@ -107,7 +109,9 @@ final class BackupManager
             }
             while (!gzeof($gz)) {
                 $chunk = gzread($gz, 8192);
-                if ($chunk === false || $chunk === '') break;
+                if ($chunk === false || $chunk === '') {
+                    break;
+                }
                 fwrite($fp, $chunk);
             }
             gzclose($gz);
@@ -122,7 +126,9 @@ final class BackupManager
             $testPdo->query('PRAGMA integrity_check');
             $testPdo = null;
         } catch (Throwable $e) {
-            if ($tempFile !== null) @unlink($tempFile);
+            if ($tempFile !== null) {
+                @unlink($tempFile);
+            }
             return ['success' => false, 'message' => 'Invalid backup file: ' . $e->getMessage()];
         }
 
@@ -133,13 +139,17 @@ final class BackupManager
                 @unlink($this->dbPath);
             }
             $copied = @copy($sourceFile, $this->dbPath);
-            if ($tempFile !== null) @unlink($tempFile);
+            if ($tempFile !== null) {
+                @unlink($tempFile);
+            }
             if (!$copied) {
                 return ['success' => false, 'message' => 'Could not copy backup over database: ' . $this->dbPath];
             }
             return ['success' => true, 'message' => 'Restore completed'];
         } catch (Throwable $e) {
-            if ($tempFile !== null) @unlink($tempFile);
+            if ($tempFile !== null) {
+                @unlink($tempFile);
+            }
             return ['success' => false, 'message' => 'Restore failed: ' . $e->getMessage()];
         }
     }

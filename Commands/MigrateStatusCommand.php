@@ -9,7 +9,8 @@ use Siro\Core\Database;
 use Siro\Core\Env;
 use Throwable;
 
-final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface {
+final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -35,10 +36,10 @@ final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         Env::load($this->basePath . DIRECTORY_SEPARATOR . '.env');
-        
+
         // Preflight check
         $this->checkRequiredExtensions();
-        
+
         /** @var array<string, mixed> $config */
         $config = require $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
         Database::configure($config);
@@ -54,7 +55,7 @@ final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
             fwrite(STDERR, "  3. Network connectivity and firewall settings\n");
             exit(1);
         }
-        
+
         $this->ensureMigrationTable($pdo);
 
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
@@ -91,8 +92,10 @@ final class MigrateStatusCommand implements \Siro\Core\Commands\CommandInterface
         $driver = is_string($driverAttr) ? $driverAttr : 'mysql';
 
         $sql = match ($driver) {
-            'pgsql' => 'CREATE TABLE IF NOT EXISTS migrations (id BIGSERIAL PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
-            default => 'CREATE TABLE IF NOT EXISTS migrations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE, batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
+            'pgsql' => 'CREATE TABLE IF NOT EXISTS migrations (id BIGSERIAL PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE,' .
+                ' batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
+            default => 'CREATE TABLE IF NOT EXISTS migrations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, migration VARCHAR(255) NOT NULL UNIQUE,' .
+                ' batch INT NOT NULL DEFAULT 1, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)',
         };
 
         $pdo->exec($sql);

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class LogTopCommand implements \Siro\Core\Commands\CommandInterface {
+final class LogTopCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -35,13 +36,17 @@ final class LogTopCommand implements \Siro\Core\Commands\CommandInterface {
         $aggregated = [];
         foreach ($files as $file) {
             $data = json_decode((string) file_get_contents($file), true);
-            if (!is_array($data)) continue;
+            if (!is_array($data)) {
+                continue;
+            }
 
             $key = strtoupper($this->safeStr($data['method'] ?? 'GET')) . ' ' . $this->safeStr($data['path'] ?? '/');
             $timeMsVal = $data['time_ms'] ?? 0;
             $timeMs = is_numeric($timeMsVal) ? (float) $timeMsVal : 0;
 
-            if ($timeMs < $minMs) continue;
+            if ($timeMs < $minMs) {
+                continue;
+            }
 
             if (!isset($aggregated[$key])) {
                 $aggregated[$key] = [

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Siro Framework — The Fastest, Lightest, Most Secure PHP Framework
  *
@@ -9,6 +7,8 @@ declare(strict_types=1);
  *
  * @package Siro\Core
  */
+
+declare(strict_types=1);
 
 namespace Siro\Core;
 
@@ -47,7 +47,9 @@ final class App
      */
     public function boot(): void
     {
-        if ($this->booted) { return; }
+        if ($this->booted) {
+            return;
+        }
         $this->booted = true;
 
         \Siro\Core\Env::reset();
@@ -217,7 +219,9 @@ final class App
         if (is_file($cacheFile) && $router->loadFromCache($cacheFile)) {
             $routes = $router->getRoutes();
             if ($routes !== []) {
-                if ($this->debug) { Logger::debug('Routes loaded from cache'); }
+                if ($this->debug) {
+                    Logger::debug('Routes loaded from cache');
+                }
                 return;
             }
         }
@@ -237,7 +241,9 @@ final class App
             $basePath = (string) dirname(__DIR__);
         }
         $file = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down';
-        if (!file_exists($file)) { return null; }
+        if (!file_exists($file)) {
+            return null;
+        }
         $contents = file_get_contents($file);
         $data = is_string($contents) ? json_decode($contents, true) : null;
         /** @var array<string, mixed>|null $data */
@@ -256,7 +262,9 @@ final class App
         Response::enableDebug($this->debug);
         Cache::resetRequestState();
         $requestStartedAt = microtime(true);
-        $method = 'GET'; $path = '/'; $status = 500;
+        $method = 'GET';
+        $path = '/';
+        $status = 500;
         $request = null;
         // W3C Trace Context: accept incoming, propagate outgoing
         $incomingTraceparent = isset($_SERVER['HTTP_TRACEPARENT']) && is_string($_SERVER['HTTP_TRACEPARENT']) ? $_SERVER['HTTP_TRACEPARENT'] : '';
@@ -308,7 +316,9 @@ final class App
                     $msgVal = $maintenance['message'] ?? 'Under maintenance';
                     $resp = Response::error(is_string($msgVal) ? $msgVal : 'Under maintenance', 503);
                     $resp->header('Retry-After', (string) $retry)->header('X-Siro-Trace-Id', $traceId);
-                    $resp->send(); $status = 503; return;
+                    $resp->send();
+                    $status = 503;
+                    return;
                 }
             }
 
@@ -328,7 +338,9 @@ final class App
             $response->send();
         } catch (ValidationException $e) {
             $this->attachDebugMeta();
-            $errorResponse = $e->toResponse();
+            $errorResponse = ($request !== null && Response::wantsProblemDetails($request))
+                ? Response::fromException($e, $request)
+                : $e->toResponse();
             $status = $errorResponse->statusCode();
             if ($this->traceEnabled) {
                 TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -337,7 +349,9 @@ final class App
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (MalformedBodyException $e) {
             $this->attachDebugMeta();
-            $errorResponse = $e->toResponse();
+            $errorResponse = ($request !== null && Response::wantsProblemDetails($request))
+                ? Response::fromException($e, $request)
+                : $e->toResponse();
             $status = $errorResponse->statusCode();
             if ($this->traceEnabled) {
                 TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -346,7 +360,9 @@ final class App
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } catch (AuthorizationException $e) {
             $this->attachDebugMeta();
-            $errorResponse = $e->toResponse();
+            $errorResponse = ($request !== null && Response::wantsProblemDetails($request))
+                ? Response::fromException($e, $request)
+                : $e->toResponse();
             $status = $errorResponse->statusCode();
             if ($this->traceEnabled) {
                 TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -356,7 +372,9 @@ final class App
         } catch (ModelNotFoundException $e) {
             $this->attachDebugMeta();
             $status = 404;
-            $errorResponse = Response::error($e->getMessage(), 404);
+            $errorResponse = ($request !== null && Response::wantsProblemDetails($request))
+                ? Response::fromException($e, $request)
+                : Response::error($e->getMessage(), 404);
             if ($this->traceEnabled) {
                 TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 TraceData::setException($e::class, $e->getMessage());
@@ -368,9 +386,16 @@ final class App
             if ($this->showDebugTrace) {
                 $errors = ['error_id' => $traceId];
             }
-            if ($request !== null && class_exists(\App\Exceptions\Handler::class) && is_subclass_of(\App\Exceptions\Handler::class, \Siro\Core\ExceptionHandlerInterface::class)) {
+            if (
+                $request !== null
+                && class_exists(\App\Exceptions\Handler::class)
+                && is_subclass_of(\App\Exceptions\Handler::class, \Siro\Core\ExceptionHandlerInterface::class)
+            ) {
                 /** @var Response $errorResponse */
                 $errorResponse = \App\Exceptions\Handler::handle($e, $request);
+            } elseif ($request !== null && Response::wantsProblemDetails($request)) {
+                $this->attachDebugMeta();
+                $errorResponse = Response::fromException($e, $request);
             } else {
                 $this->attachDebugMeta();
                 $errorResponse = Response::error('Internal Server Error', 500, $errors);
@@ -386,7 +411,9 @@ final class App
             $remoteAddr = isset($_SERVER['REMOTE_ADDR']) && is_string($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
             $userAgent = isset($_SERVER['HTTP_USER_AGENT']) && is_string($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
             Logger::request($method, $path, $status, $timeMs, $remoteAddr, $traceId, $userAgent);
-            if ($timeMs > 100) { Logger::slowRequest($method, $path, $status, $timeMs); }
+            if ($timeMs > 100) {
+                Logger::slowRequest($method, $path, $status, $timeMs);
+            }
 
             // Write trace file for why/replay commands
             if ($this->traceEnabled) {
@@ -419,15 +446,24 @@ final class App
                     $traceData['cookie'] = '***REDACTED***';
                 }
                 if (isset($traceData['request_body']) && is_string($traceData['request_body'])) {
-                    $sensitiveKeys = ['password', 'token', 'secret', 'key', 'otp', 'code', 'authorization', 'access_token', 'refresh_token', 'api_key', 'session_id'];
+                    $sensitiveKeys = ['password', 'token', 'secret', 'key', 'otp', 'code', 'authorization',
+                        'access_token', 'refresh_token', 'api_key', 'session_id'];
                     $body = json_decode($traceData['request_body'], true);
                     if (is_array($body)) {
                         $body = self::redactSensitiveKeys($body, $sensitiveKeys);
                         $traceData['request_body'] = (string) json_encode($body, JSON_UNESCAPED_UNICODE);
                     } else {
-                        $redacted = preg_replace('/(password|token|secret|key|otp|code|access_token|refresh_token|api_key|session_id)=([^&\s]+)/i', '$1=***REDACTED***', $traceData['request_body']);
+                        $redacted = preg_replace(
+                            '/(password|token|secret|key|otp|code|access_token|refresh_token|api_key|session_id)=([^&\s]+)/i',
+                            '$1=***REDACTED***',
+                            $traceData['request_body']
+                        );
                         // Also redact XML sensitive fields
-                        $traceData['request_body'] = (string) preg_replace('/<(\/?)(' . implode('|', $sensitiveKeys) . ')([^>]*)>(.*?)<\/\2>/i', '<$1$2$3>***REDACTED***</$2>', $redacted ?? $traceData['request_body']);
+                        $traceData['request_body'] = (string) preg_replace(
+                            '/<(\/?)(' . implode('|', $sensitiveKeys) . ')([^>]*)>(.*?)<\/\2>/i',
+                            '<$1$2$3>***REDACTED***</$2>',
+                            $redacted ?? $traceData['request_body']
+                        );
                     }
                 }
 
@@ -501,7 +537,9 @@ final class App
 
     private function attachDebugMeta(): void
     {
-        if (!$this->debug) { return; }
+        if (!$this->debug) {
+            return;
+        }
         $executionTimeMs = (microtime(true) - $this->startedAt) * 1000;
         $memoryUsageMb = memory_get_peak_usage(true) / 1024 / 1024;
         Response::setDebugMeta([

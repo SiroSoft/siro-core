@@ -9,7 +9,8 @@ use Siro\Core\Database;
 use Siro\Core\Env;
 use Throwable;
 
-final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface {
+final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface
+{
     use MigrationBaseCommand;
 
     public function __construct(private readonly string $basePath)

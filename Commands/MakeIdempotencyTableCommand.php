@@ -9,7 +9,8 @@ use Siro\Core\Commands\CommandSupport;
 /**
  * Create idempotency table migration.
  */
-final class MakeIdempotencyTableCommand implements \Siro\Core\Commands\CommandInterface {
+final class MakeIdempotencyTableCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

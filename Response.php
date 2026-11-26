@@ -33,6 +33,7 @@ final class Response
     private string $filePath = '';
     private bool $isRaw = false;
     private string $rawContent = '';
+    private bool $isProblem = false;
 
     /**
      * JSON-envelope constructor.
@@ -99,6 +100,9 @@ final class Response
      * @param string $detail Detailed error explanation
      * @param string $type URI identifying the problem type
      * @param string $instance URI identifying the specific occurrence
+     * @param array<string, mixed> $extensions RFC 7807 extension members
+     *        (e.g. ['errors' => [...]]) merged after the standard fields;
+     *        keys colliding with standard fields are ignored.
      */
     public static function problem(
         string $title = 'An error occurred',
@@ -106,6 +110,7 @@ final class Response
         string $detail = '',
         string $type = 'about:blank',
         string $instance = '',
+        array $extensions = [],
     ): self {
         $payload = [
             'type' => $type,
@@ -116,7 +121,111 @@ final class Response
         if ($instance !== '') {
             $payload['instance'] = $instance;
         }
-        return new self($payload, $statusCode);
+        foreach ($extensions as $key => $value) {
+            if (!array_key_exists($key, $payload)) {
+                $payload[$key] = $value;
+            }
+        }
+        $response = new self($payload, $statusCode);
+        $response->isProblem = true;
+        $response->extraHeaders['Content-Type'] = 'application/problem+json';
+        return $response;
+    }
+
+    public function isProblem(): bool
+    {
+        return $this->isProblem;
+    }
+
+    /**
+     * Should this request receive RFC 7807 problem details instead of the
+     * legacy success/error envelope? True when ANY of:
+     * - the Accept header asks for application/problem+json;
+     * - the request runs on API version >= 2 (an app that registers v2 opts
+     *   into problem details as its default error format);
+     * - config `api.problem_details_default` or env
+     *   SIRO_PROBLEM_DETAILS_DEFAULT enables it app-wide.
+     * Default is false: the legacy envelope stays the default so existing
+     * clients keep working unchanged.
+     */
+    public static function wantsProblemDetails(Request $request): bool
+    {
+        $accept = (string) $request->header('accept', '');
+        if ($accept !== '') {
+            foreach (explode(',', $accept) as $part) {
+                $mediaType = strtolower(trim(explode(';', $part, 2)[0]));
+                if ($mediaType === 'application/problem+json') {
+                    return true;
+                }
+            }
+        }
+
+        if ($request->version() >= 2) {
+            return true;
+        }
+
+        $configDefault = Config::get('api.problem_details_default', false);
+        if (in_array($configDefault, [true, 1, '1', 'true'], true)) {
+            return true;
+        }
+
+        return Env::bool('SIRO_PROBLEM_DETAILS_DEFAULT', false);
+    }
+
+    /**
+     * Build an RFC 7807 problem response for a known exception type.
+     * Type URIs are stable per error kind so clients can match on them.
+     * The generic 500 case never leaks the exception message into `detail`.
+     */
+    public static function fromException(\Throwable $e, Request $request): self
+    {
+        $instance = $request->path();
+
+        if ($e instanceof ValidationException) {
+            return self::problem(
+                'Validation Failed',
+                422,
+                $e->getMessage(),
+                'https://siro.dev/problems/validation-failed',
+                $instance,
+                ['errors' => $e->errors()],
+            );
+        }
+        if ($e instanceof ModelNotFoundException) {
+            return self::problem(
+                'Not Found',
+                404,
+                $e->getMessage(),
+                'https://siro.dev/problems/not-found',
+                $instance,
+            );
+        }
+        if ($e instanceof AuthorizationException) {
+            return self::problem(
+                'Forbidden',
+                403,
+                $e->getMessage(),
+                'https://siro.dev/problems/forbidden',
+                $instance,
+            );
+        }
+        if ($e instanceof MalformedBodyException) {
+            return self::problem(
+                'Malformed Request Body',
+                400,
+                $e->getMessage(),
+                'https://siro.dev/problems/malformed-body',
+                $instance,
+            );
+        }
+
+        return self::problem(
+            'Internal Server Error',
+            500,
+            'Internal Server Error',
+            'https://siro.dev/problems/internal-server-error',
+            $instance,
+        );
     }
 
     public static function created(mixed $data = null, string $message = 'Created'): self
@@ -469,7 +578,20 @@ final class Response
 
         if (!$isCli) {
             http_response_code($this->statusCode);
-            header('Content-Type: application/json; charset=utf-8');
+            // A problem response (or an explicit caller header) already
+            // carries its own Content-Type in extraHeaders — never emit a
+            // second, conflicting one. Matched case-insensitively, like the
+            // security-header merge above.
+            $hasContentType = false;
+            foreach (array_keys($this->extraHeaders) as $headerName) {
+                if (strtolower($headerName) === 'content-type') {
+                    $hasContentType = true;
+                    break;
+                }
+            }
+            if (!$hasContentType) {
+                header('Content-Type: application/json; charset=utf-8');
+            }
 
             if (self::$requestId !== '') {
                 header('X-Request-Id: ' . self::$requestId);
@@ -501,7 +623,9 @@ final class Response
         }
 
         if (!$isCli) {
-            $acceptEncoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && is_scalar($_SERVER['HTTP_ACCEPT_ENCODING']) ? (string) $_SERVER['HTTP_ACCEPT_ENCODING'] : '';
+            $acceptEncoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && is_scalar($_SERVER['HTTP_ACCEPT_ENCODING'])
+                ? (string) $_SERVER['HTTP_ACCEPT_ENCODING']
+                : '';
             if (str_contains($acceptEncoding, 'gzip') && function_exists('gzencode')) {
                 header('Content-Encoding: gzip');
                 echo gzencode($encoded);
@@ -551,7 +675,9 @@ final class Response
         if (ini_get('zlib.output_compression')) {
             return false;
         }
-        $acceptEncoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && is_scalar($_SERVER['HTTP_ACCEPT_ENCODING']) ? (string) $_SERVER['HTTP_ACCEPT_ENCODING'] : '';
+        $acceptEncoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && is_scalar($_SERVER['HTTP_ACCEPT_ENCODING'])
+            ? (string) $_SERVER['HTTP_ACCEPT_ENCODING']
+            : '';
         if ($acceptEncoding === '' || !str_contains($acceptEncoding, 'gzip') || !function_exists('gzencode')) {
             return false;
         }
@@ -579,7 +705,9 @@ final class Response
         if (!$isCli) {
             http_response_code($this->statusCode);
 
-            $acceptEncoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && is_scalar($_SERVER['HTTP_ACCEPT_ENCODING']) ? (string) $_SERVER['HTTP_ACCEPT_ENCODING'] : '';
+            $acceptEncoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && is_scalar($_SERVER['HTTP_ACCEPT_ENCODING'])
+                ? (string) $_SERVER['HTTP_ACCEPT_ENCODING']
+                : '';
             $canGzip = !ini_get('zlib.output_compression')
                 && str_contains($acceptEncoding, 'gzip')
                 && function_exists('gzencode')

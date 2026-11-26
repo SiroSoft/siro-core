@@ -17,7 +17,8 @@ final class DatabaseConnectionException extends RuntimeException
         $this->host = $host;
 
         $message = sprintf(
-            "Cannot connect to %s database at %s:%d\n\n  %s\n\nPlease check:\n  1. Your .env DB configuration (DB_HOST, DB_PORT, DB_DATABASE)\n  2. Database server is running and accessible\n  3. Network connectivity and firewall settings",
+            "Cannot connect to %s database at %s:%d\n\n  %s\n\nPlease check:\n  1. Your .env DB configuration (DB_HOST, DB_PORT, DB_DATABASE)\n"
+            . "  2. Database server is running and accessible\n  3. Network connectivity and firewall settings",
             $driver,
             $host,
             $port,

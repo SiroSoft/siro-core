@@ -35,10 +35,18 @@ final class LoggerInstance implements LoggerInterface
         $this->dailyDir = $this->logDir . DIRECTORY_SEPARATOR . 'daily';
         $this->mainDir = $this->logDir . DIRECTORY_SEPARATOR . 'main';
         $this->traceDir = $this->logDir . DIRECTORY_SEPARATOR . 'traces';
-        if (!is_dir($this->logDir)) { mkdir($this->logDir, 0775, true); }
-        if (!is_dir($this->dailyDir)) { mkdir($this->dailyDir, 0775, true); }
-        if (!is_dir($this->mainDir)) { mkdir($this->mainDir, 0775, true); }
-        if (!is_dir($this->traceDir)) { mkdir($this->traceDir, 0775, true); }
+        if (!is_dir($this->logDir)) {
+            mkdir($this->logDir, 0775, true);
+        }
+        if (!is_dir($this->dailyDir)) {
+            mkdir($this->dailyDir, 0775, true);
+        }
+        if (!is_dir($this->mainDir)) {
+            mkdir($this->mainDir, 0775, true);
+        }
+        if (!is_dir($this->traceDir)) {
+            mkdir($this->traceDir, 0775, true);
+        }
         $this->protectLogDir();
 
         $this->retentionDays = max(1, (int) Env::get('LOG_RETENTION_DAYS', '30'));
@@ -67,9 +75,15 @@ final class LoggerInstance implements LoggerInterface
     /** @param array{headers?: array<int, string>, body?: array<int, string>, query?: array<int, string>} $config */
     public function setSanitizeConfig(array $config): void
     {
-        if (isset($config['headers'])) $this->sanitizeConfig['headers'] = $config['headers'];
-        if (isset($config['body'])) $this->sanitizeConfig['body'] = $config['body'];
-        if (isset($config['query'])) $this->sanitizeConfig['query'] = $config['query'];
+        if (isset($config['headers'])) {
+            $this->sanitizeConfig['headers'] = $config['headers'];
+        }
+        if (isset($config['body'])) {
+            $this->sanitizeConfig['body'] = $config['body'];
+        }
+        if (isset($config['query'])) {
+            $this->sanitizeConfig['query'] = $config['query'];
+        }
     }
 
     public function request(string $method, string $path, int $status, float $timeMs, string $ip = '', string $traceId = '', string $userAgent = ''): void
@@ -103,7 +117,12 @@ final class LoggerInstance implements LoggerInterface
 
         $line = sprintf(
             '[%s] %s %s %d %.2fms (threshold: %dms)',
-            date('Y-m-d H:i:s'), strtoupper($method), $path, $status, $timeMs, $this->slowThreshold
+            date('Y-m-d H:i:s'),
+            strtoupper($method),
+            $path,
+            $status,
+            $timeMs,
+            $this->slowThreshold
         );
 
         $this->write('slow', $line, true);
@@ -276,7 +295,9 @@ final class LoggerInstance implements LoggerInterface
     {
         /** @var array<string, mixed>|null $decoded */
         $decoded = json_decode($json, true);
-        if (!is_array($decoded)) return $json;
+        if (!is_array($decoded)) {
+            return $json;
+        }
 
         $decoded = $this->sanitizeRecursive($decoded, $this->sanitizeConfig['body']);
 
@@ -405,7 +426,9 @@ final class LoggerInstance implements LoggerInterface
 
     private function cleanOldTraces(): void
     {
-        if (!is_dir($this->traceDir)) return;
+        if (!is_dir($this->traceDir)) {
+            return;
+        }
 
         $cutoff = time() - ($this->retentionDays * 86400);
         $yearDirs = glob($this->traceDir . DIRECTORY_SEPARATOR . '????', GLOB_ONLYDIR) ?: [];
@@ -417,24 +440,38 @@ final class LoggerInstance implements LoggerInterface
                     $prefixDirs = glob($dayDir . DIRECTORY_SEPARATOR . '??', GLOB_ONLYDIR) ?: [];
                     foreach ($prefixDirs as $prefixDir) {
                         foreach (glob($prefixDir . DIRECTORY_SEPARATOR . '*.json') ?: [] as $file) {
-                            if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
+                            if (filemtime($file) < $cutoff && is_file($file)) {
+                                unlink($file);
+                            }
                         }
-                        if (count(glob($prefixDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) rmdir($prefixDir);
+                        if (count(glob($prefixDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) {
+                            rmdir($prefixDir);
+                        }
                     }
                     foreach (glob($dayDir . DIRECTORY_SEPARATOR . '*.json') ?: [] as $file) {
-                        if (filemtime($file) < $cutoff && is_file($file)) unlink($file);
+                        if (filemtime($file) < $cutoff && is_file($file)) {
+                            unlink($file);
+                        }
                     }
-                    if (count(glob($dayDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) rmdir($dayDir);
+                    if (count(glob($dayDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) {
+                        rmdir($dayDir);
+                    }
                 }
-                if (count(glob($monthDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) rmdir($monthDir);
+                if (count(glob($monthDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) {
+                    rmdir($monthDir);
+                }
             }
-            if (count(glob($yearDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) rmdir($yearDir);
+            if (count(glob($yearDir . DIRECTORY_SEPARATOR . '*') ?: []) === 0) {
+                rmdir($yearDir);
+            }
         }
     }
 
     private function cleanOldLogs(): void
     {
-        if ($this->logDir === '') return;
+        if ($this->logDir === '') {
+            return;
+        }
 
         $cutoff = time() - ($this->retentionDays * 86400);
         $totalSize = 0;
@@ -443,10 +480,14 @@ final class LoggerInstance implements LoggerInterface
         // Scan daily month dirs
         $monthDirs = glob($this->dailyDir . DIRECTORY_SEPARATOR . '????-??', GLOB_ONLYDIR) ?: [];
         foreach ($monthDirs as $monthDir) {
-            if (!is_dir($monthDir)) continue;
+            if (!is_dir($monthDir)) {
+                continue;
+            }
             foreach (glob($monthDir . DIRECTORY_SEPARATOR . '*-????-??-??.log') ?: [] as $file) {
                 if (filemtime($file) < $cutoff) {
-                    if (is_file($file)) unlink($file);
+                    if (is_file($file)) {
+                        unlink($file);
+                    }
                 } else {
                     $totalSize += is_file($file) ? filesize($file) : 0;
                     $allFiles[] = $file;

@@ -14,7 +14,9 @@ final class DemoCommand implements CommandInterface
 {
     use CommandSupport;
 
-    public function __construct(private readonly string $basePath) {}
+    public function __construct(private readonly string $basePath)
+    {
+    }
 
     /** @param array<int, string> $args */
     public function run(array $args): int

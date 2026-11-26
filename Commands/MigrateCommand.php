@@ -33,7 +33,7 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $pdo = $this->setupDatabaseConnection($this->basePath);
-        
+
         $this->ensureMigrationTable($pdo);
 
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
@@ -94,11 +94,11 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
                     'migration' => $migrationName,
                     'batch' => $batch,
                 ]);
-                
+
                 if ($canTransaction && $pdo->inTransaction()) {
                     $pdo->commit();
                 }
-                
+
                 $ran++;
                 $this->success('Migrated: ' . $migrationName);
             } catch (Throwable $e) {

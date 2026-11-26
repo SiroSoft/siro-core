@@ -126,7 +126,9 @@ final class Validator
 
         // Min validation (handles strings, numbers, files)
         self::registerStrategy('min', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
-            if ($param === null) return null;
+            if ($param === null) {
+                return null;
+            }
             $min = (int) $param;
 
             if ($value instanceof UploadedFile && $value->isValid()) {
@@ -153,7 +155,9 @@ final class Validator
 
         // Max validation (handles strings, numbers, files)
         self::registerStrategy('max', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
-            if ($param === null) return null;
+            if ($param === null) {
+                return null;
+            }
             $max = (int) $param;
 
             if ($value instanceof UploadedFile && $value->isValid()) {
@@ -191,7 +195,9 @@ final class Validator
 
         // In validation
         self::registerStrategy('in', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
-            if ($param === null) return null;
+            if ($param === null) {
+                return null;
+            }
             $allowedValues = array_map('trim', explode(',', $param));
             return !in_array(is_scalar($value) ? (string) $value : '', $allowedValues, true)
                 ? [self::message('in', 'validation.in'), ['values' => implode(', ', $allowedValues)]]
@@ -200,9 +206,13 @@ final class Validator
 
         // Regex validation
         self::registerStrategy('regex', function ($value, ?string $param): ?string {
-            if ($param === null) return null;
+            if ($param === null) {
+                return null;
+            }
             try {
-                if (preg_match((string) $param, '') === false) return null;
+                if (preg_match((string) $param, '') === false) {
+                    return null;
+                }
             } catch (\Throwable $e) {
                 \Siro\Core\Logger::error('Regex validation failed: ' . $e->getMessage());
                 return null;

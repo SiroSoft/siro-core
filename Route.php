@@ -24,7 +24,7 @@ final class Route
 
     /** @var array<string, array{method:string, path:string}> */
     private static array $namedRoutes = [];
-    
+
     public function __construct(
         private readonly Router $router,
         private readonly string $method,
@@ -188,7 +188,7 @@ final class Route
 
     /**
      * Add rate limiting to route
-     * 
+     *
      * @param int $maxAttempts Maximum number of attempts
      * @param int $decayMinutes Decay period in minutes
      */
@@ -207,17 +207,17 @@ final class Route
     private static function registerRoute(string $method, string $path, callable|array|string $handler): self
     {
         $router = self::$routerInstance;
-        
+
         if ($router === null) {
             // Auto-create a router if none is set
             $router = new Router();
             self::$routerInstance = $router;
         }
-        
+
         $lowerMethod = strtolower($method);
         /** @var Route $route */
         $route = $router->{$lowerMethod}($path, $handler);
-        
+
         return $route;
     }
 
@@ -253,16 +253,24 @@ final class Route
     public static function registerAttributes(string $controllerDir, array $globalMiddleware = [], string $prefix = ''): void
     {
         $router = self::$routerInstance;
-        if ($router === null) return;
+        if ($router === null) {
+            return;
+        }
 
-        if (!is_dir($controllerDir)) return;
+        if (!is_dir($controllerDir)) {
+            return;
+        }
 
         $files = glob(rtrim($controllerDir, '/') . '/*Controller.php');
-        if ($files === false) return;
+        if ($files === false) {
+            return;
+        }
 
         foreach ($files as $file) {
             $className = self::pathToClassName($file);
-            if ($className === null) continue;
+            if ($className === null) {
+                continue;
+            }
 
             $refClass = new \ReflectionClass($className);
             $classAttrs = self::controllerAttributes($refClass);
@@ -360,11 +368,15 @@ final class Route
         }
 
         $basename = basename($file, '.php');
-        if ($basename === '') return null;
+        if ($basename === '') {
+            return null;
+        }
 
         $fqcn = $namespace !== '' ? $namespace . '\\' . $basename : $basename;
 
-        if (!class_exists($fqcn)) return null;
+        if (!class_exists($fqcn)) {
+            return null;
+        }
 
         return $fqcn;
     }

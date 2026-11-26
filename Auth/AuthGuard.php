@@ -49,6 +49,44 @@ final class AuthGuard
             return null;
         }
 
+        // OAuth2 (v1.5.0): when the bridge is enabled, a league access token
+        // validates here first. Core JWTs are NOT consumed by this branch
+        // (source must be 'oauth2') — they fall through to the flow below,
+        // including the token-version check. When OAuth2 is disabled this
+        // block is skipped entirely, so existing behavior is unchanged.
+        if (\Siro\Core\Auth\OAuth2\AuthorizationServer::isEnabled()) {
+            try {
+                $oauth = \Siro\Core\Auth\OAuth2\AuthorizationServer::validateRequest($request);
+                if ($oauth !== null && $oauth['source'] === 'oauth2') {
+                    $oauthUserId = $oauth['user_id'];
+                    if ($oauthUserId !== null) {
+                        $oauthProvider = $this->getUserProvider();
+                        $oauthUser = $oauthProvider !== null
+                            ? $oauthProvider->retrieveById($oauthUserId)
+                            : null;
+                        if ($oauthUser === null) {
+                            return null;
+                        }
+                        /** @var array<string, mixed> $oauthUser */
+                        $this->userData = $oauthUser;
+                        $this->userData['oauth'] = $oauth;
+                        return $this->userData;
+                    }
+                    // client_credentials token: no resource owner, client context only.
+                    $this->userData = [
+                        'id' => null,
+                        'type' => 'oauth2_client',
+                        'client_id' => $oauth['client_id'],
+                        'scopes' => $oauth['scopes'],
+                        'oauth' => $oauth,
+                    ];
+                    return $this->userData;
+                }
+            } catch (\Throwable) {
+                // Fall through to the core JWT flow below.
+            }
+        }
+
         try {
             /** @var array<string, mixed> $claims */
             $claims = JWT::decode(trim($matches[1]));
@@ -103,7 +141,9 @@ final class AuthGuard
 
     public function hasRole(string ...$roles): bool
     {
-        if ($this->userData === null) return false;
+        if ($this->userData === null) {
+            return false;
+        }
         $userRoleVal = $this->userData['role'] ?? 'user';
         $userRole = is_scalar($userRoleVal) ? (string) $userRoleVal : 'user';
         foreach ($roles as $role) {
@@ -124,7 +164,8 @@ final class AuthGuard
         $container = Container::getInstance();
 
         if ($container->has('auth.provider')) {
-            $provider = $container->make('auth.provider'); return $provider instanceof UserProvider ? $provider : null;
+            $provider = $container->make('auth.provider');
+            return $provider instanceof UserProvider ? $provider : null;
         }
 
         /** @var string $modelClass */
