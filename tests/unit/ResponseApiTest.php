@@ -101,6 +101,28 @@ final class ResponseApiTest extends TestCase
         $this->assertFalse($resp->isFileResponse());
     }
 
+    /**
+     * F3 (v1.4.1): the 404 for a missing download must not leak the
+     * requested path. The old message was "File not found: <full path>".
+     */
+    public function testDownloadMissingFileDoesNotLeakPath(): void
+    {
+        $secret = $this->projTmp . '/secret-dir/definitely-missing.txt';
+        $resp = Response::download($secret);
+        $this->assertSame(404, $resp->statusCode());
+        $this->assertSame('File not found', $resp->payload()['message']);
+        $this->assertStringNotContainsString($secret, (string) json_encode($resp->payload()));
+    }
+
+    public function testStreamMissingFileDoesNotLeakPath(): void
+    {
+        $secret = $this->projTmp . '/secret-dir/definitely-missing.bin';
+        $resp = Response::stream($secret);
+        $this->assertSame(404, $resp->statusCode());
+        $this->assertSame('File not found', $resp->payload()['message']);
+        $this->assertStringNotContainsString($secret, (string) json_encode($resp->payload()));
+    }
+
     public function testDownloadPathTraversalRejected(): void
     {
         $resp = Response::download('../etc/passwd');

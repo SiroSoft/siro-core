@@ -63,4 +63,23 @@ final class QueryBuilderOrderByRawTest extends TestCase
             ->toSql();
         $this->assertStringContainsString('ORDER BY COALESCE(a, b) DESC, `name` ASC', $sql);
     }
+
+    /**
+     * F2 (v1.4.1): a direction carried by the expression beats the
+     * explicit $direction argument — it is used as-is, never duplicated.
+     */
+    public function testExpressionDirectionBeatsExplicitDirection(): void
+    {
+        $sql = (new QueryBuilder('users'))->orderByRaw('quantity_on_hand DESC', 'asc')->toSql();
+        $this->assertStringContainsString('ORDER BY quantity_on_hand DESC', $sql);
+        $this->assertStringNotContainsString('DESC ASC', $sql);
+        $this->assertStringNotContainsString('DESC DESC', $sql);
+    }
+
+    public function testExpressionDirectionBeatsExplicitDesc(): void
+    {
+        $sql = (new QueryBuilder('users'))->orderByRaw('COALESCE(a, b) ASC', 'desc')->toSql();
+        $this->assertStringContainsString('ORDER BY COALESCE(a, b) ASC', $sql);
+        $this->assertStringNotContainsString('ASC DESC', $sql);
+    }
 }

@@ -250,7 +250,10 @@ final class Response
         // Resolve symlinks and relative paths, validate within project
         $real = realpath($filePath);
         if ($real === false || !is_file($real) || !is_readable($real)) {
-            throw new RuntimeException('File not found: ' . $filePath);
+            // Generic message on purpose: the requested path must never leak
+            // into an error response (F3, v1.4.1). Callers that need the path
+            // already have it; the 404 body must not reveal it.
+            throw new RuntimeException('File not found');
         }
         // Ensure file is within project directory to prevent path traversal
         $base = defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : (string) getcwd();

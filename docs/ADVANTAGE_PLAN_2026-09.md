@@ -33,8 +33,9 @@ passed/warned/failed counts and returns 0 for a clean contract.
 
 Migration behavior:
 
-- a failed migration is never inserted into `migrations`;
-- only an explicit `--force-record` records a failed migration;
+- a failed migration is never inserted into `migrations` (there is no
+  `--force-record` flag — it was removed in v1.4.0; failed runs are
+  simply retried, never recorded as successful);
 - the next run retries the same file;
 - existing `already exists` errors remain visible and are not silently marked.
 

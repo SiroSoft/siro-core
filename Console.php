@@ -104,7 +104,7 @@ use Siro\Core\Commands\AuditLogCommand;
 
 final class Console
 {
-    public const VERSION = '1.4.0';
+    public const VERSION = '1.4.1';
 
     /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
     private static array $appCommands = [];
@@ -142,14 +142,36 @@ final class Console
         return self::VERSION;
     }
 
-    public function __construct(private readonly string $basePath)
+    private readonly string $basePath;
+
+    public function __construct(string $basePath)
     {
+        // An empty basePath used to silently poison every file-based
+        // command (e.g. route:rules looked for "/routes/api.php" and
+        // exited 1 — the pre-existing testRouteRules failure). Resolve it
+        // from the SIRO_BASE_PATH constant, then the env var of the same
+        // name, then the working directory — the same fallback order the
+        // rest of the framework (App, Response, Storage) already uses.
+        $this->basePath = $basePath !== '' ? $basePath : self::resolveBasePath();
+
         $envFile = $this->basePath . DIRECTORY_SEPARATOR . '.env';
         if (file_exists($envFile)) {
             Env::load($envFile);
         }
         $this->discoverPackageCommands();
         $this->discoverAppCommands();
+    }
+
+    private static function resolveBasePath(): string
+    {
+        if (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) && SIRO_BASE_PATH !== '') {
+            return SIRO_BASE_PATH;
+        }
+        $env = getenv('SIRO_BASE_PATH');
+        if (is_string($env) && $env !== '') {
+            return $env;
+        }
+        return (string) getcwd();
     }
 
     private function discoverPackageCommands(): void

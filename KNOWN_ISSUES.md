@@ -1,5 +1,16 @@
 # Known Issues & Limitations
 
+## v1.4.1 — Fixed in this release
+
+| Issue | Fix |
+|-------|-----|
+| `Response::download()` / `stream()` leaked the requested file path in the JSON 404 body (F3) | Generic "File not found" message; traversal case keeps its own "Access denied" message |
+| `QueryBuilder::where('col')` with 1 arg silently became `IS NULL` (F1) | Bare 1-arg `where()` / `orWhere()` now throw `RuntimeException`; explicit `where('col', null)` still means IS NULL |
+| `orderByRaw()` direction precedence undocumented (F2) | Documented: an ASC/DESC carried by the expression wins over the explicit `$direction`; tests lock the behaviour |
+| `new Console('')` poisoned every file-based command — `route:rules` exited 1 (pre-existing `testRouteRules` failure) | Empty basePath resolves from `SIRO_BASE_PATH` (constant, then env var), then `getcwd()` |
+| Hardcoded `NUL` proc descriptor in `ApiTestCommandTest` broke the watch-mode deleter on Linux | Platform-aware `/dev/null` / `NUL` (same pattern as the webhook test) |
+| `symfony/filesystem` v7.4.11 advisory (CVE-2026-135803, dev-only) | Bumped to the patched 7.4.x; `composer audit` exits 0, so the release-check audit step passes |
+
 ## v0.35.1 — Resolved & Current Limitations
 
 ### Resolved since v0.26
