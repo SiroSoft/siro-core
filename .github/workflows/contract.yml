@@ -3,9 +3,11 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - 'routes/**'
-      - 'docs/openapi/**'
-      - 'app/Controllers/**'
+      - 'tests/fixtures/contract-app/**'
+      - 'Commands/ApiContractCommand.php'
+      - 'Commands/MakeOpenApiCommand.php'
+      - 'Router.php'
+      - 'Console.php'
 
 jobs:
   schemathesis:
@@ -16,21 +18,31 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.4'
+          extensions: pdo, pdo_sqlite, sqlite3, json, mbstring, openssl, fileinfo, curl
           tools: composer:v2
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
-      - name: Start dev server
+      - name: Contract --strict --coverage (fixture app)
+        # Real gate: every spec operation needs a matching route AND a
+        # declared response (--strict), and every route needs a spec
+        # operation (--coverage). Fails the build on drift.
+        env:
+          JWT_SECRET: placeholder_jwt_secret_for_tests_only_0000
+          APP_KEY: placeholder_app_key_for_tests_only_0000
         run: |
-          php -S 127.0.0.1:8080 -t public > /dev/null 2>&1 &
-          echo "PID=$!" >> $GITHUB_ENV
-          sleep 2
+          php -r 'require "vendor/autoload.php"; exit((new \Siro\Core\Console("tests/fixtures/contract-app"))->run(["siro", "api:contract", "--strict", "--coverage"]));'
+      - name: OpenAPI spec is freshly generated (fixture app)
+        # The committed fixture spec must be exactly what make:openapi
+        # generates — hand edits drift.
+        env:
+          JWT_SECRET: placeholder_jwt_secret_for_tests_only_0000
+          APP_KEY: placeholder_app_key_for_tests_only_0000
+        run: |
+          rm -rf /tmp/contract-fixture
+          cp -r tests/fixtures/contract-app /tmp/contract-fixture
+          php -r 'require "vendor/autoload.php"; exit((new \Siro\Core\Console("/tmp/contract-fixture"))->run(["siro", "make:openapi", "--force"]));'
+          diff -u tests/fixtures/contract-app/docs/openapi/openapi.json /tmp/contract-fixture/docs/openapi/openapi.json
       - name: Validate OpenAPI spec
         run: |
-          if [ -f docs/openapi/openapi.json ]; then
-            npx @redocly/cli lint docs/openapi/openapi.json || true
-          else
-            echo "No OpenAPI spec found — skipping contract validation"
-          fi
-      - name: Stop dev server
-        run: kill ${{ env.PID }} || true
+          npx @redocly/cli lint tests/fixtures/contract-app/docs/openapi/openapi.json || true
