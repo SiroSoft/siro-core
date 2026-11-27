@@ -1,10 +1,6 @@
 # Changelog — siro-core
 
-## Unreleased
-
-> NOTE: the first `## vX.Y.Z` heading below must stay the released version
-> (VersionDriftTest + release-check enforce `CHANGELOG head ===
-> Console::VERSION`). The v1.5.0 version bump happens at release time.
+## v1.5.0 (2026-11-27)
 
 ### Added
 - OAuth2 partner authentication (G2, v1.5.0): optional bridge over
