@@ -38,7 +38,9 @@ use Siro\Core\Commands\MigrateRollbackCommand;
 use Siro\Core\Commands\MigrateStatusCommand;
 use Siro\Core\Commands\OptimizeCommand;
 use Siro\Core\Commands\QueueWorkCommand;
+use Siro\Core\Commands\RouteCacheCommand;
 use Siro\Core\Commands\RouteListCommand;
+use Siro\Core\Commands\ScheduleListCommand;
 use Siro\Core\Commands\ScheduleRunCommand;
 use Siro\Core\Commands\SeedCommand;
 use Siro\Core\Commands\ServeCommand;
@@ -259,7 +261,7 @@ final class Console
             'make:openapi' => [
                 'handler' => MakeOpenApiCommand::class,
                 'desc' => 'Generate OpenAPI spec',
-                'usage' => 'php siro make:openapi [--with-swagger] [--routes-dir=] [--tag=TAG] [--flow=auth|crud] [--output=] [--force] [--title=]',
+                'usage' => 'php siro make:openapi [--with-swagger] [--routes-dir=] [--tag=TAG] [--flow=auth|crud] [--output=] [--force] [--title=] [--version=] [--host=] [--method=] [--path=]',
             ],
             'make:postman' => [
                 'handler' => MakePostmanCommand::class,
@@ -293,7 +295,7 @@ final class Console
                 'desc' => 'Generate API key',
                 'usage' => 'php siro make:apikey <name> [scopes] [expires_days]',
             ],
-            'make:oauth-client' => ['handler' => MakeOAuthClient::class, 'desc' => 'Create OAuth2 client', 'usage' => 'php siro make:oauth-client <name>'],
+            'make:oauth-client' => ['handler' => MakeOAuthClient::class, 'desc' => 'Create OAuth2 client', 'usage' => 'php siro make:oauth-client <name> [--public] [--redirect-uri=] [--grants=] [--scopes=]'],
             'make:oauth-keys' => ['handler' => MakeOAuthKeysCommand::class, 'desc' => 'Generate OAuth2 keys', 'usage' => 'php siro make:oauth-keys [--force]'],
             'benchmark' => ['handler' => BenchmarkCommand::class, 'desc' => 'Performance benchmark', 'usage' => 'php siro benchmark [--iterations=N] [--json]'],
             'api:contract' => [
@@ -355,7 +357,7 @@ final class Console
             'log:replay' => [
                 'handler' => LogReplayCommand::class,
                 'desc' => 'Replay request (risk-aware, --force for risky traces)',
-                'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val] [--format=] [--safe] [--dry-run]',
+                'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val] [--format=] [--safe] [--dry-run] [--edit] [--diff] [--seed] [--test] [--auth] [--as=] [--https] [--http] [--insecure]',
             ],
             'log:trace' => [
                 'handler' => LogTraceCommand::class,
@@ -423,6 +425,7 @@ final class Console
             'queue:status'  => ['handler' => QueueStatusCommand::class, 'desc' => 'Queue statistics', 'usage' => 'php siro queue:status'],
 
             'schedule:run'  => ['handler' => ScheduleRunCommand::class, 'desc' => 'Run scheduled tasks', 'usage' => 'php siro schedule:run'],
+            'schedule:list' => ['handler' => ScheduleListCommand::class, 'desc' => 'List scheduled tasks', 'usage' => 'php siro schedule:list'],
 
             'serve'             => ['handler' => ServeCommand::class, 'desc' => 'Start dev server (php -S)', 'usage' => 'php siro serve [--port=8080]'],
             'frankenphp:serve' => [
@@ -450,6 +453,7 @@ final class Console
             ],
             'up'            => ['handler' => UpCommand::class, 'desc' => 'Disable maintenance mode', 'usage' => 'php siro up'],
             'route:list'    => ['handler' => RouteListCommand::class, 'desc' => 'List all routes', 'usage' => 'php siro route:list'],
+            'route:cache'   => ['handler' => RouteCacheCommand::class, 'desc' => 'Cache routes for faster boot', 'usage' => 'php siro route:cache'],
             'route:search'  => ['handler' => RouteSearchCommand::class, 'desc' => 'Search routes by keyword', 'usage' => 'php siro route:search <keyword>'],
             'route:rules'   => ['handler' => RouteRulesCommand::class, 'desc' => 'Show validation rules', 'usage' => 'php siro route:rules'],
             'trace:list' => [

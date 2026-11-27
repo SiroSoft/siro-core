@@ -59,6 +59,46 @@ final class ScheduleTask
         return $this->matchesCron($now);
     }
 
+    public function expression(): string
+    {
+        return $this->expression;
+    }
+
+    public function describe(): string
+    {
+        if (is_string($this->task)) {
+            return $this->task;
+        }
+        if ($this->task instanceof \Closure) {
+            return 'Closure';
+        }
+        if (is_array($this->task) && isset($this->task[0], $this->task[1])) {
+            $target = is_object($this->task[0]) ? get_class($this->task[0]) : (string) $this->task[0];
+            return $target . '::' . (string) $this->task[1];
+        }
+        if (is_object($this->task)) {
+            return get_class($this->task);
+        }
+        return 'callable';
+    }
+
+    /**
+     * Next minute (strictly after $from) at which this task is due,
+     * scanning at most 366 days ahead. Null when no match in range.
+     */
+    public function nextRun(int $from): ?int
+    {
+        $t = (int) (floor($from / 60) + 1) * 60;
+        $limit = $from + 366 * 24 * 60 * 60;
+        while ($t <= $limit) {
+            if ($this->isDue($t)) {
+                return $t;
+            }
+            $t += 60;
+        }
+        return null;
+    }
+
     public function withoutOverlapping(int $expires = 1440): self
     {
         $this->withoutOverlapping = true;

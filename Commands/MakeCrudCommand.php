@@ -28,7 +28,7 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
         $resource = trim((string) ($args[0] ?? ''));
 
         if ($resource === '') {
-            $this->write('Usage: php siro make:crud <name> [--seed] [--simple] [--with-rbac] [--without-service] [--without-repository]');
+            $this->write('Usage: php siro make:crud <name> [--seed] [--simple] [--force] [--with-rbac] [--without-service] [--without-repository]');
             return 1;
         }
 
