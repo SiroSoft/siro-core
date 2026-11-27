@@ -19,7 +19,9 @@ use Siro\Core\Response;
  */
 final class CspMiddleware implements MiddlewareInterface
 {
-    private const DEFAULT_POLICY = "default-src 'self'; script-src 'strict-dynamic' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    private const DEFAULT_POLICY = "default-src 'self'; script-src 'strict-dynamic' 'nonce-{nonce}'; " .
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; " .
+        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
     private static ?string $nonce = null;
 

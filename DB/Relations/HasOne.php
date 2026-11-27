@@ -31,9 +31,18 @@ class HasOne
             ->where($this->foreignKey, '=', $this->localValue);
     }
 
-    public function getRelatedClass(): string { return $this->relatedClass; }
-    public function getForeignKey(): string { return $this->foreignKey; }
-    public function getLocalKey(): string { return $this->localKey; }
+    public function getRelatedClass(): string
+    {
+        return $this->relatedClass;
+    }
+    public function getForeignKey(): string
+    {
+        return $this->foreignKey;
+    }
+    public function getLocalKey(): string
+    {
+        return $this->localKey;
+    }
 
     /**
      * @param array<int, mixed> $parameters

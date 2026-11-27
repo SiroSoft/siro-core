@@ -54,13 +54,22 @@ final class ApiKeyMiddleware implements MiddlewareInterface
             }
         }
 
-        $request->setUser([
+        $userData = [
             'id' => $keyData['user_id'],
             'type' => 'api_key',
             'name' => $keyData['name'],
             'scopes' => $keyData['scopes'],
             'key_id' => $keyData['id'],
-        ]);
+        ];
+        // Forward the key's plan when one is set (G6): ThrottleMiddleware
+        // maps plans to limiters via definePlan(). The api_keys table has no
+        // plan column yet, so this is a forward-compatible passthrough — see
+        // UPGRADE.md (v1.5.0) for the follow-up migration.
+        $plan = (string) ($keyData['plan'] ?? '');
+        if ($plan !== '') {
+            $userData['plan'] = $plan;
+        }
+        $request->setUser($userData);
 
         return $next($request);
     }

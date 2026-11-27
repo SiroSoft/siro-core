@@ -72,5 +72,3 @@ final class Schedule
         $console->run([0 => 'siro', 1 => $name, ...$args]);
     }
 }
-
-

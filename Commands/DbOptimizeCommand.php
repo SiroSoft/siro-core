@@ -12,7 +12,8 @@ use Siro\Core\Lite\LiteConfig;
  *
  * Usage: php siro db:optimize
  */
-final class DbOptimizeCommand implements \Siro\Core\Commands\CommandInterface {
+final class DbOptimizeCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

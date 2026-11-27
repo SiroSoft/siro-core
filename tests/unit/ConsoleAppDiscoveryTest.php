@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\Tests\Unit;
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Siro\Core\Console;
@@ -13,9 +14,8 @@ use Siro\Core\Console;
  * $this->commands (non-existent instance property) instead of
  * self::$appCommands (static property). This caused a PHPStan error
  * and would fatal on PHP 8.4+ where dynamic properties are removed.
- *
- * @coversNothing (tests private discovery behavior)
  */
+#[CoversNothing]
 class ConsoleAppDiscoveryTest extends TestCase
 {
     private string $tempDir;

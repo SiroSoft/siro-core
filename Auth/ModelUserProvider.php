@@ -35,7 +35,9 @@ final class ModelUserProvider implements UserProvider
         $query = $model::query();
 
         foreach ($credentials as $key => $value) {
-            if ($key === 'password') continue;
+            if ($key === 'password') {
+                continue;
+            }
             $query = $query->where($key, $value);
         }
 

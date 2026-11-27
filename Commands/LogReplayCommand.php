@@ -14,7 +14,8 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
+final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport {
         ask as protected traitAsk;
     }
@@ -224,9 +225,15 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $useHttps = false;
         $insecure = false;
         foreach ($args as $arg) {
-            if ($arg === '--https')    { $useHttps = true; }
-            if ($arg === '--http')     { $useHttps = false; }
-            if ($arg === '--insecure') { $insecure = true; }
+            if ($arg === '--https') {
+                $useHttps = true;
+            }
+            if ($arg === '--http') {
+                $useHttps = false;
+            }
+            if ($arg === '--insecure') {
+                $insecure = true;
+            }
         }
         $scheme = $useHttps ? 'https' : 'http';
         $url = $scheme . '://' . $host . $path;
@@ -357,7 +364,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             if (is_array($seedData)) {
                 unset($seedData['id'], $seedData['created_at'], $seedData['updated_at']);
                 $this->write('Seed command:');
-                $this->write('  $db->table("' . $this->safeStr($data['table'] ?? 'table') . '")->insert(' . json_encode($seedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . ');');
+                $insertJson = json_encode($seedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                $this->write('  $db->table("' . $this->safeStr($data['table'] ?? 'table') . '")->insert(' . $insertJson . ');');
                 $this->write('  Then run: php siro db:seed');
             }
             return 0;
@@ -502,8 +510,12 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 $this->write('  âœ… Fixed!');
             } else {
                 $changes = [];
-                if ($statusChanged) $changes[] = "status: {$beforeStatus} â†’ {$statusAfter}";
-                if ($bodyChanged) $changes[] = 'response body changed';
+                if ($statusChanged) {
+                    $changes[] = "status: {$beforeStatus} â†’ {$statusAfter}";
+                }
+                if ($bodyChanged) {
+                    $changes[] = 'response body changed';
+                }
                 $this->write('  âš  ' . implode(', ', $changes));
             }
 
@@ -537,7 +549,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             if ($headers !== []) {
                 foreach ($headers as $k => $v) {
                     $lk = strtolower((string) $k);
-                    if ($lk === 'host' || $lk === 'content-length') continue;
+                    if ($lk === 'host' || $lk === 'content-length') {
+                        continue;
+                    }
                     $headersOutput[$lk] = $this->safeStr($k) . ': ' . $this->safeStr($v);
                 }
             }
@@ -603,13 +617,13 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                         $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
                         $responseBody = $this->safeStr($result['body'] ?? '{}');
                         $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
-                    if ($status >= 200 && $status < 300) {
-                        $this->write('  âœ… Replay succeeded with refreshed token.');
-                    } elseif ($status >= 400 && $status < 500) {
-                        $this->write('  â„¹ï¸ Auth OK â€” server returned ' . $status . ' (client error, likely bad request data).');
-                    } else {
-                        $this->write('  âš  Replay returned ' . $status . ' even after auth refresh.');
-                    }
+                        if ($status >= 200 && $status < 300) {
+                            $this->write('  âœ… Replay succeeded with refreshed token.');
+                        } elseif ($status >= 400 && $status < 500) {
+                            $this->write('  â„¹ï¸ Auth OK â€” server returned ' . $status . ' (client error, likely bad request data).');
+                        } else {
+                            $this->write('  âš  Replay returned ' . $status . ' even after auth refresh.');
+                        }
                     } else {
                         $this->write('  âš  Could not auto-refresh. Try manual login:');
                         $manualEmail = $this->ask('  Email/username: ');
@@ -626,11 +640,11 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                                     $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
                                     $responseBody = $this->safeStr($result['body'] ?? '{}');
                                     $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
-                                if ($status >= 200 && $status < 300) {
-                                    $this->write('  âœ… Replay succeeded.');
-                                } elseif ($status >= 400 && $status < 500) {
-                                    $this->write('  â„¹ï¸ Auth OK â€” server returned ' . $status . ' (client error).');
-                                }
+                                    if ($status >= 200 && $status < 300) {
+                                        $this->write('  âœ… Replay succeeded.');
+                                    } elseif ($status >= 400 && $status < 500) {
+                                        $this->write('  â„¹ï¸ Auth OK â€” server returned ' . $status . ' (client error).');
+                                    }
                                 } else {
                                     $this->write('  âŒ Login failed. Try: php siro replay ' . $traceId . ' --as=email');
                                 }
@@ -731,7 +745,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
     private function auditReplay(string $traceId, string $method, string $path, string $mode): void
     {
         $auditDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs';
-        if (!is_dir($auditDir)) return;
+        if (!is_dir($auditDir)) {
+            return;
+        }
 
         $auditFile = $auditDir . DIRECTORY_SEPARATOR . 'replay-audit.log';
         $envVal = getenv('APP_ENV');
@@ -759,8 +775,16 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    private function executeReplay(string $method, string $url, string $body, array $headers, string $auth, string $ct, array $data, bool $insecure = false): array
-    {
+    private function executeReplay(
+        string $method,
+        string $url,
+        string $body,
+        array $headers,
+        string $auth,
+        string $ct,
+        array $data,
+        bool $insecure = false
+    ): array {
         $ch = curl_init($url);
         if ($ch === false) {
             return ['status' => 0, 'body' => '', 'error' => 'Failed to initialize curl'];
@@ -769,13 +793,23 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $hasContentType = false;
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
-            if ($lk === 'host' || $lk === 'content-length') continue;
-            if ($lk === 'authorization') continue;
-            if ($lk === 'content-type') $hasContentType = true;
+            if ($lk === 'host' || $lk === 'content-length') {
+                continue;
+            }
+            if ($lk === 'authorization') {
+                continue;
+            }
+            if ($lk === 'content-type') {
+                $hasContentType = true;
+            }
             $curlHeaders[] = (string) $k . ': ' . (string) $v;
         }
-        if ($auth !== '') $curlHeaders[] = 'Authorization: ' . $auth;
-        if ($ct !== '' && !$hasContentType) $curlHeaders[] = 'Content-Type: ' . $ct;
+        if ($auth !== '') {
+            $curlHeaders[] = 'Authorization: ' . $auth;
+        }
+        if ($ct !== '' && !$hasContentType) {
+            $curlHeaders[] = 'Content-Type: ' . $ct;
+        }
 
         /** @var array<int, mixed> $curlOpts */
         $curlOpts = [
@@ -829,7 +863,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $seen = [];
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
-            if ($lk === 'host' || $lk === 'content-length' || isset($seen[$lk])) continue;
+            if ($lk === 'host' || $lk === 'content-length' || isset($seen[$lk])) {
+                continue;
+            }
             $seen[$lk] = true;
             $cmd .= " \\\n    -H " . $q((string) $k . ': ' . (string) $v);
         }
@@ -889,7 +925,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $parts = ['http', strtolower($httpMethod), $url];
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
-            if ($lk === 'host' || $lk === 'content-length') continue;
+            if ($lk === 'host' || $lk === 'content-length') {
+                continue;
+            }
             $parts[] = $k . ':' . $v;
         }
         if ($auth !== '') {
@@ -931,11 +969,17 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 $input = $this->ask("  New value (Enter to keep): ");
                 if ($input !== '') {
                     // Try to preserve types: numeric, bool, null
-                    if ($input === 'true') { $data[$key] = true; }
-                    elseif ($input === 'false') { $data[$key] = false; }
-                    elseif ($input === 'null') { $data[$key] = null; }
-                    elseif (is_numeric($input)) { $data[$key] = str_contains($input, '.') ? (float) $input : (int) $input; }
-                    else { $data[$key] = $input; }
+                    if ($input === 'true') {
+                        $data[$key] = true;
+                    } elseif ($input === 'false') {
+                        $data[$key] = false;
+                    } elseif ($input === 'null') {
+                        $data[$key] = null;
+                    } elseif (is_numeric($input)) {
+                        $data[$key] = str_contains($input, '.') ? (float) $input : (int) $input;
+                    } else {
+                        $data[$key] = $input;
+                    }
                 }
             }
         }
@@ -1021,7 +1065,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 }
             }
             // Find field names from validate() in AuthController
-            $authControllerFile = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AuthController.php';
+            $authControllerFile = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers'
+                . DIRECTORY_SEPARATOR . 'AuthController.php';
             if (file_exists($authControllerFile)) {
                 $authContent = (string) file_get_contents($authControllerFile);
                 if (preg_match('/\'(email|username|login)\'\s*=>\s*\'required\|email/', $authContent, $m)) {
@@ -1082,11 +1127,21 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         if (file_exists($envFile)) {
             $c = (string) file_get_contents($envFile);
             $m = null;
-            if (preg_match('/^AUTH_ENDPOINT\s*=\s*(.+)$/m', $c, $m)) $cfg['endpoint'] = trim($m[1]);
-            if (preg_match('/^AUTH_EMAIL_FIELD\s*=\s*(.+)$/m', $c, $m)) $cfg['email_field'] = trim($m[1]);
-            if (preg_match('/^AUTH_PASSWORD_FIELD\s*=\s*(.+)$/m', $c, $m)) $cfg['pass_field'] = trim($m[1]);
-            if (preg_match('/^AUTH_TOKEN_PATH\s*=\s*(.+)$/m', $c, $m)) $cfg['token_path'] = trim($m[1]);
-            if (preg_match('/^AUTH_REFRESH_ENDPOINT\s*=\s*(.+)$/m', $c, $m)) $cfg['refresh_endpoint'] = trim($m[1]);
+            if (preg_match('/^AUTH_ENDPOINT\s*=\s*(.+)$/m', $c, $m)) {
+                $cfg['endpoint'] = trim($m[1]);
+            }
+            if (preg_match('/^AUTH_EMAIL_FIELD\s*=\s*(.+)$/m', $c, $m)) {
+                $cfg['email_field'] = trim($m[1]);
+            }
+            if (preg_match('/^AUTH_PASSWORD_FIELD\s*=\s*(.+)$/m', $c, $m)) {
+                $cfg['pass_field'] = trim($m[1]);
+            }
+            if (preg_match('/^AUTH_TOKEN_PATH\s*=\s*(.+)$/m', $c, $m)) {
+                $cfg['token_path'] = trim($m[1]);
+            }
+            if (preg_match('/^AUTH_REFRESH_ENDPOINT\s*=\s*(.+)$/m', $c, $m)) {
+                $cfg['refresh_endpoint'] = trim($m[1]);
+            }
         }
 
         return $cfg;
@@ -1105,10 +1160,15 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $keys = explode('.', $tokenPath);
         $current = $response;
         foreach ($keys as $key) {
-            if (!is_array($current) || !isset($current[$key])) { $current = null; break; }
+            if (!is_array($current) || !isset($current[$key])) {
+                $current = null;
+                break;
+            }
             $current = $current[$key];
         }
-        if (is_string($current) && $current !== '') return $current;
+        if (is_string($current) && $current !== '') {
+            return $current;
+        }
 
         // Fallback: try all common paths
         $fallbackPaths = [
@@ -1117,15 +1177,22 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             'data.accessToken', 'accessToken',
         ];
         foreach ($fallbackPaths as $fb) {
-            if ($fb === $tokenPath) continue;
+            if ($fb === $tokenPath) {
+                continue;
+            }
             $keys = explode('.', $fb);
             $current = $response;
             $ok = true;
             foreach ($keys as $key) {
-                if (!is_array($current) || !isset($current[$key])) { $ok = false; break; }
+                if (!is_array($current) || !isset($current[$key])) {
+                    $ok = false;
+                    break;
+                }
                 $current = $current[$key];
             }
-            if ($ok && is_string($current) && $current !== '') return $current;
+            if ($ok && is_string($current) && $current !== '') {
+                return $current;
+            }
         }
 
         return null;
@@ -1139,9 +1206,13 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $cfg = $this->authConfig();
         $url = 'http://' . $host . $cfg['refresh_endpoint'];
         $ch = curl_init($url);
-        if ($ch === false) return null;
+        if ($ch === false) {
+            return null;
+        }
         $body = json_encode(['refresh_token' => $refreshToken]);
-        if ($body === false) return null;
+        if ($body === false) {
+            return null;
+        }
         curl_setopt_array($ch, [
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_RETURNTRANSFER => true,
@@ -1157,10 +1228,14 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             $result = json_decode((string) $response, true);
             if (is_array($result)) {
                 $token = $this->extractToken($result, $cfg['token_path']);
-                if ($token !== null) return $token;
+                if ($token !== null) {
+                    return $token;
+                }
                 foreach (['access_token', 'token', 'data.access_token'] as $p) {
                     $t = $this->extractToken($result, $p);
-                    if ($t !== null) return $t;
+                    if ($t !== null) {
+                        return $t;
+                    }
                 }
             }
         }
@@ -1203,7 +1278,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
 
         if (PHP_OS_FAMILY === 'Windows') {
             // Windows: use inline script to read hidden input
-            $psCmd = 'powershell -Command "$p=Read-Host -AsSecureString; $r=[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p)); Write-Output $r"';
+            $psCmd = 'powershell -Command "$p=Read-Host -AsSecureString; $r=[Runtime.InteropServices.Marshal]::PtrToStringAuto(' .
+                '[Runtime.InteropServices.Marshal]::SecureStringToBSTR($p)); Write-Output $r"';
             $output = shell_exec($psCmd);
             return is_string($output) ? trim($output) : '';
         }
@@ -1229,9 +1305,13 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         $cfg = $this->authConfig();
         $url = 'http://' . $host . $cfg['endpoint'];
         $ch = curl_init($url);
-        if ($ch === false) return null;
+        if ($ch === false) {
+            return null;
+        }
         $body = json_encode([$cfg['email_field'] => $email, $cfg['pass_field'] => $password]);
-        if ($body === false) return null;
+        if ($body === false) {
+            return null;
+        }
         curl_setopt_array($ch, [
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_RETURNTRANSFER => true,
@@ -1250,7 +1330,10 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                 if ($token === null) {
                     foreach (['data.token', 'access_token', 'token', 'data.access_token'] as $p) {
                         $t = $this->extractToken($result, $p);
-                        if ($t !== null) { $token = $t; break; }
+                        if ($t !== null) {
+                            $token = $t;
+                            break;
+                        }
                     }
                 }
                 if ($token !== null) {
@@ -1262,7 +1345,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                     }
                     $stored['email'] = $email;
                     $stored['access_token'] = $token;
-                    $stored['refresh_token'] = $this->safeStr(is_array($result['data'] ?? null) ? ($result['data']['refresh_token'] ?? '') : ($result['refresh_token'] ?? ''));
+                    $refreshToken = is_array($result['data'] ?? null) ? ($result['data']['refresh_token'] ?? '') : ($result['refresh_token'] ?? '');
+                    $stored['refresh_token'] = $this->safeStr($refreshToken);
                     // Remove old password if present
                     unset($stored['password']);
                     $this->writeAuthFile($authFile, $stored);
@@ -1272,7 +1356,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         }
         // fallback: try with stream_context (different curl backend)
         $fallbackBody = json_encode([$cfg['email_field'] => $email, $cfg['pass_field'] => $password]);
-        if ($fallbackBody === false) return null;
+        if ($fallbackBody === false) {
+            return null;
+        }
         $context = stream_context_create([
             'http' => [
                 'method' => 'POST',
@@ -1282,15 +1368,22 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
             ],
         ]);
         $fbResponse = @file_get_contents($url, false, $context);
-        if ($fbResponse === false) return null;
+        if ($fbResponse === false) {
+            return null;
+        }
         /** @var array<string, mixed>|null $fbResult */
         $fbResult = json_decode($fbResponse, true);
-        if (!is_array($fbResult)) return null;
+        if (!is_array($fbResult)) {
+            return null;
+        }
         $token = $this->extractToken($fbResult, $cfg['token_path']);
         if ($token === null) {
             foreach (['data.token', 'access_token', 'token'] as $p) {
                 $t = $this->extractToken($fbResult, $p);
-                if ($t !== null) { $token = $t; break; }
+                if ($t !== null) {
+                    $token = $t;
+                    break;
+                }
             }
         }
         return $token;
@@ -1317,8 +1410,12 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         if (file_exists($envFile)) {
             $c = (string) file_get_contents($envFile);
             $m = null;
-            if (preg_match('/^ADMIN_EMAIL\s*=\s*(.+)$/m', $c, $m)) $adminEmail = trim($m[1]);
-            if (preg_match('/^ADMIN_PASSWORD\s*=\s*(.+)$/m', $c, $m)) $adminPassword = trim($m[1]);
+            if (preg_match('/^ADMIN_EMAIL\s*=\s*(.+)$/m', $c, $m)) {
+                $adminEmail = trim($m[1]);
+            }
+            if (preg_match('/^ADMIN_PASSWORD\s*=\s*(.+)$/m', $c, $m)) {
+                $adminPassword = trim($m[1]);
+            }
         }
 
         // 1) Try stored credentials
@@ -1358,7 +1455,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
         // 2) Try ADMIN_EMAIL / ADMIN_PASSWORD from .env (must be explicitly configured)
         if ($adminEmail !== '' && $adminPassword !== '') {
             $newToken = $this->login($host, $adminEmail, $adminPassword);
-            if ($newToken !== null) return ['token' => $newToken, 'strategy' => 'env_admin'];
+            if ($newToken !== null) {
+                return ['token' => $newToken, 'strategy' => 'env_admin'];
+            }
         } else {
             $this->warn("ADMIN_EMAIL and ADMIN_PASSWORD not set in .env. Auto-auth requires explicit credentials.");
         }
@@ -1391,7 +1490,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface {
                     curl_close($ch);
                     if ($regStatus >= 200 && $regStatus < 300) {
                         $newToken = $this->login($host, $email, $password);
-                        if ($newToken !== null) return ['token' => $newToken, 'strategy' => 'register_new'];
+                        if ($newToken !== null) {
+                            return ['token' => $newToken, 'strategy' => 'register_new'];
+                        }
                     }
                 }
             }

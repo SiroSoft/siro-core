@@ -62,7 +62,7 @@ abstract class TestCase extends BaseTestCase
         }
     }
 
-    protected function refreshDatabase(string $migrationsDir, string $dbConfig = null): void
+    protected function refreshDatabase(string $migrationsDir, ?string $dbConfig = null): void
     {
         if ($dbConfig !== null) {
             \Siro\Core\Database::configure($dbConfig);

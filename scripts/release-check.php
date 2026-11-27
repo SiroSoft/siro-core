@@ -5,26 +5,31 @@ declare(strict_types=1);
 $strict = in_array('--strict', $argv ?? [], true);
 $withProdDoctor = in_array('--with-prod-doctor', $argv ?? [], true);
 
+// Use the interpreter running this script (PHP_BINARY), not a bare `php`
+// from PATH — the check must run PHPStan/PHPUnit with the same PHP that
+// runs the check itself (e.g. php8.4 on a host where `php` is 8.3).
+$php = escapeshellarg(PHP_BINARY);
+
 $steps = [
     ['name' => 'Composer audit', 'cmd' => 'composer audit --no-interaction'],
-    ['name' => 'PHPStan (Level Max)', 'cmd' => 'php vendor/bin/phpstan analyse --level=max --no-progress --memory-limit=1G'],
-    ['name' => 'PHPUnit', 'cmd' => 'php vendor/bin/phpunit --no-progress'],
+    ['name' => 'PHPStan (Level Max)', 'cmd' => $php . ' vendor/bin/phpstan analyse --level=max --no-progress --memory-limit=1G'],
+    ['name' => 'PHPUnit', 'cmd' => $php . ' vendor/bin/phpunit --no-progress'],
 ];
 
 if ($strict) {
     $steps = array_merge($steps, [
-        ['name' => 'Psalm Taint Analysis', 'cmd' => 'php vendor/bin/psalm --taint-analysis --no-progress --show-info=false --php-version=8.2'],
-        ['name' => 'Fuzz Tests', 'cmd' => 'php scripts/fuzz.php'],
-        ['name' => 'Chaos Tests', 'cmd' => 'php scripts/chaos-test.php'],
-        ['name' => 'Mutation Tests (≥80% MSI)', 'cmd' => 'php vendor/bin/infection --min-msi=80 --threads=4 --no-progress'],
-        ['name' => 'Benchmark Regression', 'cmd' => 'php scripts/benchmark-ci.php'],
-        ['name' => 'SBOM Generation', 'cmd' => 'php scripts/generate-sbom.php'],
-        ['name' => 'Load Test', 'cmd' => 'php scripts/loadtest.php'],
+        ['name' => 'Psalm Taint Analysis', 'cmd' => $php . ' vendor/bin/psalm --taint-analysis --no-progress --show-info=false --php-version=8.4'],
+        ['name' => 'Fuzz Tests', 'cmd' => $php . ' scripts/fuzz.php'],
+        ['name' => 'Chaos Tests', 'cmd' => $php . ' scripts/chaos-test.php'],
+        ['name' => 'Mutation Tests (≥80% MSI)', 'cmd' => $php . ' vendor/bin/infection --min-msi=80 --threads=4 --no-progress'],
+        ['name' => 'Benchmark Regression', 'cmd' => $php . ' scripts/benchmark-ci.php'],
+        ['name' => 'SBOM Generation', 'cmd' => $php . ' scripts/generate-sbom.php'],
+        ['name' => 'Load Test', 'cmd' => $php . ' scripts/loadtest.php'],
     ]);
 }
 
 if ($withProdDoctor) {
-    $steps[] = ['name' => 'Production Doctor', 'cmd' => 'php siro doctor --prod'];
+    $steps[] = ['name' => 'Production Doctor', 'cmd' => $php . ' siro doctor --prod'];
 }
 
 $failures = 0;

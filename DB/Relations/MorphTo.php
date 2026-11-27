@@ -37,6 +37,12 @@ final class MorphTo
         return $result;
     }
 
-    public function getRelatedClass(): string { return $this->morphType; }
-    public function getMorphName(): string { return $this->morphName; }
+    public function getRelatedClass(): string
+    {
+        return $this->morphType;
+    }
+    public function getMorphName(): string
+    {
+        return $this->morphName;
+    }
 }

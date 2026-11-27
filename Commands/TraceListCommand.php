@@ -13,7 +13,8 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-final class TraceListCommand implements \Siro\Core\Commands\CommandInterface {
+final class TraceListCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -64,7 +65,9 @@ final class TraceListCommand implements \Siro\Core\Commands\CommandInterface {
         foreach ($files as $file) {
             $traceId = basename($file, '.json');
             $data = json_decode((string) file_get_contents($file), true);
-            if (!is_array($data)) continue;
+            if (!is_array($data)) {
+                continue;
+            }
 
             $method = str_pad($this->safeStr($data['method'] ?? '?'), 7);
             $statusVal = $data['status'] ?? 0;

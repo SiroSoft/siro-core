@@ -15,7 +15,9 @@ final class TinkerCommand implements CommandInterface
 {
     use CommandSupport;
 
-    public function __construct(private readonly string $basePath = '') {}
+    public function __construct(private readonly string $basePath = '')
+    {
+    }
 
     public function run(array $args): int
     {
@@ -48,15 +50,23 @@ final class TinkerCommand implements CommandInterface
         while (true) {
             $code = $this->readLine("  [36msiro[0m> ");
 
-            if ($code === null) { break; }
+            if ($code === null) {
+                break;
+            }
 
             $trimmed = trim($code);
-            if ($trimmed === '') { continue; }
+            if ($trimmed === '') {
+                continue;
+            }
 
             $lower = strtolower($trimmed);
-            if (in_array($lower, ['exit', 'quit', 'q', '\\q'], true)) { break; }
+            if (in_array($lower, ['exit', 'quit', 'q', '\\q'], true)) {
+                break;
+            }
 
-            if ($this->handleShortcut($trimmed)) { continue; }
+            if ($this->handleShortcut($trimmed)) {
+                continue;
+            }
 
             $this->execCode($trimmed);
 
@@ -79,7 +89,9 @@ final class TinkerCommand implements CommandInterface
 
     private function enableQueryCapture(): void
     {
-        if ($this->tinkerCaptureEnabled) { return; }
+        if ($this->tinkerCaptureEnabled) {
+            return;
+        }
         $this->tinkerCaptureEnabled = true;
         try {
             Database::connection()->exec('SELECT 1');
@@ -184,7 +196,9 @@ final class TinkerCommand implements CommandInterface
             $fields[] = $k . ': ' . (is_string($v) ? $this->truncate($v, 40) : $this->render($v));
         }
         $label = '[96m' . $short . '[0m { ' . implode(', ', $fields);
-        if (count($attrs) > 6) { $label .= ', ...'; }
+        if (count($attrs) > 6) {
+            $label .= ', ...';
+        }
         $label .= ' }';
         return $label;
     }
@@ -192,7 +206,9 @@ final class TinkerCommand implements CommandInterface
     /** @param array<mixed> $arr */
     private function renderArray(array $arr): string
     {
-        if ($arr === []) { return '[90m[][0m'; }
+        if ($arr === []) {
+            return '[90m[][0m';
+        }
 
         $isList = array_is_list($arr);
         if ($isList && count($arr) <= 8) {
@@ -205,7 +221,10 @@ final class TinkerCommand implements CommandInterface
         $pairs = [];
         $i = 0;
         foreach ($arr as $k => $v) {
-            if ($i++ >= 5) { $pairs[] = '...'; break; }
+            if ($i++ >= 5) {
+                $pairs[] = '...';
+                break;
+            }
             $pairs[] = (is_string($k) ? $k : (string) $k) . ': ' . $this->render($v);
         }
         return '{ ' . implode(', ', $pairs) . ' }';
@@ -219,11 +238,26 @@ final class TinkerCommand implements CommandInterface
     private function handleShortcut(string $code): bool
     {
         $lower = strtolower($code);
-        if ($lower === 'help' || $lower === '?') { $this->showHelp(); return true; }
-        if ($lower === 'db') { $this->showDb(); return true; }
-        if ($lower === 'routes') { $this->showRoutes(); return true; }
-        if ($lower === 'vars') { $this->showVars(); return true; }
-        if ($lower === 'clear' || $lower === 'cls') { echo "[2J[H"; return true; }
+        if ($lower === 'help' || $lower === '?') {
+            $this->showHelp();
+            return true;
+        }
+        if ($lower === 'db') {
+            $this->showDb();
+            return true;
+        }
+        if ($lower === 'routes') {
+            $this->showRoutes();
+            return true;
+        }
+        if ($lower === 'vars') {
+            $this->showVars();
+            return true;
+        }
+        if ($lower === 'clear' || $lower === 'cls') {
+            echo "[2J[H";
+            return true;
+        }
         return false;
     }
 
@@ -319,7 +353,9 @@ final class TinkerCommand implements CommandInterface
             ? BASE_PATH
             : (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : '');
         $storage = $dir !== '' ? $dir . DIRECTORY_SEPARATOR . 'storage' : sys_get_temp_dir();
-        if (!is_dir($storage)) { @mkdir($storage, 0775, true); }
+        if (!is_dir($storage)) {
+            @mkdir($storage, 0775, true);
+        }
         return $storage . DIRECTORY_SEPARATOR . '.tinker_history';
     }
 }

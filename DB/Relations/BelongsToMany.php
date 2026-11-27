@@ -51,9 +51,11 @@ class BelongsToMany
         }
 
         // Prevent multi-statement injection
-        if (stripos($identifier, ';') !== false ||
+        if (
+            stripos($identifier, ';') !== false ||
             stripos($identifier, '--') !== false ||
-            stripos($identifier, '/*') !== false) {
+            stripos($identifier, '/*') !== false
+        ) {
             throw new \RuntimeException('Invalid identifier: SQL injection attempt detected');
         }
 
@@ -119,12 +121,30 @@ class BelongsToMany
     }
 
     /** @return array<int, string> */
-    public function getPivotColumns(): array { return $this->pivotColumns; }
-    public function getRelatedClass(): string { return $this->relatedClass; }
-    public function getPivotTable(): string { return $this->pivotTable; }
-    public function getForeignKey(): string { return $this->foreignKey; }
-    public function getRelatedKey(): string { return $this->relatedKey; }
-    public function getLocalKey(): string { return $this->localKey; }
+    public function getPivotColumns(): array
+    {
+        return $this->pivotColumns;
+    }
+    public function getRelatedClass(): string
+    {
+        return $this->relatedClass;
+    }
+    public function getPivotTable(): string
+    {
+        return $this->pivotTable;
+    }
+    public function getForeignKey(): string
+    {
+        return $this->foreignKey;
+    }
+    public function getRelatedKey(): string
+    {
+        return $this->relatedKey;
+    }
+    public function getLocalKey(): string
+    {
+        return $this->localKey;
+    }
 
     /**
      * @param array<string, mixed> $pivotData

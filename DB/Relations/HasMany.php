@@ -32,9 +32,18 @@ class HasMany
             ->where($this->foreignKey, '=', $this->localValue);
     }
 
-    public function getRelatedClass(): string { return $this->relatedClass; }
-    public function getForeignKey(): string { return $this->foreignKey; }
-    public function getLocalKey(): string { return $this->localKey; }
+    public function getRelatedClass(): string
+    {
+        return $this->relatedClass;
+    }
+    public function getForeignKey(): string
+    {
+        return $this->foreignKey;
+    }
+    public function getLocalKey(): string
+    {
+        return $this->localKey;
+    }
 
     /** @param array<string, mixed> $data */
     public function create(array $data): \Siro\Core\Model

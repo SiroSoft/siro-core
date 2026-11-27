@@ -75,14 +75,17 @@ use Siro\Core\Commands\NewCommand;
 use Siro\Core\Commands\NewProjectCommand;
 use Siro\Core\Commands\RuntimeCommand;
 use Siro\Core\Commands\DatabaseCommand;
-
 use Siro\Core\Commands\MakeIdempotencyTableCommand;
 use Siro\Core\Commands\MakeApiKeysTableCommand;
 use Siro\Core\Commands\MakeApiKeyCommand;
+use Siro\Core\Commands\MakeOAuthClientCommand as MakeOAuthClient;
+use Siro\Core\Commands\MakeOAuthKeysCommand;
 use Siro\Core\Commands\MakeMiddlewareCommand;
 use Siro\Core\Commands\MakeRequestCommand;
 use Siro\Core\Commands\MakeRuleCommand;
 use Siro\Core\Commands\MakeListenerCommand;
+use Siro\Core\Commands\MakeWebhookCommand;
+use Siro\Core\Commands\WebhookTestCommand;
 use Siro\Core\Commands\MakeObserverCommand;
 use Siro\Core\Commands\TestCommand;
 use Siro\Core\Commands\BenchmarkCommand;
@@ -231,66 +234,190 @@ final class Console
             'make:controller' => ['handler' => MakeControllerCommand::class, 'desc' => 'Generate controller', 'usage' => 'php siro make:controller <name>'],
             'make:model'      => ['handler' => MakeModelCommand::class, 'desc' => 'Generate model', 'usage' => 'php siro make:model <name>'],
             'make:migration'  => ['handler' => MakeMigrationCommand::class, 'desc' => 'Generate migration', 'usage' => 'php siro make:migration <name>'],
-            'make:queue-table'=> ['handler' => MakeQueueTableCommand::class, 'desc' => 'Generate queue tables migration', 'usage' => 'php siro make:queue-table'],
-            'make:resource'   => ['handler' => MakeResourceCommand::class, 'desc' => 'Generate API resource transformer', 'usage' => 'php siro make:resource <name>'],
+            'make:queue-table' => [
+                'handler' => MakeQueueTableCommand::class,
+                'desc' => 'Generate queue tables migration',
+                'usage' => 'php siro make:queue-table',
+            ],
+            'make:resource' => [
+                'handler' => MakeResourceCommand::class,
+                'desc' => 'Generate API resource transformer',
+                'usage' => 'php siro make:resource <name>',
+            ],
             'make:seeder'     => ['handler' => MakeSeederCommand::class, 'desc' => 'Generate seeder', 'usage' => 'php siro make:seeder <name>'],
-            'make:crud'       => ['handler' => MakeCrudCommand::class, 'desc' => 'Full CRUD scaffolding (--simple, --seed, --force)', 'usage' => 'php siro make:crud <name> [--simple] [--seed] [--force]'],
+            'make:crud' => [
+                'handler' => MakeCrudCommand::class,
+                'desc' => 'Full CRUD scaffolding (--simple, --seed, --force)',
+                'usage' => 'php siro make:crud <name> [--simple] [--seed] [--force]',
+            ],
             'make:test'       => ['handler' => MakeTestCommand::class, 'desc' => 'Generate test file', 'usage' => 'php siro make:test <name>'],
             'make:job'        => ['handler' => MakeJobCommand::class, 'desc' => 'Generate job class', 'usage' => 'php siro make:job <name>'],
             'make:mail'       => ['handler' => MakeMailCommand::class, 'desc' => 'Generate mail class', 'usage' => 'php siro make:mail <name>'],
             'make:event'      => ['handler' => MakeEventCommand::class, 'desc' => 'Generate event class', 'usage' => 'php siro make:event <name>'],
             'make:lang'       => ['handler' => MakeLangCommand::class, 'desc' => 'Generate language file', 'usage' => 'php siro make:lang <locale> <file>'],
             'make:factory'    => ['handler' => MakeFactoryCommand::class, 'desc' => 'Generate factory', 'usage' => 'php siro make:factory <name>'],
-            'make:openapi'    => ['handler' => MakeOpenApiCommand::class, 'desc' => 'Generate OpenAPI spec', 'usage' => 'php siro make:openapi [--with-swagger] [--routes-dir=] [--tag=TAG] [--flow=auth|crud] [--output=] [--force] [--title=]'],
-            'make:postman'    => ['handler' => MakePostmanCommand::class, 'desc' => 'Generate Postman collection', 'usage' => 'php siro make:postman [--flow=crud]'],
+            'make:openapi' => [
+                'handler' => MakeOpenApiCommand::class,
+                'desc' => 'Generate OpenAPI spec',
+                'usage' => 'php siro make:openapi [--with-swagger] [--routes-dir=] [--tag=TAG] [--flow=auth|crud] [--output=] [--force] [--title=]',
+            ],
+            'make:postman' => [
+                'handler' => MakePostmanCommand::class,
+                'desc' => 'Generate Postman collection',
+                'usage' => 'php siro make:postman [--flow=crud]',
+            ],
             'make:service'    => ['handler' => MakeServiceCommand::class, 'desc' => 'Generate service class', 'usage' => 'php siro make:service <name>'],
-            'make:repository' => ['handler' => MakeRepositoryCommand::class, 'desc' => 'Generate repository class', 'usage' => 'php siro make:repository <name>'],
-            'make:middleware'  => ['handler' => MakeMiddlewareCommand::class, 'desc' => 'Generate middleware class', 'usage' => 'php siro make:middleware <name>'],
+            'make:repository' => [
+                'handler' => MakeRepositoryCommand::class,
+                'desc' => 'Generate repository class',
+                'usage' => 'php siro make:repository <name>',
+            ],
+            'make:middleware' => [
+                'handler' => MakeMiddlewareCommand::class,
+                'desc' => 'Generate middleware class',
+                'usage' => 'php siro make:middleware <name>',
+            ],
             'make:listener'    => ['handler' => MakeListenerCommand::class, 'desc' => 'Generate event listener', 'usage' => 'php siro make:listener <name>'],
+            'make:webhook'     => ['handler' => MakeWebhookCommand::class, 'desc' => 'Generate webhook listener', 'usage' => 'php siro make:webhook <name>'],
             'make:request'     => ['handler' => MakeRequestCommand::class, 'desc' => 'Generate FormRequest class', 'usage' => 'php siro make:request <name>'],
             'make:rule'        => ['handler' => MakeRuleCommand::class, 'desc' => 'Generate custom validation rule', 'usage' => 'php siro make:rule <name>'],
             'make:observer'    => ['handler' => MakeObserverCommand::class, 'desc' => 'Generate model observer', 'usage' => 'php siro make:observer <name>'],
-            'make:idempotency-table' => ['handler' => MakeIdempotencyTableCommand::class, 'desc' => 'Create idempotency table', 'usage' => 'php siro make:idempotency-table'],
+            'make:idempotency-table' => [
+                'handler' => MakeIdempotencyTableCommand::class,
+                'desc' => 'Create idempotency table',
+                'usage' => 'php siro make:idempotency-table',
+            ],
             'make:apikey-table' => ['handler' => MakeApiKeysTableCommand::class, 'desc' => 'Create API keys table', 'usage' => 'php siro make:apikey-table'],
-            'make:apikey' => ['handler' => MakeApiKeyCommand::class, 'desc' => 'Generate API key', 'usage' => 'php siro make:apikey <name> [scopes] [expires_days]'],
+            'make:apikey' => [
+                'handler' => MakeApiKeyCommand::class,
+                'desc' => 'Generate API key',
+                'usage' => 'php siro make:apikey <name> [scopes] [expires_days]',
+            ],
+            'make:oauth-client' => ['handler' => MakeOAuthClient::class, 'desc' => 'Create OAuth2 client', 'usage' => 'php siro make:oauth-client <name>'],
+            'make:oauth-keys' => ['handler' => MakeOAuthKeysCommand::class, 'desc' => 'Generate OAuth2 keys', 'usage' => 'php siro make:oauth-keys [--force]'],
             'benchmark' => ['handler' => BenchmarkCommand::class, 'desc' => 'Performance benchmark', 'usage' => 'php siro benchmark [--iterations=N] [--json]'],
-            'api:contract' => ['handler' => ApiContractCommand::class, 'desc' => 'Verify OpenAPI against registered routes', 'usage' => 'php siro api:contract [--spec=] [--path=] [--strict]'],
+            'api:contract' => [
+                'handler' => ApiContractCommand::class,
+                'desc' => 'Verify OpenAPI against registered routes',
+                'usage' => 'php siro api:contract [--spec=] [--path=] [--strict] [--coverage]',
+            ],
+            'webhook:test' => [
+                'handler' => WebhookTestCommand::class,
+                'desc' => 'Send a test webhook event',
+                'usage' => 'php siro webhook:test <event> [--url=] [--secret=] [--payload=]',
+            ],
 
             'migrate'          => ['handler' => MigrateCommand::class, 'desc' => 'Run migrations', 'usage' => 'php siro migrate'],
-            'migrate:fresh'    => ['handler' => MigrateFreshCommand::class, 'desc' => 'Drop all tables and re-run all migrations', 'usage' => 'php siro migrate:fresh [--seed]'],
-            'migrate:rollback'  => ['handler' => MigrateRollbackCommand::class, 'desc' => 'Rollback migrations', 'usage' => 'php siro migrate:rollback [--step=N]'],
+            'migrate:fresh' => [
+                'handler' => MigrateFreshCommand::class,
+                'desc' => 'Drop all tables and re-run all migrations',
+                'usage' => 'php siro migrate:fresh [--seed]',
+            ],
+            'migrate:rollback' => [
+                'handler' => MigrateRollbackCommand::class,
+                'desc' => 'Rollback migrations',
+                'usage' => 'php siro migrate:rollback [--step=N]',
+            ],
             'migrate:status'    => ['handler' => MigrateStatusCommand::class, 'desc' => 'Migration status', 'usage' => 'php siro migrate:status'],
             'migrate:reset'     => ['handler' => MigrateResetCommand::class, 'desc' => 'Rollback all migrations', 'usage' => 'php siro migrate:reset'],
-            'migrate:refresh'   => ['handler' => MigrateRefreshCommand::class, 'desc' => 'Rollback all and re-run migrations', 'usage' => 'php siro migrate:refresh [--seed]'],
+            'migrate:refresh' => [
+                'handler' => MigrateRefreshCommand::class,
+                'desc' => 'Rollback all and re-run migrations',
+                'usage' => 'php siro migrate:refresh [--seed]',
+            ],
             'db:seed'           => ['handler' => SeedCommand::class, 'desc' => 'Run seeders', 'usage' => 'php siro db:seed'],
-            'db:show'           => ['handler' => DbShowCommand::class, 'desc' => 'Show table data/schema', 'usage' => 'php siro db:show <table> [--schema] [--limit=N]'],
+            'db:show' => [
+                'handler' => DbShowCommand::class,
+                'desc' => 'Show table data/schema',
+                'usage' => 'php siro db:show <table> [--schema] [--limit=N]',
+            ],
             'db:health'    => ['handler' => DbHealthCommand::class, 'desc' => 'Database health check (SQLite + MySQL)', 'usage' => 'php siro db:health'],
             'db:check'     => ['handler' => DbCheckCommand::class, 'desc' => 'Database integrity check (SQLite + MySQL)', 'usage' => 'php siro db:check'],
             'db:stats'     => ['handler' => DbStatsCommand::class, 'desc' => 'Database statistics (SQLite + MySQL)', 'usage' => 'php siro db:stats'],
             'db:optimize'  => ['handler' => DbOptimizeCommand::class, 'desc' => 'Optimize database (SQLite + MySQL)', 'usage' => 'php siro db:optimize'],
             'db:backup'    => ['handler' => DbBackupCommand::class, 'desc' => 'Backup database (SQLite + MySQL)', 'usage' => 'php siro db:backup [--compress]'],
-            'db:restore'   => ['handler' => DbRestoreCommand::class, 'desc' => 'Restore SQLite database from backup', 'usage' => 'php siro db:restore <file> [--force] (SQLite only)'],
-            'db:explain'   => ['handler' => DbExplainCommand::class, 'desc' => 'EXPLAIN query (merged into db:why)', 'usage' => 'php siro db:why --query="..."'],
-            'db:benchmark' => ['handler' => DbBenchmarkCommand::class, 'desc' => 'SQLite performance benchmark', 'usage' => 'php siro db:benchmark [--iterations=N] (SQLite only)'],
+            'db:restore' => [
+                'handler' => DbRestoreCommand::class,
+                'desc' => 'Restore SQLite database from backup',
+                'usage' => 'php siro db:restore <file> [--force] (SQLite only)',
+            ],
+            'db:explain' => [
+                'handler' => DbExplainCommand::class,
+                'desc' => 'EXPLAIN query (merged into db:why)',
+                'usage' => 'php siro db:why --query="..."',
+            ],
+            'db:benchmark' => [
+                'handler' => DbBenchmarkCommand::class,
+                'desc' => 'SQLite performance benchmark',
+                'usage' => 'php siro db:benchmark [--iterations=N] (SQLite only)',
+            ],
 
-            'log:replay'  => ['handler' => LogReplayCommand::class, 'desc' => 'Replay request (risk-aware, --force for risky traces)', 'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val] [--format=] [--safe] [--dry-run]'],
-            'log:trace'   => ['handler' => LogTraceCommand::class, 'desc' => 'View trace details (--full for more)', 'usage' => 'php siro log:trace [<id>] [--status=500] [--limit=N] [--full]'],
-            'log:export'  => ['handler' => LogExportCommand::class, 'desc' => 'Export trace (JSON/CSV/Postman)', 'usage' => 'php siro log:export <trace_id> [--format=] [--output=] [--days=] [--curl]'],
-            'log:cleanup' => ['handler' => LogCleanupCommand::class, 'desc' => 'Clean old trace files', 'usage' => 'php siro log:cleanup [--days=N] [--dry-run]'],
+            'log:replay' => [
+                'handler' => LogReplayCommand::class,
+                'desc' => 'Replay request (risk-aware, --force for risky traces)',
+                'usage' => 'php siro log:replay <trace_id> [--force] [--set key=val] [--format=] [--safe] [--dry-run]',
+            ],
+            'log:trace' => [
+                'handler' => LogTraceCommand::class,
+                'desc' => 'View trace details (--full for more)',
+                'usage' => 'php siro log:trace [<id>] [--status=500] [--limit=N] [--full]',
+            ],
+            'log:export' => [
+                'handler' => LogExportCommand::class,
+                'desc' => 'Export trace (JSON/CSV/Postman)',
+                'usage' => 'php siro log:export <trace_id> [--format=] [--output=] [--days=] [--curl]',
+            ],
+            'log:cleanup' => [
+                'handler' => LogCleanupCommand::class,
+                'desc' => 'Clean old trace files',
+                'usage' => 'php siro log:cleanup [--days=N] [--dry-run]',
+            ],
             'log:slow'    => ['handler' => SlowLogCommand::class, 'desc' => 'Show slow requests', 'usage' => 'php siro log:slow [--limit=N] [--min=MS]'],
-            'api:why'     => ['handler' => ApiWhyCommand::class, 'desc' => 'Trace a specific request — middleware, SQL, timing, exception', 'usage' => 'php siro api:why <METHOD> <path>'],
-            'db:why'      => ['handler' => DbWhyCommand::class, 'desc' => 'Analyze slow query — EXPLAIN, index suggestion', 'usage' => 'php siro db:why <query_hash>'],
-            'log:tail'    => ['handler' => LogTailCommand::class, 'desc' => 'Tail log files in real-time', 'usage' => 'php siro log:tail [--type=request|error|slow] [--lines=N] [--follow|-f]'],
+            'api:why' => [
+                'handler' => ApiWhyCommand::class,
+                'desc' => 'Trace a specific request — middleware, SQL, timing, exception',
+                'usage' => 'php siro api:why <METHOD> <path>',
+            ],
+            'db:why' => [
+                'handler' => DbWhyCommand::class,
+                'desc' => 'Analyze slow query — EXPLAIN, index suggestion',
+                'usage' => 'php siro db:why <query_hash>',
+            ],
+            'log:tail' => [
+                'handler' => LogTailCommand::class,
+                'desc' => 'Tail log files in real-time',
+                'usage' => 'php siro log:tail [--type=request|error|slow] [--lines=N] [--follow|-f]',
+            ],
             'log:stats'   => ['handler' => LogStatsCommand::class, 'desc' => 'Request statistics with charts', 'usage' => 'php siro log:stats [--days=N]'],
-            'log:top'     => ['handler' => LogTopCommand::class, 'desc' => 'Top slowest APIs by total time', 'usage' => 'php siro log:top [--limit=N] [--min=MS]'],
+            'log:top' => [
+                'handler' => LogTopCommand::class,
+                'desc' => 'Top slowest APIs by total time',
+                'usage' => 'php siro log:top [--limit=N] [--min=MS]',
+            ],
             'debug:last'    => ['handler' => DebugLastCommand::class, 'desc' => 'Show why last request failed (alias: why)', 'usage' => 'php siro debug:last'],
-            'debug:health'  => ['handler' => DebugHealthCommand::class, 'desc' => 'Check debug system health and configuration', 'usage' => 'php siro debug:health'],
+            'debug:health' => [
+                'handler' => DebugHealthCommand::class,
+                'desc' => 'Check debug system health and configuration',
+                'usage' => 'php siro debug:health',
+            ],
 
-            'test:regression' => ['handler' => TestRegressionCommand::class, 'desc' => 'Replay all traces & compare responses — detect regressions', 'usage' => 'php siro test:regression [--limit=N] [--status=500] [--fail]'],
+            'test:regression' => [
+                'handler' => TestRegressionCommand::class,
+                'desc' => 'Replay all traces & compare responses — detect regressions',
+                'usage' => 'php siro test:regression [--limit=N] [--status=500] [--fail]',
+            ],
             'test:run'      => ['handler' => TestRunCommand::class, 'desc' => 'Run PHPUnit test suite (legacy)', 'usage' => 'php siro test:run'],
-            'api:test'      => ['handler' => ApiTestCommand::class, 'desc' => 'Test API (--loop, --as=admin/guest)', 'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]'],
+            'api:test' => [
+                'handler' => ApiTestCommand::class,
+                'desc' => 'Test API (--loop, --as=admin/guest)',
+                'usage' => 'php siro api:test <method> <path> [field:value...] [--as=admin|guest] [--loop=N]',
+            ],
 
-            'queue:work'    => ['handler' => QueueWorkCommand::class, 'desc' => 'Process queue jobs', 'usage' => 'php siro queue:work [--daemon] [--workers=N]'],
+            'queue:work' => [
+                'handler' => QueueWorkCommand::class,
+                'desc' => 'Process queue jobs',
+                'usage' => 'php siro queue:work [--daemon] [--workers=N]',
+            ],
             'queue:retry'   => ['handler' => QueueRetryCommand::class, 'desc' => 'Retry failed jobs', 'usage' => 'php siro queue:retry <id|all>'],
             'queue:flush'   => ['handler' => QueueFlushCommand::class, 'desc' => 'Clear failed jobs', 'usage' => 'php siro queue:flush'],
             'queue:status'  => ['handler' => QueueStatusCommand::class, 'desc' => 'Queue statistics', 'usage' => 'php siro queue:status'],
@@ -298,7 +425,11 @@ final class Console
             'schedule:run'  => ['handler' => ScheduleRunCommand::class, 'desc' => 'Run scheduled tasks', 'usage' => 'php siro schedule:run'],
 
             'serve'             => ['handler' => ServeCommand::class, 'desc' => 'Start dev server (php -S)', 'usage' => 'php siro serve [--port=8080]'],
-            'frankenphp:serve'  => ['handler' => FrankenphpServeCommand::class, 'desc' => 'Start FrankenPHP production server (--docker)', 'usage' => 'php siro frankenphp:serve [--docker] [--port=80]'],
+            'frankenphp:serve' => [
+                'handler' => FrankenphpServeCommand::class,
+                'desc' => 'Start FrankenPHP production server (--docker)',
+                'usage' => 'php siro frankenphp:serve [--docker] [--port=80]',
+            ],
             'live'         => ['handler' => LiveCommand::class, 'desc' => 'Live reload dev server', 'usage' => 'php siro live [--port=9090]'],
             'deploy'       => ['handler' => DeployCommand::class, 'desc' => 'Deploy application', 'usage' => 'php siro deploy [--init] [--list]'],
             'storage:link' => ['handler' => StorageLinkCommand::class, 'desc' => 'Create storage symlink', 'usage' => 'php siro storage:link'],
@@ -312,24 +443,60 @@ final class Console
             'env:switch'    => ['handler' => EnvSwitchCommand::class, 'desc' => 'Switch environment', 'usage' => 'php siro env:switch <env>'],
             'doctor'        => ['handler' => DoctorCommand::class, 'desc' => 'System health check (--prod)', 'usage' => 'php siro doctor [--prod]'],
             'fix'           => ['handler' => FixCommand::class, 'desc' => 'Watch code changes & auto-replay last test', 'usage' => 'php siro fix'],
-            'down'          => ['handler' => DownCommand::class, 'desc' => 'Enable maintenance mode', 'usage' => 'php siro down [--message="..."] [--retry=60] [--allow=ip1,ip2]'],
+            'down' => [
+                'handler' => DownCommand::class,
+                'desc' => 'Enable maintenance mode',
+                'usage' => 'php siro down [--message="..."] [--retry=60] [--allow=ip1,ip2]',
+            ],
             'up'            => ['handler' => UpCommand::class, 'desc' => 'Disable maintenance mode', 'usage' => 'php siro up'],
             'route:list'    => ['handler' => RouteListCommand::class, 'desc' => 'List all routes', 'usage' => 'php siro route:list'],
             'route:search'  => ['handler' => RouteSearchCommand::class, 'desc' => 'Search routes by keyword', 'usage' => 'php siro route:search <keyword>'],
             'route:rules'   => ['handler' => RouteRulesCommand::class, 'desc' => 'Show validation rules', 'usage' => 'php siro route:rules'],
-            'trace:list'    => ['handler' => TraceListCommand::class, 'desc' => 'List recent traces (--limit=N)', 'usage' => 'php siro trace:list [--limit=20]'],
+            'trace:list' => [
+                'handler' => TraceListCommand::class,
+                'desc' => 'List recent traces (--limit=N)',
+                'usage' => 'php siro trace:list [--limit=20]',
+            ],
             'rate:status'   => ['handler' => RateStatusCommand::class, 'desc' => 'Rate limit dashboard', 'usage' => 'php siro rate:status'],
-            'replay'        => ['handler' => ReplayCommand::class, 'desc' => 'Replay last trace (risk-aware)', 'usage' => 'php siro replay [trace_id] [--force] [--edit] [--diff] [--dry-run]'],
-            'runtime'       => ['handler' => RuntimeCommand::class, 'desc' => 'Siro Runtime manager (install, switch, list)', 'usage' => 'php siro runtime [install|switch|list|remove|current|path]'],
-            'db'            => ['handler' => DatabaseCommand::class, 'desc' => 'Database manager (init, start, stop)', 'usage' => 'php siro db [init|start|stop|status|remove]'],
+            'replay' => [
+                'handler' => ReplayCommand::class,
+                'desc' => 'Replay last trace (risk-aware)',
+                'usage' => 'php siro replay [trace_id] [--force] [--edit] [--diff] [--dry-run]',
+            ],
+            'runtime' => [
+                'handler' => RuntimeCommand::class,
+                'desc' => 'Siro Runtime manager (install, switch, list)',
+                'usage' => 'php siro runtime [install|switch|list|remove|current|path]',
+            ],
+            'db' => [
+                'handler' => DatabaseCommand::class,
+                'desc' => 'Database manager (init, start, stop)',
+                'usage' => 'php siro db [init|start|stop|status|remove]',
+            ],
             'demo'          => ['handler' => DemoCommand::class, 'desc' => '30s debug workflow demo — test, fail, why, fix, trace', 'usage' => 'php siro demo'],
             'tinker'        => ['handler' => TinkerCommand::class, 'desc' => 'Interactive PHP playground in app context', 'usage' => 'php siro tinker'],
-            'mercure:subscribe' => ['handler' => MercureSubscribeCommand::class, 'desc' => 'Subscribe to Mercure topics and print events', 'usage' => 'php siro mercure:subscribe <topic>'],
-            'test'          => ['handler' => TestCommand::class, 'desc' => 'Run tests (--filter=, --suite=, --coverage)', 'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]'],
+            'mercure:subscribe' => [
+                'handler' => MercureSubscribeCommand::class,
+                'desc' => 'Subscribe to Mercure topics and print events',
+                'usage' => 'php siro mercure:subscribe <topic>',
+            ],
+            'test' => [
+                'handler' => TestCommand::class,
+                'desc' => 'Run tests (--filter=, --suite=, --coverage)',
+                'usage' => 'php siro test [--filter=name] [--suite=Unit] [--coverage]',
+            ],
             'new'           => ['handler' => NewCommand::class, 'desc' => 'Create new project from skeleton', 'usage' => 'php siro new <name>'],
             'new:project'   => ['handler' => NewProjectCommand::class, 'desc' => 'Create project via composer', 'usage' => 'php siro new:project <name>'],
-            'audit:verify'  => ['handler' => AuditVerifyCommand::class, 'desc' => 'Verify immutable audit trail integrity', 'usage' => 'php siro audit:verify [--all]'],
-            'audit:log'     => ['handler' => AuditLogCommand::class, 'desc' => 'Append a manual audit entry', 'usage' => 'php siro audit:log <action> [--context=key=value]'],
+            'audit:verify' => [
+                'handler' => AuditVerifyCommand::class,
+                'desc' => 'Verify immutable audit trail integrity',
+                'usage' => 'php siro audit:verify [--all]',
+            ],
+            'audit:log' => [
+                'handler' => AuditLogCommand::class,
+                'desc' => 'Append a manual audit entry',
+                'usage' => 'php siro audit:log <action> [--context=key=value]',
+            ],
         ];
     }
 
@@ -706,11 +873,17 @@ final class Console
         $coreCommands = $this->commandRegistry();
         foreach (glob($dir . DIRECTORY_SEPARATOR . '*.php') ?: [] as $file) {
             $content = (string) file_get_contents($file);
-            if (!str_contains($content, 'CommandInterface')) continue;
-            if (!preg_match('/signature\s*=\s*[\'"]([^\'"]+)[\'"]/', $content, $sm)) continue;
+            if (!str_contains($content, 'CommandInterface')) {
+                continue;
+            }
+            if (!preg_match('/signature\s*=\s*[\'"]([^\'"]+)[\'"]/', $content, $sm)) {
+                continue;
+            }
             $fullSignature = trim($sm[1]);
             $signature = explode(' ', $fullSignature)[0];
-            if ($signature === '' || isset(self::$appCommands[$signature]) || isset($coreCommands[$signature])) continue;
+            if ($signature === '' || isset(self::$appCommands[$signature]) || isset($coreCommands[$signature])) {
+                continue;
+            }
 
             preg_match('/description\s*=\s*[\'"]([^\'"]*)[\'"]/', $content, $dm);
             $class = basename($file, '.php');
@@ -718,7 +891,9 @@ final class Console
             if (!class_exists($fqcn)) {
                 require_once $file;
             }
-            if (!class_exists($fqcn)) continue;
+            if (!class_exists($fqcn)) {
+                continue;
+            }
 
             self::registerCommand($signature, $fqcn, $dm[1] ?? $signature);
         }

@@ -16,7 +16,8 @@ use Siro\Core\Queue;
  *
  * @package Siro\Core\Commands
  */
-final class QueueFlushCommand implements \Siro\Core\Commands\CommandInterface {
+final class QueueFlushCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

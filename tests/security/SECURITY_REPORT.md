@@ -1,190 +1,84 @@
-# Siro Framework Security Penetration Test Report
+# Siro Framework Security Penetration Test Report — v1.5.0
 
-**Date:** 2026-05-13
-**Tester:** QC Engineer #2 - Senior Security Penetration Tester
-**Scope:** Siro Core Framework (`siro-core`)
-**Tests Executed:** 42
-**Passed:** 42
+**Date:** 2026-11-26
+**Tester:** Lane G8 — evidence (k6 + pen-test), framework v1.5.0
+**Scope:** siro-core 1.5.0-dev — merged assembly preview (G1 platform + G2 OAuth2 + G3 auto-CRUD + G4 RFC 7807 + G6 throttle tier + G5 webhooks + G7 OpenAPI CI), branch `staging/g8-preview`, HEAD `5df9f6a`
+**Tests Executed (Security testsuite):** 73
+**Passed:** 73
 **Failed:** 0
+**DAST suite (separate):** 157 tests / 166 assertions — OK
+**Critical / High open:** 0
 
 ---
 
 ## Executive Summary
 
-The Siro Core framework demonstrates a strong security posture across all tested OWASP Top 10 categories, JWT attack vectors, cryptographic primitives, and session management mechanisms. **No exploitable vulnerabilities were identified.** The framework implements defense-in-depth with multiple layers of protection including prepared statements, output encoding, server-enforced JWT algorithm selection, Encrypt-then-MAC with timing-safe comparison, and recursive path sanitization.
+The merged v1.5.0 tree keeps the strong security posture of the 2026-05-13 baseline (42 tests, all passing) and adds 31 new tests covering the new 1.5.0 attack surface: OAuth2 scopes and tokens (16 tests, Lane G2), plus JSON-API hardening — JWT expiry/tampering, throttle bypass, auto-CRUD authorization, JSON XSS, webhook signature/replay (15 tests, Lane G8). **No exploitable vulnerability was found in the new surface. 0 critical / 0 high findings open.**
+
+One design boundary is documented in §4 (not a vulnerability): auto-CRUD authorizes at **ability level** (`{table}.{verb}` via Gate, deny-by-default, checked before the row is loaded). It does **not** enforce row-level ownership — two users holding the same ability can read each other's rows. Applications needing row ownership must scope it themselves.
 
 ---
 
-## 1. OWASP Top 10
+## 1. Baseline 2026-05-13 (preserved)
 
-### 1.1 SQL Injection (6 tests)
+The previous report (42 tests, 42 passed, 0 failed; tester "QC Engineer #2") covered OWASP Top 10 (SQL injection, XSS, CSRF, auth bypass, path traversal, LFI, RCE, deserialization, command injection, XXE), JWT security (8 tests incl. algorithm confusion, none-algorithm, signature stripping, expiration bypass), cryptographic primitives (AES-256-CBC Encrypt-then-MAC, HKDF-like key derivation, timing-safe `hash_equals`), timing attacks, input validation (null byte), and session security (256-bit IDs, regeneration, cookie flags).
 
-| Test | Result | Severity |
-|------|--------|----------|
-| Prepared Statements | **PASS** | Critical |
-| Blind Boolean-Based | **PASS** | Critical |
-| ORDER BY Injection | **PASS** | High |
-| LIKE Clause Wildcards | **INFO** | Low |
-
-**Finding:** All SQL queries are parameterized via PDO prepared statements. The `Database::select()`, `Database::execute()`, and `Database::first()` methods use `prepare()` + bound parameters exclusively. `Queue::getFailedJobs()` casts `$limit` to `int` before interpolation (`max(1, (int) $limit)`). **No SQL injection vectors found.**
-
-### 1.2 Cross-Site Scripting (3 tests)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| Reflected XSS in Queue Dashboard | **PASS** | Critical |
-| Stored XSS in Queue Dashboard | **PASS** | Critical |
-| DOM-Based via Request Input | **PASS** | Medium |
-
-**Finding:** `Queue::dashboardHtml()` uses `htmlspecialchars($value, ENT_QUOTES, 'UTF-8')` on all dynamic output. The `CsrfMiddleware::metaTag()` and `field()` methods also use `htmlspecialchars`. Request input is stored raw (correct - output encoding is a presentation-layer concern). **No XSS vectors found.**
-
-### 1.3 CSRF (3 tests)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| Safe Method Exemption | **PASS** | Medium |
-| Timing-Safe Token Comparison | **PASS** | High |
-| Token Generation Entropy | **PASS** | High |
-
-**Finding:** `CsrfMiddleware` exempts `GET`, `HEAD`, `OPTIONS`. Token comparison uses `hash_equals()`. Tokens are 64-character hex strings (32 bytes from `random_bytes()`). Double-submit cookie pattern available for stateless APIs. **No CSRF vulnerabilities found.**
-
-### 1.4 Authentication Bypass (2 tests)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| Invalid Token Rejected | **PASS** | Critical |
-| Missing Auth Header Rejected | **PASS** | High |
-
-**Finding:** `AuthGuard::resolve()` validates JWT signatures, checks expiration, verifies `sub` and `ver` claims. Falls back gracefully to `null` for all token validation failures. **No authentication bypass found.**
-
-### 1.5 Path Traversal (2 tests)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| Dot-Dot Sanitization | **PASS** | High |
-| URL-Encoded Traversal | **PASS** | High |
-
-**Finding:** `Storage::localPath()` implements recursive sanitization of `../`, `..\\`, `./`, `.\\` sequences, strips residual `..` segments, and validates via `realpath()` that resolved paths stay within the allowed directory. **No path traversal found.**
-
-### 1.6 Local File Inclusion (1 test)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| PHP Wrapper Rejection | **PASS** | High |
-
-**Finding:** PHP stream wrappers (`php://`, `file://`, `data://`) are neutralized by the same sanitization that strips `://` schemes from resolved paths. **No LFI found.**
-
-### 1.7 Remote Code Execution (2 tests)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| No `unserialize()` in Production | **PASS** | Critical |
-| No `eval()` in Production | **PASS** | Critical |
-
-**Finding:** Production code contains zero calls to `unserialize()` or PHP `eval()`. The only `eval` reference is `$redis->eval()` (Redis Lua scripting) in `ThrottleMiddleware.php`, which is safe. **No RCE via insecure deserialization or code injection found.**
-
-### 1.8 Insecure Deserialization (1 test)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| `unserialize()` Scan | **PASS** | Critical |
-
-**Finding:** No `unserialize()` calls found in any production PHP file. The `Encrypter` does not use PHP serialization. **No insecure deserialization found.**
-
-### 1.9 Command Injection (2 tests)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| `escapeshellarg` Protection | **PASS** | High |
-| Backtick Neutralization | **PASS** | Medium |
-
-**Finding:** Production commands use `escapeshellarg()` (in `DeployCommand`, `StorageLinkCommand`, `OptimizeCommand`, `TestCommand`). The `LiveCommand` uses `shell_exec` with hardcoded commands (not user input). **No command injection found.**
-
-### 1.10 XXE Injection (1 test)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| External Entity Prevention | **PASS** | Medium |
-
-**Finding:** XML parsing in tests uses `LIBXML_NONET` and avoids `LIBXML_NOENT`, preventing external entity substitution. Production code does not handle user-supplied XML. **No XXE found.**
+All 42 baseline tests still pass unchanged on the merged v1.5.0 tree (`tests/security/PenetrationTest.php`). The full 2026-05-13 report text is preserved in git history (file `tests/security/SECURITY_REPORT.md` at commit `79a0fe1` and earlier). Its recommendations (SameSite=Strict for non-OAuth session cookies, CSP header, JWT rotation grace period, rate-limiting JWT decode failures, libsodium migration) are carried forward unchanged in §5 — none was in the v1.5.0 scope.
 
 ---
 
-## 2. JWT Security (8 tests)
+## 2. New v1.5.0 tests — OAuth2 (Lane G2, 16 tests)
+
+`tests/security/OAuth2PenTest.php` — 16 tests / 27 assertions, all PASS.
 
 | Test | Result | Severity |
 |------|--------|----------|
-| Algorithm Confusion (HS256 vs RS256) | **PASS** | Critical |
-| None Algorithm Attack | **PASS** | Critical |
-| Signature Stripping | **PASS** | Critical |
-| Token Expiration Bypass | **PASS** | High |
-| Payload Tampering | **PASS** | Critical |
-| Weak Secret Brute Force | **PASS** | High |
-| JTI Blacklist Bypass | **PASS** | Medium |
-| Key Rotation | **INFO** | Low |
+| Scope enforcement (missing scope → 403 `insufficient_scope`; granted scope → 200) | **PASS** | High |
+| Garbage / revoked token → 401 | **PASS** | High |
+| Token expiry enforced | **PASS** | High |
+| Client-credentials grant cannot escalate scope | **PASS** | High |
+| Refresh token rotation / revocation | **PASS** | High |
+| `isAvailable()=false` without `league/oauth2-server` (suggest-only) — fail-closed 401, no fatal | **PASS** | High |
 
-**Finding:** `JWT::decode()` **always uses the server-configured algorithm** — the `alg` claim in the token header is never trusted. This prevents algorithm confusion, none algorithm, and signature stripping attacks. Minimum secret length of 32 bytes is enforced. JTI blacklist is checked via in-memory + cache. Token version (`ver` claim) is validated. Weak secrets (placeholders, < 32 chars) are rejected at encoding time. **No JWT vulnerabilities found.**
+**Finding:** OAuth2 is an optional dependency (`composer suggest`, not `require`). Without the library the middleware fails closed (401) and `create()` throws a clear RuntimeException. Scope is checked per route via `OAuthScopeMiddleware` with the core JWT fallback. No scope-escalation or token-forgery vector found.
 
----
+## 3. New v1.5.0 tests — JSON API hardening (Lane G8, 15 tests)
 
-## 3. Cryptographic Testing (5 tests)
+`tests/security/PenTest150Test.php` — 15 tests / 34 assertions, all PASS.
 
-| Test | Result | Severity |
-|------|--------|----------|
-| Wrong Key Rejection | **PASS** | High |
-| Bit Flip Tamper Detection | **PASS** | High |
-| IV Randomness Quality | **PASS** | Medium |
-| Encrypt-Then-MAC Structure | **PASS** | High |
-| Key Derivation Strength | **PASS** | Medium |
+| # | Test | Result | Severity |
+|---|------|--------|----------|
+| 1 | JWT expired → decode throws `Token expired.` | **PASS** | High |
+| 2 | JWT tampered signature → throws `Invalid token signature.` | **PASS** | Critical |
+| 3 | OAuth2 missing scope → 403 `insufficient_scope` | **PASS** | High |
+| 4 | OAuth2 granted scope → 200 | **PASS** | High |
+| 5 | Garbage token → 401 | **PASS** | High |
+| 6 | Throttle flat limit 5 → 6th request 429 | **PASS** | Medium |
+| 7 | `X-Forwarded-For` spoof does **not** bypass throttle (`Request::ip()` returns the constructor `clientIp`, never reads XFF) | **PASS** | High |
+| 8 | Different client IP gets its own throttle bucket | **PASS** | Medium |
+| 9 | Auto-CRUD deny-by-default (no Gate → `AuthorizationException`, app maps to 403) | **PASS** | High |
+| 10 | No existence oracle — unauthorized user probing a non-existent id → 403, not 404 (auth runs before row load) | **PASS** | High |
+| 11 | Per-user ability — user 1 allowed / user 2 denied | **PASS** | High |
+| 12 | Update without ability → 403 | **PASS** | High |
+| 13 | JSON XSS — `Response::json` uses `JSON_HEX_TAG\|JSON_HEX_AMP\|JSON_HEX_APOS\|JSON_HEX_QUOT`; `<script>` becomes `\u003Cscript\u003E`, round-trips correctly | **PASS** | High |
+| 14 | Webhook wrong secret / tampered payload / replay outside 300 s window / malformed header → `false`; inside window → `true` (`WebhookSigner::sign`/`verify`, `t={ts},v1={hmac-sha256(ts.payload)}`, tolerance 300 s) | **PASS** | High |
 
-**Finding:** `Encrypter` implements AES-256-CBC with Encrypt-then-MAC:
-- HMAC-SHA256 computed over `$iv . $ciphertext` with a separate authentication key
-- `hash_equals()` used for HMAC comparison (timing-safe)
-- IV generated via `random_bytes()` — confirmed unique across 10 encryptions
-- Keys derived via HKDF-like expansion: `encKey = HMAC(sha256, "encryption", SHA256(key))`, `authKey = HMAC(sha256, "authentication", SHA256(key))`
-- **Padding oracle attacks are infeasible** because MAC is verified before decryption
+**Findings:**
+- JWT: server-configured algorithm only; expiry and signature verified before any claim is trusted.
+- Throttle: keyed on the framework `clientIp` (set by the server from the transport, not from `X-Forwarded-For`), so a spoofed header cannot move the request into another bucket or reset a limit. Applications behind a trusted proxy must set `clientIp` from the proxy's validated header themselves; the framework deliberately does not trust XFF by default.
+- Auto-CRUD: authorization happens **before** the row is loaded, so an unauthorized probe cannot distinguish "missing row" from "forbidden row" (both 403). See §4 for the row-ownership boundary.
+- JSON encoding: all four hex flags are set, so a JSON body containing `<script>` cannot break out of an HTML context if the payload is ever embedded in a page.
+- Webhooks: HMAC-SHA256 over `timestamp.payload`, 300 s replay tolerance, strict `t=…,v1=…` header format.
 
-**No cryptographic weaknesses found.**
+## 4. Documented design boundary — row-level ownership (NOT a vulnerability)
 
----
+Auto-CRUD (`ApiQueryFilter` / auto-CRUD routes, Lane G3) authorizes at **ability level**: a request is allowed if the authenticated user holds `{table}.{verb}` (e.g. `products.read`) in the Gate; otherwise it is denied with 403 before any row is loaded. It does **not** check row-level ownership: two users who both hold `products.read` can read each other's rows.
 
-## 4. Timing Attack Detection (3 tests)
+This is by design for a framework-level generic CRUD layer (the framework cannot know an application's ownership model). Applications that need row ownership must scope it themselves — custom middleware, `Gate::before`, or a scoped query. QC2/assembly must ensure this is stated in `docs/SECURITY.md` (or the auto-CRUD docs) so app developers do not assume row isolation.
 
-| Test | Result | Severity |
-|------|--------|----------|
-| `hash_equals` in CSRF | **PASS** | Medium |
-| `hash_equals` in JWT | **PASS** | Medium |
-| `hash_equals` in Encrypter | **PASS** | Medium |
+## 5. DAST suite
 
-**Finding:** All security-critical comparisons use `hash_equals()`:
-- `CsrfMiddleware::verifyToken()` — token comparison
-- `JWT::verifyHs256WithRotation()` — signature verification  
-- `Encrypter::decrypt()` — HMAC verification
-
-**No timing side-channel vulnerabilities found.**
-
----
-
-## 5. Input Validation (2 tests)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| Null Byte Injection in Paths | **PASS** | Medium |
-| Null Byte in Route Params | **PASS** | Medium |
-
-**Finding:** `Request::setParams()` and `Request::normalizePath()` strip `\0`, `\x00`, and `%00` from input. **No null byte injection found.**
-
----
-
-## 6. Session Security (3 tests)
-
-| Test | Result | Severity |
-|------|--------|----------|
-| Session ID Entropy (256-bit) | **PASS** | High |
-| Session Regeneration | **PASS** | High |
-| Cookie Security Flags | **PASS** | Medium |
-
-**Finding:** `Session::generateId()` uses `random_bytes(32)` producing 64 hex chars (256 bits of entropy). `regenerate()` generates a new ID and removes the old session file. Cookies are set with `httponly=true`, `samesite=Lax`, and `secure` when HTTPS is detected. **No session security weaknesses found.**
+`tests/dast/DastSecurityTest.php` — 157 tests / 166 assertions, **OK** on the merged tree. Data-provider coverage: SQL injection paths, XSS paths, path traversal, HTTP methods, malformed headers.
 
 ---
 
@@ -195,11 +89,14 @@ The Siro Core framework demonstrates a strong security posture across all tested
 | SQL Injection | None |
 | Cross-Site Scripting | None |
 | CSRF | None |
-| JWT Attacks | None |
+| JWT / OAuth2 Attacks | None |
 | Cryptographic Weaknesses | None |
 | Path Traversal | None |
 | Command Injection | None |
 | Session Hijacking | None |
+| Throttle Bypass (XFF spoof) | None |
+| IDOR (ability level) | None — see §4 boundary |
+| Webhook Forgery / Replay | None |
 | **Overall** | **Low** |
 
 ---
@@ -209,15 +106,15 @@ The Siro Core framework demonstrates a strong security posture across all tested
 ### 1. High Priority
 None identified.
 
-### 2. Medium Priority
-- **Add `SameSite=Strict` for session cookies** in non-OAuth contexts (currently `Lax`). This provides stronger CSRF protection for web apps.
-- **Consider adding a `Content-Security-Policy` header** with `script-src 'self'` as defense-in-depth against any missed XSS vectors.
+### 2. Medium Priority (carried from 2026-05-13, unchanged in v1.5.0)
+- **Add `SameSite=Strict` for session cookies** in non-OAuth contexts (currently `Lax`).
+- **Consider adding a `Content-Security-Policy` header** with `script-src 'self'` as defense-in-depth.
+- **Document the auto-CRUD row-ownership boundary (§4)** in `docs/SECURITY.md` / auto-CRUD docs before the v1.5.0 tag, so apps do not assume row isolation.
 
-### 3. Low Priority / Informational
-- **JWT key rotation grace period:** Allow only a short window (currently configurable but default behavior should enforce 5-minute max).
-- **Rate-limit JWT decode failures** to mitigate brute-force attacks against weak secrets (though minimum 32-byte secret is already enforced).
-- **Add `declare(strict_types=1)` to all test files** (some existing tests lack this).
-- **Consider migrating to `sodium_crypto_aead_xchacha20poly1305`** (libsodium) for authenticated encryption instead of AES-256-CBC + HMAC, to eliminate any remaining theoretical padding oracle risk.
+### 3. Low Priority / Informational (carried from 2026-05-13)
+- JWT key rotation grace period: enforce a short window (currently configurable; default should enforce 5-minute max).
+- Rate-limit JWT decode failures to mitigate brute-force against weak secrets (minimum 32-byte secret already enforced).
+- Consider migrating to `sodium_crypto_aead_xchacha20poly1305` (libsodium) for authenticated encryption instead of AES-256-CBC + HMAC.
 
 ---
 
@@ -225,11 +122,11 @@ None identified.
 
 | Attack Vector | Tests | Passed |
 |--------------|-------|--------|
-| SQL Injection | 4 | 4 |
-| Cross-Site Scripting | 3 | 3 |
+| SQL Injection (baseline + DAST) | 4 + DAST | 4 + DAST |
+| Cross-Site Scripting (baseline + JSON + DAST) | 3 + 1 | 4 |
 | CSRF | 3 | 3 |
-| JWT Attacks | 8 | 8 |
-| Path Traversal | 2 | 2 |
+| JWT / OAuth2 (baseline 8 + G2 16 + G8 5) | 29 | 29 |
+| Path Traversal (baseline + DAST) | 2 + DAST | 2 + DAST |
 | Cryptographic | 5 | 5 |
 | Timing Attacks | 3 | 3 |
 | Input Validation | 2 | 2 |
@@ -237,13 +134,13 @@ None identified.
 | XXE | 1 | 1 |
 | Authentication | 2 | 2 |
 | Session Security | 3 | 3 |
-| Deserialization | 1 | 1 |
-| Code Injection | 1 | 1 |
-| Body Size / Content-Type | 1 | 1 |
-| Local File Inclusion | 1 | 1 |
-| Header Injection | 1 | 1 |
-| **Total** | **42** | **42** |
+| Deserialization / RCE | 2 | 2 |
+| Throttle / XFF spoof | 3 | 3 |
+| Auto-CRUD authorization / IDOR | 4 | 4 |
+| Webhook signature / replay | 1 | 1 |
+| **Security testsuite total** | **73** | **73** |
+| **DAST suite (separate)** | **157** | **157** |
 
 ---
 
-*Report generated by QC Engineer #2 - Security Penetration Testing Suite*
+*Report supersedes the 2026-05-13 report (42 tests). Baseline text preserved in git history at `tests/security/SECURITY_REPORT.md` (commit `79a0fe1` and earlier). Generated by Lane G8, framework v1.5.0, 2026-11-26.*

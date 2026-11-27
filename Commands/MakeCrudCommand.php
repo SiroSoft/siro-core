@@ -58,32 +58,48 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
         $ok = true;
 
         // 1. Model
-        if (!$this->generateModel($model, $table)) { $ok = false; }
+        if (!$this->generateModel($model, $table)) {
+            $ok = false;
+        }
 
         // 2. Migration
-        if (!$this->generateMigration($table, $model)) { $ok = false; }
+        if (!$this->generateMigration($table, $model)) {
+            $ok = false;
+        }
 
         // 3. Repository (skip in simple mode)
         if (!$withoutRepository) {
-            if (!$this->generateRepository($repoName, $model, $table)) { $ok = false; }
+            if (!$this->generateRepository($repoName, $model, $table)) {
+                $ok = false;
+            }
         }
 
         // 4. Service (skip in simple mode)
         if (!$withoutService) {
-            if (!$this->generateService($serviceName, $model, $repoName, $withoutRepository)) { $ok = false; }
+            if (!$this->generateService($serviceName, $model, $repoName, $withoutRepository)) {
+                $ok = false;
+            }
         }
 
         // 5. Controller
-        if (!$this->generateController($controllerClass, $model, $resourceClass, $serviceName, $withoutService)) { $ok = false; }
+        if (!$this->generateController($controllerClass, $model, $resourceClass, $serviceName, $withoutService)) {
+            $ok = false;
+        }
 
         // 6. Resource (needed by both simple and full controllers)
-        if (!$this->generateResource($resourceClass)) { $ok = false; }
+        if (!$this->generateResource($resourceClass)) {
+            $ok = false;
+        }
 
         // 7. Routes
-        if (!$this->generateRoutes($resource, $controllerClass)) { $ok = false; }
+        if (!$this->generateRoutes($resource, $controllerClass)) {
+            $ok = false;
+        }
 
         // 8. Feature test
-        if (!$this->generateTest($resource, $model)) { $ok = false; }
+        if (!$this->generateTest($resource, $model)) {
+            $ok = false;
+        }
 
         $this->write('');
         if ($ok) {
@@ -100,10 +116,10 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
                 $this->write('     php siro migrate');
                 $this->write('');
                 $step++;
-                if ($withSeed) {
-                    $this->write('     php siro db:seed');
-                    $this->write('');
-                }
+            if ($withSeed) {
+                $this->write('     php siro db:seed');
+                $this->write('');
+            }
             }
             $this->write('  ' . $step . '. Start dev server:');
             $this->write('     php siro serve');
@@ -402,7 +418,9 @@ PHP;
             return false;
         }
         $dir = dirname($path);
-        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
 
         if ($withoutRepository) {
             // Service -> Model directly
@@ -510,7 +528,9 @@ PHP);
             return false;
         }
         $dir = dirname($path);
-        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
 
         file_put_contents($path, <<<PHP
 <?php
@@ -661,7 +681,9 @@ PHP;
         }
 
         $dir = dirname($path);
-        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
 
         $endpoint = '/api/' . $resource;
 

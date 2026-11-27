@@ -128,7 +128,7 @@ final class TestClient
         }
         try {
             return new TestResponse($this->router->dispatch($request));
-        } catch (ValidationException|MalformedBodyException|ModelNotFoundException|AuthorizationException $e) {
+        } catch (ValidationException | MalformedBodyException | ModelNotFoundException | AuthorizationException $e) {
             // Mirror App::run() so HTTP-level assertions see status codes,
             // not bubbled exceptions.
             return new TestResponse($e->toResponse());

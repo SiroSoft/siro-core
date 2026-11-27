@@ -20,7 +20,8 @@ use Siro\Core\Queue;
  *
  * @package Siro\Core\Commands
  */
-final class QueueStatusCommand implements \Siro\Core\Commands\CommandInterface {
+final class QueueStatusCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

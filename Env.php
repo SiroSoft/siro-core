@@ -102,7 +102,8 @@ final class Env
                 $envMtime = filemtime($mainFile);
                 $useCache = $cacheMtime !== false && $envMtime !== false && $cacheMtime >= $envMtime;
             }
-            if ($useCache && is_file(self::$cachedFile)) {
+            // $useCache is only true when the cache file existed (checked above).
+            if ($useCache) {
                 $raw = substr((string) file_get_contents(self::$cachedFile), strlen('<?php exit; ?>'));
                 $cached = null;
                 // APP_KEY is excluded from cache (SENSITIVE_KEYS), so read directly from .env
@@ -199,8 +200,10 @@ final class Env
                         $inSingle = !$inSingle;
                     } elseif ($char === '"' && !$inSingle) {
                         $inDouble = !$inDouble;
-                    } elseif ($char === '#' && !$inSingle && !$inDouble
-                        && ($i === 0 || $value[$i - 1] === ' ' || $value[$i - 1] === "\t")) {
+                    } elseif (
+                        $char === '#' && !$inSingle && !$inDouble
+                        && ($i === 0 || $value[$i - 1] === ' ' || $value[$i - 1] === "\t")
+                    ) {
                         $value = trim(substr($value, 0, $i));
                         break;
                     }
@@ -252,7 +255,9 @@ final class Env
         }
 
         $payload = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($payload === false) { return false; }
+        if ($payload === false) {
+            return false;
+        }
 
         $appKey = (string) self::get('APP_KEY', '');
         if ($appKey !== '' && strlen($appKey) >= 16 && class_exists(\Siro\Core\Encrypter::class)) {
@@ -286,14 +291,22 @@ final class Env
     private static function readKeyFromEnvFile(string $envPath, string $key): string
     {
         $lines = is_file($envPath) ? @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : false;
-        if ($lines === false) return '';
+        if ($lines === false) {
+            return '';
+        }
         foreach ($lines as $line) {
             $line = trim($line);
-            if ($line === '' || str_starts_with($line, '#')) continue;
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
             $pos = strpos($line, '=');
-            if ($pos === false) continue;
+            if ($pos === false) {
+                continue;
+            }
             $k = trim(substr($line, 0, $pos));
-            if ($k === $key) return trim(substr($line, $pos + 1));
+            if ($k === $key) {
+                return trim(substr($line, $pos + 1));
+            }
         }
         return '';
     }

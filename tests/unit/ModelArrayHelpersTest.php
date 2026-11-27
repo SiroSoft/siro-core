@@ -62,7 +62,10 @@ final class ModelArrayHelpersTest extends TestCase
         ArrWidget::create(['name' => 'B']);
         $rows = ArrWidget::query()->orderBy('name', 'asc')->getArray();
         $this->assertCount(2, $rows);
-        $this->assertContainsOnly('array', $rows);
+        // assertContainsOnly() was removed in PHPUnit 12 — assert per element.
+        foreach ($rows as $row) {
+            $this->assertIsArray($row);
+        }
         $this->assertSame(['A', 'B'], array_column($rows, 'name'));
     }
 

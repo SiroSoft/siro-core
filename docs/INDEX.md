@@ -16,6 +16,7 @@ Welcome to the Siro Core documentation! This index helps you find the right guid
 ### Core Guides
 - **[Architecture Decisions](ARCHITECTURE.md)** — Design choices and ADRs
 - **[Security Guide](SECURITY.md)** — JWT, encryption, best practices
+- **[OAuth2](OAUTH2.md)** — Third-party partner auth (authorization_code + PKCE, client_credentials, refresh_token)
 - **[Performance Optimization](PERFORMANCE.md)** — Benchmarking and tuning
 - **[AI Coding and MCP](AI_MCP.md)** — Safe AI-assisted development and audit workflow
 

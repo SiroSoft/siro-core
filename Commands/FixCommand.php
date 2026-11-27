@@ -13,7 +13,8 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-final class FixCommand implements \Siro\Core\Commands\CommandInterface {
+final class FixCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     private string $basePath;
@@ -71,7 +72,9 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
             }
             foreach ($headers as $k => $v) {
                 $lk = strtolower((string) $k);
-                if (in_array($lk, ['host', 'content-length', 'content-type', 'authorization'], true)) continue;
+                if (in_array($lk, ['host', 'content-length', 'content-type', 'authorization'], true)) {
+                    continue;
+                }
                 $curlHeaders[] = (string) $k . ': ' . $v;
             }
 
@@ -199,12 +202,16 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $max = 0;
         foreach ($dirs as $dir) {
-            if (!is_dir($dir)) continue;
+            if (!is_dir($dir)) {
+                continue;
+            }
             $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
             foreach ($files as $file) {
                 if ($file instanceof \SplFileInfo && $file->isFile() && $file->getExtension() === 'php') {
                     $mtime = $file->getMTime();
-                    if ($mtime > $max) $max = $mtime;
+                    if ($mtime > $max) {
+                        $max = $mtime;
+                    }
                 }
             }
         }
@@ -215,7 +222,9 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $tracesDir = $this->getTracesDir($this->basePath);
         $rawFiles = $this->findTraceFiles($tracesDir);
-        if ($rawFiles === []) return null;
+        if ($rawFiles === []) {
+            return null;
+        }
         usort($rawFiles, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
         return basename($rawFiles[0], '.json');
     }

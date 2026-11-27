@@ -8,6 +8,7 @@ use Siro\Core\Cache\CacheInstance;
 use Siro\Core\Env;
 use Siro\Core\Request;
 use Siro\Core\Response;
+use InvalidArgumentException;
 use Throwable;
 
 final class ThrottleMiddleware implements MiddlewareInterface
@@ -16,24 +17,105 @@ final class ThrottleMiddleware implements MiddlewareInterface
     private const FALLBACK_FAIL_CLOSED = 'fail_closed';
     private const FALLBACK_FILE = 'file';
 
+    /**
+     * Named limiter registry: name => ['limit' => int, 'minutes' => int,
+     * 'key' => string|callable]. Key strategies: 'ip' (client IP), 'user'
+     * (authenticated user id), 'api_key' (API key id), or a callable
+     * (Request): string returning the key part for a request.
+     *
+     * @var array<string, array{limit: int, minutes: int, key: string|callable}>
+     */
+    private static array $limiters = [];
+
+    /** @var array<string, string> API-key plan name => limiter name. */
+    private static array $planLimiters = [];
+
+    /**
+     * Define a named rate limiter, e.g. ThrottleMiddleware::define('pos', 600, 1, 'user').
+     * Defining the same name again replaces the previous definition.
+     *
+     * @param string|callable $key Counter-key strategy ('ip', 'user', 'api_key')
+     *        or a resolver returning the key part for a request.
+     */
+    public static function define(string $name, int $maxRequests, int $minutes = 1, string|callable $key = 'ip'): void
+    {
+        if ($name === '') {
+            throw new InvalidArgumentException('Throttle limiter name must not be empty.');
+        }
+        if ($maxRequests < 1) {
+            throw new InvalidArgumentException('Throttle limiter limit must be at least 1.');
+        }
+        if ($minutes < 1) {
+            throw new InvalidArgumentException('Throttle limiter window must be at least 1 minute.');
+        }
+        if (is_string($key) && !in_array($key, ['ip', 'user', 'api_key'], true)) {
+            throw new InvalidArgumentException(
+                "Throttle limiter key strategy must be 'ip', 'user', 'api_key' or a callable, got '{$key}'."
+            );
+        }
+        self::$limiters[$name] = ['limit' => $maxRequests, 'minutes' => $minutes, 'key' => $key];
+    }
+
+    /**
+     * Map an API-key plan to a limiter: keys carrying that plan are counted
+     * against the mapped limiter instead of the route's limiter.
+     */
+    public static function definePlan(string $plan, string $limiter): void
+    {
+        if ($plan === '' || $limiter === '') {
+            throw new InvalidArgumentException('Throttle plan and limiter names must not be empty.');
+        }
+        self::$planLimiters[$plan] = $limiter;
+    }
+
+    /** Clear all defined limiters and plan mappings. Required for test isolation. */
+    public static function reset(): void
+    {
+        self::$limiters = [];
+        self::$planLimiters = [];
+    }
+
+    /** @return array<string, array{limit: int, minutes: int, key: string|callable}> */
+    public static function limiters(): array
+    {
+        return self::$limiters;
+    }
+
+    /** @return array{limit: int, minutes: int, key: string|callable}|null */
+    public static function getLimiter(string $name): ?array
+    {
+        return self::$limiters[$name] ?? null;
+    }
+
+    /** @return array<string, string> */
+    public static function planLimiters(): array
+    {
+        return self::$planLimiters;
+    }
+
     private ?\Redis $redis = null;
     private bool $resolved = false;
 
-    public function handle(Request $request, callable $next, int $maxRequests = 60, int $minutes = 1): mixed
+    /**
+     * @param int|string $limiterOrMax Named limiter (string, must be defined
+     *        with ::define()) or a flat max-requests limit (int, legacy).
+     */
+    public function handle(Request $request, callable $next, int|string $limiterOrMax = 60, int $minutes = 1): mixed
     {
-        $limit = max(1, $maxRequests);
-        $windowMinutes = max(1, $minutes);
+        $resolved = $this->resolveLimiter($request, $limiterOrMax, $minutes);
+        $limit = $resolved['limit'];
+        $windowMinutes = $resolved['minutes'];
         $ttl = $windowMinutes * 60;
 
         $redis = $this->redis();
         if (!$redis instanceof \Redis) {
-            return $this->handleFallback($request, $next, $limit, $windowMinutes, $ttl);
+            return $this->handleFallback($request, $next, $resolved, $ttl);
         }
 
         $prefix = (string) Env::get('REDIS_PREFIX', 'siro:throttle:');
-        $ip = $request->ip();
+        $keyPart = $this->keyPart($request, $resolved['key']);
         $route = rawurlencode($request->method() . ':' . self::normalizePath($request->path()));
-        $key = $prefix . sprintf('rate:%s:%s', $ip, $route);
+        $key = $prefix . sprintf('rate:%s:%s:%s', $resolved['name'], $keyPart, $route);
 
         try {
             $result = $redis->eval(
@@ -61,22 +143,12 @@ final class ThrottleMiddleware implements MiddlewareInterface
                 $response = Response::error('Too Many Requests', 429, [
                     'throttle' => [sprintf('Rate limit exceeded. Max %d requests per %d minute(s).', $limit, $windowMinutes)],
                 ]);
-                $response->header('X-RateLimit-Limit', (string) $limit);
-                $response->header('X-RateLimit-Remaining', (string) $remaining);
-                if ($retryAfter > 0) {
-                    $response->header('X-RateLimit-Reset', (string) (time() + $retryAfter));
-                    $response->header('Retry-After', (string) $retryAfter);
-                }
-                return $response;
+                return $this->withRateHeaders($response, $limit, $remaining, time() + $retryAfter, $retryAfter);
             }
 
             $response = $next($request);
             if ($response instanceof Response) {
-                $response->header('X-RateLimit-Limit', (string) $limit);
-                $response->header('X-RateLimit-Remaining', (string) $remaining);
-                if ($retryAfter > 0) {
-                    $response->header('X-RateLimit-Reset', (string) (time() + $retryAfter));
-                }
+                $response = $this->withRateHeaders($response, $limit, $remaining, time() + $retryAfter, $retryAfter);
             }
             return $response;
         } catch (Throwable $e) {
@@ -88,12 +160,116 @@ final class ThrottleMiddleware implements MiddlewareInterface
             if (!$isOwnStateError) {
                 throw $e;
             }
-            return $this->handleFallback($request, $next, $limit, $windowMinutes, $ttl);
+            return $this->handleFallback($request, $next, $resolved, $ttl);
         }
     }
 
-    private function handleFallback(Request $request, callable $next, int $limit, int $windowMinutes, int $ttl): mixed
+    /**
+     * Resolve the effective limiter for a request.
+     *
+     * @return array{name: string, limit: int, minutes: int, key: string|callable}
+     */
+    private function resolveLimiter(Request $request, int|string $limiterOrMax, int $minutes): array
     {
+        if (is_int($limiterOrMax)) {
+            return [
+                'name' => 'default',
+                'limit' => max(1, $limiterOrMax),
+                'minutes' => max(1, $minutes),
+                'key' => 'ip',
+            ];
+        }
+
+        $limiter = self::$limiters[$limiterOrMax] ?? null;
+        if ($limiter === null) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    "Throttle limiter '%s' is not defined. Define it with ThrottleMiddleware::define() first.",
+                    $limiterOrMax
+                )
+            );
+        }
+
+        // An API-key plan (set on the request by ApiKeyMiddleware) maps to
+        // its own limiter when one is registered for that plan.
+        $user = $request->user();
+        $planValue = is_array($user) ? ($user['plan'] ?? null) : null;
+        $plan = is_string($planValue) ? $planValue : '';
+        if ($plan !== '' && isset(self::$planLimiters[$plan])) {
+            $mappedName = self::$planLimiters[$plan];
+            $mapped = self::$limiters[$mappedName] ?? null;
+            if ($mapped !== null) {
+                return [
+                    'name' => $mappedName,
+                    'limit' => $mapped['limit'],
+                    'minutes' => $mapped['minutes'],
+                    'key' => $mapped['key'],
+                ];
+            }
+        }
+
+        return [
+            'name' => $limiterOrMax,
+            'limit' => $limiter['limit'],
+            'minutes' => $limiter['minutes'],
+            'key' => $limiter['key'],
+        ];
+    }
+
+    /** @param string|callable $strategy */
+    private function keyPart(Request $request, string|callable $strategy): string
+    {
+        $user = $request->user();
+        if (is_string($strategy)) {
+            $userId = is_array($user) ? ($user['id'] ?? null) : null;
+            $keyId = is_array($user) ? ($user['key_id'] ?? null) : null;
+            if ($strategy === 'user' && (is_string($userId) || is_int($userId))) {
+                return 'user:' . (string) $userId;
+            }
+            if ($strategy === 'api_key') {
+                if (is_string($keyId) || is_int($keyId)) {
+                    return 'key:' . (string) $keyId;
+                }
+                if (is_string($userId) || is_int($userId)) {
+                    return 'user:' . (string) $userId;
+                }
+            }
+            return $request->ip();
+        }
+
+        // A resolver must return a string key part; anything else falls back
+        // to the client IP instead of failing the request.
+        $resolved = $strategy($request);
+        if (is_string($resolved) && $resolved !== '') {
+            return $resolved;
+        }
+        return $request->ip();
+    }
+
+    /**
+     * Attach the full rate-limit header set — Limit, Remaining, Reset and
+     * Retry-After — to a response, whether it is a success or a 429.
+     * $resetAt is an epoch timestamp; $retryAfter is seconds until reset.
+     */
+    private function withRateHeaders(
+        Response $response,
+        int $limit,
+        int $remaining,
+        int $resetAt,
+        int $retryAfter
+    ): Response {
+        $response->header('X-RateLimit-Limit', (string) $limit);
+        $response->header('X-RateLimit-Remaining', (string) $remaining);
+        $response->header('X-RateLimit-Reset', (string) $resetAt);
+        $response->header('Retry-After', (string) max(0, $retryAfter));
+        return $response;
+    }
+
+    /** @param array{name: string, limit: int, minutes: int, key: string|callable} $limiter */
+    private function handleFallback(Request $request, callable $next, array $limiter, int $ttl): mixed
+    {
+        $limit = $limiter['limit'];
+        $windowMinutes = $limiter['minutes'];
         $strategy = strtolower((string) Env::get('THROTTLE_FALLBACK', self::FALLBACK_FILE));
 
         if ($strategy === self::FALLBACK_DISABLED || $strategy === 'fail_open') {
@@ -113,17 +289,20 @@ final class ThrottleMiddleware implements MiddlewareInterface
             return $response;
         }
 
-        return $this->enforceFileFallback($request, $next, $limit, $windowMinutes, $ttl);
+        return $this->enforceFileFallback($request, $next, $limiter, $ttl);
     }
 
-    private function enforceFileFallback(Request $request, callable $next, int $limit, int $windowMinutes, int $ttl): mixed
+    /** @param array{name: string, limit: int, minutes: int, key: string|callable} $limiter */
+    private function enforceFileFallback(Request $request, callable $next, array $limiter, int $ttl): mixed
     {
+        $limit = $limiter['limit'];
+        $windowMinutes = $limiter['minutes'];
         $basePath = defined('BASE_PATH') && is_string(BASE_PATH) ? BASE_PATH
             : (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : (string) getcwd());
 
-        $ip = $request->ip();
+        $keyPart = $this->keyPart($request, $limiter['key']);
         $route = rawurlencode($request->method() . ':' . self::normalizePath($request->path()));
-        $key = sprintf('rate:%s:%s', $ip, $route);
+        $key = sprintf('rate:%s:%s:%s', $limiter['name'], $keyPart, $route);
 
         $storeDir = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'rate_limit';
         if (!is_dir($storeDir)) {
@@ -174,6 +353,8 @@ final class ThrottleMiddleware implements MiddlewareInterface
             $encoded = (string) json_encode([
                 'count' => $count,
                 'expires_at' => $expiresAt,
+                'limiter' => $limiter['name'],
+                'limit' => $limit,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             ftruncate($fp, 0);
             rewind($fp);
@@ -193,20 +374,12 @@ final class ThrottleMiddleware implements MiddlewareInterface
                 $response = Response::error('Too Many Requests', 429, [
                     'throttle' => [sprintf('Rate limit exceeded. Max %d requests per %d minute(s).', $limit, $windowMinutes)],
                 ]);
-                $response->header('X-RateLimit-Limit', (string) $limit);
-                $response->header('X-RateLimit-Remaining', (string) $remaining);
-                $response->header('X-RateLimit-Reset', (string) ($now + $remainingTtl));
-                if ($remainingTtl > 0) {
-                    $response->header('Retry-After', (string) $remainingTtl);
-                }
-                return $response;
+                return $this->withRateHeaders($response, $limit, $remaining, $now + $remainingTtl, $remainingTtl);
             }
 
             $response = $next($request);
             if ($response instanceof Response) {
-                $response->header('X-RateLimit-Limit', (string) $limit);
-                $response->header('X-RateLimit-Remaining', (string) $remaining);
-                $response->header('X-RateLimit-Reset', (string) ($now + $remainingTtl));
+                $response = $this->withRateHeaders($response, $limit, $remaining, $now + $remainingTtl, $remainingTtl);
             }
             return $response;
         } catch (Throwable $e) {

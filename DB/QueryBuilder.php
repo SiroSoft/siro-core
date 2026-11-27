@@ -260,7 +260,8 @@ class QueryBuilder
             return $this->addNestedWhere('AND', $column);
         }
         if (func_num_args() === 1) {
-            throw new RuntimeException("where() requires a value: use where('col', \$value) or where('col', '=', \$value). A bare where('col') would silently become IS NULL.");
+            throw new RuntimeException("where() requires a value: use where('col', \$value) or " .
+                "where('col', '=', \$value). A bare where('col') would silently become IS NULL.");
         }
         $hasExplicitValue = func_num_args() >= 3;
         return $this->addWhere('AND', $column, $operatorOrValue, $value, $hasExplicitValue);
@@ -283,7 +284,8 @@ class QueryBuilder
             return $this->addNestedWhere('OR', $column);
         }
         if (func_num_args() === 1) {
-            throw new RuntimeException("orWhere() requires a value: use orWhere('col', \$value) or orWhere('col', '=', \$value). A bare orWhere('col') would silently become IS NULL.");
+            throw new RuntimeException("orWhere() requires a value: use orWhere('col', \$value) or " .
+                "orWhere('col', '=', \$value). A bare orWhere('col') would silently become IS NULL.");
         }
         $hasExplicitValue = func_num_args() >= 3;
         return $this->addWhere('OR', $column, $operatorOrValue, $value, $hasExplicitValue);
@@ -697,9 +699,16 @@ class QueryBuilder
     {
         $lockMode = $this->resolveLockMode();
         [$sql, $bindings] = $this->compiler->buildSelectQuery(
-            $this->columns, $this->table, $this->wheres, $this->havings,
-            $this->joins, $this->groups, $this->orders,
-            $this->limitValue, $this->offsetValue, $this->bindings,
+            $this->columns,
+            $this->table,
+            $this->wheres,
+            $this->havings,
+            $this->joins,
+            $this->groups,
+            $this->orders,
+            $this->limitValue,
+            $this->offsetValue,
+            $this->bindings,
             $lockMode
         );
         return $this->runSelect($sql, $this->withSubBindings($bindings));
@@ -718,9 +727,16 @@ class QueryBuilder
     {
         $lockMode = $this->resolveLockMode();
         [$sql, $bindings] = $this->compiler->buildSelectQuery(
-            $this->columns, $this->table, $this->wheres, $this->havings,
-            $this->joins, $this->groups, $this->orders,
-            $this->limitValue, $this->offsetValue, $this->bindings,
+            $this->columns,
+            $this->table,
+            $this->wheres,
+            $this->havings,
+            $this->joins,
+            $this->groups,
+            $this->orders,
+            $this->limitValue,
+            $this->offsetValue,
+            $this->bindings,
             $lockMode
         );
         $bindings = $this->withSubBindings($bindings);
@@ -939,9 +955,16 @@ class QueryBuilder
     public function dump(): self
     {
         [$sql, $bindings] = $this->compiler->buildSelectQuery(
-            $this->columns, $this->table, $this->wheres, $this->havings,
-            $this->joins, $this->groups, $this->orders,
-            $this->limitValue, $this->offsetValue, $this->bindings
+            $this->columns,
+            $this->table,
+            $this->wheres,
+            $this->havings,
+            $this->joins,
+            $this->groups,
+            $this->orders,
+            $this->limitValue,
+            $this->offsetValue,
+            $this->bindings
         );
         $bindings = $this->withSubBindings($bindings);
         echo PHP_EOL . 'SQL: ' . $sql . PHP_EOL;
@@ -958,9 +981,16 @@ class QueryBuilder
     public function toSql(): string
     {
         [$sql] = $this->compiler->buildSelectQuery(
-            $this->columns, $this->table, $this->wheres, $this->havings,
-            $this->joins, $this->groups, $this->orders,
-            $this->limitValue, $this->offsetValue, $this->bindings
+            $this->columns,
+            $this->table,
+            $this->wheres,
+            $this->havings,
+            $this->joins,
+            $this->groups,
+            $this->orders,
+            $this->limitValue,
+            $this->offsetValue,
+            $this->bindings
         );
         return $sql;
     }
@@ -1026,9 +1056,16 @@ class QueryBuilder
     public function toCompiled(): array
     {
         [$sql, $bindings] = $this->compiler->buildSelectQuery(
-            $this->columns, $this->table, $this->wheres, $this->havings,
-            $this->joins, $this->groups, $this->orders,
-            $this->limitValue, $this->offsetValue, $this->bindings
+            $this->columns,
+            $this->table,
+            $this->wheres,
+            $this->havings,
+            $this->joins,
+            $this->groups,
+            $this->orders,
+            $this->limitValue,
+            $this->offsetValue,
+            $this->bindings
         );
         $bindings = $this->withSubBindings($bindings);
         /** @var array<int|string, mixed> $bindings */
@@ -1063,8 +1100,14 @@ class QueryBuilder
     private function aggregate(string $function, string $column): float|int
     {
         [$sql, $bindings] = $this->compiler->buildAggregateQuery(
-            $function, $column, $this->table, $this->wheres, $this->havings,
-            $this->joins, $this->groups, $this->bindings
+            $function,
+            $column,
+            $this->table,
+            $this->wheres,
+            $this->havings,
+            $this->joins,
+            $this->groups,
+            $this->bindings
         );
         $rows = $this->runSelect($sql, $this->withSubBindings($bindings));
         $value = $rows[0]['aggregate'] ?? 0;
@@ -1168,7 +1211,9 @@ class QueryBuilder
             ),
             default => sprintf(
                 'INSERT INTO %s (%s) VALUES (%s) ON CONFLICT(%s) DO UPDATE SET %s',
-                $this->table, $cols, $vals,
+                $this->table,
+                $cols,
+                $vals,
                 implode(',', $update),
                 implode(', ', array_map(fn(string $c): string => "{$c} = excluded.{$c}", $update))
             ),
@@ -1372,8 +1417,12 @@ class QueryBuilder
         $offset = ($page - 1) * $perPage;
 
         [$countSql, $countBindings] = $this->compiler->buildCountQuery(
-            $this->table, $this->wheres, $this->havings,
-            $this->joins, $this->groups, $this->bindings
+            $this->table,
+            $this->wheres,
+            $this->havings,
+            $this->joins,
+            $this->groups,
+            $this->bindings
         );
         $countRows = $this->runSelect($countSql, $this->withSubBindings($countBindings));
         /** @var int|string $aggregate */

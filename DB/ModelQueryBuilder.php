@@ -434,7 +434,8 @@ final class ModelQueryBuilder extends QueryBuilder
      */
     private function resolveRelation(mixed $rel): mixed
     {
-        if ($rel instanceof \Siro\Core\DB\Relations\HasOne
+        if (
+            $rel instanceof \Siro\Core\DB\Relations\HasOne
             || $rel instanceof \Siro\Core\DB\Relations\HasMany
             || $rel instanceof \Siro\Core\DB\Relations\BelongsTo
             || $rel instanceof \Siro\Core\DB\Relations\BelongsToMany
@@ -494,7 +495,8 @@ final class ModelQueryBuilder extends QueryBuilder
             $query = (new $relClass())->query();
             /** @var ModelQueryBuilder $query */
             return [
-                "{$relTable}.{$rel->getRelatedKey()} IN (SELECT {$rel->getRelatedKey()} FROM {$rel->getPivotTable()} WHERE {$rel->getForeignKey()} = {$parentTable}.id)",
+                "{$relTable}.{$rel->getRelatedKey()} IN (SELECT {$rel->getRelatedKey()} FROM {$rel->getPivotTable()} "
+                . "WHERE {$rel->getForeignKey()} = {$parentTable}.id)",
                 $query,
             ];
         }
@@ -577,7 +579,9 @@ final class ModelQueryBuilder extends QueryBuilder
     {
         $allEagerLoads = $this->eagerLoads;
         if ($this->modelClass !== '') {
-            if (!class_exists($this->modelClass)) return;
+            if (!class_exists($this->modelClass)) {
+                return;
+            }
             $ref = new \ReflectionClass($this->modelClass);
             if ($ref->hasProperty('with')) {
                 $prop = $ref->getProperty('with');

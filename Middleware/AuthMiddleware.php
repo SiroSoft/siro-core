@@ -67,13 +67,23 @@ final class AuthMiddleware implements MiddlewareInterface
             }
 
             $userIdVal = isset($userData['id']) && is_numeric($userData['id']) ? (int) $userData['id'] : 0;
-            $userNameVal = isset($userData['name']) && is_string($userData['name']) ? $userData['name'] : (isset($userData['name']) && is_scalar($userData['name']) ? (string) $userData['name'] : '');
-            $userEmailVal = isset($userData['email']) && is_string($userData['email']) ? $userData['email'] : (isset($userData['email']) && is_scalar($userData['email']) ? (string) $userData['email'] : '');
-            $userRoleVal = isset($userData['role']) && is_string($userData['role']) ? $userData['role'] : (isset($userData['role']) && is_scalar($userData['role']) ? (string) $userData['role'] : 'user');
+            $userNameVal = isset($userData['name']) && is_string($userData['name'])
+                ? $userData['name']
+                : (isset($userData['name']) && is_scalar($userData['name']) ? (string) $userData['name'] : '');
+            $userEmailVal = isset($userData['email']) && is_string($userData['email'])
+                ? $userData['email']
+                : (isset($userData['email']) && is_scalar($userData['email']) ? (string) $userData['email'] : '');
+            $userRoleVal = isset($userData['role']) && is_string($userData['role'])
+                ? $userData['role']
+                : (isset($userData['role']) && is_scalar($userData['role']) ? (string) $userData['role'] : 'user');
             $userStatusVal = isset($userData['status']) && is_numeric($userData['status']) ? (int) $userData['status'] : 0;
             $userTokenVerVal = isset($userData['token_version']) && is_numeric($userData['token_version']) ? (int) $userData['token_version'] : 1;
-            $userCreatedAtVal = isset($userData['created_at']) && is_string($userData['created_at']) ? $userData['created_at'] : (isset($userData['created_at']) && is_scalar($userData['created_at']) ? (string) $userData['created_at'] : '');
-            $userAvatarVal = isset($userData['avatar']) && is_string($userData['avatar']) ? $userData['avatar'] : (isset($userData['avatar']) && is_scalar($userData['avatar']) ? (string) $userData['avatar'] : '');
+            $userCreatedAtVal = isset($userData['created_at']) && is_string($userData['created_at'])
+                ? $userData['created_at']
+                : (isset($userData['created_at']) && is_scalar($userData['created_at']) ? (string) $userData['created_at'] : '');
+            $userAvatarVal = isset($userData['avatar']) && is_string($userData['avatar'])
+                ? $userData['avatar']
+                : (isset($userData['avatar']) && is_scalar($userData['avatar']) ? (string) $userData['avatar'] : '');
 
             $request->setUser([
                 'id' => $userIdVal,

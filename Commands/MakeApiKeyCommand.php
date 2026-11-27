@@ -12,7 +12,8 @@ use Throwable;
 /**
  * Create API key for external developers.
  */
-final class MakeApiKeyCommand implements \Siro\Core\Commands\CommandInterface {
+final class MakeApiKeyCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

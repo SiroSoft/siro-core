@@ -21,5 +21,3 @@ class ModelNotFoundException extends \RuntimeException
         return Response::error($this->getMessage(), 404, [], 'not_found');
     }
 }
-
-

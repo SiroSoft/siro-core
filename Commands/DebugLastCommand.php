@@ -17,7 +17,8 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
+final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -80,7 +81,9 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  ' . self::BOLD . 'Middleware Pipeline' . self::RESET);
             $mwCount = count($middleware);
             foreach ($middleware as $idx => $mw) {
-                if (!is_array($mw)) continue;
+                if (!is_array($mw)) {
+                    continue;
+                }
                 $mwName = $this->safeStr(is_string($mw['name'] ?? null) ? $mw['name'] : '?');
                 $mwPassed = (bool) ($mw['passed'] ?? true);
                 $mwTime = is_numeric($mw['time_ms'] ?? null) ? (float) $mw['time_ms'] : 0.0;
@@ -90,7 +93,8 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
                 $timeStr = sprintf('%.1fms', $mwTime);
                 $slowMark = $mwTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
                 $lineColor = !$mwPassed ? self::RED : self::GRAY;
-                $this->write("    " . $lineColor . $connector . " " . $icon . self::RESET . " " . $mwName . " " . self::GRAY . $timeStr . self::RESET . $slowMark);
+                $this->write("    " . $lineColor . $connector . " " . $icon . self::RESET . " " . $mwName . " "
+                    . self::GRAY . $timeStr . self::RESET . $slowMark);
             }
             $this->write('');
         }
@@ -101,7 +105,9 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
             $this->write('  ' . self::BOLD . 'SQL Queries' . self::RESET);
             $totalSqlTime = 0.0;
             foreach ($queries as $idx => $q) {
-                if (!is_array($q)) continue;
+                if (!is_array($q)) {
+                    continue;
+                }
                 $qTime = is_numeric($q['time_ms'] ?? null) ? (float) $q['time_ms'] : 0.0;
                 $totalSqlTime += $qTime;
                 $qSql = $this->safeStr(is_string($q['sql'] ?? null) ? $q['sql'] : '?');
@@ -113,7 +119,8 @@ final class DebugLastCommand implements \Siro\Core\Commands\CommandInterface {
                 $slowLabel = $qTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
 
                 $connector = ($idx < count($queries) - 1) ? '├' : '└';
-                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . self::RESET . " " . $qDisplay . " " . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
+                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . self::RESET . " " . $qDisplay . " "
+                    . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
             }
             $this->write('    ' . self::GRAY . '  Total SQL: ' . sprintf('%.0fms', $totalSqlTime) . self::RESET);
             $this->write('');

@@ -122,9 +122,9 @@ final class TestRegressionCommand implements \Siro\Core\Commands\CommandInterfac
                 if ($newStatus !== $origStatus) {
                     $issues[] = 'status_changed: ' . $origStatus . ' -> ' . $newStatus;
                 }
-            if (is_string($response) && $response !== '') {
-                $newBody = json_decode($response, true);
-                $origBody = json_decode($this->safeStr($data['response_body'] ?? '{}'), true);
+                if (is_string($response) && $response !== '') {
+                    $newBody = json_decode($response, true);
+                    $origBody = json_decode($this->safeStr($data['response_body'] ?? '{}'), true);
                     if (is_array($newBody) && is_array($origBody)) {
                         $origSuccess = $origBody['success'] ?? null;
                         $newSuccess = $newBody['success'] ?? null;

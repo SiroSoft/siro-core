@@ -88,9 +88,14 @@ final class Event
         if (!isset($instance->listeners[$event]) && !str_contains($event, '*')) {
             $hasWildcard = false;
             foreach ($instance->listeners as $key => $val) {
-                if (str_contains($key, '*')) { $hasWildcard = true; break; }
+                if (str_contains($key, '*')) {
+                    $hasWildcard = true;
+                    break;
+                }
             }
-            if (!$hasWildcard) return true;
+            if (!$hasWildcard) {
+                return true;
+            }
         }
         return $instance->dispatch($event, $payload);
     }

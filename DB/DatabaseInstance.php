@@ -91,10 +91,17 @@ final class DatabaseInstance implements DatabaseInterface
         $persistent = isset($config['persistent']) && $config['persistent'] === true;
         $emulatePrepares = $persistent || $driver === 'sqlite';
 
+        $pdoOptions = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_PERSISTENT => $persistent,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ];
+
         try {
             $pdo = $driver === 'sqlite'
-                ? new PDO($dsn, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_PERSISTENT => $persistent, PDO::ATTR_EMULATE_PREPARES => false])
-                : new PDO($dsn, $username, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_PERSISTENT => $persistent, PDO::ATTR_EMULATE_PREPARES => false]);
+                ? new PDO($dsn, null, null, $pdoOptions)
+                : new PDO($dsn, $username, $password, $pdoOptions);
         } catch (PDOException $e) {
             Logger::error('Database connection failed: ' . $e->getMessage() . " ({$driver}:{$host}:{$port}/{$database})");
             throw new DatabaseConnectionException($driver, $host, $port, $e->getMessage());
@@ -169,11 +176,17 @@ final class DatabaseInstance implements DatabaseInterface
     {
         $groups = [];
         foreach ($this->capturedQueries as $query) {
-            if (!preg_match('/^\s*SELECT\b/i', $query['sql'])) continue;
+            if (!preg_match('/^\s*SELECT\b/i', $query['sql'])) {
+                continue;
+            }
             $shape = preg_replace('/\b(?:\d+(?:\.\d+)?|\'[^\']*\'|"[^"]*")\b/', '?', $query['sql']);
             $shape = is_string($shape) ? preg_replace('/\s+/', ' ', trim($shape)) : $query['sql'];
-            if (!is_string($shape)) continue;
-            if (!isset($groups[$shape])) $groups[$shape] = ['sql' => $shape, 'count' => 0, 'total_ms' => 0.0];
+            if (!is_string($shape)) {
+                continue;
+            }
+            if (!isset($groups[$shape])) {
+                $groups[$shape] = ['sql' => $shape, 'count' => 0, 'total_ms' => 0.0];
+            }
             $groups[$shape]['count']++;
             $groups[$shape]['total_ms'] += $query['time_ms'];
         }
@@ -451,7 +464,9 @@ final class DatabaseInstance implements DatabaseInterface
     {
         $connName ??= $this->defaultConnection;
         $depth = $this->txDepth[$connName] ?? 0;
-        if ($depth === 0) return;
+        if ($depth === 0) {
+            return;
+        }
         $pdo = $this->connection($connName);
         $stack = $this->txStack[$connName] ?? [];
         $frame = array_pop($stack);
@@ -469,7 +484,9 @@ final class DatabaseInstance implements DatabaseInterface
     {
         $connName ??= $this->defaultConnection;
         $depth = $this->txDepth[$connName] ?? 0;
-        if ($depth === 0) return;
+        if ($depth === 0) {
+            return;
+        }
         $pdo = $this->connection($connName);
         $stack = $this->txStack[$connName] ?? [];
         $frame = array_pop($stack);
@@ -477,7 +494,9 @@ final class DatabaseInstance implements DatabaseInterface
         $this->txDepth[$connName] = max(0, $depth - 1);
 
         if (($frame['sp'] ?? null) === null) {
-            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
         } else {
             $pdo->exec('ROLLBACK TO SAVEPOINT ' . $frame['sp']);
             $pdo->exec('RELEASE SAVEPOINT ' . $frame['sp']);

@@ -18,7 +18,9 @@ trait CommandSupport
 
     private function hasColor(): bool
     {
-        if (self::$supportsColor !== null) return self::$supportsColor;
+        if (self::$supportsColor !== null) {
+            return self::$supportsColor;
+        }
         // Detect if terminal supports ANSI color
         $rawTerm = $_SERVER['TERM'] ?? '';
         $term = is_string($rawTerm) ? $rawTerm : '';
@@ -33,7 +35,9 @@ trait CommandSupport
 
     private function colorize(string $text, string $color): string
     {
-        if (!$this->hasColor()) return $text;
+        if (!$this->hasColor()) {
+            return $text;
+        }
         $colors = [
             'red' => "\033[31m",
             'green' => "\033[32m",
@@ -180,9 +184,11 @@ trait CommandSupport
         }
 
         // Words ending in 'sh', 'ch', 'x', 'z', 'ss' need 'es'
-        if (str_ends_with($value, 'sh') || str_ends_with($value, 'ch') || 
+        if (
+            str_ends_with($value, 'sh') || str_ends_with($value, 'ch') ||
             str_ends_with($value, 'x') || str_ends_with($value, 'z') ||
-            str_ends_with($value, 'ss')) {
+            str_ends_with($value, 'ss')
+        ) {
             return $value . 'es';
         }
 
@@ -289,9 +295,10 @@ trait CommandSupport
      */
     protected function findTraceById(string $tracesDir, string $traceId): ?string
     {
+        $datePath = date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR . date('d');
         $candidates = [
             $tracesDir . DIRECTORY_SEPARATOR . $traceId . '.json',
-            $tracesDir . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR . date('d') . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . $traceId . '.json',
+            $tracesDir . DIRECTORY_SEPARATOR . $datePath . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . $traceId . '.json',
         ];
         foreach ($candidates as $pattern) {
             if (str_contains($pattern, '*')) {

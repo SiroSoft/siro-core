@@ -45,7 +45,11 @@ final class Faker
     ];
 
     /** @var array<int, string> */
-    private const PHONE_PREFIXES = ['032', '033', '034', '035', '036', '037', '038', '039', '070', '079', '077', '076', '078', '083', '084', '085', '081', '082', '056', '058', '059', '090', '093', '089', '091', '094', '088', '092', '096', '097', '098'];
+    private const PHONE_PREFIXES = [
+        '032', '033', '034', '035', '036', '037', '038', '039', '070', '079',
+        '077', '076', '078', '083', '084', '085', '081', '082', '056', '058',
+        '059', '090', '093', '089', '091', '094', '088', '092', '096', '097', '098',
+    ];
 
     public static function seed(int $seed): void
     {
@@ -68,7 +72,9 @@ final class Faker
 
     public static function email(string $name = ''): string
     {
-        $local = $name !== '' ? self::slug($name) : self::slug(self::text(self::pick(self::FIRST_NAMES))) . '.' . self::slug(self::text(self::pick(self::LAST_NAMES)));
+        $local = $name !== ''
+            ? self::slug($name)
+            : self::slug(self::text(self::pick(self::FIRST_NAMES))) . '.' . self::slug(self::text(self::pick(self::LAST_NAMES)));
         return strtolower($local) . mt_rand(1, 999) . '@example.com';
     }
 

@@ -112,13 +112,17 @@ final class EagerLoader
         foreach ($rows as $row) {
             /** @var Model $row */
             $idxVal = $row->{$foreignKey} ?? '0';
-            if (!is_scalar($idxVal)) { $idxVal = '0'; }
+            if (!is_scalar($idxVal)) {
+                $idxVal = '0';
+            }
             $indexed[strval($idxVal)] = $row;
         }
 
         foreach ($models as $m) {
             $id = $m->{$localKey} ?? '0';
-            if (!is_scalar($id)) { $id = '0'; }
+            if (!is_scalar($id)) {
+                $id = '0';
+            }
             $m->setRelation($relation, $indexed[strval($id)] ?? null);
         }
     }
@@ -230,13 +234,17 @@ final class EagerLoader
         foreach ($rows as $row) {
             /** @var Model $row */
             $fkVal = $row->{$foreignKey} ?? '0';
-            if (!is_scalar($fkVal)) { $fkVal = '0'; }
+            if (!is_scalar($fkVal)) {
+                $fkVal = '0';
+            }
             $grouped[strval($fkVal)][] = $row;
         }
 
         foreach ($models as $m) {
             $id = $m->{$localKey} ?? '0';
-            if (!is_scalar($id)) { $id = '0'; }
+            if (!is_scalar($id)) {
+                $id = '0';
+            }
             $m->setRelation($relation, $grouped[strval($id)] ?? []);
         }
     }
@@ -282,7 +290,9 @@ final class EagerLoader
         $grouped = [];
         foreach ($rows as $row) {
             $fkVal = $row->{$idCol} ?? '0';
-            if (!is_scalar($fkVal)) { $fkVal = '0'; }
+            if (!is_scalar($fkVal)) {
+                $fkVal = '0';
+            }
             $grouped[strval($fkVal)][] = $row;
         }
 
@@ -318,7 +328,9 @@ final class EagerLoader
 
         $resolved = [];
         foreach ($groupedByType as $type => $ids) {
-            if (!class_exists($type)) { continue; }
+            if (!class_exists($type)) {
+                continue;
+            }
             /** @var Model $instance */
             $instance = new $type();
             $query = $instance->query();
@@ -382,13 +394,17 @@ final class EagerLoader
         foreach ($rows as $row) {
             /** @var Model $row */
             $idxVal = $row->{$ownerKeyCol} ?? '0';
-            if (!is_scalar($idxVal)) { $idxVal = '0'; }
+            if (!is_scalar($idxVal)) {
+                $idxVal = '0';
+            }
             $indexed[strval($idxVal)] = $row;
         }
 
         foreach ($models as $m) {
             $fk = $m->{$foreignKey} ?? '0';
-            if (!is_scalar($fk)) { $fk = '0'; }
+            if (!is_scalar($fk)) {
+                $fk = '0';
+            }
             $m->setRelation($relation, $indexed[strval($fk)] ?? null);
         }
     }

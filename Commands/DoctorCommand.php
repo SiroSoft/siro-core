@@ -6,7 +6,8 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\Env;
 
-final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
+final class DoctorCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -38,7 +39,9 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
         $phpVersion = PHP_VERSION;
         $phpOk = version_compare($phpVersion, '8.2.0', '>=');
         $this->printCheck('PHP Version', $phpVersion . ' (>= 8.2 required)', $phpOk);
-        if (!$phpOk) $allPassed = false;
+        if (!$phpOk) {
+            $allPassed = false;
+        }
 
         if ($isProd) {
             $phpProdOk = version_compare($phpVersion, '8.3.0', '>=');
@@ -60,7 +63,9 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
         foreach ($extensions as $ext => $desc) {
             $loaded = extension_loaded($ext);
             $this->printCheck("Extension: {$ext}", $desc, $loaded);
-            if (!$loaded) $allPassed = false;
+            if (!$loaded) {
+                $allPassed = false;
+            }
         }
 
         // Check PDO Drivers
@@ -75,7 +80,9 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
             [$driver, $desc] = $pdoDrivers[$dbConnection];
             $driverLoaded = extension_loaded($driver);
             $this->printCheck("PDO Driver: {$driver}", $desc . " (for {$dbConnection})", $driverLoaded);
-            if (!$driverLoaded) $allPassed = false;
+            if (!$driverLoaded) {
+                $allPassed = false;
+            }
         } else {
             $this->printCheck("PDO Driver", "Unknown driver: {$dbConnection}", false);
             $allPassed = false;
@@ -84,27 +91,37 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
         // Check .env file
         $envExists = is_file($this->basePath . DIRECTORY_SEPARATOR . '.env');
         $this->printCheck('.env File', 'Configuration file exists', $envExists);
-        if (!$envExists) $allPassed = false;
+        if (!$envExists) {
+            $allPassed = false;
+        }
 
         // Check JWT_SECRET
         $jwtSecret = (string) Env::get('JWT_SECRET', '');
         $jwtOk = strlen($jwtSecret) >= 32 && !str_contains(strtolower($jwtSecret), 'change_this');
         $this->printCheck('JWT_SECRET', strlen($jwtSecret) >= 32 ? 'Configured (' . strlen($jwtSecret) . ' chars)' : 'Not configured or too short', $jwtOk);
-        if (!$jwtOk) $allPassed = false;
+        if (!$jwtOk) {
+            $allPassed = false;
+        }
 
         if ($isProd) {
             $appEnv = strtolower((string) Env::get('APP_ENV', 'production'));
             $appDebug = strtolower((string) Env::get('APP_DEBUG', 'false'));
             $envOk = $appEnv === 'production' && $appDebug === 'false';
             $this->printCheck('APP_ENV', $appEnv . ' (should be production)', $appEnv === 'production');
-            if ($appEnv !== 'production') $allPassed = false;
+            if ($appEnv !== 'production') {
+                $allPassed = false;
+            }
             $this->printCheck('APP_DEBUG', $appDebug . ' (should be false)', $appDebug === 'false');
-            if ($appDebug !== 'false') $allPassed = false;
+            if ($appDebug !== 'false') {
+                $allPassed = false;
+            }
 
             $appUrl = sprintf('%s', Env::get('APP_URL', ''));
             $httpsOk = $appUrl !== '' && str_starts_with($appUrl, 'https://');
             $this->printCheck('HTTPS', $appUrl !== '' ? $appUrl : 'not set', $httpsOk);
-            if (!$httpsOk) $allPassed = false;
+            if (!$httpsOk) {
+                $allPassed = false;
+            }
 
             $corsOrigins = sprintf('%s', Env::get('CORS_ALLOWED_ORIGINS', ''));
             $corsOk = $corsOrigins !== '';
@@ -118,7 +135,9 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
         $storageDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage';
         $storageWritable = is_dir($storageDir) && is_writable($storageDir);
         $this->printCheck('Storage Directory', 'Writable', $storageWritable);
-        if (!$storageWritable) $allPassed = false;
+        if (!$storageWritable) {
+            $allPassed = false;
+        }
 
         // Check Log Files
         $logDir = $storageDir . DIRECTORY_SEPARATOR . 'logs';
@@ -129,20 +148,26 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
                 $logPath = $mainDir . DIRECTORY_SEPARATOR . $logFile;
                 $exists = file_exists($logPath);
                 $this->printCheck("Log File: main/{$logFile}", $exists ? 'Exists' : 'Missing', $exists);
-                if (!$exists) $allPassed = false;
+                if (!$exists) {
+                    $allPassed = false;
+                }
             }
 
             // Check log directory is NOT inside public/
             $publicDir = $this->basePath . DIRECTORY_SEPARATOR . 'public';
             $logInsidePublic = str_starts_with(realpath($logDir) ?: $logDir, rtrim(realpath($publicDir) ?: $publicDir, DIRECTORY_SEPARATOR));
             $this->printCheck('Logs outside public/', $logInsidePublic ? '⚠ INSIDE public/' : 'OK (outside)', !$logInsidePublic);
-            if ($logInsidePublic) $allPassed = false;
+            if ($logInsidePublic) {
+                $allPassed = false;
+            }
 
             // Check .htaccess protection (Apache)
             $htaccess = $logDir . DIRECTORY_SEPARATOR . '.htaccess';
             $htaccessOk = file_exists($htaccess) && str_contains((string) file_get_contents($htaccess), 'Deny from all');
             $this->printCheck('Log Protection (.htaccess/Apache)', $htaccessOk ? 'Protected' : 'Missing', $htaccessOk);
-            if (!$htaccessOk) $allPassed = false;
+            if (!$htaccessOk) {
+                $allPassed = false;
+            }
 
             // Check for Nginx-style protection (suggest if missing)
             $nginxConfig = $publicDir . DIRECTORY_SEPARATOR . 'nginx-log-protection.conf';
@@ -160,13 +185,17 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface {
             $traceDir = $storageDir . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
             $traceWritable = is_dir($traceDir) && is_writable($traceDir);
             $this->printCheck('Traces Directory', $traceWritable ? 'Writable' : 'Missing/Not writable', $traceWritable);
-            if (!$traceWritable) $allPassed = false;
+            if (!$traceWritable) {
+                $allPassed = false;
+            }
 
             $cacheDir = $storageDir . DIRECTORY_SEPARATOR . 'cache';
             if (is_dir($cacheDir)) {
                 $cacheWritable = is_writable($cacheDir);
                 $this->printCheck('Cache Directory', $cacheWritable ? 'Writable' : 'Not writable', $cacheWritable);
-                if (!$cacheWritable) $allPassed = false;
+                if (!$cacheWritable) {
+                    $allPassed = false;
+                }
             }
         }
 

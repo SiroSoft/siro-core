@@ -68,12 +68,17 @@ final class SqlCompiler
         if (preg_match('/[^a-zA-Z0-9_.\s\-]/', $identifier)) {
             preg_match_all('/[^a-zA-Z0-9_.\s\-]/', $identifier, $invalidChars);
             $chars = array_unique($invalidChars[0]);
-            throw new \RuntimeException('Invalid identifier: contains illegal characters [' . implode('', $chars) . '] in "' . $identifier . '". Use RawExpression or raw methods for SQL functions.');
+            throw new \RuntimeException(
+                'Invalid identifier: contains illegal characters [' . implode('', $chars)
+                . '] in "' . $identifier . '". Use RawExpression or raw methods for SQL functions.',
+            );
         }
 
-        if (stripos($identifier, ';') !== false ||
+        if (
+            stripos($identifier, ';') !== false ||
             stripos($identifier, '--') !== false ||
-            stripos($identifier, '/*') !== false) {
+            stripos($identifier, '/*') !== false
+        ) {
             throw new \RuntimeException('Invalid identifier: SQL injection attempt detected');
         }
 
@@ -146,7 +151,11 @@ final class SqlCompiler
 
     /**
      * @param array<int, string|RawExpression> $columns
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}|array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}
+     *     |array{type:'raw', boolean:string, sql:string, bindings?:mixed}
+     *     |array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}
+     *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
+     *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
      * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
      * @param array<int, string|RawExpression> $groups
@@ -214,7 +223,11 @@ final class SqlCompiler
     }
 
     /**
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}|array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}
+     *     |array{type:'raw', boolean:string, sql:string, bindings?:mixed}
+     *     |array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}
+     *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
+     *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
      * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
      * @param array<int, string|RawExpression> $groups
@@ -248,7 +261,11 @@ final class SqlCompiler
     }
 
     /**
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}|array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}
+     *     |array{type:'raw', boolean:string, sql:string, bindings?:mixed}
+     *     |array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}
+     *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
+     *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
      * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
      * @param array<int, string|RawExpression> $groups
@@ -280,7 +297,10 @@ final class SqlCompiler
             . $this->compileGroupBy($groups)
             . $havingSql;
 
-        return ['SELECT ' . strtoupper($function) . '(aggregate) AS aggregate FROM (' . $subQuery . ') AS siro_aggregate_table', [...$whereBindings, ...$havingBindings]];
+        return [
+            'SELECT ' . strtoupper($function) . '(aggregate) AS aggregate FROM (' . $subQuery . ') AS siro_aggregate_table',
+            [...$whereBindings, ...$havingBindings],
+        ];
     }
 
     /**
@@ -368,7 +388,11 @@ final class SqlCompiler
     }
 
     /**
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}|array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}
+     *     |array{type:'raw', boolean:string, sql:string, bindings?:mixed}
+     *     |array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}
+     *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
+     *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
      */
@@ -389,7 +413,11 @@ final class SqlCompiler
      * Shared by compileWhere() and by grouped (nested) where clauses,
      * which compile through QueryBuilder::compileWhereClause().
      *
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}|array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}
+     *     |array{type:'raw', boolean:string, sql:string, bindings?:mixed}
+     *     |array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}
+     *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
+     *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
      */
@@ -452,7 +480,8 @@ final class SqlCompiler
     }
 
     /**
-     * @param array<int, array{boolean:string, column:string, operator:string, param:string, raw?:bool, sql?:string, bindings?:array<int|string, mixed>}> $havings
+     * @param array<int, array{boolean:string, column:string, operator:string, param:string, raw?:bool, sql?:string,
+     *     bindings?:array<int|string, mixed>}> $havings
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<string, mixed>}
      */
@@ -583,7 +612,11 @@ final class SqlCompiler
 
     /**
      * @param array<string, mixed> $data
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}|array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}
+     *     |array{type:'raw', boolean:string, sql:string, bindings?:mixed}
+     *     |array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}
+     *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
+     *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
      */
@@ -605,7 +638,11 @@ final class SqlCompiler
     }
 
     /**
-     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}|array{type:'raw', boolean:string, sql:string, bindings?:mixed}|array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}|array{type:'column', boolean:string, first:string, operator:string, second:string}|array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
+     * @param array<int, array{type:'basic', boolean:string, column:string, operator:string, param:string}
+     *     |array{type:'raw', boolean:string, sql:string, bindings?:mixed}
+     *     |array{type:'in', boolean:string, column:string, not:bool, params:array<int, string>}
+     *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
+     *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
      */

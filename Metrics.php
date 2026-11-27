@@ -61,10 +61,14 @@ final class Metrics
 
     public static function persistNow(): void
     {
-        if (!self::$persist) { return; }
+        if (!self::$persist) {
+            return;
+        }
         $data = ['counters' => self::$counters, 'histograms' => self::$histograms, 'gauges' => self::$gauges];
         $dir = dirname(self::METRICS_CACHE_FILE);
-        if (!is_dir($dir)) { @mkdir($dir, 0775, true); }
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json !== false) {
             file_put_contents(self::METRICS_CACHE_FILE, $json);
@@ -92,8 +96,13 @@ final class Metrics
      * @param array<string, string> $labels
      * @param array<int, float> $buckets Custom bucket boundaries
      */
-    public static function histogram(string $name, float $value, array $labels = [], string $help = '', array $buckets = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]): void
-    {
+    public static function histogram(
+        string $name,
+        float $value,
+        array $labels = [],
+        string $help = '',
+        array $buckets = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000],
+    ): void {
         if (!isset(self::$histograms[$name])) {
             self::$histograms[$name] = [
                 'buckets' => $buckets,
@@ -209,7 +218,9 @@ final class Metrics
     /** @param array<string, string> $labels */
     private static function formatLabels(array $labels): string
     {
-        if ($labels === []) { return ''; }
+        if ($labels === []) {
+            return '';
+        }
         $parts = [];
         foreach ($labels as $k => $v) {
             $parts[] = "{$k}=\"{$v}\"";
@@ -232,9 +243,13 @@ final class Metrics
 
     private static function maybeFlush(): void
     {
-        if (!self::$persist) { return; }
+        if (!self::$persist) {
+            return;
+        }
         self::$opsSinceFlush++;
-        if (self::$opsSinceFlush < self::$flushInterval) { return; }
+        if (self::$opsSinceFlush < self::$flushInterval) {
+            return;
+        }
         self::$opsSinceFlush = 0;
         self::persistNow();
     }
@@ -245,7 +260,9 @@ final class Metrics
         if (defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH)) {
             $cacheFile = SIRO_BASE_PATH . '/' . $cacheFile;
         }
-        if (!is_file($cacheFile)) { return; }
+        if (!is_file($cacheFile)) {
+            return;
+        }
         $raw = (string) file_get_contents($cacheFile);
         /** @var mixed $data */
         $data = json_decode($raw, true);

@@ -16,7 +16,8 @@ namespace Siro\Core\Commands;
  *
  * @package Siro\Core\Commands
  */
-final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
+final class LiveCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     private int $port = 9090;
@@ -119,7 +120,8 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface {
      * @param array<int, string> $dirs
      */
     private function checkChanges(array $dirs, int $since): string
-    {        foreach ($dirs as $dir) {
+    {
+        foreach ($dirs as $dir) {
             if (!is_dir($dir)) {
                 continue;
             }

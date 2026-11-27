@@ -94,6 +94,19 @@ Route::get('/api/external/data', [Controller::class, 'data'])
 
 Keys can be scoped (e.g. `read,write`) and expire. `make:apikey` generates them.
 
+### Auto-CRUD authorization boundary (v1.5.0)
+
+`Router::apiResource()` authorizes at the **ability level only**: every
+action calls `Gate::authorize('{table}.{verb}')` (or the `abilities`
+override) before touching the database, and an ability never defined
+denies the request (403). It does **NOT** enforce row-level ownership —
+a user authorized for `orders.view` can read any order by id. When a user
+must only see their own rows, do not expose that model with a bare
+`apiResource()`; add your own ownership check (a hand-written controller,
+a `Gate` rule that inspects the row, or a `filterable` scope the user
+cannot override). See `docs/ROUTER.md`, "Auto-CRUD", and `UPGRADE.md`
+(v1.4.2 → v1.5.0, G3).
+
 ---
 
 ## CSRF Protection

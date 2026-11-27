@@ -23,6 +23,9 @@
         <testsuite name="Fuzz">
             <directory suffix="Test.php">tests/fuzz</directory>
         </testsuite>
+        <testsuite name="Security">
+            <directory suffix="Test.php">tests/security</directory>
+        </testsuite>
         <testsuite name="DAST">
             <directory suffix="Test.php">tests/dast</directory>
         </testsuite>

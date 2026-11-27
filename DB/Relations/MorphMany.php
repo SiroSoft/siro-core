@@ -37,8 +37,14 @@ final class MorphMany
             ->where($this->morphName . '_id', '=', $this->localValue);
     }
 
-    public function getRelatedClass(): string { return $this->relatedClass; }
-    public function getMorphName(): string { return $this->morphName; }
+    public function getRelatedClass(): string
+    {
+        return $this->relatedClass;
+    }
+    public function getMorphName(): string
+    {
+        return $this->morphName;
+    }
 
     /** @param array<string, mixed> $data */
     public function create(array $data): Model

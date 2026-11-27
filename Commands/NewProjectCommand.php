@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class NewProjectCommand implements \Siro\Core\Commands\CommandInterface {
+final class NewProjectCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
+
+    /** @phpstan-ignore property.onlyWritten */
+    private string $basePath;
 
     public function __construct(string $basePath)
     {
-        unset($basePath);
+        $this->basePath = $basePath;
     }
 
     /**
@@ -38,18 +42,28 @@ final class NewProjectCommand implements \Siro\Core\Commands\CommandInterface {
     }
 
     /** @param array<int, string> $args */
-    public function run(array $args): int {
+    public function run(array $args): int
+    {
         $name = trim((string)($args[0] ?? ''));
-        if ($name === '') { $this->write('Usage: php siro new <project-name-or-path>'); return 1; }
+        if ($name === '') {
+            $this->write('Usage: php siro new <project-name-or-path>');
+            return 1;
+        }
 
         $this->write("Creating new SiroPHP project: {$name}");
 
         $targetDir = self::resolveTarget($name);
-        if (is_dir($targetDir)) { $this->write("Directory already exists: {$targetDir}"); return 1; }
+        if (is_dir($targetDir)) {
+            $this->write("Directory already exists: {$targetDir}");
+            return 1;
+        }
 
         $cmd = sprintf('composer create-project sirosoft/api %s --no-interaction 2>&1', escapeshellarg($targetDir));
         passthru($cmd, $exitCode);
-        if ($exitCode !== 0) { $this->error("Failed to create project."); return $exitCode; }
+        if ($exitCode !== 0) {
+            $this->error("Failed to create project.");
+            return $exitCode;
+        }
 
         chdir($targetDir);
         passthru("php siro key:generate 2>&1");

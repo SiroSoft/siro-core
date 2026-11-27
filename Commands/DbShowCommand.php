@@ -7,7 +7,8 @@ namespace Siro\Core\Commands;
 use Siro\Core\Database;
 use Siro\Core\Env;
 
-final class DbShowCommand implements \Siro\Core\Commands\CommandInterface {
+final class DbShowCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -125,8 +126,12 @@ final class DbShowCommand implements \Siro\Core\Commands\CommandInterface {
         $data = [];
         foreach ($rows as $row) {
             $data[] = array_map(function (mixed $val): string {
-                if ($val === null) return 'NULL';
-                if (is_bool($val)) return $val ? 'true' : 'false';
+                if ($val === null) {
+                    return 'NULL';
+                }
+                if (is_bool($val)) {
+                    return $val ? 'true' : 'false';
+                }
                 $s = $this->safeStr($val);
                 return strlen($s) > 60 ? mb_substr($s, 0, 60) . '...' : $s;
             }, array_values($row));

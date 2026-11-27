@@ -11,7 +11,8 @@ use Siro\Core\Database;
  *
  * Usage: php siro db:check
  */
-final class DbCheckCommand implements \Siro\Core\Commands\CommandInterface {
+final class DbCheckCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

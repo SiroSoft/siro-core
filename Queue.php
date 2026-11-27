@@ -135,17 +135,24 @@ final class Queue
             $lockedUntil = $j['locked_until'] ?? null;
             $status = (is_numeric($lockedUntil) && (int) $lockedUntil > time()) ? 'processing' : 'pending';
             $badge = $status === 'processing' ? '<span class="badge badge-blue">PROCESSING</span>' : '<span class="badge badge-green">PENDING</span>';
-            $rows .= '<tr><td>' . htmlspecialchars(is_scalar($jId) ? (string) $jId : '', ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</td><td>' . htmlspecialchars(is_scalar($jJob) ? (string) $jJob : '', ENT_QUOTES | ENT_HTML5, 'UTF-8') . ' ' . $badge . '</td>'
-                . '<td>' . htmlspecialchars(is_scalar($jAttempts) ? (string) $jAttempts : '0', ENT_QUOTES | ENT_HTML5, 'UTF-8') . '/' . htmlspecialchars(is_scalar($jMaxAttempts) ? (string) $jMaxAttempts : '3', ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</td>'
-                . '<td>' . htmlspecialchars(is_scalar($jPriority) ? (string) $jPriority : '0', ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</td>'
-                . '<td>' . htmlspecialchars(date('Y-m-d H:i:s', is_numeric($jAvailable) ? (int) $jAvailable : 0), ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</td></tr>';
+            $jIdEsc = htmlspecialchars(is_scalar($jId) ? (string) $jId : '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $jJobEsc = htmlspecialchars(is_scalar($jJob) ? (string) $jJob : '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $jAttemptsEsc = htmlspecialchars(is_scalar($jAttempts) ? (string) $jAttempts : '0', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $jMaxAttemptsEsc = htmlspecialchars(is_scalar($jMaxAttempts) ? (string) $jMaxAttempts : '3', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $jPriorityEsc = htmlspecialchars(is_scalar($jPriority) ? (string) $jPriority : '0', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $jAvailableEsc = htmlspecialchars(date('Y-m-d H:i:s', is_numeric($jAvailable) ? (int) $jAvailable : 0), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $rows .= '<tr><td>' . $jIdEsc . '</td><td>' . $jJobEsc . ' ' . $badge . '</td>'
+                . '<td>' . $jAttemptsEsc . '/' . $jMaxAttemptsEsc . '</td>'
+                . '<td>' . $jPriorityEsc . '</td>'
+                . '<td>' . $jAvailableEsc . '</td></tr>';
         }
 
         return '<!DOCTYPE html><html><head><title>Queue Dashboard - Siro</title>'
             . '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             . '<meta http-equiv="refresh" content="10">'
             . '<style>body{font-family:-apple-system,sans-serif;max-width:960px;margin:0 auto;padding:20px;background:#f5f5f5}'
-            . '.stat{display:inline-block;background:#fff;border-radius:8px;padding:20px 30px;margin:10px;box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center;min-width:160px}'
+            . '.stat{display:inline-block;background:#fff;border-radius:8px;padding:20px 30px;margin:10px;'
+            . 'box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center;min-width:160px}'
             . '.stat h3{margin:0;font-size:14px;color:#666}'
             . '.stat .num{font-size:32px;font-weight:700;color:#333}'
             . 'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}'
@@ -158,10 +165,13 @@ final class Queue
             . '.badge-red{background:#ffe6e6;color:#c00}</style></head><body>'
             . '<h1>Queue Dashboard <span style="font-size:14px;color:#999">auto-refresh 10s</span></h1>'
             . '<div class="stat"><h3>Pending</h3><div class="num">' . htmlspecialchars((string) $pending, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
-            . '<div class="stat"><h3>Processing</h3><div class="num">' . htmlspecialchars((string) $processing, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Processing</h3><div class="num">'
+            . htmlspecialchars((string) $processing, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
             . '<div class="stat"><h3>Failed</h3><div class="num">' . htmlspecialchars((string) $failed, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
-            . '<div class="stat"><h3>Success Rate</h3><div class="num">' . htmlspecialchars((string) $successRate, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '%</div></div>'
-            . '<div class="stat"><h3>Avg Attempts</h3><div class="num">' . htmlspecialchars((string) $avgAttempts, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Success Rate</h3><div class="num">'
+            . htmlspecialchars((string) $successRate, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '%</div></div>'
+            . '<div class="stat"><h3>Avg Attempts</h3><div class="num">'
+            . htmlspecialchars((string) $avgAttempts, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
             . '<h2>Recent Jobs</h2>'
             . '<table><thead><tr><th>ID</th><th>Job</th><th>Attempts</th><th>Priority</th><th>Available</th></tr></thead><tbody>'
             . $rows . '</tbody></table>'
@@ -214,7 +224,9 @@ final class Queue
                     'timeout' => max(30, $timeout),
                     'created_at' => date('Y-m-d H:i:s'),
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if (!is_string($payload)) { return; }
+                if (!is_string($payload)) {
+                    return;
+                }
 
                 if ($delay > 0) {
                     $redis->release('default', $payload, $delay);
@@ -516,8 +528,12 @@ final class Queue
                 if (function_exists('pcntl_async_signals')) {
                     pcntl_async_signals(true);
                 }
-                pcntl_signal(SIGTERM, function (): void { exit(0); });
-                pcntl_signal(SIGINT, function (): void { exit(0); });
+                pcntl_signal(SIGTERM, function (): void {
+                    exit(0);
+                });
+                pcntl_signal(SIGINT, function (): void {
+                    exit(0);
+                });
                 // Reconnect DB — child has its own connection after fork
                 try {
                     \Siro\Core\Database::connection()->query('SELECT 1');

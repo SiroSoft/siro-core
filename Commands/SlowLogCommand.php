@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
+final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -17,7 +18,8 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
         $limit = 10;
         $minMs = 100;
         $tracesDir = $this->getTracesDir($this->basePath);
-        $slowFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'main' . DIRECTORY_SEPARATOR . 'slow.log';
+        $slowFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs'
+            . DIRECTORY_SEPARATOR . 'main' . DIRECTORY_SEPARATOR . 'slow.log';
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--limit=')) {
@@ -81,18 +83,18 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface {
             return 0;
         }
 
-            if ($entries !== []) {
+        if ($entries !== []) {
             $this->table(
                 ['#', 'Time', 'Method', 'Path', 'Status', 'Duration', 'SQL'],
                 array_map(function (int $i, array $e): array {
                     return [
-                        $this->safeStr($i + 1),
-                        $this->safeStr($e['time']),
-                        $this->safeStr($e['method']),
-                        $this->safeStr($e['path']),
-                        $this->safeStr($e['status']),
-                        round($e['ms'], 1) . 'ms',
-                        $this->safeStr($e['queries']),
+                    $this->safeStr($i + 1),
+                    $this->safeStr($e['time']),
+                    $this->safeStr($e['method']),
+                    $this->safeStr($e['path']),
+                    $this->safeStr($e['status']),
+                    round($e['ms'], 1) . 'ms',
+                    $this->safeStr($e['queries']),
                     ];
                 }, array_keys($entries), $entries)
             );

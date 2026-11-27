@@ -137,7 +137,9 @@ final class Schema
         };
         $stmt = self::pdo()->prepare($sql);
         $stmt->execute([':table' => $table]);
-        return array_map(fn ($v) => is_scalar($v) ? (string) $v : '', $stmt->fetchAll(PDO::FETCH_COLUMN));
+        // array_values(): fetchAll() keys are not guaranteed int, the
+        // declared return is list<string>.
+        return array_values(array_map(fn ($v) => is_scalar($v) ? (string) $v : '', $stmt->fetchAll(PDO::FETCH_COLUMN)));
     }
 
     public static function hasColumn(string $table, string $column): bool

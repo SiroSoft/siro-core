@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class LogStatsCommand implements \Siro\Core\Commands\CommandInterface {
+final class LogStatsCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -36,10 +37,14 @@ final class LogStatsCommand implements \Siro\Core\Commands\CommandInterface {
         $slowCount = 0;
 
         foreach ($files as $file) {
-            if (filemtime($file) < $cutoff) continue;
+            if (filemtime($file) < $cutoff) {
+                continue;
+            }
 
             $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            if ($lines === false) continue;
+            if ($lines === false) {
+                continue;
+            }
 
             foreach ($lines as $line) {
                 $totalRequests++;
@@ -53,7 +58,9 @@ final class LogStatsCommand implements \Siro\Core\Commands\CommandInterface {
                 if (preg_match('/([\d.]+)ms/', $line, $m)) {
                     $ms = (float) $m[1];
                     $totalTime += $ms;
-                    if ($ms > 100) $slowCount++;
+                    if ($ms > 100) {
+                        $slowCount++;
+                    }
                 }
             }
         }

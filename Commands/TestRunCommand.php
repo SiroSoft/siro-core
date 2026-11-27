@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
-final class TestRunCommand implements \Siro\Core\Commands\CommandInterface {
+final class TestRunCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -32,7 +33,9 @@ final class TestRunCommand implements \Siro\Core\Commands\CommandInterface {
         $verbose = false;
         $passthru = [];
 
-        $allowedPassthruFlags = ['--filter=', '--testsuite=', '--stop-on-failure', '--stop-on-error', '--group=', '--exclude-group=', '--colors=', '--testdox', '--prepend=', '--coverage-html=', '--coverage-text=', '--coverage-clover=', '--log-junit=', '--debug', '--no-configuration', '--bootstrap=', '-c', '--configuration='];
+        $allowedPassthruFlags = ['--filter=', '--testsuite=', '--stop-on-failure', '--stop-on-error', '--group=',
+            '--exclude-group=', '--colors=', '--testdox', '--prepend=', '--coverage-html=', '--coverage-text=',
+            '--coverage-clover=', '--log-junit=', '--debug', '--no-configuration', '--bootstrap=', '-c', '--configuration='];
 
         // Parse flags, forward only whitelisted ones to PHPUnit
         foreach ($args as $arg) {
@@ -54,8 +57,12 @@ final class TestRunCommand implements \Siro\Core\Commands\CommandInterface {
                 }
             }
             if ($matched) {
-                if (str_starts_with($arg, '--filter=')) $hasFilter = true;
-                if (str_starts_with($arg, '--testsuite=')) $hasSuite = true;
+                if (str_starts_with($arg, '--filter=')) {
+                    $hasFilter = true;
+                }
+                if (str_starts_with($arg, '--testsuite=')) {
+                    $hasSuite = true;
+                }
             }
         }
 

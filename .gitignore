@@ -11,3 +11,5 @@
 /.next/
 /tools/**/storage/
 /tools/**/results/
+
+.phpunit.cache/

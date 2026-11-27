@@ -25,8 +25,10 @@ final class RouteMatcher
     private ?array $routeListCache = null;
 
     /**
-     * @param array<string, array<string, array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>> $staticRoutes
-     * @param array<string, array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}>> $dynamicRoutes
+     * @param array<string, array<string, array{path:string,handler:callable|array{0:class-string,1:string}|string,
+     *     middleware:array<int,callable|string>,cache_ttl:int}>> $staticRoutes
+     * @param array<string, array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,
+     *     middleware:array<int,callable|string>,cache_ttl:int}>> $dynamicRoutes
      * @param array<string, array<string, string>> $whereConstraints
      */
     public function __construct(
@@ -78,7 +80,8 @@ final class RouteMatcher
     }
 
     /**
-     * @param array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null $value
+     * @param array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,
+     *     cache_ttl:int,params?:array<string,string>}|null $value
      */
     private function setMatchCache(string $key, ?array $value): void
     {
@@ -101,7 +104,8 @@ final class RouteMatcher
     }
 
     /**
-     * @param array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int}> $routes
+     * @param array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,
+     *     middleware:array<int,callable|string>,cache_ttl:int}> $routes
      * @param array<int, string> $pathSegments
      * @return array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null
      */
@@ -113,14 +117,19 @@ final class RouteMatcher
             foreach ($route['segments'] as $i => $segment) {
                 if ($this->isParamSegment($segment)) {
                     $paramName = substr($segment, 1, -1);
-                    if ($paramName === '') { $match = false; break; }
+                    if ($paramName === '') {
+                        $match = false;
+                        break;
+                    }
                     $params[$paramName] = $pathSegments[$i];
                 } elseif ($segment !== $pathSegments[$i]) {
                     $match = false;
                     break;
                 }
             }
-            if (!$match) { continue; }
+            if (!$match) {
+                continue;
+            }
 
             $constraints = $this->getWhereConstraints($method, $route['path']);
             if ($constraints !== []) {
@@ -153,7 +162,9 @@ final class RouteMatcher
         foreach ($this->dynamicRoutes as $method => $routeList) {
             foreach ($routeList as $route) {
                 /** @var array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int} $route */
-                if (count($route['segments']) !== count($segments)) { continue; }
+                if (count($route['segments']) !== count($segments)) {
+                    continue;
+                }
                 $match = true;
                 foreach ($route['segments'] as $i => $segment) {
                     if (!$this->isParamSegment($segment) && $segment !== $segments[$i]) {
@@ -161,7 +172,9 @@ final class RouteMatcher
                         break;
                     }
                 }
-                if ($match) { return true; }
+                if ($match) {
+                    return true;
+                }
             }
         }
         return false;

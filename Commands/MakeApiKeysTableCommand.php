@@ -6,7 +6,8 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\Commands\CommandSupport;
 
-final class MakeApiKeysTableCommand implements \Siro\Core\Commands\CommandInterface {
+final class MakeApiKeysTableCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)

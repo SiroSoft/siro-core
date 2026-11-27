@@ -9,7 +9,8 @@ use Siro\Core\Env;
 /**
  * Check environment configuration — shows MySQL connection info when DB_CONNECTION=mysql.
  */
-final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
+final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -170,15 +171,23 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface {
     {
         $values = [];
         $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if ($lines === false) return $values;
+        if ($lines === false) {
+            return $values;
+        }
         foreach ($lines as $line) {
             $line = trim($line);
-            if ($line === '' || str_starts_with($line, '#')) continue;
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
             $pos = strpos($line, '=');
-            if ($pos === false) continue;
+            if ($pos === false) {
+                continue;
+            }
             $key = trim(substr($line, 0, $pos));
             $value = trim(substr($line, $pos + 1));
-            if ($key !== '') $values[$key] = $value;
+            if ($key !== '') {
+                $values[$key] = $value;
+            }
         }
         return $values;
     }

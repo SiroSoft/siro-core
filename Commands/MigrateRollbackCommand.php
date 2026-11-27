@@ -35,7 +35,7 @@ final class MigrateRollbackCommand implements \Siro\Core\Commands\CommandInterfa
         }
 
         $pdo = $this->setupDatabaseConnection($this->basePath);
-        
+
         $this->ensureMigrationTable($pdo);
         $migrations = $this->lastAppliedMigrations($pdo, $step);
 

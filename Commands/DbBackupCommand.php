@@ -12,7 +12,8 @@ use Siro\Core\Lite\BackupManager;
  *
  * Usage: php siro db:backup [--compress]
  */
-final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface {
+final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface
+{
     use CommandSupport;
 
     public function __construct(private readonly string $basePath)
@@ -144,22 +145,36 @@ final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface {
         $tables = $tablesStmt !== false ? $tablesStmt->fetchAll(\PDO::FETCH_COLUMN) : [];
         foreach ($tables as $table) {
             $t = is_scalar($table) ? (string) $table : '';
-            if ($t === '') continue;
+            if ($t === '') {
+                continue;
+            }
             $sql .= "DROP TABLE IF EXISTS `{$t}`;\n";
             $createStmt = $pdo->query("SHOW CREATE TABLE `{$t}`");
             $create = $createStmt !== false ? $createStmt->fetch(\PDO::FETCH_NUM) : false;
             $sql .= (is_array($create) && isset($create[1]) && is_string($create[1])) ? $create[1] . ";\n\n" : '';
             $rowsStmt = $pdo->query("SELECT * FROM `{$t}`");
-            if ($rowsStmt === false) continue;
+            if ($rowsStmt === false) {
+                continue;
+            }
             $rows = $rowsStmt->fetchAll(\PDO::FETCH_ASSOC);
             foreach ($rows as $row) {
-                if (!is_array($row)) continue;
+                if (!is_array($row)) {
+                    continue;
+                }
                 $cols = implode(', ', array_map(fn ($c): string => '`' . (string) $c . '`', array_keys($row)));
                 $vals = implode(', ', array_map(function ($v) use ($pdo): string {
-                    if ($v === null) return 'NULL';
-                    if (is_int($v) || is_float($v)) return (string) $v;
-                    if (is_bool($v)) return $v ? '1' : '0';
-                    if (is_string($v)) return $pdo->quote($v);
+                    if ($v === null) {
+                        return 'NULL';
+                    }
+                    if (is_int($v) || is_float($v)) {
+                        return (string) $v;
+                    }
+                    if (is_bool($v)) {
+                        return $v ? '1' : '0';
+                    }
+                    if (is_string($v)) {
+                        return $pdo->quote($v);
+                    }
                     return $pdo->quote((string) json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 }, $row));
                 $sql .= "INSERT INTO `{$t}` ({$cols}) VALUES ({$vals});\n";
@@ -184,13 +199,16 @@ final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface {
         $gzPath = $path . '.gz';
         $gz = gzopen($gzPath, 'wb');
         if ($gz === false) {
-            return ['success' => true, 'message' => 'Backup completed (compression failed)', 'path' => $path, 'size' => (int) filesize($path), 'compressed' => false];
+            return ['success' => true, 'message' => 'Backup completed (compression failed)', 'path' => $path,
+                'size' => (int) filesize($path), 'compressed' => false];
         }
         $fp = fopen($path, 'rb');
         if ($fp !== false) {
             while (!feof($fp)) {
                 $chunk = fread($fp, 8192);
-                if ($chunk === false) break;
+                if ($chunk === false) {
+                    break;
+                }
                 gzwrite($gz, $chunk);
             }
             fclose($fp);
@@ -207,7 +225,9 @@ final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface {
         // named NUL in the working directory (v1.4.2). `command -v` is
         // the POSIX equivalent of `where` for the existence check.
         $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-        foreach (['mysqldump', 'mysqldump.exe', 'C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe', 'C:\\xampp\\mysql\\bin\\mysqldump.exe'] as $candidate) {
+        $candidates = ['mysqldump', 'mysqldump.exe', 'C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe',
+            'C:\\xampp\\mysql\\bin\\mysqldump.exe'];
+        foreach ($candidates as $candidate) {
             $which = $isWindows
                 ? shell_exec('where ' . escapeshellarg($candidate) . ' 2>NUL')
                 : shell_exec('command -v ' . escapeshellarg($candidate) . ' 2>/dev/null');

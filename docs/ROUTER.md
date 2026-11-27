@@ -348,6 +348,87 @@ VersionMiddleware::override(2, 'GET', '/users', V2UserController::class);
 
 ---
 
+## Auto-CRUD (v1.5.0)
+
+Runtime auto-CRUD: register one model with one line and get the 5 standard
+endpoints — no controller file, no scaffold. Different from
+`MakeCrudCommand` (a generator that writes static controller files) and from
+`resource()` (which points at a hand-written controller).
+
+```php
+$router->apiResource(Product::class, [
+    'filterable' => ['status', 'category_id'],
+    'sortable'   => ['created_at', 'price', 'name'],
+    'includable' => ['category'],
+    'fields'     => ['id', 'name', 'price', 'status', 'created_at'],
+    'resource'   => ProductResource::class, // optional
+    'request'    => ProductRequest::class,  // optional FormRequest (store/update)
+    'abilities'  => ['index' => 'products.view'], // optional Gate override
+    'per_page'   => 15,
+    'only'       => [], 'except' => [], // optional — limit actions
+]);
+// GET    /products       → index     (filter/sort/include/fields/pagination)
+// GET    /products/{id}  → show
+// POST   /products       → store     (201)
+// PUT    /products/{id}  → update
+// DELETE /products/{id}  → destroy   (204)
+```
+
+The URI defaults to the model's table name; override with the `uri` option.
+`only` / `except` limit the actions, like `resource()` — pass them inside the
+options array (they win over the separate parameters, which are also accepted
+for parity with `resource()`). The 5 routes are
+plain Router routes, so they appear in `getRoutes()`, the route cache,
+`api:contract` and `make:openapi` with no special-casing.
+
+### Query params (index only)
+
+| Param | Example | Notes |
+|---|---|---|
+| `filter` | `?filter[status]=active`, `?filter[price][gte]=10` | Ops: `eq` (default), `ne`, `lt`, `lte`, `gt`, `gte`, `like`, `in`, `nin`. `in`/`nin` take comma-separated values (max 100). |
+| `sort` | `?sort=-created_at,price` | `-` = DESC. Multiple fields, comma-separated. |
+| `include` | `?include=category` | Eager-loads a relation (must be a method on the model). No nested includes in v1. |
+| `fields` | `?fields=id,name` | Sparse fieldset on the serialized output. |
+| `page` / `per_page` | `?page=2&per_page=20` | `page` ≥ 1; `per_page` 1–100 (default 15). |
+
+**Whitelist is mandatory.** Every field/relation used in `filter` / `sort` /
+`include` / `fields` must be listed in the matching option
+(`filterable` / `sortable` / `includable` / `fields`). Anything else returns
+**400** — never 500, never leaked data. An option left unset (or empty) means
+that param is rejected outright. `like` wraps the value in `%...%` (a `%` or
+`_` inside the value keeps its LIKE wildcard meaning); values are always
+bound parameters, so there is no SQL injection through filters.
+
+The index response reuses `paginate()` and adds the applied query to `meta`:
+
+```json
+{
+  "success": true,
+  "data": [ { "id": 1, "name": "Hammer", "...": "..." } ],
+  "meta": {
+    "page": 1, "per_page": 15, "total": 3, "last_page": 1,
+    "filters": ["status:eq:active"], "sort": ["-price"]
+  }
+}
+```
+
+### Authorization (default DENY)
+
+Every action authorizes through `Gate` **before** touching the database.
+The ability is `abilities[action]` when configured, otherwise
+`{table}.{verb}` (`products.view`, `products.create`, `products.update`,
+`products.delete`). An ability that was never defined denies the request
+(403) — registering auto-CRUD on a sensitive model without configuring a
+policy leaks nothing. To open an endpoint, define the ability:
+
+```php
+Gate::define('products.view', fn (?array $user): bool => $user !== null);
+```
+
+Store/update bodies additionally pass through the per-model FormRequest when
+`request` is configured (`rules()` + `authorize()`; failures → 422), and
+mass assignment is always guarded by the model's `$fillable`.
+
 ## Full Example
 
 ```php

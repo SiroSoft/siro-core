@@ -71,7 +71,7 @@ final class JWT
         return implode('.', $segments);
     }
 
-    public static function encodeAccess(int $userId, int $tokenVersion, int $ttl = 3600, ?string $audience = null): string
+    public static function encodeAccess(int $userId, int $tokenVersion, int $ttl = 3600, ?string $audience = null, ?string $scope = null): string
     {
         $now = time();
         $payload = [
@@ -85,12 +85,21 @@ final class JWT
         if ($audience !== null) {
             $payload['aud'] = $audience;
         }
+        if ($scope !== null && trim($scope) !== '') {
+            $payload['scope'] = trim($scope);
+        }
         $payload['iss'] = rtrim((string) Env::get('APP_URL', ''), '/') ?: 'siro-api';
         return self::encode($payload);
     }
 
-    public static function encodeRefresh(int $userId, int $tokenVersion, int $ttl = 604800, ?string $jti = null, ?string $audience = null): string
-    {
+    public static function encodeRefresh(
+        int $userId,
+        int $tokenVersion,
+        int $ttl = 604800,
+        ?string $jti = null,
+        ?string $audience = null,
+        ?string $scope = null,
+    ): string {
         $now = time();
         $payload = [
             'sub' => $userId,
@@ -103,8 +112,45 @@ final class JWT
         if ($audience !== null) {
             $payload['aud'] = $audience;
         }
+        if ($scope !== null && trim($scope) !== '') {
+            $payload['scope'] = trim($scope);
+        }
         $payload['iss'] = rtrim((string) Env::get('APP_URL', ''), '/') ?: 'siro-api';
         return self::encode($payload);
+    }
+
+    /**
+     * Scopes carried by a decoded token payload.
+     *
+     * Accepts both the core JWT `scope` claim (space-separated string, RFC 6749
+     * §3.3) and the league/oauth2-server `scopes` claim (array of strings).
+     *
+     * @param array<string, mixed> $payload
+     * @return array<int, string>
+     */
+    public static function scopes(array $payload): array
+    {
+        $scopeClaim = $payload['scope'] ?? null;
+        if (is_string($scopeClaim) && trim($scopeClaim) !== '') {
+            return array_values(array_filter(array_map(
+                static fn (string $s): string => strtolower(trim($s)),
+                explode(' ', $scopeClaim),
+            ), static fn (string $s): bool => $s !== ''));
+        }
+        $scopesClaim = $payload['scopes'] ?? null;
+        if (is_array($scopesClaim)) {
+            return array_values(array_filter(array_map(
+                static fn (mixed $s): string => strtolower(trim(is_scalar($s) ? (string) $s : '')),
+                $scopesClaim,
+            ), static fn (string $s): bool => $s !== ''));
+        }
+        return [];
+    }
+
+    /** @param array<string, mixed> $payload */
+    public static function hasScope(array $payload, string $scope): bool
+    {
+        return in_array(strtolower(trim($scope)), self::scopes($payload), true);
     }
 
     /** @param array<string, mixed> $payload */
