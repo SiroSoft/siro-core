@@ -258,8 +258,8 @@ final class CommandSmokeAllTest extends TestCase
         $m->setAccessible(true);
         $registry = $m->invoke($console);
 
-        // Must have exactly 96 registered commands
-        $this->assertCount(96, $registry, 'Console must register exactly 96 commands');
+        // Must have exactly 100 registered commands
+        $this->assertCount(100, $registry, 'Console must register exactly 100 commands');
 
         // All keys must be strings
         foreach ($registry as $name => $config) {
