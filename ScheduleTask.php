@@ -73,11 +73,28 @@ final class ScheduleTask
             return 'Closure';
         }
         if (is_array($this->task) && isset($this->task[0], $this->task[1])) {
-            $target = is_object($this->task[0]) ? get_class($this->task[0]) : (string) $this->task[0];
-            return $target . '::' . (string) $this->task[1];
+            $target = is_object($this->task[0]) ? get_class($this->task[0]) : $this->stringify($this->task[0]);
+            return $target . '::' . $this->stringify($this->task[1]);
         }
         if (is_object($this->task)) {
             return get_class($this->task);
+        }
+        return 'callable';
+    }
+
+    /**
+     * Stringify one half of an array callable ([target, method]).
+     * Strings and scalars keep their old (string)-cast rendering;
+     * anything else (array, null, resource) is not a printable
+     * callable part and renders as 'callable'.
+     */
+    private function stringify(mixed $value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_scalar($value)) {
+            return (string) $value;
         }
         return 'callable';
     }

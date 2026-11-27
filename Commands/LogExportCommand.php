@@ -58,6 +58,18 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
         $files = $this->findTraceFiles($traceDir);
         usort($files, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
 
+        // A positional trace id restricts json/csv export to that one trace.
+        // (Previously the id was parsed but only the --postman branch used it,
+        // so `log:export <id>` silently exported every trace.)
+        if ($traceId !== '') {
+            $single = $this->findTraceById($traceDir, $traceId);
+            if ($single === null) {
+                $this->write('Trace not found: ' . $traceId);
+                return 1;
+            }
+            $files = [$single];
+        }
+
         $cutoff = $days !== null ? time() - ($days * 86400) : 0;
         $traces = [];
 

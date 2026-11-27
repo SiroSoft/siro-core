@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Run the PHPUnit test suite.
+ *
+ * Runs from the project root (chdir to basePath) so phpunit.xml is
+ * discovered even when the caller runs from another directory (TQ-M9).
+ *
+ * Usage:
+ *   php siro test [--filter=name] [--suite=Unit] [--coverage]
+ *
+ * @package Siro\Core\Commands
+ */
 final class TestCommand implements \Siro\Core\Commands\CommandInterface
 {
     use CommandSupport;
@@ -55,6 +66,12 @@ final class TestCommand implements \Siro\Core\Commands\CommandInterface
 
         $this->write('Running: vendor/bin/phpunit' . ($filter ? " --filter={$filter}" : '') . ($suite ? " --testsuite={$suite}" : ''));
         $this->write('');
+
+        // Run from the project root (TQ-M9): phpunit discovers
+        // phpunit.xml from the cwd.
+        if (is_dir($this->basePath)) {
+            chdir($this->basePath);
+        }
 
         passthru($cmd, $exitCode);
 

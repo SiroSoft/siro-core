@@ -33,7 +33,7 @@ final class CommandSmokeTest extends TestCase
         }
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=local\nAPP_URL=http://localhost\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_testing_1234\n"
+            "APP_ENV=local\nAPP_URL=http://localhost\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_testing_1234\nAPP_KEY=0123456789abcdef0123456789abcdef\n"
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',

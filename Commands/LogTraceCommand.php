@@ -45,7 +45,7 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface
                 $slow = true;
                 $limit = 50;
             } elseif (str_starts_with($arg, '--limit=')) {
-                $limit = max(1, (int) substr($arg, 7));
+                $limit = max(1, (int) substr($arg, 8));
             } elseif (str_starts_with($arg, '--days=')) {
                 $days = max(1, (int) substr($arg, 7));
             } elseif (str_starts_with($arg, '--ip=')) {

@@ -32,17 +32,29 @@ final class RouteRulesCommand implements \Siro\Core\Commands\CommandInterface
 
         $found = false;
         $currentRoute = '';
+        $groupPrefix = '';
 
         foreach ($lines as $num => $line) {
             $lineNum = $num + 1;
 
             // Detect route registration
             if (preg_match('/->(get|post|put|patch|delete|options)\([\'"]([^\'"]+)/i', $line, $m)) {
-                $currentRoute = strtoupper($m[1]) . ' ' . $m[2];
+                $path = $m[2];
+                // Routes inside $router->group('/api', ...) are written
+                // relative ('/auth/register') but served with the group
+                // prefix ('/api/auth/register').
+                if ($groupPrefix !== '' && !str_starts_with($path, $groupPrefix)) {
+                    $path = rtrim($groupPrefix, '/') . '/' . ltrim($path, '/');
+                }
+                $currentRoute = strtoupper($m[1]) . ' ' . $path;
             }
 
-            // Detect group path
+            // Detect group path — routes below inherit this prefix.
+            // (Single-level groups only; a nested group replaces it.)
             if (preg_match('/->group\([\'"]([^\'"]+)/i', $line, $m)) {
+                if (str_starts_with($m[1], '/')) {
+                    $groupPrefix = $m[1];
+                }
                 $currentRoute = 'GROUP: ' . $m[1];
             }
 
@@ -91,24 +103,40 @@ final class RouteRulesCommand implements \Siro\Core\Commands\CommandInterface
 
         $inMethod = false;
         $braceDepth = 0;
+        $seenOpen = false;
         $methodCode = '';
 
         foreach ($lines as $line) {
             if (!$inMethod) {
                 if (preg_match('/function\s+' . preg_quote($method, '/') . '\s*\(/', $line)) {
                     $inMethod = true;
-                    $braceDepth = 1;
-                    $methodCode = $line . "\n";
+                } else {
+                    continue;
                 }
-                continue;
             }
 
+            // Count braces on EVERY line including the signature line.
+            // The old code started at depth 1 on the signature line and
+            // skipped counting it — but controllers put the opening brace
+            // on the NEXT line, so depth went 1 -> 2 -> 1 and never
+            // reached 0: extraction swallowed the rest of the file and
+            // merged every later method's validate() rules into this one.
             $methodCode .= $line . "\n";
             $braceDepth += substr_count($line, '{') - substr_count($line, '}');
+            if (str_contains($line, '{')) {
+                $seenOpen = true;
+            }
 
-            if ($braceDepth <= 0) {
+            if ($seenOpen && $braceDepth <= 0) {
                 break;
             }
+        }
+
+        // A method with no opening brace (abstract/interface, or a
+        // signature the scan never completed) has no body to extract
+        // from — return nothing instead of leaking later code.
+        if (!$seenOpen) {
+            return [];
         }
 
         // Extract validate() calls

@@ -46,6 +46,7 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
         $passed = 0;
         $warnings = 0;
         $failed = 0;
+        $checked = 0;
         foreach ($spec['paths'] as $path => $operations) {
             if ($pathFilter !== null && !str_contains((string) $path, $pathFilter)) {
                 continue;
@@ -57,13 +58,14 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
                 if (!is_string($method) || !in_array(strtoupper($method), ['GET','POST','PUT','PATCH','DELETE','OPTIONS'], true)) {
                     continue;
                 }
+                $checked++;
                 $found = false;
                 foreach ($routes as $route) {
                     $routeMethod = is_string($route['method'] ?? null) ? $route['method'] : '';
                     $routePath = is_string($route['path'] ?? null) ? $route['path'] : '';
                     if (
                         strtoupper($routeMethod) === strtoupper($method)
-                        && $this->samePath((string) $path, $routePath)
+                        && $this->matchesRoute((string) $path, $routePath, $routes, (string) $method)
                     ) {
                         $found = true;
                         break;
@@ -97,21 +99,32 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
                 if ($routeMethod === '' || $routePath === '' || $routeMethod === 'OPTIONS') {
                     continue;
                 }
-                if (!$this->specHasOperation($specPaths, $routeMethod, $routePath)) {
+                if (!$this->specHasOperation($specPaths, $routeMethod, $routePath, $routes)) {
                     $failed++;
                     $this->error('Route not covered by spec: ' . $routeMethod . ' ' . $routePath);
                 }
             }
         }
+        if ($checked === 0) {
+            // A filter that matches nothing (or an empty spec) must not
+            // report a silent pass: exit non-zero and say so plainly.
+            if ($pathFilter !== null) {
+                $this->warn("No operations matched --path filter '{$pathFilter}'. Nothing was checked.");
+            } else {
+                $this->warn('No operations to check in spec. Nothing was checked.');
+            }
+        }
         $this->write("Contract: {$passed} passed, {$warnings} warnings, {$failed} failed");
-        return $failed > 0 || ($strict && $warnings > 0) ? 1 : 0;
+        return $failed > 0 || ($strict && $warnings > 0) || $checked === 0 ? 1 : 0;
     }
 
     /**
      * @param array<mixed, mixed> $specPaths Decoded spec paths (keys are
      *     strings in a valid document; cast inside).
+     * @param list<array<string, mixed>> $routes Registered routes (for
+     *     the placeholder literal guard in matchesRoute()).
      */
-    private function specHasOperation(array $specPaths, string $method, string $path): bool
+    private function specHasOperation(array $specPaths, string $method, string $path, array $routes): bool
     {
         foreach ($specPaths as $specPath => $operations) {
             if (!is_array($operations)) {
@@ -121,12 +134,76 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
                 if (!is_string($opMethod) || strtoupper($opMethod) !== $method) {
                     continue;
                 }
-                if ($this->samePath((string) $specPath, $path)) {
+                if ($this->matchesRoute((string) $specPath, $path, $routes, $method)) {
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    /**
+     * Does a spec path match a registered route path?
+     *
+     * Chosen approach — literal-first with a placeholder guard: a
+     * placeholder segment ({id}) never matches a segment that exists as
+     * a LITERAL segment of a route with the same method and the same
+     * static parts. E.g. spec GET /api/auth/{id} must not "pass" by
+     * matching GET /api/auth/me (the smoke false-pass). A real
+     * parameterized route (GET /api/auth/{id} in the router) still
+     * matches, because its segment is itself a placeholder, not a
+     * literal — and a spec placeholder matches it via the regex below.
+     *
+     * @param list<array<string, mixed>> $routes Registered routes.
+     */
+    private function matchesRoute(string $spec, string $actual, array $routes, string $method): bool
+    {
+        if (!$this->samePath($spec, $actual)) {
+            return false;
+        }
+        if (!str_contains($spec, '{')) {
+            return true;
+        }
+        $specSegments = explode('/', trim($spec, '/'));
+        $actualSegments = explode('/', trim($actual, '/'));
+        foreach ($specSegments as $i => $segment) {
+            if (!str_starts_with($segment, '{')) {
+                continue;
+            }
+            $candidate = $actualSegments[$i] ?? '';
+            if ($candidate === '' || str_starts_with($candidate, '{')) {
+                continue;
+            }
+            // The candidate segment is a literal. Block the match when
+            // any route with the same method and the same static
+            // segments owns this literal at this position — including
+            // the candidate route itself (that is the false-pass case).
+            foreach ($routes as $route) {
+                $routeMethod = is_string($route['method'] ?? null) ? (string) $route['method'] : '';
+                if (strtoupper($routeMethod) !== strtoupper($method)) {
+                    continue;
+                }
+                $routePath = is_string($route['path'] ?? null) ? (string) $route['path'] : '';
+                $routeSegments = explode('/', trim($routePath, '/'));
+                $staticMatch = true;
+                foreach ($specSegments as $j => $static) {
+                    if (str_starts_with($static, '{')) {
+                        continue;
+                    }
+                    if (($routeSegments[$j] ?? null) !== $static) {
+                        $staticMatch = false;
+                        break;
+                    }
+                }
+                if (!$staticMatch) {
+                    continue;
+                }
+                if (($routeSegments[$i] ?? null) === $candidate) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /** @return list<array<string, mixed>> */

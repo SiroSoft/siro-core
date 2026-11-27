@@ -30,7 +30,7 @@ final class DbShowCommand implements \Siro\Core\Commands\CommandInterface
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--limit=')) {
-                $limit = max(1, (int) substr($arg, 7));
+                $limit = max(1, (int) substr($arg, 8));
             }
             if ($arg === '--schema') {
                 $showSchema = true;

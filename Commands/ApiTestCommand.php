@@ -16,7 +16,9 @@ use Siro\Core\ValidationException;
  *
  * Sends HTTP requests to the local dev server and displays
  * formatted response with status, timing, and body.
- * Supports --body, --json, --as, --loop, --header, --watch.
+ * Supports --body, --json, --as, --loop, --header, --watch, --login,
+ * --cors, --webhook, --collection-save, --collection, --history.
+ * Field args accept both key=value and field:value forms.
  * Alias: php siro t
  *
  * @package Siro\Core\Commands
@@ -64,7 +66,17 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         // ─── History ──────────────────────
-        if (in_array('--history', $args, true) || in_array('--history-clear', $args, true)) {
+        // NOTE: '--history=<N>' must be matched here too — exact-match
+        // in_array('--history') alone drops the =N form down to the
+        // normal-request branch (TQ-M3: "Method and path are required").
+        $hasHistory = false;
+        foreach ($args as $arg) {
+            if ($arg === '--history' || str_starts_with($arg, '--history=')) {
+                $hasHistory = true;
+                break;
+            }
+        }
+        if ($hasHistory || in_array('--history-clear', $args, true)) {
             if (in_array('--history-clear', $args, true)) {
                 $this->clearHistory();
                 return 0;
@@ -150,7 +162,20 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
                     $fields = array_merge($fields, $decoded);
                 }
             } elseif (str_contains($arg, '=') && !str_starts_with($arg, '--')) {
-                $parts = explode('=', $arg, 2);
+                // Field arg: key=value OR field:value — whichever
+                // delimiter comes first wins (TQ-M2: usage advertises
+                // [field:value ...] but only key=value was parsed).
+                $eqPos = strpos($arg, '=');
+                $colonPos = strpos($arg, ':');
+                if ($colonPos !== false && ($eqPos === false || $colonPos < $eqPos)) {
+                    $fields[substr($arg, 0, $colonPos)] = substr($arg, $colonPos + 1);
+                } else {
+                    $parts = explode('=', $arg, 2);
+                    $fields[$parts[0]] = $parts[1];
+                }
+            } elseif (str_contains($arg, ':') && !str_starts_with($arg, '--')) {
+                // field:value form (no '=' present).
+                $parts = explode(':', $arg, 2);
                 $fields[$parts[0]] = $parts[1];
             }
         }
@@ -179,9 +204,15 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
 
         // Auto-login before making the request
         if ($login) {
-            $loginEmail = $fields['email'] ?? ($as !== null ? $as . '@test.com' : '');
-            $loginPassword = $fields['password'] ?? 'password';
+            // The default role is 'default' — derive the login email from
+            // the ROLE, not from $as (TQ-M16: bare --login left $as null
+            // so the email was '' and login always 422'd).
             $loginRole = $as ?? 'default';
+            if (str_contains($loginRole, ':')) {
+                $loginRole = explode(':', $loginRole, 2)[0];
+            }
+            $loginEmail = $fields['email'] ?? ($loginRole . '@test.com');
+            $loginPassword = $fields['password'] ?? 'password';
 
             $this->write("  \033[33mLogging in as '{$loginRole}'...\033[0m");
             $loginCode = $this->sendInternal(
@@ -193,7 +224,8 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
                 $loginRole
             );
 
-            if ($loginCode !== 0) {
+            // sendInternal() returns the real HTTP status (S-02 fix).
+            if ($loginCode < 200 || $loginCode >= 300) {
                 $this->write("  \033[31mLogin failed. Check credentials.\033[0m");
                 return 1;
             }
@@ -287,12 +319,23 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
         $this->write("  \033[33mWatching for changes... (Ctrl+C to stop)\033[0m");
         $this->write('');
 
+        // Console::run() registers a SIGTERM/SIGINT handler, but it only
+        // runs when signals are dispatched. Enable async signals so the
+        // handler fires inside this loop (TQ-M8: timeout/SIGTERM was
+        // ignored here and only SIGKILL worked).
+        if (function_exists('pcntl_async_signals')) {
+            pcntl_async_signals(true);
+        }
+
         $maxIterations = (int) getenv('SIRO_API_TEST_WATCH_MAX');
         $iteration = 0;
         while (true) {
             $iteration++;
             if ($maxIterations > 0 && $iteration > $maxIterations) {
                 break;
+            }
+            if (function_exists('pcntl_signal_dispatch')) {
+                pcntl_signal_dispatch();
             }
             sleep(1);
             $changed = false;
@@ -373,6 +416,10 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
             'as' => $as,
         ];
         $collection['requests'] = $requests;
+        // $collection is a by-value copy of $collections[$name] — write it
+        // back before persisting (S-03: without this the appended request
+        // was lost and the file always kept "requests": []).
+        $collections[$name] = $collection;
         $dir = dirname($this->collectionFile);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -418,7 +465,8 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
                 $this->safeStr($req['content_type'] ?? 'json'),
                 isset($req['as']) ? (is_string($req['as']) ? $req['as'] : null) : null,
             );
-            if ($code === 0) {
+            // sendInternal() returns the real HTTP status (S-02 fix).
+            if ($code < 400) {
                 $passed++;
             } else {
                 $failed++;
@@ -649,10 +697,16 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
             $this->write('');
 
             $this->saveHistory($method, $pathOnly, $fields, $customHeaders, 500, $duration, $memory, $as);
-            return 1;
+            // Dispatch failure is not an HTTP status — report it as 500 so
+            // callers (exit code, --loop marks, --cors summary, login
+            // check) treat it as a failure instead of success (S-02).
+            return 500;
         }
 
-        return $statusCode < 400 ? 0 : 1;
+        // Return the REAL HTTP status code (S-02 fix). Previously this
+        // returned 0/1 and run() compared that 0/1 against 400 again, so
+        // every 4xx/5xx still exited 0 — and --loop/--cors printed 0.
+        return $statusCode;
     }
 
     private function getToken(string $role): ?string
@@ -871,9 +925,19 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
         $count = 0;
         $maxIterations = (int) getenv('SIRO_API_TEST_WEBHOOK_MAX');
         $acceptTimeout = (int) getenv('SIRO_API_TEST_WEBHOOK_ACCEPT_TIMEOUT') ?: 5;
+
+        // See watchMode(): Console::run() registers the SIGTERM/SIGINT
+        // handler, but it only runs when signals are dispatched (TQ-M8).
+        if (function_exists('pcntl_async_signals')) {
+            pcntl_async_signals(true);
+        }
+
         while (true) {
             if ($maxIterations > 0 && $count >= $maxIterations) {
                 break;
+            }
+            if (function_exists('pcntl_signal_dispatch')) {
+                pcntl_signal_dispatch();
             }
             $conn = @stream_socket_accept($socket, $acceptTimeout);
             if ($conn === false) {
@@ -936,9 +1000,15 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('Usage: php siro api:test <method> <path> [field:value...] [options]');
         $this->write('Options:');
         $this->write('  --json              Send as JSON (default)');
+        $this->write('  --json=<json>       Send a JSON object as fields');
+        $this->write('  --body=<k=v|json>   Send body as key=value or JSON object');
         $this->write('  --form              Send as form-urlencoded');
         $this->write('  --header="X: v"     Custom header');
-        $this->write('  --as=<role>         Auth as role (admin, user)');
+        $this->write('  --as=<role>         Auth as role (admin, user, guest, user:123)');
+        $this->write('  --login             Log in first (default role, or --as=<role>)');
+        $this->write('  --loop=N            Repeat the request N times');
+        $this->write('  --cors              Run CORS preflight + Origin checks');
+        $this->write('  --webhook [--port=N]  Listen for incoming webhooks (default port 9000)');
         $this->write('  --watch             Watch files + auto re-run on change');
         $this->write('  --collection-save=N  Save request to named collection');
         $this->write('  --collection=N       Run all requests in collection');

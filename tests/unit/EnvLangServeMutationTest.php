@@ -76,7 +76,7 @@ final class EnvLangServeMutationTest extends TestCase
         $this->assertSame(1, $code);
     }
 
-    public function testEnvSwitchRestoresFromBackup(): void
+    public function testEnvSwitchMissingEnvDoesNotRestoreFromBackup(): void
     {
         file_put_contents($this->basePath . DIRECTORY_SEPARATOR . '.env', 'BACKUP_CONTENT');
         file_put_contents($this->basePath . DIRECTORY_SEPARATOR . '.env.backup', 'RESTORED');
@@ -86,8 +86,12 @@ final class EnvLangServeMutationTest extends TestCase
         ob_start();
         $code = $cmd->run(['staging']);
         ob_end_clean();
-        $this->assertSame(0, $code);
-        $this->assertSame('RESTORED', (string) file_get_contents($this->basePath . DIRECTORY_SEPARATOR . '.env'));
+        // A missing .env.<env> is always an error, even when .env.backup exists:
+        // silently restoring the backup used to report success (exit 0) while the
+        // requested environment was never applied (SYS-M2 fix, 27/11/2026).
+        $this->assertSame(1, $code);
+        $this->assertFileDoesNotExist($this->basePath . DIRECTORY_SEPARATOR . '.env');
+        $this->assertSame('RESTORED', (string) file_get_contents($this->basePath . DIRECTORY_SEPARATOR . '.env.backup'));
     }
 
     public function testEnvSwitchSuccess(): void

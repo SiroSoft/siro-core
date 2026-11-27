@@ -63,6 +63,12 @@ final class SlowLogCommand implements \Siro\Core\Commands\CommandInterface
             if ($lines !== false) {
                 foreach (array_reverse($lines) as $line) {
                     if (preg_match('/^\[.*?\]\s+(\w+)\s+(\/\S+).*?(\d+\.?\d*)ms/', $line, $m)) {
+                        // Apply the same --min threshold as the trace branch:
+                        // a slow.log line below the threshold must not be shown
+                        // under a "> {$minMs}ms" header.
+                        if ((float) $m[3] < $minMs) {
+                            continue;
+                        }
                         $slowEntries[] = [
                             'line' => $line,
                             'ms' => (float) $m[3],

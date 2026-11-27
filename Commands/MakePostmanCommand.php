@@ -33,6 +33,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
         $output = $postmanDir . DIRECTORY_SEPARATOR . 'collection.json';
         $publicOutput = $this->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json';
         $host = 'localhost:8080';
+        $hostScheme = 'http';
         $filterTag = null;
         $filterMethod = null;
         $filterPath = null;
@@ -54,6 +55,33 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
             }
         }
 
+        // Strip a leading http(s):// from --host= so base_url never
+        // doubles the scheme (http://https://…); keep the scheme given.
+        $host = trim($host);
+        $lowerHost = strtolower($host);
+        if (str_starts_with($lowerHost, 'https://')) {
+            $hostScheme = 'https';
+            $host = substr($host, 8);
+        } elseif (str_starts_with($lowerHost, 'http://')) {
+            $host = substr($host, 7);
+        }
+        $host = rtrim($host, '/');
+
+        // Unknown --flow values used to be silently ignored and behave
+        // exactly like the default — fail fast instead, before writing
+        // a collection the user did not ask for.
+        if ($filterFlow !== null && !in_array($filterFlow, ['auth', 'crud'], true)) {
+            $this->write("  Error: Invalid --flow value '{$filterFlow}'. Valid values: auth, crud.");
+            return 1;
+        }
+
+        // A relative --output= resolves against the project root, not
+        // the shell's working directory, so the collection never
+        // escapes the project.
+        if (!$this->isAbsolutePath($output)) {
+            $output = $this->basePath . DIRECTORY_SEPARATOR . $output;
+        }
+
         $app = new App($this->basePath);
         $app->boot();
         $app->loadRoutes($this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php');
@@ -73,10 +101,12 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
             $middlewareStr = $route['middleware'];
             $middlewares = $middlewareStr !== '' ? explode(', ', $middlewareStr) : [];
             $hasAuthMiddleware = in_array('auth', $middlewares, true);
-            $tag = $this->handlerToTag($handler);
+            $tag = $this->handlerToTag($handler, $path);
 
-            // Apply filters
-            if ($filterTag !== null && strcasecmp($tag, $filterTag) !== 0) {
+            // Apply filters (tag uses substring match, same as make:openapi,
+            // so --tag=products matches the "Products" tag instead of silently
+            // producing an empty collection on exact-match).
+            if ($filterTag !== null && !str_contains(strtolower($tag), strtolower($filterTag))) {
                 continue;
             }
             if ($filterMethod !== null && strcasecmp($method, $filterMethod) !== 0) {
@@ -85,10 +115,10 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
             if ($filterPath !== null && !str_starts_with($path, (string) $filterPath)) {
                 continue;
             }
-            if ($filterFlow === 'auth' && !str_contains($path, '/auth/')) {
+            if ($filterFlow === 'auth' && !$this->isAuthPath($path)) {
                 continue;
             }
-            if ($filterFlow === 'crud' && str_contains($path, '/auth/')) {
+            if ($filterFlow === 'crud' && $this->isAuthPath($path)) {
                 continue;
             }
 
@@ -141,7 +171,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
                 ];
             }
 
-            $tag = $this->handlerToTag($handler);
+            $tag = $this->handlerToTag($handler, $path);
 
             // Build response example from handler
             $responseExample = $this->buildResponseExample($handler, $method, $path);
@@ -166,7 +196,7 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
                 'schema' => 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
             ],
             'variable' => [
-                ['key' => 'base_url', 'value' => 'http://' . $host, 'type' => 'string'],
+                ['key' => 'base_url', 'value' => $hostScheme . '://' . $host, 'type' => 'string'],
                 ['key' => 'token', 'value' => '', 'type' => 'string'],
             ],
             'item' => array_values($folders),
@@ -250,12 +280,44 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
         return 0;
     }
 
-    private function handlerToTag(string $handler): string
+    private function isAbsolutePath(string $path): bool
     {
+        return str_starts_with($path, '/')
+            || str_starts_with($path, '\\')
+            || (bool) preg_match('/^[A-Za-z]:[\\\\\\/]/', $path);
+    }
+
+    /**
+     * True for auth paths, including the bare collection path
+     * (/api/auth) — not just nested ones (/api/auth/login).
+     */
+    private function isAuthPath(string $path): bool
+    {
+        return str_contains($path, '/auth/') || str_ends_with($path, '/auth');
+    }
+
+    private function handlerToTag(string $handler, string $path): string
+    {
+        // Same tag taxonomy as MakeOpenApiCommand::deriveTag(): auth paths
+        // are 'Auth' (not 'Auths'), health/root are 'System'.
+        if ($this->isAuthPath($path)) {
+            return 'Auth';
+        }
+        if (str_contains($path, '/health') || $path === '/') {
+            return 'System';
+        }
         if (str_contains($handler, '@')) {
             $parts = explode('@', $handler);
             $controller = basename(str_replace('\\', '/', $parts[0]));
-            return str_replace('Controller', '', $controller);
+            $tag = str_replace('Controller', '', $controller);
+            // Pluralize exactly like MakeOpenApiCommand::deriveTag() so both
+            // generators use the same tag taxonomy ("Products", not "Product").
+            $last = substr($tag, -1);
+            return match (true) {
+                str_ends_with($tag, 'y') => substr($tag, 0, -1) . 'ies',
+                $last === 's' || $last === 'x' || $last === 'z' || str_ends_with($tag, 'sh') || str_ends_with($tag, 'ch') => $tag . 'es',
+                default => $tag . 's',
+            };
         }
 
         return 'General';

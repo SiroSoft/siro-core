@@ -148,7 +148,7 @@ final class MiscCommandMutationTest extends TestCase
 
     public function testEnvCacheSuccess(): void
     {
-        file_put_contents($this->basePath . DIRECTORY_SEPARATOR . '.env', "APP_ENV=testing\nDB_CONNECTION=sqlite\n");
+        file_put_contents($this->basePath . DIRECTORY_SEPARATOR . '.env', "APP_ENV=testing\nDB_CONNECTION=sqlite\nAPP_KEY=0123456789abcdef0123456789abcdef\n");
         $cmd = new EnvCacheCommand($this->basePath);
         ob_start();
         $code = $cmd->run([]);

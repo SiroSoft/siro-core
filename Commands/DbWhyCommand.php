@@ -25,6 +25,14 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
 
     private const SLOW_THRESHOLD_MS = 100;
 
+    /**
+     * Message of the last EXPLAIN failure, if the EXPLAIN statement
+     * itself errored (e.g. unknown table, syntax error). Null when
+     * EXPLAIN ran fine or no database connection exists at all
+     * (the latter keeps the old "(EXPLAIN not available…)" path).
+     */
+    private ?string $explainError = null;
+
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
@@ -60,11 +68,10 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
 
         // Analyze a query directly from --query= (no trace lookup needed)
         if ($queryArg !== null && $queryArg !== '') {
-            $this->analyzeQuery(
+            return $this->analyzeQuery(
                 ['sql' => $queryArg, 'time_ms' => 0.0, 'rows' => 0],
                 ['trace_id' => '', 'method' => '', 'path' => ''],
             );
-            return 0;
         }
 
         // Find query by hash from trace files
@@ -112,9 +119,7 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
 
         /** @var array<string, mixed> $matchedQuery */
         /** @var array<string, mixed> $matchedTrace */
-        $this->analyzeQuery($matchedQuery, $matchedTrace);
-
-        return 0;
+        return $this->analyzeQuery($matchedQuery, $matchedTrace);
     }
 
     private function listSlowQueries(): int
@@ -188,8 +193,9 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
     }
 
     /** @param array<string, mixed> $query
-     * @param array<string, mixed> $trace */
-    private function analyzeQuery(array $query, array $trace): void
+     * @param array<string, mixed> $trace
+     * @return int 0 when the query was analyzed, 1 when EXPLAIN itself failed (bad SQL) */
+    private function analyzeQuery(array $query, array $trace): int
     {
         $sql = $this->safeStr($query['sql'] ?? '');
         $timeMs = is_numeric($query['time_ms'] ?? null) ? (float) $query['time_ms'] : 0.0;
@@ -216,6 +222,15 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         // Try to run EXPLAIN
         $this->write('  ' . self::BOLD . 'EXPLAIN' . self::RESET);
         $explainResult = $this->runExplain($sql);
+        // DB-M2: an EXPLAIN failure means the SQL itself is broken
+        // (unknown table, syntax error, …). It must be reported loudly
+        // and fail the command — never swallowed into "No issues
+        // detected" with exit 0.
+        if ($this->explainError !== null) {
+            $this->write('    ' . self::RED . '✗ EXPLAIN failed: ' . $this->explainError . self::RESET);
+            $this->write('');
+            return 1;
+        }
         if ($explainResult !== null && $explainResult !== []) {
             $driver = $this->detectDriver();
             foreach ($explainResult as $row) {
@@ -263,11 +278,14 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         }
         $this->write('');
         $this->write('  ' . self::GRAY . str_repeat('─', 56) . self::RESET);
+
+        return 0;
     }
 
     /** @return array<int, array<string, mixed>>|null */
     private function runExplain(string $sql): ?array
     {
+        $this->explainError = null;
         try {
             // Try primary database connection
             $pdo = Database::connection();
@@ -295,12 +313,20 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
             $explainSql = (is_string($driver) && $driver === 'sqlite') ? 'EXPLAIN QUERY PLAN ' . $normalized : 'EXPLAIN ' . $normalized;
             $stmt = $pdo->query($explainSql);
             if ($stmt === false) {
+                // PDO in silent mode: surface the driver error instead of
+                // pretending EXPLAIN is merely unavailable (DB-M2).
+                $info = $pdo->errorInfo();
+                $driverError = is_string($info[2] ?? null) && $info[2] !== '' ? $info[2] : 'EXPLAIN query failed';
+                $this->explainError = $driverError;
                 return null;
             }
             /** @var array<int, array<string, mixed>> $rows */
             $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             return $rows;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            // The SQL itself failed (unknown table, syntax error, …) —
+            // record it so analyzeQuery() reports it and exits 1 (DB-M2).
+            $this->explainError = $e->getMessage();
             return null;
         }
     }

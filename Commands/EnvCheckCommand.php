@@ -36,6 +36,7 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface
 
         $passed = 0;
         $failed = 0;
+        $warnings = 0;
 
         $this->write('Environment Check');
         $this->write('');
@@ -111,7 +112,9 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface
                 $passed++;
             } else {
                 $this->write('  [WARN] ' . $ext . ' not loaded (optional for some drivers)');
-                // Warnings do not count as failures
+                // Warnings count as warnings, not failures — the summary
+                // must reflect every [WARN] line printed above.
+                $warnings++;
             }
         }
 
@@ -124,7 +127,7 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface
                 $stmt = \Siro\Core\Database::connection()->query('SELECT VERSION() AS v');
                 if ($stmt === false) {
                     $this->write('  [WARN] Could not query MySQL version');
-                    $failed++;
+                    $warnings++;
                 } else {
                     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
                     $version = is_array($row) && isset($row['v']) && is_scalar($row['v']) ? (string) $row['v'] : '';
@@ -138,7 +141,7 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface
                 }
             } catch (\Throwable $e) {
                 $this->write('  [WARN] Could not connect to MySQL: ' . $e->getMessage());
-                $failed++;
+                $warnings++;
             }
         }
 
@@ -161,7 +164,7 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $this->write('');
-        $this->write('Results: ' . $passed . ' passed, ' . $failed . ' warnings/issues');
+        $this->write('Results: ' . $passed . ' passed, ' . $warnings . ' warnings, ' . $failed . ' failed');
 
         return $failed > 0 ? 1 : 0;
     }

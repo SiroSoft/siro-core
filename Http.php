@@ -22,6 +22,13 @@ final class Http
     private static bool $sslConfigured = false;
     /** @var array<string, string> */ private static array $defaultHeaders = [];
     private static bool $ssrfProtectionEnabled = true;
+    /**
+     * Explicit opt-in to allow private-IP targets (e.g. webhooks to a
+     * localhost catcher in development). Default false: SSRF protection
+     * stays on unless the application opts in — see allowPrivateIp() and
+     * the WEBHOOK_ALLOW_PRIVATE_IP env toggle. Never enabled implicitly.
+     */
+    private static bool $allowPrivateIp = false;
 
     // --- Execution tracing ---
     /** @var array<int, array{method: string, url: string, status: int, duration_ms: float, error: string}> */
@@ -47,6 +54,34 @@ final class Http
     public static function disableSsrfProtection(): void
     {
         self::$ssrfProtectionEnabled = false;
+    }
+
+    /**
+     * Opt in to allowing private-IP targets (loopback, RFC 1918, …) for
+     * outbound requests. Default is false — SSRF protection stays on.
+     * The same opt-in can be set without code via the environment:
+     * WEBHOOK_ALLOW_PRIVATE_IP=true (e.g. in .env). Intended for
+     * developer-configured webhook endpoints / local test receivers;
+     * never enable it for user-supplied URLs.
+     */
+    public static function allowPrivateIp(bool $allow = true): void
+    {
+        self::$allowPrivateIp = $allow;
+    }
+
+    /**
+     * Whether private-IP targets are currently allowed: either the
+     * programmatic opt-in (allowPrivateIp()) or the explicit env toggle
+     * WEBHOOK_ALLOW_PRIVATE_IP=true. Anything else (missing, "false",
+     * "0", …) means blocked.
+     */
+    public static function isPrivateIpAllowed(): bool
+    {
+        if (self::$allowPrivateIp) {
+            return true;
+        }
+        $env = Env::get('WEBHOOK_ALLOW_PRIVATE_IP', '');
+        return $env !== null && $env !== '' && filter_var($env, FILTER_VALIDATE_BOOLEAN);
     }
 
     public static function timeout(int $seconds): void
@@ -76,9 +111,18 @@ final class Http
 
         $host = $parsed['host'];
 
-        // Block known sensitive hosts
+        // Block known sensitive hosts — ALWAYS, even when private IPs
+        // are explicitly allowed (a metadata endpoint is never a
+        // legitimate webhook target).
         if (in_array(strtolower($host), self::BLOCKED_HOSTS, true)) {
             throw new \RuntimeException('SSRF blocked: target host is blocked');
+        }
+
+        // Explicit opt-in (allowPrivateIp() or WEBHOOK_ALLOW_PRIVATE_IP=true)
+        // lifts only the private-range check, for developer-configured
+        // endpoints such as a localhost webhook catcher.
+        if (self::isPrivateIpAllowed()) {
+            return $url;
         }
 
         // Resolve hostname to IP(s) for private range check

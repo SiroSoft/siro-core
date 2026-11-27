@@ -46,7 +46,7 @@ final class NewProjectCommand implements \Siro\Core\Commands\CommandInterface
     {
         $name = trim((string)($args[0] ?? ''));
         if ($name === '') {
-            $this->write('Usage: php siro new <project-name-or-path>');
+            $this->write('Usage: php siro new:project <project-name-or-path>');
             return 1;
         }
 

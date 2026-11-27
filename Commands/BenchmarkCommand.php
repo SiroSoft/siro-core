@@ -24,6 +24,15 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
+        // Console registers SIGTERM/SIGINT handlers, but they only fire
+        // when signals are dispatched — and the bcrypt loop below never
+        // yields. Without async signals a plain `timeout`/SIGTERM was
+        // ignored for the whole (~100s default) run; only SIGKILL worked.
+        // Enable async delivery so the registered handler runs promptly.
+        if (extension_loaded('pcntl') && function_exists('pcntl_async_signals')) {
+            pcntl_async_signals(true);
+        }
+
         $this->parseArgs($args);
 
         if ($this->iterations < 1) {

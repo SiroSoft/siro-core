@@ -14,6 +14,7 @@ namespace Siro\Core\Commands;
  *   php siro frankenphp:serve            # Start FrankenPHP
  *   php siro frankenphp:serve --docker   # Start via Docker
  *   php siro frankenphp:serve --port=8080
+ *   php siro frankenphp:serve --docker --docker-port=8080
  *
  * @package Siro\Core\Commands
  */
@@ -48,7 +49,17 @@ final class FrankenphpServeCommand implements \Siro\Core\Commands\CommandInterfa
             return 1;
         }
 
+        if ((int) $port < 1 || (int) $port > 65535) {
+            $this->write('  Invalid port.');
+            return 1;
+        }
+
         if ($useDocker) {
+            if (!ctype_digit($dockerPort) || (int) $dockerPort < 1 || (int) $dockerPort > 65535) {
+                $this->write('  Invalid docker port.');
+                return 1;
+            }
+
             return $this->runDocker($dockerPort);
         }
 
