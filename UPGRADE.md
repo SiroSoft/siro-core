@@ -11,7 +11,7 @@ against v0.41.x continues to work unchanged.
 
 ---
 
-## v1.4.2 → v1.5.0 (unreleased)
+## v1.4.2 → v1.5.0 (2026-11-27)
 
 **There are no breaking changes from v1.4.2 to v1.5.0.** All features below
 are opt-in: the legacy error envelope stays the default, the old flat
