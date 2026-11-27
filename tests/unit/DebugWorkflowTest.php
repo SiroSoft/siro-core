@@ -393,6 +393,23 @@ PHP;
         $this->assertStringContainsString('SELECT', $output);
     }
 
+    public function testDbWhyAcceptsExplainFlag(): void
+    {
+        // '--explain' is a no-op for backward compat (db:explain forwards here).
+        // It must not be treated as the query hash.
+        [$exit, $output] = $this->runCmd(DbWhyCommand::class, ['--explain', '--query=SELECT * FROM users']);
+        $this->assertSame(0, $exit);
+        $this->assertStringContainsString('SELECT', $output);
+    }
+
+    public function testDbWhyExplainFlagAloneShowsUsage(): void
+    {
+        // '--explain' alone → stripped → no args → usage, not "No traces".
+        [$exit, $output] = $this->runCmd(DbWhyCommand::class, ['--explain']);
+        $this->assertSame(1, $exit);
+        $this->assertStringContainsString('Usage', $output);
+    }
+
     public function testDbWhySlow(): void
     {
         $this->writeTrace('w8', [

@@ -213,6 +213,40 @@ final class MakeCrudCommandTest extends TestCase
         [$exit, $output] = $this->runCmd(['member', '--seed']);
         $this->assertSame(0, $exit);
         $this->assertStringContainsString('db:seed', $output);
+        // --seed must generate a real seeder, not just print the hint
+        $seeder = $this->basePath . '/database/seeds/MemberSeeder.php';
+        $this->assertFileExists($seeder);
+        $content = (string) file_get_contents($seeder);
+        $this->assertStringContainsString('final class MemberSeeder', $content);
+        $this->assertStringContainsString("Database::table('members')->insertMany", $content);
+    }
+
+    public function testNoSeederWithoutSeedFlag(): void
+    {
+        [$exit, $output] = $this->runCmd(['member']);
+        $this->assertSame(0, $exit);
+        $this->assertFileDoesNotExist($this->basePath . '/database/seeds/MemberSeeder.php');
+    }
+
+    public function testMigrationHasFillableColumns(): void
+    {
+        [$exit, $output] = $this->runCmd(['product']);
+        $this->assertSame(0, $exit, $output);
+        $migrations = glob($this->basePath . '/database/migrations/*_create_products_table.php');
+        $this->assertNotEmpty($migrations);
+        $migration = (string) file_get_contents((string) $migrations[0]);
+        // Columns must match the generated Model's $fillable (name is hardcoded)
+        $this->assertStringContainsString("\$t->string('name');", $migration);
+        $this->assertStringContainsString("\$t->string('email')->nullable();", $migration);
+        $this->assertStringContainsString("\$t->string('phone')->nullable();", $migration);
+        $this->assertStringContainsString("\$t->string('status')->default('active');", $migration);
+        $this->assertStringContainsString("\$t->text('description')->nullable();", $migration);
+        $this->assertStringContainsString("\$t->string('category')->nullable();", $migration);
+        $this->assertStringContainsString("\$t->string('sku')->nullable();", $migration);
+        $this->assertStringContainsString("\$t->decimal('price', 10, 2)->default(0);", $migration);
+        $this->assertStringContainsString("\$t->string('address')->nullable();", $migration);
+        $this->assertStringContainsString("\$t->string('city')->nullable();", $migration);
+        $this->assertStringContainsString("\$t->text('notes')->nullable();", $migration);
     }
 
     public function testOverwriteDeclinedSkipsFiles(): void

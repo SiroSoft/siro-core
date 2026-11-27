@@ -101,6 +101,13 @@ final class MakeCrudCommand implements \Siro\Core\Commands\CommandInterface
             $ok = false;
         }
 
+        // 9. Seeder (only with --seed)
+        if ($withSeed) {
+            if (!$this->generateSeeder($model, $table)) {
+                $ok = false;
+            }
+        }
+
         $this->write('');
         if ($ok) {
             $this->write('');
@@ -234,7 +241,64 @@ PHP);
 
     private function detectColumns(string $model): string
     {
-        return '';
+        // Columns matching the generated Model's $fillable (see generateModel).
+        // 'name' is already emitted by the migration template, so it is not
+        // repeated here. Every other fillable field gets a column, otherwise
+        // the generated controller's store/update would fail on unknown columns.
+        $lines = [
+            "\$t->string('email')->nullable();",
+            "\$t->string('phone')->nullable();",
+            "\$t->string('status')->default('active');",
+            "\$t->text('description')->nullable();",
+            "\$t->string('category')->nullable();",
+            "\$t->string('sku')->nullable();",
+            "\$t->decimal('price', 10, 2)->default(0);",
+            "\$t->string('address')->nullable();",
+            "\$t->string('city')->nullable();",
+            "\$t->text('notes')->nullable();",
+        ];
+
+        return implode("\n            ", $lines);
+    }
+
+    private function generateSeeder(string $model, string $table): bool
+    {
+        $className = $model . 'Seeder';
+        $path = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds' . DIRECTORY_SEPARATOR . $className . '.php';
+
+        if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
+            $this->write('Skipped: database/seeds/' . $className . '.php');
+            return false;
+        }
+
+        if (!is_dir(dirname($path))) {
+            mkdir(dirname($path), 0775, true);
+        }
+
+        file_put_contents($path, <<<PHP
+<?php
+
+declare(strict_types=1);
+
+use Siro\Core\Database;
+
+final class {$className}
+{
+    public function run(): void
+    {
+        \$now = date('Y-m-d H:i:s');
+
+        Database::table('{$table}')->insertMany([
+            ['name' => 'Sample {$model} 1', 'email' => 'sample1@example.com', 'status' => 'active', 'created_at' => \$now, 'updated_at' => \$now],
+            ['name' => 'Sample {$model} 2', 'email' => 'sample2@example.com', 'status' => 'active', 'created_at' => \$now, 'updated_at' => \$now],
+            ['name' => 'Sample {$model} 3', 'email' => 'sample3@example.com', 'status' => 'inactive', 'created_at' => \$now, 'updated_at' => \$now],
+        ]);
+    }
+}
+
+PHP);
+        $this->write('Generated: database/seeds/' . $className . '.php');
+        return true;
     }
 
     private function generateController(string $class, string $model, string $resource, string $serviceName, bool $withoutService): bool

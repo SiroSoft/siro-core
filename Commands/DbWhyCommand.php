@@ -28,6 +28,10 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
+        // '--explain' is accepted for backward compatibility (db:explain
+        // forwards here); it is a no-op — db:why IS the explain command.
+        $args = array_values(array_filter($args, static fn(string $a): bool => $a !== '--explain'));
+
         $queryHash = trim((string) ($args[0] ?? ''));
         $listSlow = in_array('--slow', $args, true);
 
