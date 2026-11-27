@@ -2,6 +2,20 @@
 
 ## v1.5.0 (2026-11-27)
 
+### Fixed
+- OAuth2 authorize (O2, re-score 27/11): a wrong `redirect_uri` on
+  `GET /oauth/authorize` no longer escapes as a 500. New bridge helper
+  `AuthorizationServer::authorizationErrorResponse()` converts a League
+  `OAuthServerException` into the proper OAuth error response (401
+  `invalid_client`, no redirect to the unregistered URI, RFC 6749
+  §4.1.2.1); the `docs/OAUTH2.md` authorize example and the
+  `tests/fixtures/oauth2-app` route now wrap validate/complete in
+  try/catch using it. Regression tests: unit + real-HTTP E2E.
+- `make:openapi` (O3, re-score 27/11): when route files exist but nothing
+  could be read (broken routes file, failed boot, empty static fallback)
+  the command now exits 1 and writes no spec, instead of exiting 0 with
+  an empty 0-endpoint spec. Regression test added.
+
 ### Added
 - OAuth2 partner authentication (G2, v1.5.0): optional bridge over
   `league/oauth2-server` 9.x (`suggest` + `require-dev`, `class_exists`

@@ -64,6 +64,19 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $routes = $this->loadRoutes();
+
+        // O3: routes files exist but nothing could be read (broken routes
+        // file, failed boot, empty static fallback) — a 0-endpoint spec is
+        // not a success. Fail loudly and write nothing instead of exiting 0
+        // with an empty spec the operator may not notice.
+        if ($routes === [] && $this->routesFilesExist()) {
+            $this->write('  Error: Could not read any routes — route files exist but');
+            $this->write('  the app could not be booted to read them and the static');
+            $this->write('  fallback found nothing. Fix the routes/bootstrap issue');
+            $this->write('  and re-run; no spec was written.');
+            return 1;
+        }
+
         $this->buildCoreSchemas();
 
         $paths = [];
@@ -197,6 +210,19 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         return $routes !== [] ? $routes : $this->buildFallbackRoutes();
+    }
+
+    /**
+     * True when at least one route file exists in the routes directory
+     * (honours --routes-dir). Distinguishes "the app has no routes" from
+     * "routes exist but could not be read" (O3).
+     */
+    private function routesFilesExist(): bool
+    {
+        $routesDir = $this->routesDir !== null
+            ? $this->routesDir
+            : $this->basePath . DIRECTORY_SEPARATOR . 'routes';
+        return (glob($routesDir . DIRECTORY_SEPARATOR . '*.php') ?: []) !== [];
     }
 
     private function resolveHandler(mixed $handler): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Siro\Core\Tests\Unit;
 
+use League\OAuth2\Server\Exception\OAuthServerException;
 use PHPUnit\Framework\TestCase;
 use Siro\Core\Auth\JWT;
 use Siro\Core\Auth\OAuth2\AuthorizationServer;
@@ -260,6 +261,35 @@ final class AuthOAuth2Test extends TestCase
         $claims = self::decodeJwtPayload($accessToken);
         $this->assertSame('1', (string) ($claims['sub'] ?? ''));
         $this->assertSame(['read'], $claims['scopes'] ?? null);
+    }
+
+    public function testAuthorizeWrongRedirectUriReturnsOAuthErrorNot500(): void
+    {
+        // O2: a wrong redirect_uri must answer with the proper OAuth error
+        // (401 invalid_client, no redirect to the unregistered URI) — never
+        // a 500 from an uncaught OAuthServerException.
+        [, $challenge] = self::pkcePair();
+        try {
+            AuthorizationServer::validateAuthorizationRequest(new Request(
+                'GET',
+                '/oauth/authorize',
+                [
+                    'response_type' => 'code',
+                    'client_id' => $this->oauthPublicClient['client_id'],
+                    'redirect_uri' => 'https://evil.example/cb',
+                    'scope' => 'read',
+                    'state' => 'xyz',
+                    'code_challenge' => $challenge,
+                    'code_challenge_method' => 'S256',
+                ],
+            ));
+            $this->fail('Expected OAuthServerException for unregistered redirect_uri');
+        } catch (OAuthServerException $e) {
+            $response = AuthorizationServer::authorizationErrorResponse($e);
+        }
+        $this->assertSame(401, $response->statusCode());
+        $this->assertSame('invalid_client', $this->oauthTokenPayload($response)['error'] ?? null);
+        $this->assertArrayNotHasKey('Location', $response->headers());
     }
 
     public function testRefreshTokenGrantRotates(): void

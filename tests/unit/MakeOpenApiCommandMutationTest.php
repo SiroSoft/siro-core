@@ -169,6 +169,23 @@ final class MakeOpenApiCommandMutationTest extends TestCase
         $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' . DIRECTORY_SEPARATOR . 'openapi.json');
     }
 
+    public function testBrokenRoutesExitNonZeroWithoutSpec(): void
+    {
+        // O3: routes file exists but throws when loaded, and no controllers
+        // exist so the static fallback also yields nothing. Must fail loudly
+        // (exit 1, no spec written) instead of exiting 0 with an empty spec.
+        file_put_contents(
+            $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php',
+            "<?php\nthrow new RuntimeException('boom: routes are broken');\n"
+        );
+        $cmd = new MakeOpenApiCommand($this->basePath);
+        ob_start();
+        $code = $cmd->run(['--force']);
+        ob_end_clean();
+        $this->assertSame(1, $code);
+        $this->assertFileDoesNotExist($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' . DIRECTORY_SEPARATOR . 'openapi.json');
+    }
+
     public function testOpenApiEnabledViaEnv(): void
     {
         putenv('SIRO_OPENAPI_ENABLED=1');

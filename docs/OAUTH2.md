@@ -84,9 +84,17 @@ Router::registerMiddlewareAlias('oauth', \Siro\Core\Middleware\OAuthScopeMiddlew
 $router->post('/oauth/token', fn (Request $r) => AuthorizationServer::handleTokenRequest($r));
 $router->post('/oauth/revoke', fn (Request $r) => AuthorizationServer::handleRevokeRequest($r));
 $router->get('/oauth/authorize', function (Request $request) {
-    // Your own approval screen here; then:
-    $authRequest = AuthorizationServer::validateAuthorizationRequest($request);
-    return AuthorizationServer::completeAuthorizationRequest($authRequest, $userId, $approved);
+    try {
+        // Your own approval screen here; then:
+        $authRequest = AuthorizationServer::validateAuthorizationRequest($request);
+        return AuthorizationServer::completeAuthorizationRequest($authRequest, $userId, $approved);
+    } catch (\League\OAuth2\Server\Exception\OAuthServerException $e) {
+        // Wrong redirect_uri, unknown client, bad scope, ... — answer with
+        // the proper OAuth error (401 invalid_client etc.) instead of a 500.
+        // Never redirect to the requested URI here: it is unregistered
+        // (RFC 6749 §4.1.2.1), and the helper answers directly.
+        return AuthorizationServer::authorizationErrorResponse($e);
+    }
 });
 
 $router->get('/api/partner/data', [PartnerController::class, 'data'], ['oauth:read']);

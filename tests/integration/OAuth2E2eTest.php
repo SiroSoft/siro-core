@@ -358,6 +358,27 @@ final class OAuth2E2eTest extends TestCase
         $this->assertNotSame('', (string) ($token['json']['access_token'] ?? ''));
     }
 
+    public function testAuthorizeWrongRedirectUriReturnsOAuthErrorNot500(): void
+    {
+        // O2 over real HTTP: the fixture authorize route (docs/OAUTH2.md
+        // pattern) must answer 401 invalid_client — never a 500 — and never
+        // redirect to the unregistered URI.
+        [, $challenge] = self::pkcePair();
+        $auth = $this->http('GET', '/oauth/authorize', [
+            'response_type' => 'code',
+            'client_id' => self::$publicClient['client_id'],
+            'redirect_uri' => 'https://evil.example/cb',
+            'scope' => 'read',
+            'state' => 'xyz',
+            'code_challenge' => $challenge,
+            'code_challenge_method' => 'S256',
+            'auto_approve' => '1',
+        ]);
+        $this->assertSame(401, $auth['status'], $auth['body']);
+        $this->assertSame('invalid_client', $auth['json']['error'] ?? null);
+        $this->assertStringNotContainsString('evil.example', $auth['headers']['location'] ?? '');
+    }
+
     public function testRefreshTokenFlowEndToEnd(): void
     {
         [, $refreshToken] = $this->issueAuthCodeTokens();
