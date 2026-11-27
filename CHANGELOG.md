@@ -1,6 +1,6 @@
 # Changelog — siro-core
 
-## v1.5.0 (2026-11-27)
+## v1.5.1 (2026-11-28)
 
 ### Fixed
 - OAuth2 authorize (O2, re-score 27/11): a wrong `redirect_uri` on
@@ -15,6 +15,36 @@
   could be read (broken routes file, failed boot, empty static fallback)
   the command now exits 1 and writes no spec, instead of exiting 0 with
   an empty 0-endpoint spec. Regression test added.
+- CLI command counts: `CliTest` / `CommandSmokeAllTest` asserted 96 commands;
+  v1.5.0 ships 102 — updated to 102 (make: 29).
+- `make:crud --seed` now generates a real `database/seeds/{Model}Seeder.php`
+  (insertMany, 3 sample rows); generated migration now includes all
+  `$fillable` columns, not just `name`; `db:explain` forwards to
+  `DbWhyCommand` (real EXPLAIN, correct exit code) and `db:why` accepts
+  `--explain` as a no-op.
+- CLI usage strings list all parsed flags (`make:openapi`,
+  `make:oauth-client`, `log:replay`, `make:crud --force`); `log:top` dead
+  variable removed. New commands: `schedule:list`, `route:cache`
+  (102 commands total). `docs/CLI.md` refreshed to all 102 commands.
+- CLI smoke-test fixes (50 mismatches found by a runtime smoke test of all
+  102 commands, ~500 runs): off-by-one `substr()` parsing fixed for
+  `--limit=` / `--method=` (4 dead flags); `api:test` now exits non-zero on
+  HTTP 4xx/5xx; `--collection-save` actually saves; bare `--login` logs in;
+  `test:run` adds `--no-coverage` by default; `queue:work --tries` /
+  `--daemon` honored; SIGTERM handling for `live`, `log:tail --follow`,
+  `api:test --watch` / `--webhook`, `queue:work --daemon`, `benchmark`;
+  `env:cache` / `optimize` refuse to write a cache without a valid APP_KEY;
+  `env:switch` no longer silently reverts `.env`; `webhook:test` job
+  auto-registered + opt-in SSRF bypass for private IPs; `route:rules` no
+  longer leaks rules across methods; `make:openapi` fallback no longer emits
+  phantom routes (`App::loadRoutes()` defines `$schedule`); `--host=` with a
+  scheme no longer doubles it; `log:export <trace_id>` exports only that
+  trace; `help <command>` shows that command's help.
+- Flaky test fix: `PenetrationTest::testEncrypterTamperDetectionBitFlip`
+  used two independent `random_int()` calls (~1/256 chance the flipped byte
+  equaled the original) — now uses one shared random index.
+
+## v1.5.0 (2026-11-27)
 
 ### Added
 - OAuth2 partner authentication (G2, v1.5.0): optional bridge over
