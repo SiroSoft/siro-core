@@ -38,6 +38,13 @@ final class DbRestoreCommand implements \Siro\Core\Commands\CommandInterface
             return 1;
         }
 
+        // DB-M3: a relative backup path is resolved against the project
+        // root first (e.g. the relative path db:backup prints), falling
+        // back to the process working directory. Previously file_exists()
+        // was called on the raw argument, so a path that exists under
+        // BASE_PATH was reported as "not found" from any other CWD.
+        $backupFile = $this->resolveBackupPath($backupFile);
+
         if (!file_exists($backupFile)) {
             $this->write('  ❌ Backup file not found: ' . $backupFile);
             return 1;
@@ -90,6 +97,32 @@ final class DbRestoreCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('');
 
         return $result['success'] ? 0 : 1;
+    }
+
+    /**
+     * Resolve a backup path: absolute paths pass through unchanged;
+     * relative paths are tried against the project root first, then
+     * left as-is so the existing file_exists() check falls back to
+     * the process working directory.
+     */
+    private function resolveBackupPath(string $path): string
+    {
+        if ($this->isAbsolutePath($path)) {
+            return $path;
+        }
+        $candidate = rtrim($this->basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $path;
+        if (file_exists($candidate)) {
+            return $candidate;
+        }
+        return $path;
+    }
+
+    private function isAbsolutePath(string $path): bool
+    {
+        if ($path !== '' && ($path[0] === '/' || $path[0] === '\\')) {
+            return true;
+        }
+        return (bool) preg_match('/^[A-Za-z]:[\\\\\\/]/', $path);
     }
 
     /** @return array<string, mixed> */

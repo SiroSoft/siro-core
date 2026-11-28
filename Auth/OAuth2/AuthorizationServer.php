@@ -427,6 +427,25 @@ final class AuthorizationServer
     }
 
     /**
+     * Convert a league OAuthServerException (e.g. a wrong redirect_uri on the
+     * authorize endpoint) into a proper framework error response.
+     *
+     * RFC 6749 §4.1.2.1: when the redirect_uri is invalid the server MUST NOT
+     * redirect — it answers the resource owner directly. League's
+     * generateHttpResponse() does exactly that (a 401 invalid_client JSON
+     * body when there is no safe redirect target), so this helper only adapts
+     * it to a framework Response. Wrap the authorize route in try/catch and
+     * return this — see docs/OAUTH2.md — otherwise the exception escapes as
+     * a 500 (O2).
+     */
+    public static function authorizationErrorResponse(OAuthServerException $e): Response
+    {
+        return self::frameworkResponseFromPsr(
+            $e->generateHttpResponse(new DiactorosResponse()),
+        );
+    }
+
+    /**
      * Authenticate an OAuth2 client from Basic auth or the request body.
      *
      * @return array{client_id: string}|null

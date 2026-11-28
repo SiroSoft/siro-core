@@ -4,6 +4,25 @@ declare(strict_types=1);
 
 namespace Siro\Core\Commands;
 
+/**
+ * Run the PHPUnit test suite (legacy passthrough runner).
+ *
+ * Forwards whitelisted flags (including --filter=, --testsuite=,
+ * --testdox, --debug) plus positional paths to PHPUnit. Runs from the
+ * project root (chdir to basePath) so phpunit.xml is discovered even
+ * when the caller runs from another directory (TQ-M9).
+ *
+ * Coverage is OFF by default (TQ-M14): phpunit.xml scaffolds ship a
+ * <coverage> block, so without --no-coverage PHPUnit 13 tries to enable
+ * coverage and runs 0 tests when no driver (xdebug/pcov) is installed.
+ * Pass any --coverage* flag to opt back into coverage.
+ *
+ * Usage:
+ *   php siro test:run [--filter=name] [--testsuite=Cli] [--testdox]
+ *     [--stop-on-failure] [--group=x] [--no-coverage] [path...]
+ *
+ * @package Siro\Core\Commands
+ */
 final class TestRunCommand implements \Siro\Core\Commands\CommandInterface
 {
     use CommandSupport;
@@ -35,7 +54,8 @@ final class TestRunCommand implements \Siro\Core\Commands\CommandInterface
 
         $allowedPassthruFlags = ['--filter=', '--testsuite=', '--stop-on-failure', '--stop-on-error', '--group=',
             '--exclude-group=', '--colors=', '--testdox', '--prepend=', '--coverage-html=', '--coverage-text=',
-            '--coverage-clover=', '--log-junit=', '--debug', '--no-configuration', '--bootstrap=', '-c', '--configuration='];
+            '--coverage-clover=', '--log-junit=', '--debug', '--no-configuration', '--bootstrap=', '-c', '--configuration=',
+            '--no-coverage'];
 
         // Parse flags, forward only whitelisted ones to PHPUnit
         foreach ($args as $arg) {
@@ -64,6 +84,30 @@ final class TestRunCommand implements \Siro\Core\Commands\CommandInterface
                     $hasSuite = true;
                 }
             }
+        }
+
+        // --no-coverage by default (TQ-M14): without it, a phpunit.xml
+        // <coverage> block makes PHPUnit 13 try coverage and run 0 tests
+        // when no driver is installed. Only skip it when the user asked
+        // for coverage output, or already passed --no-coverage.
+        $wantsCoverage = false;
+        $hasNoCoverage = false;
+        foreach ($passthru as $flag) {
+            if (str_starts_with($flag, '--coverage')) {
+                $wantsCoverage = true;
+            }
+            if ($flag === '--no-coverage') {
+                $hasNoCoverage = true;
+            }
+        }
+        if (!$wantsCoverage && !$hasNoCoverage) {
+            array_unshift($passthru, '--no-coverage');
+        }
+
+        // Run from the project root (TQ-M9): phpunit discovers
+        // phpunit.xml (and relative test paths) from the cwd.
+        if (is_dir($this->basePath)) {
+            chdir($this->basePath);
         }
 
         $this->write("  \033[1;33mPHPUnit Test Suite\033[0m");

@@ -31,6 +31,12 @@ final class Schedule
         return $task;
     }
 
+    /** @return ScheduleTask[] */
+    public function tasks(): array
+    {
+        return $this->tasks;
+    }
+
     public function run(string $basePath): void
     {
         $now = time();

@@ -69,8 +69,6 @@ final class LogTopCommand implements \Siro\Core\Commands\CommandInterface
             return 0;
         }
 
-        $sortBy = $args[1] ?? 'total';
-
         $sorted = array_values($aggregated);
         usort($sorted, fn (array $a, array $b): int => $b['total_ms'] <=> $a['total_ms']);
 

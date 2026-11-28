@@ -111,6 +111,12 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
         if (is_array($middleware) && $middleware !== []) {
             $this->write('  ' . self::BOLD . 'Middleware Pipeline' . self::RESET);
             $mwCount = count($middleware);
+            // Trace times are inclusive (each entry wraps everything inside it)
+            // and recorded inner-first, so an entry's own cost is the increment
+            // over the previous entry. Flagging the inclusive time marks every
+            // middleware "slow" on any slow request, so the slow flag and the
+            // displayed time both use own cost here.
+            $prevTime = 0.0;
             foreach ($middleware as $idx => $mw) {
                 if (!is_array($mw)) {
                     continue;
@@ -118,11 +124,13 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
                 $mwName = $this->safeStr(is_string($mw['name'] ?? null) ? $mw['name'] : '?');
                 $mwPassed = (bool) ($mw['passed'] ?? true);
                 $mwTime = is_numeric($mw['time_ms'] ?? null) ? (float) $mw['time_ms'] : 0.0;
+                $ownTime = max(0.0, $mwTime - $prevTime);
+                $prevTime = $mwTime;
 
                 $connector = ($idx < $mwCount - 1) ? '├' : '└';
                 $icon = $mwPassed ? self::GREEN . '✓' : self::RED . '✗';
-                $timeStr = sprintf('%.1fms', $mwTime);
-                $slowMark = $mwTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
+                $timeStr = sprintf('%.1fms', $ownTime);
+                $slowMark = $ownTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
                 $lineColor = !$mwPassed ? self::RED : self::GRAY;
                 $this->write("    " . $lineColor . $connector . " " . $icon . self::RESET . " " . $mwName . " "
                     . self::GRAY . $timeStr . self::RESET . $slowMark);

@@ -11,6 +11,9 @@ namespace Siro\Core\Commands;
  * from the public/ directory. Shows quick test and debug
  * commands after startup.
  *
+ * Usage:
+ *   php siro serve [--host=<host>] [--port=8080] [host] [port]
+ *
  * @package Siro\Core\Commands
  */
 final class ServeCommand implements \Siro\Core\Commands\CommandInterface
@@ -45,6 +48,11 @@ final class ServeCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         if (!ctype_digit($port)) {
+            $this->write('Invalid port.');
+            return 1;
+        }
+
+        if ((int) $port < 1 || (int) $port > 65535) {
             $this->write('Invalid port.');
             return 1;
         }

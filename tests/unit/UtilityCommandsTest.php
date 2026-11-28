@@ -146,9 +146,21 @@ final class UtilityCommandsTest extends TestCase
 
     public function testDbExplain(): void
     {
+        // db:explain forwards to db:why: no args → db:why usage, exit 1
         [$exit, $output] = $this->runCmd(\Siro\Core\Commands\DbExplainCommand::class, []);
-        $this->assertSame(0, $exit);
+        $this->assertSame(1, $exit);
+        $this->assertStringContainsString('deprecated', $output);
         $this->assertStringContainsString('db:why', $output);
+        $this->assertStringContainsString('Usage', $output);
+    }
+
+    public function testDbExplainForwardsQuery(): void
+    {
+        // db:explain --query=... must actually run the EXPLAIN via db:why
+        [$exit, $output] = $this->runCmd(\Siro\Core\Commands\DbExplainCommand::class, ['--query=SELECT * FROM users']);
+        $this->assertSame(0, $exit);
+        $this->assertStringContainsString('deprecated', $output);
+        $this->assertStringContainsString('SELECT', $output);
     }
 
     public function testSlowLogNoTraces(): void

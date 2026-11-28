@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Siro\Core\Commands;
 
 /**
- * Redirect to db:why --explain.
- *
- * @deprecated Use `php siro db:why --explain` instead.
+ * @deprecated Use `php siro db:why <query_hash>` or `php siro db:why --query="SELECT ..."` instead.
+ * This command forwards to DbWhyCommand (which runs EXPLAIN) instead of
+ * printing a hint and exiting 0 without doing anything.
  */
 final class DbExplainCommand implements \Siro\Core\Commands\CommandInterface
 {
@@ -21,15 +21,9 @@ final class DbExplainCommand implements \Siro\Core\Commands\CommandInterface
     public function run(array $args): int
     {
         $this->write('');
-        $this->write('  db:explain has been merged into db:why');
-        $this->write('  Use: ' . "\033[36mphp siro db:why --query=\"SELECT ...\"\033[0m");
+        $this->write('  db:explain is deprecated — running db:why instead.');
         $this->write('');
 
-        $storage = $this->basePath . DIRECTORY_SEPARATOR . 'storage';
-        if (!is_dir($storage)) {
-            $this->write('  (project storage not found at ' . $storage . ')');
-        }
-
-        return 0;
+        return (new DbWhyCommand($this->basePath))->run($args);
     }
 }

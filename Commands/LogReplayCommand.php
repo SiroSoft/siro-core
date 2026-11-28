@@ -54,7 +54,24 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
     /** @param array<int, string> $args */
     public function run(array $args): int
     {
-        $traceId = trim((string) ($args[0] ?? ''));
+        // Trace id = first positional arg, wherever it appears — flags may
+        // come first (`log:replay --dry-run <id>`), like log:trace/log:export.
+        // (Previously $args[0] was used verbatim, so a leading flag was
+        // treated as the id: "Trace not found: --dry-run".)
+        // The value consumed by a space-separated `--set key=val` is skipped.
+        $traceId = '';
+        $argsCount = count($args);
+        for ($i = 0; $i < $argsCount; $i++) {
+            $arg = $args[$i];
+            if ($arg === '--set' && isset($args[$i + 1])) {
+                $i++;
+                continue;
+            }
+            if ($arg !== '' && !str_starts_with($arg, '--')) {
+                $traceId = trim($arg);
+                break;
+            }
+        }
         $format = 'curl';
         $force = false;
         $editMode = false;
@@ -381,6 +398,10 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
             $this->write('  Body:   ' . $body);
             $this->write('  Auth:   Bearer [token present]');
             $this->write('  ' . str_repeat('-', 40));
+            // Honour --format here too: previously the branch returned before
+            // outputCommand(), so --format=httpie was silently ignored.
+            // (Same pattern as the production auto-dry-run branch below.)
+            $this->outputCommand($format, $method, $url, $body, $headers, $auth, $data);
             $this->write('  To execute: php siro replay ' . $traceId);
             return 0;
         }
@@ -921,8 +942,11 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
     private function outputHttpie(string $method, string $url, string $body, array $headers, string $auth): void
     {
         $this->write('');
-        $httpMethod = $method === 'GET' ? '' : $method;
-        $parts = ['http', strtolower($httpMethod), $url];
+        $parts = ['http'];
+        if ($method !== 'GET') {
+            $parts[] = strtolower($method);
+        }
+        $parts[] = $url;
         foreach ($headers as $k => $v) {
             $lk = strtolower((string) $k);
             if ($lk === 'host' || $lk === 'content-length') {

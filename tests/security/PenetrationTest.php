@@ -422,9 +422,11 @@ final class PenetrationTest extends TestCase
 
         $decoded = base64_decode($encrypted, true);
         $this->assertNotFalse($decoded);
-        $decoded[random_int(16, strlen($decoded) - 1)] = chr(
-            ord($decoded[random_int(16, strlen($decoded) - 1)]) ^ 1
-        );
+        // One shared random index: two independent random_int() calls could
+        // pick different positions, and the flipped byte could coincidentally
+        // equal the original byte (~1/256), making the test flaky.
+        $index = random_int(16, strlen($decoded) - 1);
+        $decoded[$index] = chr(ord($decoded[$index]) ^ 1);
         $tampered = base64_encode($decoded);
 
         $this->expectException(\RuntimeException::class);

@@ -213,6 +213,14 @@ final class App
     {
         $app = $this;
         $router = $this->router;
+        // Route files may use any of the three context variables the
+        // framework documents: $app / $router (HTTP routes) and
+        // $schedule (routes/schedule.php, see ScheduleRunCommand).
+        // loadRoutes() is called with EVERY file in routes/*.php by
+        // MakeOpenApiCommand / ApiContractCommand, so a schedule file
+        // that calls $schedule->command(...) must not fatal here with
+        // "Call to a member function command() on null" (S-07).
+        $schedule = new Schedule();
 
         $cacheFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR
             . 'framework' . DIRECTORY_SEPARATOR . 'routes.php';

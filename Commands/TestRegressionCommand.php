@@ -29,7 +29,7 @@ final class TestRegressionCommand implements \Siro\Core\Commands\CommandInterfac
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--limit=')) {
-                $limit = max(1, (int) substr($arg, 7));
+                $limit = max(1, (int) substr($arg, 8));
             } elseif (str_starts_with($arg, '--status=')) {
                 $statusFilter = (int) substr($arg, 9);
             } elseif ($arg === '--fail') {

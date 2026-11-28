@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Siro\Core;
 
 use Siro\Core\Queue\RedisQueueDriver;
+use Siro\Core\Webhook\WebhookDeliveryJob;
 use Throwable;
 
 /**
@@ -56,6 +57,12 @@ final class Queue
     {
         if (!isset(self::$allowedJobs[SendMailJob::class])) {
             self::$allowedJobs[SendMailJob::class] = true;
+        }
+        // Core webhook deliveries must work out of the box: webhook:test
+        // queues this job, and a skeleton app has no app/Jobs class to
+        // trigger App's auto-registration for it.
+        if (!isset(self::$allowedJobs[WebhookDeliveryJob::class])) {
+            self::$allowedJobs[WebhookDeliveryJob::class] = true;
         }
     }
 

@@ -163,12 +163,20 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface
         $authHeaderVar = $hasAuth ? "\n        \$headers = \$this->authenticate();" : '';
         $authArg = $hasAuth ? ', $headers' : '';
 
-        // Generate assertJsonStructure calls
+        // Emit assertions for the response keys that survived --ignore
+        // (extractKeys() above already dropped the ignored ones).
+        // Each key becomes an assertArrayHasKey() so --ignore visibly
+        // changes the generated test; 'success'/'message' are already
+        // asserted in the template body below.
         $assertStructure = '';
         if ($responseKeys !== []) {
-            $keysStr = var_export($responseKeys, true);
-            $indented = str_replace("\n", "\n        ", $keysStr);
             $assertStructure = "\n        \$response->assertJsonPath('success', " . ($status < 400 ? 'true' : 'false') . ");";
+            foreach (array_keys($responseKeys) as $responseKey) {
+                if ($responseKey === 'success' || $responseKey === 'message') {
+                    continue;
+                }
+                $assertStructure .= "\n        \$this->assertArrayHasKey('" . addslashes((string) $responseKey) . "', \$body);";
+            }
         }
 
         $bodyArg = $bodyArray !== [] ? var_export($bodyArray, true) : '[]';

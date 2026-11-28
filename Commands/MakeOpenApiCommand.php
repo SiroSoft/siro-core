@@ -12,6 +12,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
 
     private string $basePath;
     private string $host = 'localhost:8080';
+    private string $hostScheme = 'http';
     private string $title = 'Siro API';
     private string $apiVersion = '1.0.0';
     private string $outputFile = '';
@@ -37,6 +38,21 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
     public function run(array $args): int
     {
         $this->parseArgs($args);
+
+        // Unknown --flow values used to be silently ignored and behave
+        // exactly like the default — fail fast instead, before writing
+        // a spec the user did not ask for.
+        if ($this->flowFilter !== null && !in_array(strtolower($this->flowFilter), ['auth', 'crud'], true)) {
+            $this->write("  Error: Invalid --flow value '{$this->flowFilter}'. Valid values: auth, crud.");
+            return 1;
+        }
+
+        // A relative --output= resolves against the project root, not
+        // the shell's working directory, so the spec never escapes
+        // the project.
+        if ($this->outputFile !== '' && !$this->isAbsolutePath($this->outputFile)) {
+            $this->outputFile = $this->basePath . DIRECTORY_SEPARATOR . $this->outputFile;
+        }
 
         // Fix 1: Production safety - disabled by default
         $envFile = $this->basePath . '/.env';
@@ -64,6 +80,19 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $routes = $this->loadRoutes();
+
+        // O3: routes files exist but nothing could be read (broken routes
+        // file, failed boot, empty static fallback) — a 0-endpoint spec is
+        // not a success. Fail loudly and write nothing instead of exiting 0
+        // with an empty spec the operator may not notice.
+        if ($routes === [] && $this->routesFilesExist()) {
+            $this->write('  Error: Could not read any routes — route files exist but');
+            $this->write('  the app could not be booted to read them and the static');
+            $this->write('  fallback found nothing. Fix the routes/bootstrap issue');
+            $this->write('  and re-run; no spec was written.');
+            return 1;
+        }
+
         $this->buildCoreSchemas();
 
         $paths = [];
@@ -84,7 +113,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
                 'license' => ['name' => 'MIT', 'url' => 'https://opensource.org/licenses/MIT'],
             ],
             'servers' => [
-                ['url' => 'http://' . $this->host, 'description' => 'Development'],
+                ['url' => $this->hostScheme . '://' . $this->host, 'description' => 'Development'],
             ],
             'tags' => $this->buildTagsList(),
             'paths' => $paths,
@@ -199,6 +228,19 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         return $routes !== [] ? $routes : $this->buildFallbackRoutes();
     }
 
+    /**
+     * True when at least one route file exists in the routes directory
+     * (honours --routes-dir). Distinguishes "the app has no routes" from
+     * "routes exist but could not be read" (O3).
+     */
+    private function routesFilesExist(): bool
+    {
+        $routesDir = $this->routesDir !== null
+            ? $this->routesDir
+            : $this->basePath . DIRECTORY_SEPARATOR . 'routes';
+        return (glob($routesDir . DIRECTORY_SEPARATOR . '*.php') ?: []) !== [];
+    }
+
     private function resolveHandler(mixed $handler): string
     {
         if (is_string($handler)) {
@@ -304,7 +346,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
 
     private function deriveTag(string $handler, string $path): string
     {
-        if (str_contains($path, '/auth/')) {
+        if ($this->isAuthPath($path)) {
             return 'Auth';
         }
         if (str_contains($path, '/health') || $path === '/') {
@@ -1272,6 +1314,17 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
     }
 
     /**
+     * True for auth paths, including the bare collection path
+     * (/api/auth) — not just nested ones (/api/auth/login).
+     * A plain str_contains($path, '/auth/') misses the bare path,
+     * which dropped GET/POST /api/auth from --flow=auth.
+     */
+    private function isAuthPath(string $path): bool
+    {
+        return str_contains($path, '/auth/') || str_ends_with($path, '/auth');
+    }
+
+    /**
      * @param array<string, mixed> $route
      */
     private function passesFilter(array $route): bool
@@ -1294,7 +1347,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         }
         if ($this->flowFilter !== null) {
             $flow = strtolower($this->flowFilter);
-            if ($flow === 'auth' && !str_contains($path, '/auth/')) {
+            if ($flow === 'auth' && !$this->isAuthPath($path)) {
                 return false;
             }
             if ($flow === 'crud' && !str_contains($path, '/api/')) {
@@ -1339,6 +1392,32 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         return $routes;
     }
 
+    private function isAbsolutePath(string $path): bool
+    {
+        return str_starts_with($path, '/')
+            || str_starts_with($path, '\\')
+            || (bool) preg_match('/^[A-Za-z]:[\\\\\\/]/', $path);
+    }
+
+    /**
+     * Accept `--host=` with or without a scheme. A leading http(s)://
+     * is stripped and remembered so the servers URL keeps the scheme
+     * the user asked for instead of doubling it (http://https://…).
+     */
+    private function setHost(string $host): void
+    {
+        $host = trim($host);
+        $lower = strtolower($host);
+        if (str_starts_with($lower, 'https://')) {
+            $this->hostScheme = 'https';
+            $host = substr($host, 8);
+        } elseif (str_starts_with($lower, 'http://')) {
+            $this->hostScheme = 'http';
+            $host = substr($host, 7);
+        }
+        $this->host = rtrim($host, '/');
+    }
+
     /**
      * @param array<int, string> $args
      */
@@ -1356,11 +1435,11 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
             } elseif (str_starts_with($arg, '--version=')) {
                 $this->apiVersion = substr($arg, 10);
             } elseif (str_starts_with($arg, '--host=')) {
-                $this->host = substr($arg, 7);
+                $this->setHost(substr($arg, 7));
             } elseif (str_starts_with($arg, '--tag=')) {
                 $this->tagFilter = substr($arg, 6);
             } elseif (str_starts_with($arg, '--method=')) {
-                $this->methodFilter = strtoupper(substr($arg, 8));
+                $this->methodFilter = strtoupper(substr($arg, 9));
             } elseif (str_starts_with($arg, '--path=')) {
                 $this->pathFilter = substr($arg, 7);
             } elseif (str_starts_with($arg, '--flow=')) {
@@ -1420,8 +1499,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $host = $this->host;
-        $this->write("  Swagger UI: http://{$host}/docs.html");
-        $this->write("  Swagger UI: http://{$host}/docs");
-        $this->write("  OpenAPI:    http://{$host}/openapi.json");
+        $scheme = $this->hostScheme;
+        $this->write("  Swagger UI: {$scheme}://{$host}/docs.html");
+        $this->write("  Swagger UI: {$scheme}://{$host}/docs");
+        $this->write("  OpenAPI:    {$scheme}://{$host}/openapi.json");
     }
 }

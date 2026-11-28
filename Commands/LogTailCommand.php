@@ -59,9 +59,21 @@ final class LogTailCommand implements \Siro\Core\Commands\CommandInterface
         if ($follow) {
             $this->write('');
             $this->write("  \033[33mWatching for new entries... (Ctrl+C to stop)\033[0m");
+            // Honor SIGTERM/SIGINT: Console::run() registers handlers, but
+            // they only run if signals are dispatched. Enable async signals
+            // when pcntl is available (guarded so non-pcntl builds keep
+            // working) and dispatch on every loop iteration, so `timeout`
+            // / Ctrl+C actually stops the follow loop instead of hanging
+            // until SIGKILL.
+            if (function_exists('pcntl_async_signals')) {
+                pcntl_async_signals(true);
+            }
             $lastSize = filesize($logFile);
             // @phpstan-ignore-next-line while.alwaysTrue
             while (true) {
+                if (function_exists('pcntl_signal_dispatch')) {
+                    pcntl_signal_dispatch();
+                }
                 clearstatcache(true, $logFile);
                 $currentSize = filesize($logFile);
                 if ($currentSize > $lastSize) {

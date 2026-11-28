@@ -11,6 +11,17 @@ against v0.41.x continues to work unchanged.
 
 ---
 
+## v1.5.0 → v1.5.1 (2026-11-28)
+
+**There are no breaking changes from v1.5.0 to v1.5.1.** This is a bug-fix
+patch: OAuth2 authorize error handling (O2), `make:openapi` empty-spec exit
+code (O3), CLI command-count assertions, `make:crud` seeder/migration fixes,
+`db:explain` forwarding, two new commands (`schedule:list`, `route:cache`),
+and 50 CLI runtime fixes from the full smoke test. No API changes; no
+migration needed.
+
+---
+
 ## v1.4.2 → v1.5.0 (2026-11-27)
 
 **There are no breaking changes from v1.4.2 to v1.5.0.** All features below
