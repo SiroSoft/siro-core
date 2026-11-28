@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Cache Stampede Baseline Test
  *
@@ -13,6 +11,8 @@ declare(strict_types=1);
  * BEFORE FIX: expect callback_executed ≈ workers (stampede)
  * AFTER FIX:  expect callback_executed = 1 (protected)
  */
+
+declare(strict_types=1);
 
 $workers = (int) ($argv[1] ?? 20);
 $testId = 'stampede_' . uniqid();

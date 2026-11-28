@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * SiroPHP B2 Pre-Flight Check
  *
@@ -12,6 +10,8 @@ declare(strict_types=1);
  *   php scripts/soak/preflight.php --target=http://localhost:8080
  *   php scripts/soak/preflight.php --target=http://localhost:8080 --redis-host=127.0.0.1
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__, 2);
 $targetUrl = null;
@@ -68,7 +68,11 @@ check('Git SHA', $gitSha !== 'unknown', "SHA: {$gitSha}");
 
 $gitStatusOutput = @shell_exec("cd \"{$basePath}\" && git status --porcelain -u 2>&1") ?: '';
 $workingTreeClean = trim($gitStatusOutput) === '' || str_contains($gitStatusOutput, 'not recognized');
-check('Working tree clean', $workingTreeClean, $workingTreeClean ? 'No uncommitted changes' : 'UNCOMMITTED CHANGES DETECTED');
+check(
+    'Working tree clean',
+    $workingTreeClean,
+    $workingTreeClean ? 'No uncommitted changes' : 'UNCOMMITTED CHANGES DETECTED'
+);
 
 $gitBranch = trim(@shell_exec("cd \"{$basePath}\" && git branch --show-current 2>&1") ?: 'unknown');
 if (str_contains($gitBranch, 'not recognized') || str_contains($gitBranch, 'cannot find')) {
@@ -93,10 +97,15 @@ check('Nginx running', $nginxRunning !== '', "Master PID: " . trim($nginxRunning
 
 // Check Nginx config for soak app
 $nginxConf = @shell_exec('nginx -T 2>/dev/null') ?: '';
-$hasSoakUpstream = str_contains($nginxConf, 'soak') || str_contains($nginxConf, '8080') || str_contains($nginxConf, 'php-fpm');
+$hasSoakUpstream = str_contains($nginxConf, 'soak')
+        || str_contains($nginxConf, '8080') || str_contains($nginxConf, 'php-fpm');
 $siteConf = @file_get_contents('/etc/nginx/sites-available/soak') ?: '';
 $hasFpmRef = str_contains($siteConf, 'fastcgi_pass') || str_contains($siteConf, 'soak');
-check('Nginx config references PHP-FPM', $hasFpmRef, $hasFpmRef ? 'Found fastcgi_pass/soak in sites-available/soak' : 'No FPM reference in nginx soak config');
+check(
+    'Nginx config references PHP-FPM',
+    $hasFpmRef,
+    $hasFpmRef ? 'Found fastcgi_pass/soak in sites-available/soak' : 'No FPM reference in nginx soak config'
+);
 echo "\n";
 
 // ── 3. PHP-FPM ──
@@ -123,7 +132,8 @@ if ($fpmRunning) {
     echo "      Master PID: " . ($masterPid ?: 'unknown') . "\n";
     echo "      Worker count: " . count($workerPids) . "\n";
     if ($workerPids) {
-        echo "      Worker PIDs: " . implode(', ', array_slice($workerPids, 0, 5)) . (count($workerPids) > 5 ? '...' : '') . "\n";
+        echo "      Worker PIDs: " . implode(', ', array_slice($workerPids, 0, 5))
+                . (count($workerPids) > 5 ? '...' : '') . "\n";
     }
     check('FPM master PID identified', $masterPid !== null, "PID: {$masterPid}");
     check('FPM workers present', count($workerPids) > 0, count($workerPids) . " workers");
@@ -133,7 +143,11 @@ if ($fpmRunning) {
 echo "\n=== OPcache ===\n";
 $opcacheCli = @shell_exec("php -r 'echo ini_get(\"opcache.enable\");' 2>/dev/null") ?: '';
 $opcacheEnabled = trim($opcacheCli) === '1';
-check('OPcache enabled (CLI)', $opcacheEnabled, $opcacheEnabled ? 'OPcache enabled in CLI' : 'OPcache disabled in CLI (check FPM config)');
+check(
+    'OPcache enabled (CLI)',
+    $opcacheEnabled,
+    $opcacheEnabled ? 'OPcache enabled in CLI' : 'OPcache disabled in CLI (check FPM config)'
+);
 echo "\n";
 
 // ── 4. PHP Version ──
@@ -144,7 +158,11 @@ check('PHP version', version_compare($phpVersion, '8.2.0', '>='), "PHP {$phpVers
 $extensions = get_loaded_extensions();
 $required = ['pdo', 'pdo_sqlite', 'json', 'mbstring', 'openssl', 'curl'];
 $missing = array_diff($required, array_map('strtolower', $extensions));
-check('Required extensions', empty($missing), $missing ? 'Missing: ' . implode(', ', $missing) : count($extensions) . ' loaded');
+check(
+    'Required extensions',
+    empty($missing),
+    $missing ? 'Missing: ' . implode(', ', $missing) : count($extensions) . ' loaded'
+);
 echo "\n";
 
 // ── 5. Redis ──
@@ -183,7 +201,11 @@ check('Sufficient disk space', $freeGB >= 2, "{$freeGB}GB free, {$usedPct}% used
 // Estimate 48h log growth (rough: ~100MB/day with trace + logs)
 $estimatedGrowthMB = 200 * 2; // 200MB/day * 2 days
 $estimatedGrowthBytes = $estimatedGrowthMB * 1024 * 1024;
-check('Disk survives 48h estimate', $freeBytes > $estimatedGrowthBytes, "Estimated 48h growth: ~{$estimatedGrowthMB}MB, free: {$freeGB}GB");
+check(
+    'Disk survives 48h estimate',
+    $freeBytes > $estimatedGrowthBytes,
+    "Estimated 48h growth: ~{$estimatedGrowthMB}MB, free: {$freeGB}GB"
+);
 echo "\n";
 
 // ── 7. Database ──

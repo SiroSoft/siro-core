@@ -64,7 +64,8 @@ foreach ($phpFiles as $file) {
     $namespace = $nsMatch[1] ?? '';
 
     // Extract class
-    preg_match_all('/(?:abstract\s+|final\s+)?class\s+(\w+)(?:\s+extends\s+\w+)?(?:\s+implements\s+[\w\\\\,\s]+)?/', $content, $classMatches);
+    preg_match_all('/(?:abstract\s+|final\s+)?class\s+(\w+)'
+        . '(?:\s+extends\s+\w+)?(?:\s+implements\s+[\w\\\\,\s]+)?/', $content, $classMatches);
     foreach ($classMatches[1] as $cls) {
         $classes[] = ['name' => $cls, 'namespace' => $namespace, 'file' => $relativePath];
     }
@@ -157,7 +158,8 @@ echo "\nTotal env vars: " . count($envVars) . "\n\n";
 // 5. Extract CLI commands (from Console.php)
 echo "=== CLI COMMANDS ===\n\n";
 $consoleContent = file_get_contents($basePath . '/Console.php');
-preg_match_all("/'([a-z][a-z0-9:_-]+)'\s*=>\s*\['handler'\s*=>\s*(\w+)::class,\s*'desc'\s*=>\s*'([^']*)'/", $consoleContent, $cmdMatches);
+preg_match_all("/'([a-z][a-z0-9:_-]+)'\s*=>\s*\['handler'\s*=>\s*(\w+)::class,"
+    . "\s*'desc'\s*=>\s*'([^']*)'/", $consoleContent, $cmdMatches);
 $commands = [];
 $count = count($cmdMatches[1]);
 for ($i = 0; $i < $count; $i++) {

@@ -11,7 +11,11 @@ $format = $argv[2] ?? 'cli';
 $storageDir = rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'storage';
 
 $checks = [
-    'php_version' => ['label' => 'PHP Version', 'pass' => version_compare(PHP_VERSION, '8.2.0', '>='), 'detail' => PHP_VERSION],
+    'php_version' => [
+        'label' => 'PHP Version',
+        'pass' => version_compare(PHP_VERSION, '8.2.0', '>='),
+        'detail' => PHP_VERSION
+    ],
     'ext_pdo' => ['label' => 'Extension: PDO', 'pass' => extension_loaded('pdo'), 'detail' => ''],
     'ext_json' => ['label' => 'Extension: JSON', 'pass' => extension_loaded('json'), 'detail' => ''],
     'ext_mbstring' => ['label' => 'Extension: mbstring', 'pass' => extension_loaded('mbstring'), 'detail' => ''],
@@ -23,16 +27,32 @@ if (class_exists('\Siro\Core\Env')) {
     $checks['env_file'] = ['label' => '.env File', 'pass' => is_file($envPath), 'detail' => ''];
 
     $jwt = (string) \Siro\Core\Env::get('JWT_SECRET', '');
-    $checks['jwt_secret'] = ['label' => 'JWT_SECRET', 'pass' => strlen($jwt) >= 32, 'detail' => strlen($jwt) >= 32 ? 'configured' : 'missing'];
+    $checks['jwt_secret'] = [
+        'label' => 'JWT_SECRET',
+        'pass' => strlen($jwt) >= 32,
+        'detail' => strlen($jwt) >= 32 ? 'configured' : 'missing',
+    ];
 }
 
-$checks['storage'] = ['label' => 'Storage Writable', 'pass' => is_dir($storageDir) && is_writable($storageDir), 'detail' => ''];
+$checks['storage'] = [
+    'label' => 'Storage Writable',
+    'pass' => is_dir($storageDir) && is_writable($storageDir),
+    'detail' => '',
+];
 
 $frameworkDir = $storageDir . DIRECTORY_SEPARATOR . 'framework';
-$checks['framework_writable'] = ['label' => 'Framework Cache Dir', 'pass' => is_dir($frameworkDir) && is_writable($frameworkDir), 'detail' => ''];
+$checks['framework_writable'] = [
+    'label' => 'Framework Cache Dir',
+    'pass' => is_dir($frameworkDir) && is_writable($frameworkDir),
+    'detail' => '',
+];
 
 $logDir = $storageDir . DIRECTORY_SEPARATOR . 'logs';
-$checks['logs_writable'] = ['label' => 'Logs Dir Writable', 'pass' => is_dir($logDir) && is_writable($logDir), 'detail' => ''];
+$checks['logs_writable'] = [
+    'label' => 'Logs Dir Writable',
+    'pass' => is_dir($logDir) && is_writable($logDir),
+    'detail' => '',
+];
 
 if (extension_loaded('redis')) {
     try {

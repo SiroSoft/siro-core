@@ -3,6 +3,11 @@
 
 declare(strict_types=1);
 
+namespace Siro\Scripts;
+
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+
 /**
  * SAST Security Linter - checks for dangerous patterns in PHP code.
  * Zero external dependencies, runs anywhere PHP is available.
@@ -20,13 +25,16 @@ final class SastLinter
         $this->addRule('eval', '/\beval\s*\(/', 'ERROR', 'eval() detected - potential RCE');
         $this->addRule('extract', '/\bextract\s*\(/', 'ERROR', 'extract() detected - variable injection risk');
         $this->addRule('unserialize', '/\bunserialize\s*\(/', 'ERROR', 'unserialize() detected - potential RCE');
-        $this->addRule('create_function', '/\bcreate_function\s*\(/', 'ERROR', 'create_function() detected - use closures instead');
+        $this->addRule('create_function', '/\bcreate_function\s*\(/', 'ERROR', 'create_function() detected'
+            . ' - use closures instead');
         $this->addRule('system', '/\bsystem\s*\(/', 'WARNING', 'system() detected - potential command injection');
         $this->addRule('exec', '/\bexec\s*\(/', 'WARNING', 'exec() detected - potential command injection');
-        $this->addRule('shell_exec', '/\bshell_exec\s*\(/', 'WARNING', 'shell_exec() detected - potential command injection');
+        $this->addRule('shell_exec', '/\bshell_exec\s*\(/', 'WARNING', 'shell_exec() detected'
+            . ' - potential command injection');
         $this->addRule('passthru', '/\bpassthru\s*\(/', 'WARNING', 'passthru() detected - potential command injection');
         $this->addRule('phpinfo', '/\bphpinfo\s*\(/', 'WARNING', 'phpinfo() detected - information disclosure');
-        $this->addRule('error_reporting_off', '/error_reporting\s*\(\s*0\s*\)/', 'WARNING', 'error_reporting(0) hides errors - use proper logging');
+        $this->addRule('error_reporting_off', '/error_reporting'
+            . '\s*\(\s*0\s*\)/', 'WARNING', 'error_reporting(0) hides errors - use proper logging');
         $this->addRule('var_dump', '/\bvar_dump\s*\(/', 'WARNING', 'var_dump() detected - debug code in production?');
     }
 

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Soak Test Evaluator
  *
@@ -10,6 +8,8 @@ declare(strict_types=1);
  * Usage:
  *   php scripts/soak/evaluate.php [--storage=storage]
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__, 2);
 $storageDir = $basePath . '/storage';
@@ -68,7 +68,8 @@ echo "Total requests:   " . ($counters['requests'] ?? 0) . "\n";
 echo "Success (2xx):    " . ($counters['success'] ?? 0) . "\n";
 echo "Expected 4xx:     " . ($counters['expected_4xx'] ?? 0) . "\n";
 echo "Unexpected 4xx:   " . ($counters['unexpected_4xx'] ?? 0) . "\n";
-echo "Injected 5xx:     " . ($counters['injected_5xx'] ?? 0) . " (deliberate /api/fail/inject — not a framework fault)\n";
+echo "Injected 5xx:     " . ($counters['injected_5xx'] ?? 0)
+        . " (deliberate /api/fail/inject — not a framework fault)\n";
 echo "Unexpected 5xx:   " . ($counters['5xx'] ?? 0) . "\n";
 echo "Errors:           " . ($counters['errors'] ?? 0) . "\n";
 

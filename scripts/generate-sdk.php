@@ -36,7 +36,8 @@ foreach ($spec['paths'] as $path => $pathItem) {
             continue;
         }
 
-        $operationId = $operation['operationId'] ?? str_replace(['/', '{', '}'], ['_', '', ''], trim($path, '/')) . '_' . $method;
+        $operationId = $operation['operationId']
+            ?? str_replace(['/', '{', '}'], ['_', '', ''], trim($path, '/')) . '_' . $method;
         $summary = $operation['summary'] ?? $operationId;
         $parameters = $operation['parameters'] ?? [];
         $requestBody = $operation['requestBody'] ?? null;

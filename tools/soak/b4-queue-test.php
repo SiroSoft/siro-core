@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * B4 — Redis Queue Successful Execution (Focused 60-min Test)
  *
@@ -11,6 +9,8 @@ declare(strict_types=1);
  *
  * Uses Redis LLEN for queue depth (pendingCount() is DB-only).
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__, 2);
 require_once $basePath . '/vendor/autoload.php';

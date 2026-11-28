@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * SiroPHP Focused Soak — Redis Queue Worker (v2)
  *
@@ -9,6 +7,8 @@ declare(strict_types=1);
  * Records execution in JSONL for verification.
  * Exits cleanly at deadline.
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__, 2);
 require_once $basePath . '/vendor/autoload.php';

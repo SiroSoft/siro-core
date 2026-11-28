@@ -1,13 +1,13 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * DAST Report Generator
  *
  * Parses PHPUnit DAST test output and produces a readable security report.
  * Usage: php scripts/dast-report.php [--input=results.xml] [--output=report.md]
  */
+
+declare(strict_types=1);
 
 $inputFile = 'dast-results.xml';
 $outputFile = 'php://stdout';

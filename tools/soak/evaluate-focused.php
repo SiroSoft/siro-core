@@ -1,13 +1,13 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * SiroPHP Focused Soak Evaluator
  *
  * Reads metrics.jsonl and produces the final verdict.
  * Separates expected (injected) 5xx from unexpected 5xx.
  */
+
+declare(strict_types=1);
 
 $metricsFile = $argv[1] ?? __DIR__ . '/../storage/metrics-focused.jsonl';
 $logFile = __DIR__ . '/../storage/soak_queue_log.jsonl';

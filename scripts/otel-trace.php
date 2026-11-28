@@ -3,6 +3,8 @@
 
 declare(strict_types=1);
 
+namespace Siro\Scripts;
+
 /**
  * OpenTelemetry / W3C Trace Context propagation helper.
  *

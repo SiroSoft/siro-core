@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * SiroPHP soak test — sustained traffic + trace verification pilot.
  *
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *   --concurrency=N   Parallel workers (default 10)
  *   --verify-traces   After soak, assert the trace dir grew (needs APP_DEBUG=true)
  */
+
+declare(strict_types=1);
 
 $base = 'http://localhost:8080';
 $total = 1000;

@@ -1,13 +1,13 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * SiroPHP Focused Soak — Harness
  *
  * Hits all endpoints in round-robin and writes metrics.jsonl.
  * Expected duration: 60 minutes.
  */
+
+declare(strict_types=1);
 
 $target = 'http://127.0.0.1:8088';
 $duration = 3600; // 60 minutes

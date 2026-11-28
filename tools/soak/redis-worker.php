@@ -1,13 +1,13 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * SiroPHP 48h Soak — Redis Queue Worker v3
  *
  * Uses brPop (same as framework) + proper error logging
  * Lightweight — no framework DB dependency for normal operation
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__, 2);
 
@@ -22,7 +22,8 @@ $processed = 0;
 $failed = 0;
 $lastLogTime = $startTime;
 
-error_log("[worker] Started at " . date('Y-m-d H:i:s') . " | start_depth=$startDepth | deadline=" . date('Y-m-d H:i:s', (int)$deadline));
+error_log("[worker] Started at " . date('Y-m-d H:i:s') . " | start_depth=$startDepth | deadline="
+        . date('Y-m-d H:i:s', (int)$deadline));
 
 // Quick test: pop one job and inspect it
 $testRaw = $redis->brPop(['siro:queue:default'], 1);

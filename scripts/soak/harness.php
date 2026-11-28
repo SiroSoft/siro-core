@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * SiroPHP 48-Hour Production Soak Harness
  *
@@ -16,6 +14,8 @@ declare(strict_types=1);
  *   - php built-in server or PHP-FPM+Nginx
  *   - SQLite (default) or configured DB
  */
+
+declare(strict_types=1);
 
 $startTime = microtime(true);
 $duration = 48 * 3600; // Default 48 hours

@@ -28,20 +28,25 @@ while (true) {
     if ($currentSize > $lastSize) {
         $delta = $currentSize - $lastSize;
         $elapsed = time() - $lastChange;
-        file_put_contents($logFile, "[" . date('H:i:s') . "] XML grew +{$delta} bytes (total {$currentSize}) after {$elapsed}s\n", FILE_APPEND);
+        file_put_contents($logFile, "[" . date('H:i:s') . "] XML grew +{$delta} bytes (total {$currentSize})"
+            . " after {$elapsed}s\n", FILE_APPEND);
         $lastSize = $currentSize;
         $lastChange = time();
     }
 
     $idle = time() - $lastChange;
     if ($idle >= $timeout) {
-        file_put_contents($logFile, "[" . date('H:i:s') . "] STALL DETECTED — no XML changes for {$idle}s\n", FILE_APPEND);
+        file_put_contents($logFile, "[" . date('H:i:s') . "] STALL DETECTED — no XML changes"
+            . " for {$idle}s\n", FILE_APPEND);
 
         // Read last few lines of XML to find last completed test
         if (is_file($watchFile) && $currentSize > 0) {
             $content = file_get_contents($watchFile);
             // Find last <testcase element
-            if (preg_match_all('/<testcase[^>]*name="([^"]*)"[^>]*class="([^"]*)"/', $content, $matches, PREG_SET_ORDER)) {
+            if (
+                preg_match_all('/<testcase[^>]*name="([^"]*)"'
+                . '[^>]*class="([^"]*)"/', $content, $matches, PREG_SET_ORDER)
+            ) {
                 $last = end($matches);
                 file_put_contents($logFile, "Last completed test: {$last[2]}::{$last[1]}\n", FILE_APPEND);
                 file_put_contents($logFile, "Total completed tests: " . count($matches) . "\n", FILE_APPEND);
@@ -61,7 +66,8 @@ while (true) {
     // Also check total elapsed
     $totalElapsed = time() - (int)($startTime ?? time());
     if ($totalElapsed > 1800) {
-        file_put_contents($logFile, "[" . date('H:i:s') . "] Total time exceeded 30min — stopping watcher\n", FILE_APPEND);
+        file_put_contents($logFile, "[" . date('H:i:s') . "] Total time exceeded 30min "
+            . "— stopping watcher\n", FILE_APPEND);
         break;
     }
 

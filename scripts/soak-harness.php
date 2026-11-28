@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * SiroPHP Production Soak Harness — B1
  *
@@ -26,6 +24,12 @@ declare(strict_types=1);
  *   --output=DIR          Output directory (default: storage/soak)
  *   --port=N              Server port (default: 18080)
  */
+
+declare(strict_types=1);
+
+namespace Siro\Scripts;
+
+use PDO;
 
 // ============================================================
 // CONFIGURATION
@@ -107,7 +111,10 @@ file_put_contents($projectDir . '/.env', implode("\n", [
     'LOG_LEVEL=error',
 ]));
 
-file_put_contents($projectDir . '/config/database.php', '<?php return ["driver" => "sqlite", "database" => "' . $soakDir . '/soak.db"];');
+file_put_contents(
+    $projectDir . '/config/database.php',
+    '<?php return ["driver" => "sqlite", "database" => "' . $soakDir . '/soak.db"];'
+);
 file_put_contents($projectDir . '/config/app.php', '<?php return ["name" => "SoakTest", "env" => "testing"];');
 file_put_contents($projectDir . '/config/cache.php', '<?php return ["driver" => "file", "prefix" => "soak_"];');
 file_put_contents($projectDir . '/config/session.php', '<?php return ["driver" => "file"];');
@@ -142,7 +149,8 @@ $router->get('/health/mem', function () {
 // === DATABASE OPERATIONS ===
 $router->get('/soak/db-read', function () {
     $db = Database::connection();
-    $db->exec('CREATE TABLE IF NOT EXISTS soak_items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, value INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
+    $db->exec('CREATE TABLE IF NOT EXISTS soak_items (id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        . 'name TEXT, value INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
     $stmt = $db->query('SELECT COUNT(*) as cnt FROM soak_items');
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return ['count' => (int)($row['cnt'] ?? 0)];
@@ -264,7 +272,8 @@ $router->get('/soak/log-error', function () {
 // === MIXED (realistic workload) ===
 $router->post('/soak/mixed', function () {
     $db = Database::connection();
-    $db->exec('CREATE TABLE IF NOT EXISTS soak_orders (id INTEGER PRIMARY KEY AUTOINCREMENT, product TEXT, amount INTEGER, status TEXT DEFAULT "pending")');
+    $db->exec('CREATE TABLE IF NOT EXISTS soak_orders (id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        . 'product TEXT, amount INTEGER, status TEXT DEFAULT "pending")');
     $stmt = $db->query('SELECT COUNT(*) as cnt FROM soak_orders');
     $count = (int)($stmt->fetch(PDO::FETCH_ASSOC)['cnt']);
     $product = 'product_' . random_int(1, 100);
@@ -436,7 +445,17 @@ class SoakMetrics
                 'db_failures' => $this->dbFailures,
                 'cache_errors' => $this->cacheErrors,
                 'requests_per_second' => round($this->requestCount / max(1, time() - $this->startTimestamp), 2),
-                'server_memory' => ['first' => 0, 'last' => 0, 'peak' => 0, 'min' => 0, 'growth_pct' => 0, 'post_warmup_growth_pct' => 0, 'stable_last_10pct' => true, 'last_10pct_range_bytes' => 0, 'samples' => 0],
+                'server_memory' => [
+                    'first' => 0,
+                    'last' => 0,
+                    'peak' => 0,
+                    'min' => 0,
+                    'growth_pct' => 0,
+                    'post_warmup_growth_pct' => 0,
+                    'stable_last_10pct' => true,
+                    'last_10pct_range_bytes' => 0,
+                    'samples' => 0
+                ],
                 'harness_memory' => ['current' => memory_get_usage(), 'peak' => memory_get_peak_usage()],
                 'sample_count' => 0,
             ];
@@ -514,11 +533,14 @@ class SoakMetrics
             $failures[] = "DB failures: {$summary['db_failures']} > {$criteria['db_connection_failures']}";
         }
         if ($summary['failure_count'] > 0 && $summary['failure_count'] > ($summary['total_requests'] * 0.01)) {
-            $failures[] = "Failure rate " . round($summary['failure_count'] / $summary['total_requests'] * 100, 2) . "% > 1%";
+            $failures[] = "Failure rate "
+                    . round($summary['failure_count'] / $summary['total_requests'] * 100, 2) . "% > 1%";
         }
         // Memory check: post-warmup growth should be bounded
         if ($summary['server_memory']['post_warmup_growth_pct'] > $criteria['memory_sustained_growth_pct_max']) {
-            $failures[] = "Server memory post-warmup growth {$summary['server_memory']['post_warmup_growth_pct']}% > {$criteria['memory_sustained_growth_pct_max']}%";
+            $failures[] = "Server memory post-warmup growth"
+                    . " {$summary['server_memory']['post_warmup_growth_pct']}% "
+                    . "> {$criteria['memory_sustained_growth_pct_max']}%";
         }
 
         return $failures;
@@ -623,18 +645,26 @@ $db = new PDO($dbDsn, null, null, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ]);
-$db->exec('CREATE TABLE IF NOT EXISTS soak_items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, value INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
-$db->exec('CREATE TABLE IF NOT EXISTS soak_orders (id INTEGER PRIMARY KEY AUTOINCREMENT, product TEXT, amount INTEGER, status TEXT DEFAULT "pending")');
+$db->exec('CREATE TABLE IF NOT EXISTS soak_items (id INTEGER PRIMARY KEY AUTOINCREMENT, '
+    . 'name TEXT, value INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
+$db->exec('CREATE TABLE IF NOT EXISTS soak_orders (id INTEGER PRIMARY KEY AUTOINCREMENT, '
+    . 'product TEXT, amount INTEGER, status TEXT DEFAULT "pending")');
 $db = null;
 
 // Write router entry point
 $routerFile = $projectDir . DIRECTORY_SEPARATOR . 'router.php';
 file_put_contents($routerFile, '<?php' . "\n" .
     'declare(strict_types=1);' . "\n" .
-    'require_once ' . var_export($frameworkDir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php', true) . ';' . "\n" .
+    'require_once ' . var_export(
+        $frameworkDir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php',
+        true
+    ) . ';' . "\n" .
     '$app = new \Siro\Core\App(' . var_export($projectDir, true) . ');' . "\n" .
     '$app->boot();' . "\n" .
-    '$app->loadRoutes(' . var_export($projectDir . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php', true) . ');' . "\n" .
+    '$app->loadRoutes(' . var_export(
+        $projectDir . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php',
+        true
+    ) . ');' . "\n" .
     '$app->run();' . "\n");
 
 // Start built-in PHP server

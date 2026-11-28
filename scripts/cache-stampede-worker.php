@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Cache stampede worker — spawned by cache-stampede-test.php
  *
@@ -11,6 +9,8 @@ declare(strict_types=1);
  * The callback increments a shared counter file atomically.
  * We record how many workers executed the callback.
  */
+
+declare(strict_types=1);
 
 $counterFile = $argv[1] ?? die("Usage: worker.php <counter_file> <cache_dir> <key> <worker_id>\n");
 $cacheDir = $argv[2] ?? die("Missing cache_dir\n");

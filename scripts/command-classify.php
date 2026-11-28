@@ -6,7 +6,8 @@
  */
 
 $content = file_get_contents(__DIR__ . '/../Console.php');
-preg_match_all("/'([a-z][a-z0-9:_-]+)'\s*=>\s*\['handler'\s*=>\s*(\w+)::class,\s*'desc'\s*=>\s*'([^']*)'/", $content, $matches);
+preg_match_all("/'([a-z][a-z0-9:_-]+)'\s*=>\s*\['handler'\s*=>\s*(\w+)::class,"
+    . "\s*'desc'\s*=>\s*'([^']*)'/", $content, $matches);
 
 $commands = [];
 $count = count($matches[1]);

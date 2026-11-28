@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * SiroPHP Soak Test Application
  *
@@ -25,6 +23,8 @@ declare(strict_types=1);
  *   GET  /api/session         — session create/read/update
  *   GET  /metrics             — JSON metrics snapshot
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__, 2);
 

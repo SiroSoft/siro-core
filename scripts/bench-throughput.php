@@ -1,8 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-declare(strict_types=1);
-
 /**
  * Full-stack throughput benchmark.
  *
@@ -11,6 +9,8 @@ declare(strict_types=1);
  *
  * Usage: php scripts/bench-throughput.php [--iterations=500]
  */
+
+declare(strict_types=1);
 
 namespace Siro\Benchmark;
 
