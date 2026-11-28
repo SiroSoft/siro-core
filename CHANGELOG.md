@@ -1,5 +1,23 @@
 # Changelog — siro-core
 
+## Unreleased
+
+> NOTE: the first `## vX.Y.Z` heading below must stay the released version
+> (VersionDriftTest + release-check enforce `CHANGELOG head ===
+> Console::VERSION`). The v1.5.2 version bump happens at release time.
+
+### Fixed
+- Boot time (F-B, re-score 27/11): `App::discoverPackageProviders()` no
+  longer `json_decode`s the whole `vendor/composer/installed.json`
+  (323 KB) on every boot when no package declares a provider. It now
+  returns early unless the literal key `"siro"` appears in the file
+  (composer always serializes `extra.siro.providers` with that exact key,
+  so a false negative cannot happen; a false positive only costs one full
+  parse, as before). Measured boot min 1.72–1.83 ms → 0.43–0.44 ms
+  (back-to-back on the same host; the earlier loaded-host session measured
+  2.36–2.48 ms before the fix). Regression tests: no-provider fixture, malformed JSON
+  without the key, and a declared provider still being discovered.
+
 ## v1.5.1 (2026-11-28)
 
 ### Fixed
