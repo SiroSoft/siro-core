@@ -423,7 +423,12 @@ XML);
         $this->assertSame(0, $counts['failed'], '--tries=5 must not let a max_attempts=1 job fail after 1 attempt');
         $this->assertSame(1, $counts['jobs']);
         $this->assertSame(1, $counts['attempts']);
-        $this->assertSame(5, $counts['max']);
+        // --tries is a runtime override (Queue::setMaxAttemptsOverride),
+        // not a rewrite of the stored row: the stored max_attempts stays
+        // 1. The old UPDATE-based implementation rewrote it to 5; the
+        // override also covers jobs pushed after the worker started and
+        // works for the redis driver too (CliSmallFixesTest).
+        $this->assertSame(1, $counts['max']);
     }
 
     public function testQueueWorkWithoutTriesKeepsRowMaxAttempts(): void
@@ -458,9 +463,15 @@ XML);
      * @param list<string> $args
      * @return list<int>
      */
-    private function startAssertRunningThenSigterm(string $project, array $args, int $settleSeconds = 2, int $waitSeconds = 5): array
+    private function startAssertRunningThenSigterm(
+        string $project,
+        array $args,
+        int $settleSeconds = 2,
+        int $waitSeconds = 5,
+        ?string $runnerPath = null
+    ): array
     {
-        $runner = $this->writeRunner($project);
+        $runner = $runnerPath ?? $this->writeRunner($project);
         $log = $project . '/daemon.log';
         $descriptors = [
             0 => ['file', '/dev/null', 'r'],
@@ -537,6 +548,37 @@ XML);
         $project = $this->makeQueueProject();
         $children = $this->startAssertRunningThenSigterm($project, ['queue:work', '--daemon', '--workers=2', '--sleep=1']);
         $this->assertCount(2, $children, 'daemon --workers=2 must fork exactly 2 children');
+        foreach ($children as $child) {
+            $this->assertPidDead($child);
+        }
+    }
+
+    // ==================== workAll() parent (CLI eval §3) ====================
+
+    private function writeWorkAllRunner(string $project): string
+    {
+        $runner = $project . '/run-workall.php';
+        file_put_contents($runner, "<?php\ndeclare(strict_types=1);\n"
+            . "\$project = \$argv[1];\ndefine('BASE_PATH', \$project);\n"
+            . "require '" . $this->worktree . "/vendor/autoload.php';\n"
+            . "\$app = new \\Siro\\Core\\App(\$project);\n\$app->boot();\n"
+            . "exit(\\Siro\\Core\\Queue::workAll(2));\n");
+        return $runner;
+    }
+
+    /**
+     * Queue::workAll(2) must stop on SIGTERM like queue:work --daemon
+     * does. Before the fix the parent blocked in pcntl_waitpid(), which
+     * swallows SIGTERM (same root cause as TQ-M13): the parent and both
+     * children stayed alive forever. Verified live pre-fix with a
+     * manual probe (parent + 2 children alive 5s after SIGTERM).
+     */
+    public function testWorkAllWorkersTwoStopsOnSigterm(): void
+    {
+        $project = $this->makeQueueProject();
+        $runner = $this->writeWorkAllRunner($project);
+        $children = $this->startAssertRunningThenSigterm($project, [], 2, 5, $runner);
+        $this->assertCount(2, $children, 'workAll(2) must fork exactly 2 children');
         foreach ($children as $child) {
             $this->assertPidDead($child);
         }

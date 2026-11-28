@@ -229,20 +229,19 @@ final class SmokeFixMetaTest extends TestCase
     // ==================== Pinned current behaviour (needs a decision) ====================
 
     /**
-     * tinker/tink refuse to run without a TTY but still exit 0.
-     * This pins the CURRENT behaviour recorded in CLI-SMOKE-2026-11-27.md
-     * (META-M1 notes / meta.md note 4): changing it to a non-zero exit
-     * needs an explicit coordinator decision, so update this test then.
+     * tinker/tink refuse to run without a TTY and exit NON-ZERO.
+     * Changed 2026-11-28 (CLI eval §3, D1): refusing to run is not a
+     * success — previously pinned as exit 0, now exit 1.
      */
     #[Test]
-    public function tinkerWithoutTtyRefusesButExitsZero(): void
+    public function tinkerWithoutTtyRefusesWithNonZeroExit(): void
     {
         [$exit, $output] = $this->runConsole(['siro', 'tinker']);
-        $this->assertSame(0, $exit);
+        $this->assertSame(1, $exit);
         $this->assertStringContainsString('Tinker requires an interactive terminal.', $output);
 
         [$exitTink, $outputTink] = $this->runConsole(['siro', 'tink']);
-        $this->assertSame(0, $exitTink);
+        $this->assertSame(1, $exitTink);
         $this->assertSame($output, $outputTink);
     }
 }

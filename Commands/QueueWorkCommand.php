@@ -28,6 +28,12 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface
 {
     use CommandSupport;
 
+    /**
+     * Default idle poll interval (seconds) when --sleep is not given.
+     * Matches Laravel's queue:work default (3s).
+     */
+    public const DEFAULT_SLEEP_SECONDS = 3;
+
     public function __construct(private readonly string $basePath)
     {
     }
@@ -37,7 +43,7 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface
     {
         $daemon = false;
         $maxAttempts = null;
-        $sleep = 1;
+        $sleep = self::DEFAULT_SLEEP_SECONDS;
         $workers = 1;
 
         foreach ($args as $arg) {
@@ -59,9 +65,13 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface
         $this->write("Queue worker started. Driver: {$driver}");
         $startTime = date('Y-m-d H:i:s');
         $this->write("Started at: {$startTime}");
+        // --tries=N overrides max attempts at work-time for both drivers
+        // (Queue::setMaxAttemptsOverride). Calling it unconditionally —
+        // with null when the flag is absent — also clears any override
+        // left by a previous run in this process.
+        Queue::setMaxAttemptsOverride($maxAttempts);
         if ($maxAttempts !== null) {
             $this->write("Max attempts: {$maxAttempts}");
-            $this->applyMaxAttemptsOverride($maxAttempts);
         }
 
         if ($daemon) {
@@ -76,33 +86,6 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface
         $this->write("Processed {$count} job(s).");
 
         return 0;
-    }
-
-    /**
-     * --tries=N overrides the per-job max_attempts (TQ-M11).
-     *
-     * Queue::work() reads max_attempts from the jobs row, and the flag
-     * previously only printed "Max attempts: N" without changing
-     * anything — a job with max_attempts=1 still failed after 1 attempt.
-     * Queue::work() takes no override parameter, so the override is
-     * applied to the pending rows themselves (db driver only; the redis
-     * driver keeps max_attempts inside the payload, which has no
-     * equivalent update path here).
-     */
-    private function applyMaxAttemptsOverride(int $maxAttempts): void
-    {
-        if (Queue::driverName() !== 'db') {
-            return;
-        }
-        try {
-            Database::execute(
-                'UPDATE jobs SET max_attempts = :max WHERE max_attempts != :max2',
-                ['max' => $maxAttempts, 'max2' => $maxAttempts]
-            );
-        } catch (\Throwable) {
-            // A failed override must not stop the worker; the job rows
-            // simply keep their own max_attempts.
-        }
     }
 
     /**
@@ -136,7 +119,7 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface
             && function_exists('pcntl_waitpid');
 
         if (!$canFork) {
-            $this->runSingleDaemonLoop($sleep, $maxAttempts, $stopping);
+            $this->runSingleDaemonLoop($sleep, $stopping);
             $this->write('Daemon stopped.');
             App::shutdown();
             return 0;
@@ -170,7 +153,7 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface
                 } catch (\Throwable) {
                 }
                 $childStopping = false;
-                $this->runSingleDaemonLoop($sleep, $maxAttempts, $childStopping);
+                $this->runSingleDaemonLoop($sleep, $childStopping);
                 exit(0);
             }
             $children[] = $pid;
@@ -178,7 +161,7 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface
 
         if ($children === []) {
             // Every fork failed — fall back to the single-process loop.
-            $this->runSingleDaemonLoop($sleep, $maxAttempts, $stopping);
+            $this->runSingleDaemonLoop($sleep, $stopping);
             $this->write('Daemon stopped.');
             App::shutdown();
             return 0;
@@ -220,13 +203,13 @@ final class QueueWorkCommand implements \Siro\Core\Commands\CommandInterface
      * when the queue is empty (--sleep is honoured here; the old code
      * parsed it and then ignored it).
      */
-    private function runSingleDaemonLoop(int $sleep, ?int $maxAttempts, bool &$stopping): void
+    private function runSingleDaemonLoop(int $sleep, bool &$stopping): void
     {
         while (!$stopping) {
             try {
-                if ($maxAttempts !== null) {
-                    $this->applyMaxAttemptsOverride($maxAttempts);
-                }
+                // No per-iteration override needed: Queue::setMaxAttemptsOverride()
+                // in run() applies at work-time to every Queue::work() call,
+                // including jobs pushed after the worker started.
                 $worked = Queue::work();
             } catch (\Throwable) {
                 $worked = false;

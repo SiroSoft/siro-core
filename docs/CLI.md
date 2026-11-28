@@ -286,6 +286,10 @@ php siro queue:status                     # Show pending/failed counts
 php siro schedule:list                    # Show tasks, cron expression, next run
 ```
 
+> Notes: `queue:work --sleep` defaults to 3s when idle (same as Laravel).
+> `--tries=N` overrides the per-job max attempts at work-time for both the
+> db and redis drivers (it does not rewrite the stored value).
+
 ---
 
 ## server:* — Server & Deploy (5 commands)

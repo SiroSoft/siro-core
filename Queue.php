@@ -31,6 +31,13 @@ final class Queue
     private static array $fakeJobs = [];
     private static ?RedisQueueDriver $redisDriver = null;
 
+    /**
+     * Runtime max-attempts override (queue:work --tries=N). Consulted at
+     * work-time by both drivers, so it also covers jobs pushed after the
+     * worker started — unlike rewriting pending rows.
+     */
+    private static ?int $maxAttemptsOverride = null;
+
     /** @var array<string, true> Whitelist of allowed job classes */
     private static array $allowedJobs = [];
 
@@ -50,6 +57,30 @@ final class Queue
     {
         self::$faked = false;
         self::$fakeJobs = [];
+        self::$maxAttemptsOverride = null;
+    }
+
+    /**
+     * Override the per-job max_attempts for jobs processed by this worker
+     * (queue:work --tries=N). Applies to both the db and redis drivers.
+     * Pass null to clear (QueueWorkCommand does this at the start of
+     * every run, so an override never leaks into the next run).
+     */
+    public static function setMaxAttemptsOverride(?int $maxAttempts): void
+    {
+        self::$maxAttemptsOverride = $maxAttempts !== null ? max(1, $maxAttempts) : null;
+    }
+
+    /**
+     * Effective max attempts for one job: the runtime override wins,
+     * otherwise the stored per-job value, otherwise the default.
+     */
+    private static function effectiveMaxAttempts(mixed $stored): int
+    {
+        if (self::$maxAttemptsOverride !== null) {
+            return self::$maxAttemptsOverride;
+        }
+        return is_numeric($stored) ? (int) $stored : self::DEFAULT_MAX_ATTEMPTS;
     }
 
     /** Register built-in core job classes */
@@ -346,8 +377,7 @@ final class Queue
         } else {
             $attemptsVal = $row['attempts'] ?? 0;
             $attempts = (is_numeric($attemptsVal) ? (int) $attemptsVal : 0) + 1;
-            $maxAttemptsVal = $row['max_attempts'] ?? self::DEFAULT_MAX_ATTEMPTS;
-            $maxAttempts = is_numeric($maxAttemptsVal) ? (int) $maxAttemptsVal : self::DEFAULT_MAX_ATTEMPTS;
+            $maxAttempts = self::effectiveMaxAttempts($row['max_attempts'] ?? null);
 
             if ($attempts >= $maxAttempts) {
                 Database::execute(
@@ -398,7 +428,7 @@ final class Queue
         $job = isset($decoded['job']) && is_string($decoded['job']) ? $decoded['job'] : '';
         $jobData = isset($decoded['data']) && is_array($decoded['data']) ? $decoded['data'] : [];
         $attempts = isset($decoded['attempts']) && is_numeric($decoded['attempts']) ? (int) $decoded['attempts'] : 0;
-        $maxAttempts = isset($decoded['max_attempts']) && is_numeric($decoded['max_attempts']) ? (int) $decoded['max_attempts'] : self::DEFAULT_MAX_ATTEMPTS;
+        $maxAttempts = self::effectiveMaxAttempts($decoded['max_attempts'] ?? null);
         $timeout = isset($decoded['timeout']) && is_numeric($decoded['timeout']) ? (int) $decoded['timeout'] : self::DEFAULT_TIMEOUT;
         $maxExecTime = time() + $timeout;
 
@@ -490,8 +520,15 @@ final class Queue
 
     /**
      * Process queue jobs using multiple worker processes.
-     * Forks N children using pcntl_fork(), each calling work() in a loop.
-     * Falls back to single-process if pcntl is unavailable (Windows).
+     * Forks N children using pcntl_fork(), each calling work() in a loop
+     * until signalled (SIGTERM/SIGINT).
+     *
+     * Single-process fallback: when pcntl is unavailable (Windows) or
+     * $workers <= 1, it DRAINS the queue once — processes each pending
+     * job and returns the processed count. It does NOT loop forever.
+     * That drain semantic is intentional (pinned by QueueMutationTest /
+     * QueueExtraMutationTest); callers that need a daemon loop must
+     * implement it, as QueueWorkCommand does.
      */
     public static function workAll(int $workers = 4): int
     {
@@ -559,15 +596,38 @@ final class Queue
             $children[] = $pid;
         }
 
-        $status = -1;
-        foreach ($children as $pid) {
-            pcntl_waitpid($pid, $status);
+        // ─── Parent: supervise with non-blocking waits so signals are
+        // dispatched. A blocking pcntl_waitpid() swallows SIGTERM here
+        // (same root cause as TQ-M13 in QueueWorkCommand): the parent
+        // never returns to the VM to run the handler, so it hangs until
+        // a child exits — children run ~1 year, i.e. forever. The
+        // SIGTERM/SIGINT handler registered above kills the children and
+        // exits; this loop only reaps children that exit on their own.
+        $status = 0;
+        while ($children !== []) {
+            $exited = pcntl_waitpid(-1, $status, WNOHANG);
+            if ($exited > 0) {
+                $children = array_values(array_filter($children, fn (int $p): bool => $p !== $exited));
+                continue;
+            }
+            if ($exited === -1) {
+                break;
+            }
+            usleep(100000);
+            if (function_exists('pcntl_signal_dispatch')) {
+                pcntl_signal_dispatch();
+            }
         }
 
+        // A child still alive here errored out of the wait above — stop
+        // it and reap it so no orphan worker keeps eating jobs after
+        // the parent is gone.
         foreach ($children as $pid) {
             if (function_exists('posix_kill')) {
                 @posix_kill($pid, SIGTERM);
             }
+        }
+        foreach ($children as $pid) {
             pcntl_waitpid($pid, $status);
         }
 

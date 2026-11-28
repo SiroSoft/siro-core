@@ -217,7 +217,10 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
         if ($handle === false) {
             return '';
         }
-        fputcsv($handle, ['timestamp', 'method', 'path', 'status', 'time_ms', 'ip']);
+        // Pass $escape explicitly: PHP 8.4 deprecates relying on its
+        // default ("the $escape parameter must be provided as its default
+        // value will change"). '\\' keeps the historical output exactly.
+        fputcsv($handle, ['timestamp', 'method', 'path', 'status', 'time_ms', 'ip'], ',', '"', '\\');
 
         foreach ($traces as $t) {
             /** @var array<string, mixed> $t */
@@ -228,7 +231,7 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
                 $this->safeStr($t['status'] ?? ''),
                 $this->safeStr($t['time_ms'] ?? ''),
                 $this->safeStr($t['ip'] ?? ''),
-            ]);
+            ], ',', '"', '\\');
         }
 
         rewind($handle);

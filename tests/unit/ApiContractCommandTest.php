@@ -58,6 +58,44 @@ final class ApiContractCommandTest extends TestCase
         $this->assertStringContainsString('not found', strtolower($output));
     }
 
+    /**
+     * A standard routes/schedule.php (uses $schedule, fixed by S-07)
+     * loads fine and must not trip the unloadable-file failure.
+     */
+    public function testStandardScheduleFileLoadsWithoutFailure(): void
+    {
+        file_put_contents($this->basePath . '/routes/schedule.php',
+            "<?php\n\$schedule->command('queue:work --tries=3')->dailyAt('02:30');\n");
+        file_put_contents($this->basePath . '/docs/openapi/openapi.json', json_encode([
+            'paths' => [
+                '/api/widgets' => ['get' => ['responses' => ['200' => ['description' => 'ok']]]],
+            ],
+        ]));
+        [$code, $output] = $this->runCommand([]);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('1 passed', $output);
+        $this->assertStringNotContainsString('Could not load route file', $output);
+    }
+
+    /**
+     * A route file that throws must FAIL the check with the file named
+     * (CLI eval §3: the old S-07 workaround silently skipped it, which
+     * could false-pass a contract against routes never loaded).
+     */
+    public function testThrowingRouteFileFailsWithFileNamed(): void
+    {
+        file_put_contents($this->basePath . '/routes/broken.php',
+            "<?php throw new \\RuntimeException('boom');\n");
+        file_put_contents($this->basePath . '/docs/openapi/openapi.json', json_encode([
+            'paths' => [
+                '/api/widgets' => ['get' => ['responses' => ['200' => ['description' => 'ok']]]],
+            ],
+        ]));
+        [$code, $output] = $this->runCommand([]);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('Could not load route file(s): broken.php: boom', $output);
+    }
+
     /** @return array{int, string} */
     private function runCommand(array $args): array
     {

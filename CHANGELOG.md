@@ -1,5 +1,21 @@
 # Changelog — siro-core
 
+## Unreleased
+
+### Fixed
+- CLI eval §3 small items: `tinker`/`tink` now exit 1 (was 0) when
+  refusing to run without an interactive TTY; `Queue::workAll()` parent
+  no longer blocks in `pcntl_waitpid()` (it swallowed SIGTERM — same
+  root cause as TQ-M13 — now supervises with WNOHANG + dispatch, and
+  the workers<=1 drain semantic is documented, not changed);
+  `queue:work --tries=N` now overrides max attempts at work-time for
+  both the db and redis drivers (previously db-only via a row UPDATE,
+  silently ignored for redis); `queue:work --sleep` default is now 3s
+  (was 1s, matches Laravel); `api:contract` now fails (exit 1) when a
+  route file cannot be loaded instead of silently skipping it (the S-07
+  schedule workaround is no longer needed); `log:export` CSV no longer
+  triggers the PHP 8.4 `fputcsv()` deprecation (explicit `$escape`).
+
 ## v1.5.2 (2026-11-28)
 
 ### Fixed
