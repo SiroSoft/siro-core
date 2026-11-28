@@ -28,6 +28,14 @@ final class ThrottleHeadersTest extends TestCase
         putenv('THROTTLE_FALLBACK=file');
         $_ENV['REDIS_PORT'] = '1';
         putenv('REDIS_PORT=1');
+        // Drop any cached shared connection (see
+        // ThrottleMiddlewareMutationTest): without this, an earlier suite
+        // that connected to a live server makes the middleware use Redis
+        // instead of the file fallback, so no rate file is ever written.
+        $ref = new \ReflectionClass(\Siro\Core\Cache\CacheInstance::class);
+        $prop = $ref->getProperty('sharedRedis');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
         ThrottleMiddleware::reset();
         Router::resetStatic();
         Router::registerMiddlewareAlias('throttle', ThrottleMiddleware::class);

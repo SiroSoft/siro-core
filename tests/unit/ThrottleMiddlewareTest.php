@@ -21,6 +21,13 @@ final class ThrottleMiddlewareTest extends TestCase
         putenv('THROTTLE_FALLBACK=file');
         $_ENV['REDIS_PORT'] = '1';
         putenv('REDIS_PORT=1');
+        // Drop any cached shared connection (see
+        // ThrottleMiddlewareMutationTest): the dead port only takes
+        // effect if no earlier test cached a live connection.
+        $ref = new \ReflectionClass(\Siro\Core\Cache\CacheInstance::class);
+        $prop = $ref->getProperty('sharedRedis');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
         $this->middleware = new ThrottleMiddleware();
         $this->rateDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'rate_limit';
         $this->cleanRateFiles();
