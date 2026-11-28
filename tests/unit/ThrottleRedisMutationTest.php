@@ -34,6 +34,7 @@ final class ThrottleRedisMutationTest extends TestCase
     {
         putenv('APP_ENV');
         putenv('REDIS_PREFIX');
+        unset($_ENV['REDIS_PREFIX']);
         Env::reset();
         Cache::reset();
         parent::tearDown();

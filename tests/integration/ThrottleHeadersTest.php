@@ -40,6 +40,11 @@ final class ThrottleHeadersTest extends TestCase
 
     protected function tearDown(): void
     {
+        // setUp forces REDIS_PORT=1; clear it from both putenv and $_ENV
+        // (Env::get() reads $_ENV first) or later redis tests break.
+        putenv('REDIS_PORT');
+        putenv('THROTTLE_FALLBACK');
+        unset($_ENV['REDIS_PORT'], $_ENV['THROTTLE_FALLBACK']);
         $this->cleanRateFiles();
         ThrottleMiddleware::reset();
         Router::resetStatic();

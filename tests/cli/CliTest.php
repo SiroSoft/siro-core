@@ -74,7 +74,7 @@ final class CliTest extends TestCase
 
         // Extract command name + description from registry
         preg_match_all(
-            "/'([a-z][a-z0-9:_-]+)'\s*=>\s*\['handler'\s*=>\s*[A-Z\\w]+::class,\s*'desc'\s*=>\s*'([^']*)'/",
+            "/'([a-z][a-z0-9:_-]+)'\s*=>\s*\[\s*'handler'\s*=>\s*[A-Z\\w]+::class,\s*'desc'\s*=>\s*'([^']*)'/",
             $content,
             $matches
         );

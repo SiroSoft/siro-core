@@ -94,7 +94,7 @@ final class CommandSmokeAllTest extends TestCase
         }
 
         preg_match_all(
-            "/'([a-z][a-z0-9:_-]+)'\s*=>\s*\['handler'/",
+            "/'([a-z][a-z0-9:_-]+)'\s*=>\s*\[\s*'handler'/",
             $content,
             $matches
         );

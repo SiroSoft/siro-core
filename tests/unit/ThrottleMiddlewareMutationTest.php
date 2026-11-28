@@ -29,6 +29,13 @@ final class ThrottleMiddlewareMutationTest extends TestCase
 
     protected function tearDown(): void
     {
+        // These tests force REDIS_PORT=1 (dead port) to exercise the
+        // fallback path; both putenv and $_ENV must be cleared, because
+        // Env::get() reads $_ENV first — leaking REDIS_PORT=1 breaks
+        // every later redis test in the process.
+        putenv('REDIS_PORT');
+        putenv('THROTTLE_FALLBACK');
+        unset($_ENV['REDIS_PORT'], $_ENV['THROTTLE_FALLBACK']);
         $this->cleanRateFiles();
         parent::tearDown();
     }

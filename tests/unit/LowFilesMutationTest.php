@@ -117,9 +117,13 @@ final class LowFilesMutationTest extends TestCase
     {
         $driver = new RedisQueueDriver();
         $this->assertIsBool($driver->isAvailable());
-        $this->assertNull($driver->pop('q', 1));
-        $driver->push('q', '{}');
-        $driver->release('q', '{}', 1);
+        // Unique queue per run: the live Redis server is shared by the
+        // whole suite, so a fixed name ('q') leaks payloads into other
+        // tests that pop the same queue (e.g. MoreZeroMutationTest).
+        $q = 'q-lowfiles-' . bin2hex(random_bytes(4));
+        $this->assertNull($driver->pop($q, 1));
+        $driver->push($q, '{}');
+        $driver->release($q, '{}', 1);
         $this->assertTrue(true);
     }
 

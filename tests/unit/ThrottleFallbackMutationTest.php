@@ -44,6 +44,9 @@ final class ThrottleFallbackMutationTest extends TestCase
         putenv('REDIS_PORT');
         putenv('REDIS_HOST');
         putenv('THROTTLE_FALLBACK');
+        // Env::get() reads $_ENV first: unsetting putenv alone leaves the
+        // REDIS_PORT=1 override visible to every later test in the process.
+        unset($_ENV['REDIS_PORT'], $_ENV['REDIS_HOST'], $_ENV['THROTTLE_FALLBACK']);
         Env::reset();
         Cache::reset();
         $this->cleanRateFiles();
