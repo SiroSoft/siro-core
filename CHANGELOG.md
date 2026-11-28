@@ -26,6 +26,14 @@
   0 errors, 0 warnings (was 8 errors + 61 warnings, all lines over
   the 120/160-char limits). Usage text is unchanged; only line breaks
   moved. Whole-repo style debt outside this file is untouched.
+- phpcs whole repo: auto-fix (phpcbf) + manual wrap of long lines and
+  one-class-per-file splits in tests — 1,118 errors + 912 warnings
+  down to 1 error + 15 warnings, all kept deliberately: 11
+  `SideEffects` warnings in CLI entry-point scripts, 4 heredoc
+  template lines in `MakeCrudCommand` (splitting them would change
+  generator output), and 1 `MultipleClasses` in
+  `LogReplayExecutionTest` (`App\Models\User` is asserted by
+  `class_exists` and has no PSR-4 mapping to split into).
 
 ## v1.5.2 (2026-11-28)
 
