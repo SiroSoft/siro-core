@@ -15,6 +15,12 @@
   route file cannot be loaded instead of silently skipping it (the S-07
   schedule workaround is no longer needed); `log:export` CSV no longer
   triggers the PHP 8.4 `fputcsv()` deprecation (explicit `$escape`).
+- The `Cli` testsuite is now declared in `phpunit.xml`, so the 534
+  tests in `tests/cli/` (including all smoke-fix regression tests) run
+  in `scripts/release-check.php` instead of only standalone. The
+  `Unit` testsuite was already declared and counted. Fixed the one
+  environment-dependent CLI test (`env:check` warning count) to assert
+  against the real environment instead of assuming redis is missing.
 
 ## v1.5.2 (2026-11-28)
 

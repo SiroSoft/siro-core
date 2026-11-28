@@ -467,9 +467,23 @@ final class SmokeFixSystemTest extends TestCase
     {
         [$exitCode, $output] = $this->runCommand('env:check');
         $this->assertSame(0, $exitCode, 'env:check must still exit 0 with only warnings');
-        $this->assertStringContainsString('[WARN] redis not loaded', $output);
-        $this->assertStringContainsString('1 warnings', $output, 'summary must count the redis WARN');
-        $this->assertStringNotContainsString('0 warnings', $output);
+        // The summary must reflect every [WARN] line printed above, whatever
+        // the environment: redis is the only optional extension in this temp
+        // project (DB_CONNECTION=sqlite, so no MySQL warnings), so the count
+        // is 1 when redis is missing and 0 when it is loaded. Asserting a
+        // fixed count would fail on any machine with phpredis installed.
+        if (extension_loaded('redis')) {
+            $this->assertStringNotContainsString('[WARN] redis not loaded', $output);
+            $this->assertStringContainsString('0 warnings', $output, 'summary must count 0 warnings when redis is loaded');
+        } else {
+            $this->assertStringContainsString('[WARN] redis not loaded', $output);
+            $this->assertStringContainsString('1 warnings', $output, 'summary must count the redis WARN');
+        }
+        $this->assertMatchesRegularExpression(
+            '/Results: \d+ passed, ' . substr_count($output, '[WARN]') . ' warnings, \d+ failed/',
+            $output,
+            'summary warning count must equal the number of [WARN] lines'
+        );
     }
 
     // ==================== SYS-M8 / SYS-M10: api:contract ====================
