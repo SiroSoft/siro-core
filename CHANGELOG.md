@@ -1,6 +1,6 @@
 # Changelog — siro-core
 
-## Unreleased
+## v1.5.3 (2026-11-28)
 
 ### Fixed
 - CLI eval §3 small items: `tinker`/`tink` now exit 1 (was 0) when

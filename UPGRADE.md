@@ -11,6 +11,18 @@ against v0.41.x continues to work unchanged.
 
 ---
 
+## v1.5.2 → v1.5.3 (2026-11-28)
+
+**There are no breaking changes from v1.5.2 to v1.5.3.** This is a
+bug-fix + cleanup release: six small CLI behaviour fixes from the CLI
+eval (§3 — `tinker` TTY exit code, `queue:work --tries`/`--sleep`,
+`api:contract` strictness, `log:export` CSV deprecation), the `Cli`
+testsuite is now part of the release gate, and a whole-repo phpcs
+cleanup (1,118 errors + 912 warnings → 1 error + 15 warnings kept
+deliberately). No API changes; no migration needed.
+
+---
+
 ## v1.5.1 → v1.5.2 (2026-11-28)
 
 **There are no breaking changes from v1.5.1 to v1.5.2.** This is a
