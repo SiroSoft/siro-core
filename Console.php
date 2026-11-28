@@ -109,7 +109,7 @@ use Siro\Core\Commands\AuditLogCommand;
 
 final class Console
 {
-    public const VERSION = '1.5.1';
+    public const VERSION = '1.5.2';
 
     /** @var array<string, array{handler: class-string, desc: string, usage: string}> */
     private static array $appCommands = [];

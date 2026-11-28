@@ -175,6 +175,18 @@ final class App
             return;
         }
 
+        // Fast path (boot F-B): composer serializes provider metadata as
+        // "extra": {"siro": {"providers": [...]}}. If the literal key
+        // "siro" never appears, no package can declare a provider, so
+        // parsing the whole installed.json (300+ KB) on every boot is pure
+        // waste. A false positive only costs one full parse, as before;
+        // a false negative cannot happen — composer always writes the key
+        // exactly as "siro" (a package *name* containing "siro" does not
+        // match, because the check requires the surrounding quotes).
+        if (!str_contains($contents, '"siro"')) {
+            return;
+        }
+
         $data = json_decode($contents, true);
         if (!is_array($data) || !isset($data['packages']) || !is_array($data['packages'])) {
             return;

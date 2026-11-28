@@ -114,4 +114,75 @@ final class AppBranchMutationTest extends TestCase
         $app->boot();
         $this->assertInstanceOf(\Siro\Core\Router::class, $app->router());
     }
+
+    public function testBootWithoutProvidersSkipsInstalledParse(): void
+    {
+        // Realistic installed.json: packages present, one whose *name*
+        // contains "siro" as a substring, but no package declares
+        // extra.siro.providers. Boot must succeed and no provider runs.
+        BootProviderStub::$registered = false;
+        mkdir($this->basePath . '/vendor/composer', 0777, true);
+        file_put_contents(
+            $this->basePath . '/vendor/composer/installed.json',
+            json_encode([
+                'packages' => [
+                    ['name' => 'acme/siro-tools', 'extra' => ['laravel' => ['providers' => []]]],
+                    ['name' => 'league/oauth2-server', 'extra' => []],
+                ],
+            ])
+        );
+        $app = new App($this->basePath);
+        $app->boot();
+        $this->assertInstanceOf(\Siro\Core\Router::class, $app->router());
+        $this->assertFalse(BootProviderStub::$registered);
+    }
+
+    public function testBootWithMalformedInstalledJsonAndNoSiroKey(): void
+    {
+        // The fast path returns before json_decode, so even broken JSON
+        // without the "siro" key must not break boot.
+        mkdir($this->basePath . '/vendor/composer', 0777, true);
+        file_put_contents($this->basePath . '/vendor/composer/installed.json', '{"packages": [broken');
+        $app = new App($this->basePath);
+        $app->boot();
+        $this->assertInstanceOf(\Siro\Core\Router::class, $app->router());
+    }
+
+    public function testBootDiscoversDeclaredProvider(): void
+    {
+        // The fast path must not break the real discovery path: a package
+        // declaring extra.siro.providers still gets its register() called.
+        BootProviderStub::$registered = false;
+        mkdir($this->basePath . '/vendor/composer', 0777, true);
+        file_put_contents(
+            $this->basePath . '/vendor/composer/installed.json',
+            json_encode([
+                'packages' => [
+                    [
+                        'name' => 'acme/demo',
+                        'extra' => ['siro' => ['providers' => [BootProviderStub::class]]],
+                    ],
+                ],
+            ])
+        );
+        $app = new App($this->basePath);
+        $app->boot();
+        $this->assertInstanceOf(\Siro\Core\Router::class, $app->router());
+        $this->assertTrue(BootProviderStub::$registered);
+    }
+}
+
+/**
+ * Minimal package provider stub for provider-discovery tests. Only the
+ * static flag is asserted on; register() must be called by App::boot()
+ * when the stub is declared in installed.json.
+ */
+final class BootProviderStub
+{
+    public static bool $registered = false;
+
+    public function register(App $app): void
+    {
+        self::$registered = true;
+    }
 }
