@@ -6,6 +6,21 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\App;
 
+/**
+ * @phpstan-type AttributeFields array{
+ *     body: array<string, array{
+ *         rules: array<int, string>,
+ *         type: string,
+ *         description: string,
+ *         required: bool,
+ *     }>,
+ *     query: array<string, array{
+ *         type: string,
+ *         description: string,
+ *         required: bool,
+ *     }>,
+ * }
+ */
 final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
 {
     use CommandSupport;
@@ -752,9 +767,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
      * Attribute declarations win over source-scanning patterns; the patterns
      * below remain as fallback for undecorated handlers.
      *
-     * @return array{body: array<string, array{rules: array<int, string>, type: string, description: string, required:
-     * bool}>,
-     * query: array<string, array{type: string, description: string, required: bool}>}
+     * @return AttributeFields
      */
     private function extractAttributeFields(string $handler): array
     {

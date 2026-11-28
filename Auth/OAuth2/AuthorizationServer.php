@@ -52,6 +52,13 @@ use Siro\Core\Response;
  *   refresh_token_ttl: int,
  *   auth_code_ttl: int,
  * }
+ * @phpstan-type OAuthContext array{
+ *   token_id: string,
+ *   client_id: string,
+ *   user_id: int|null,
+ *   scopes: array<int, string>,
+ *   source: string,
+ * }
  */
 final class AuthorizationServer
 {
@@ -298,8 +305,7 @@ final class AuthorizationServer
      * core JWT (HS256/RS256 tokens issued by the login flow) when the token
      * is not a league token. Used by `OAuthScopeMiddleware` and `AuthGuard`.
      *
-     * @return array{token_id: string, client_id: string, user_id: int|null, scopes: array<int, string>, source:
-     * string}|null
+     * @return OAuthContext|null
      */
     public static function validateRequest(Request $request): ?array
     {
