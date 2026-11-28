@@ -37,19 +37,28 @@ final class MigrateFreshRerecordTest extends TestCase
         file_put_contents($this->dbPath, '');
         file_put_contents(
             $this->basePath . '/config/database.php',
-            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . $this->dbPath . "', 'slow_query_threshold' => 500];\n"
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . $this
+                ->dbPath . "', 'slow_query_threshold' => 500];\n"
         );
         file_put_contents(
             $this->basePath . '/.env',
-            "APP_ENV=testing\nAPP_KEY=this_is_a_sufficiently_long_app_key_12345678\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_12345678\nDB_CONNECTION=sqlite\nDB_DATABASE=" . $this->dbPath . "\n"
+            "APP_ENV=testing\nAPP_KEY=this_is_a_sufficiently_long_app_key_12345678\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_12345678\n" . "DB_CONNECTION=sqlite\n" .
+                "DB_DATABASE=" . $this->dbPath . "\n"
         );
         file_put_contents(
             $this->basePath . '/database/migrations/2024_01_01_000001_create_users.php',
-            "<?php\nreturn new class {\n    public function up(\\PDO \$pdo): void { \$pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)'); }\n    public function down(\\PDO \$pdo): void { \$pdo->exec('DROP TABLE IF EXISTS users'); }\n};\n"
+            "<?php\nreturn new class {\n    public function up(\\PDO \$pdo): void { \$" .
+                "pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name " .
+                "TEXT)'); }\n    public function down(\\PDO \$pdo): void { \$pdo->exec('DROP " .
+                "TABLE IF EXISTS users'); }\n" . "};\n"
         );
         file_put_contents(
             $this->basePath . '/database/migrations/2024_01_01_000002_create_posts.php',
-            "<?php\nreturn new class {\n    public function up(\\PDO \$pdo): void { \$pdo->exec('CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT)'); }\n    public function down(\\PDO \$pdo): void { \$pdo->exec('DROP TABLE IF EXISTS posts'); }\n};\n"
+            "<?php\nreturn new class {\n    public function up(\\PDO \$pdo): void { \$" .
+                "pdo->exec('CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, title " .
+                "TEXT)'); }\n    public function down(\\PDO \$pdo): void { \$pdo->exec('DROP " .
+                "TABLE IF EXISTS posts'); }\n" . "};\n"
         );
     }
 

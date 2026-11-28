@@ -179,7 +179,10 @@ class DebugTest extends TestCase
     {
         putenv('APP_ENV=local');
         putenv('APP_DEBUG=true');
-        $debug = Env::bool('APP_DEBUG', false) && strtolower((string) Env::get('APP_ENV', 'production')) !== 'production';
+        $debug = Env::bool(
+            'APP_DEBUG',
+            false
+        ) && strtolower((string) Env::get('APP_ENV', 'production')) !== 'production';
         $this->assertTrue($debug);
         echo "\n [PASS] Debug trace enabled in non-production mode";
     }

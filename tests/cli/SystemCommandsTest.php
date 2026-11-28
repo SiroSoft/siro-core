@@ -48,7 +48,10 @@ final class SystemCommandsTest extends TestCase
             . 'CORS_ALLOWED_ORIGINS=*' . "\n"
         );
 
-        file_put_contents(self::$tempProject . '/routes/api.php', "<?php\n\$router->get('/api/health', 'HealthController@index');\n");
+        file_put_contents(
+            self::$tempProject . '/routes/api.php',
+            "<?php\n\$router->get('/api/health', 'HealthController@index');\n"
+        );
 
         $dbConfig = '<?php return ['
             . "'driver' => 'sqlite',"
@@ -339,7 +342,11 @@ final class SystemCommandsTest extends TestCase
     public function testStorageLink(): void
     {
         [$exitCode, $output] = $this->runCommand('storage:link');
-        $this->assertContainsEquals($exitCode, [0, 1], 'storage:link should exit 0 on success or 1 if symlinks not supported');
+        $this->assertContainsEquals(
+            $exitCode,
+            [0, 1],
+            'storage:link should exit 0 on success or 1 if symlinks not supported'
+        );
         $hasLink = str_contains($output, 'Link created') || str_contains($output, 'already exists');
         $noSupport = str_contains($output, 'Could not create');
         $this->assertTrue($hasLink || $noSupport, 'storage:link should either succeed or report failure');

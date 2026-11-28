@@ -28,10 +28,14 @@ final class LogReplayExecutionTest extends TestCase
         parent::setUp();
         putenv('APP_ENV=local');
         $this->basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_replay_exec_' . uniqid('', true);
-        $this->tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $this->tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         mkdir($this->tracesDir, 0777, true);
 
-        $this->routerFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_replay_router_' . uniqid('', true) . '.php';
+        $this->routerFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_replay_router_' . uniqid(
+            '',
+            true
+        ) . '.php';
         file_put_contents($this->routerFile, $this->routerScript());
     }
 
@@ -276,7 +280,8 @@ PHP;
         [$exit, $output] = $this->runCmd(['testtrace', '--test']);
         // make:test --from-trace should generate a test file
         $this->assertSame(0, $exit);
-        $files = glob($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature' . DIRECTORY_SEPARATOR . '*.php');
+        $files = glob($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature' .
+            DIRECTORY_SEPARATOR . '*.php');
         $this->assertNotEmpty($files, 'make:test should generate a test file');
     }
 
@@ -400,7 +405,15 @@ PHP;
         $m = $ref->getMethod('outputCurl');
         $m->setAccessible(true);
         ob_start();
-        $m->invoke($cmd, 'POST', 'http://localhost:8080/api/x', '{"a":1}', ['X-Test' => 'v', 'Host' => 'x'], 'Bearer tok', []);
+        $m->invoke(
+            $cmd,
+            'POST',
+            'http://localhost:8080/api/x',
+            '{"a":1}',
+            ['X-Test' => 'v', 'Host' => 'x'],
+            'Bearer tok',
+            []
+        );
         $output = ob_get_clean() ?: '';
         $this->assertStringContainsString('curl -X POST', $output);
         $this->assertStringContainsString('-d', $output);
@@ -678,7 +691,10 @@ PHP;
             'response_body' => '{"status":"ok"}',
         ]);
         // --as prompts for password, then logs in against the local server
-        [$exit, $output, $stderr] = $this->runCmdWithInput(['astrace', '--as=admin@test.com', '--force'], "secret123\n");
+        [$exit, $output, $stderr] = $this->runCmdWithInput(
+            ['astrace', '--as=admin@test.com', '--force'],
+            "secret123\n"
+        );
         $this->assertSame(0, $exit, 'stderr: ' . $stderr);
         $this->assertStringContainsString('logged in as admin@test.com', $output);
     }

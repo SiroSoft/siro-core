@@ -31,7 +31,10 @@ final class NewProjectCommandTest extends TestCase
 
     public function testUncPathIsUsedAsIs(): void
     {
-        $this->assertSame('\\\\server\\share\\siro-app', NewProjectCommand::resolveTarget('\\\\server\\share\\siro-app'));
+        $this->assertSame(
+            '\\\\server\\share\\siro-app',
+            NewProjectCommand::resolveTarget('\\\\server\\share\\siro-app')
+        );
     }
 
     public function testBareNameIsAnchoredToCwd(): void

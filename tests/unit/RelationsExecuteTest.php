@@ -60,8 +60,10 @@ final class RelationsExecuteTest extends TestCase
         RelUser::create(['name' => 'Alice']);
         RelUser::create(['name' => 'Bob']);
         Database::table('profiles')->insert(['user_id' => 1, 'bio' => 'Hello']);
-        Database::table('comments')->insert(['commentable_type' => 'Siro\\Core\\Tests\\Unit\\RelUser', 'commentable_id' => 1, 'body' => 'First comment']);
-        Database::table('comments')->insert(['commentable_type' => 'Siro\\Core\\Tests\\Unit\\RelUser', 'commentable_id' => 1, 'body' => 'Second comment']);
+        Database::table('comments')->insert(['commentable_type' => 'Siro\\Core\\Tests\\Unit\\RelUser',
+            'commentable_id' => 1, 'body' => 'First comment']);
+        Database::table('comments')->insert(['commentable_type' => 'Siro\\Core\\Tests\\Unit\\RelUser',
+            'commentable_id' => 1, 'body' => 'Second comment']);
         Database::table('roles')->insert(['name' => 'admin']);
         Database::table('roles')->insert(['name' => 'editor']);
         Database::table('roles_users')->insert(['user_id' => 1, 'role_id' => 1]);
@@ -137,56 +139,4 @@ final class RelationsExecuteTest extends TestCase
         $this->assertIsArray($roles);
         $this->assertCount(2, $roles);
     }
-}
-
-final class RelUser extends Model
-{
-    protected string $table = 'users';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
-
-    public function profile(): \Siro\Core\DB\Relations\HasOne
-    {
-        return $this->hasOne(RelProfile::class, 'user_id');
-    }
-
-    public function comments(): \Siro\Core\DB\Relations\MorphMany
-    {
-        return $this->morphMany(RelComment::class, 'commentable');
-    }
-
-    public function roles(): \Siro\Core\DB\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(RelRole::class, 'roles_users', 'user_id', 'role_id');
-    }
-}
-
-final class RelProfile extends Model
-{
-    protected string $table = 'profiles';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['user_id', 'bio'];
-}
-
-final class RelComment extends Model
-{
-    protected string $table = 'comments';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['commentable_type', 'commentable_id', 'body'];
-
-    public function commentable(): \Siro\Core\DB\Relations\MorphTo
-    {
-        return $this->morphTo('commentable');
-    }
-}
-
-final class RelRole extends Model
-{
-    protected string $table = 'roles';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
 }

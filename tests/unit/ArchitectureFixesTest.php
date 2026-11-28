@@ -38,8 +38,18 @@ final class ArchitectureFixesTest extends TestCase
         $testCases = [
             'missing Authorization header' => new Request('GET', '/test'),
             'empty Bearer token'           => new Request('GET', '/test', [], ['authorization' => 'Bearer ']),
-            'malformed token string'       => new Request('GET', '/test', [], ['authorization' => 'Bearer invalid-token']),
-            'wrong auth scheme (Basic)'    => new Request('GET', '/test', [], ['authorization' => 'Basic dGVzdDp0ZXN0']),
+            'malformed token string'       => new Request(
+                'GET',
+                '/test',
+                [],
+                ['authorization' => 'Bearer invalid-token']
+            ),
+            'wrong auth scheme (Basic)'    => new Request(
+                'GET',
+                '/test',
+                [],
+                ['authorization' => 'Basic dGVzdDp0ZXN0']
+            ),
         ];
 
         foreach ($testCases as $label => $request) {

@@ -104,7 +104,8 @@ final class QueueLongRunTest extends TestCase
         $this->addToAssertionCount(1); // Count this test as having an assertion
 
         // Log memory for visibility
-        error_log("Long-run results: {$jobCount} jobs, memory start=" . ($startMemory / 1024) . "KB, end=" . ($endMemory / 1024) . "KB, growth=" . ($memoryGrowth / 1024) . "KB ({$memoryGrowthPercent}%)");
+        error_log("Long-run results: {$jobCount} jobs, memory start=" . ($startMemory / 1024) . "KB, end=" .
+            ($endMemory / 1024) . "KB, growth=" . ($memoryGrowth / 1024) . "KB ({$memoryGrowthPercent}%)");
     }
 
     /**
@@ -149,55 +150,5 @@ final class QueueLongRunTest extends TestCase
         $this->assertCount(25, QLongRunJob::$executions);
         $this->assertCount(25, QLongRunAltJob::$executions);
         $this->assertSame(0, Queue::pendingCount());
-    }
-}
-
-/**
- * Lightweight job for long-run testing.
- */
-final class QLongRunJob implements \Siro\Core\QueueInterface
-{
-    /** @var array<int, array<string, mixed>> */
-    public static array $executions = [];
-
-    /** @var array<int, string> */
-    public static array $stateLeakages = [];
-
-    private static ?array $internalState = null;
-
-    public function handle(array $data = []): void
-    {
-        $seq = (int) ($data['seq'] ?? 0);
-
-        // Check for state leakage from previous job
-        if (self::$internalState !== null) {
-            self::$stateLeakages[] = "Job {$seq} leaked from previous: " . json_encode(self::$internalState);
-        }
-
-        // Process job
-        self::$executions[$seq] = $data;
-
-        // Set state (should NOT leak to next job in same worker)
-        self::$internalState = $data;
-
-        // Simulate minimal work
-        $hash = hash('sha256', json_encode($data));
-
-        // Clear state for next job
-        self::$internalState = null;
-    }
-}
-
-/**
- * Alternate job type for mixed-job testing.
- */
-final class QLongRunAltJob implements \Siro\Core\QueueInterface
-{
-    /** @var array<int, array<string, mixed>> */
-    public static array $executions = [];
-
-    public function handle(array $data = []): void
-    {
-        self::$executions[] = $data;
     }
 }

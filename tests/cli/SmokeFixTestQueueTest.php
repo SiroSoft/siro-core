@@ -73,7 +73,10 @@ final class SmokeFixTestQueueTest extends TestCase
 
     private function writeProjectBase(string $dir, string $dbDatabase): void
     {
-        foreach (['storage/framework', 'storage/logs/traces', 'storage/cache', 'storage/app', 'routes', 'config', 'app'] as $d) {
+        foreach (
+            ['storage/framework', 'storage/logs/traces', 'storage/cache', 'storage/app', 'routes', 'config',
+            'app'] as $d
+        ) {
             mkdir($dir . '/' . $d, 0777, true);
         }
         file_put_contents(
@@ -85,7 +88,10 @@ final class SmokeFixTestQueueTest extends TestCase
         );
         file_put_contents(
             $dir . '/config/database.php',
-            '<?php return ["driver" => "sqlite", "database" => ' . var_export($dbDatabase, true) . ', "charset" => "utf8mb4", "slow_query_threshold" => 500];'
+            '<?php return ["driver" => "sqlite", "database" => ' . var_export(
+                $dbDatabase,
+                true
+            ) . ', "charset" => "utf8mb4", "slow_query_threshold" => 500];'
         );
         file_put_contents($dir . '/config/app.php', '<?php return ["name" => "SiroSmokeFix", "env" => "testing"];');
         file_put_contents($dir . '/routes/schedule.php', "<?php\n\ndeclare(strict_types=1);\n");
@@ -383,7 +389,8 @@ XML);
         $pdo->exec('CREATE TABLE jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, job TEXT, data TEXT, '
             . 'attempts INTEGER DEFAULT 0, max_attempts INTEGER DEFAULT 3, available_at INTEGER, '
             . 'locked_until INTEGER, timeout INTEGER DEFAULT 60, priority INTEGER DEFAULT 0, created_at TEXT)');
-        $pdo->exec('CREATE TABLE failed_jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, job TEXT, data TEXT, error TEXT, failed_at TEXT)');
+        $pdo->exec('CREATE TABLE failed_jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, job TEXT, ' .
+            'data TEXT, error TEXT, failed_at ' . 'TEXT)');
         $pdo = null;
         return $dir;
     }
@@ -391,7 +398,8 @@ XML);
     private function insertFailingJob(string $project, int $maxAttempts): void
     {
         $pdo = new \PDO('sqlite:' . $project . '/storage/test.db');
-        $stmt = $pdo->prepare('INSERT INTO jobs (job, data, attempts, max_attempts, available_at, created_at) VALUES (?, ?, 0, ?, ?, datetime("now"))');
+        $stmt = $pdo->prepare('INSERT INTO jobs (job, data, attempts, max_attempts, available_at, ' .
+            'created_at) VALUES (?, ?, 0, ?, ?, ' . 'datetime("now"))');
         // Unregistered class: Queue::work() fails it via the whitelist check.
         $stmt->execute(['App\\Jobs\\NoSuchJobXYZ', '[]', $maxAttempts, time()]);
         $pdo = null;
@@ -498,7 +506,10 @@ XML);
             } while (time() < $deadline);
             if ($exitCode === null) {
                 proc_terminate($proc, SIGKILL);
-                $this->fail('process ignored SIGTERM (still running after ' . $waitSeconds . 's): ' . implode(' ', $args));
+                $this->fail('process ignored SIGTERM (still running after ' . $waitSeconds . 's): ' . implode(
+                    ' ',
+                    $args
+                ));
             }
             $this->assertSame(0, $exitCode, 'process must exit 0 on SIGTERM: ' . implode(' ', $args));
             return $children;
@@ -545,7 +556,10 @@ XML);
     public function testQueueDaemonWorkersTwoStopsChildrenOnSigterm(): void
     {
         $project = $this->makeQueueProject();
-        $children = $this->startAssertRunningThenSigterm($project, ['queue:work', '--daemon', '--workers=2', '--sleep=1']);
+        $children = $this->startAssertRunningThenSigterm(
+            $project,
+            ['queue:work', '--daemon', '--workers=2', '--sleep=1']
+        );
         $this->assertCount(2, $children, 'daemon --workers=2 must fork exactly 2 children');
         foreach ($children as $child) {
             $this->assertPidDead($child);
@@ -592,6 +606,9 @@ XML);
     public function testApiTestWebhookStopsOnSigterm(): void
     {
         $project = $this->makeApiProject();
-        $this->startAssertRunningThenSigterm($project, ['api:test', 'GET', '/health/live', '--webhook', '--port=18133']);
+        $this->startAssertRunningThenSigterm(
+            $project,
+            ['api:test', 'GET', '/health/live', '--webhook', '--port=18133']
+        );
     }
 }

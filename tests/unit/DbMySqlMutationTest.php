@@ -31,9 +31,15 @@ final class DbMySqlMutationTest extends TestCase
         mkdir($this->basePath . '/storage', 0777, true);
         file_put_contents(
             $this->basePath . '/config/database.php',
-            "<?php\nreturn ['driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3307, 'database' => 'siro_test', 'username' => 'root', 'password' => '', 'charset' => 'utf8mb4'];\n"
+            "<?php\nreturn ['driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3307, " .
+                "'database' => 'siro_test', 'username' => 'root', 'password' => '', 'charset' " . "=> " .
+                "'utf8mb4'];\n"
         );
-        file_put_contents($this->basePath . '/.env', "APP_ENV=testing\nDB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3307\nDB_DATABASE=siro_test\nDB_USERNAME=root\nDB_PASSWORD=\n");
+        file_put_contents(
+            $this->basePath . '/.env',
+            "APP_ENV=testing\nDB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3307\n" .
+            "DB_DATABASE=siro_test\nDB_USERNAME=root\n" . "DB_PASSWORD=\n"
+        );
     }
 
     protected function tearDown(): void

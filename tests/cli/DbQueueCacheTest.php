@@ -31,12 +31,15 @@ class DbQueueCacheTest extends TestCase
 
         file_put_contents(
             $this->tempDir . '/.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nDB_CONNECTION=sqlite\nDB_DATABASE=:memory:\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_only_32chars!!\n"
+            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\n" .
+                "DB_CONNECTION=sqlite\nDB_DATABASE=:memory:\n" .
+                "JWT_SECRET=test_jwt_secret_key_for_unit_tests_only_32chars!!\n"
         );
 
         file_put_contents(
             $this->tempDir . '/config/database.php',
-            '<?php return ["driver" => "sqlite", "database" => ":memory:", "charset" => "utf8mb4", "slow_query_threshold" => 500];'
+            '<?php return ["driver" => "sqlite", "database" => ":memory:", "charset" => ' .
+                '"utf8mb4", "slow_query_threshold" => ' . '500];'
         );
 
         file_put_contents(

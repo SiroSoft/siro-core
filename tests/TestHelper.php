@@ -86,7 +86,11 @@ trait TestHelper
         $start = microtime(true);
         $fn();
         $elapsed = (microtime(true) - $start) * 1000;
-        $this->assertLessThan($maxMs, $elapsed, "{$label} should complete under {$maxMs}ms, took: " . round($elapsed, 3) . "ms");
+        $this->assertLessThan(
+            $maxMs,
+            $elapsed,
+            "{$label} should complete under {$maxMs}ms, took: " . round($elapsed, 3) . "ms"
+        );
         return $elapsed;
     }
 

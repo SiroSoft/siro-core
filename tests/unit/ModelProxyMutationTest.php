@@ -134,25 +134,3 @@ final class ModelProxyMutationTest extends TestCase
         $this->assertSame(1, MPItem::count());
     }
 }
-
-final class MPItem extends Model
-{
-    use SoftDeletes;
-
-    protected string $table = 'mp_items';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name', 'qty'];
-
-    public static function resetStatic(): void
-    {
-        $ref = new \ReflectionClass(self::class);
-        foreach (['identityMap', 'lastInsertId', 'queryLog'] as $prop) {
-            if ($ref->hasProperty($prop)) {
-                $p = $ref->getProperty($prop);
-                $p->setAccessible(true);
-                $p->setValue(null, []);
-            }
-        }
-    }
-}

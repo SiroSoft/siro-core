@@ -60,6 +60,9 @@ final class MetricsTest extends TestCase
                 break;
             }
         }
-        $this->assertTrue($hasMetric, 'Export should contain the metric name. Lines: ' . substr(implode("\n", $lines), 0, 500));
+        $this->assertTrue(
+            $hasMetric,
+            'Export should contain the metric name. Lines: ' . substr(implode("\n", $lines), 0, 500)
+        );
     }
 }

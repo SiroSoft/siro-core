@@ -70,7 +70,10 @@ final class LowFilesMutationTest extends TestCase
     public function testApiKeyMiddlewareInvalidKey(): void
     {
         $mw = new ApiKeyMiddleware();
-        $resp = $mw->handle(new Request('GET', '/api/x', [], ['X-Api-Key' => 'bad-token']), fn () => Response::success());
+        $resp = $mw->handle(
+            new Request('GET', '/api/x', [], ['X-Api-Key' => 'bad-token']),
+            fn () => Response::success()
+        );
         $this->assertSame(401, $resp->statusCode());
     }
 

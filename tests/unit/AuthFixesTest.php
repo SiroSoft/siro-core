@@ -614,7 +614,11 @@ final class AuthFixesTest extends TestCase
             }
         }
 
-        $this->assertGreaterThan(20, $diffCount, 'KDF should produce significant bit differences for small input changes');
+        $this->assertGreaterThan(
+            20,
+            $diffCount,
+            'KDF should produce significant bit differences for small input changes'
+        );
     }
 
     public function testKdfWithMinInputHasDeterministicOutput(): void

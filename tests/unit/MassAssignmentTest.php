@@ -14,7 +14,8 @@ final class MassAssignmentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->model = new class (['name' => 'Test', 'email' => 'test@test.com', 'password' => 'secret']) extends Model {
+        $this->model = new class (['name' => 'Test', 'email' => 'test@test.com',
+            'password' => 'secret']) extends Model {
             protected array $fillable = ['name', 'email'];
         };
     }

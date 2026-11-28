@@ -18,8 +18,14 @@ final class ApiContractCommandTest extends TestCase
         mkdir($this->basePath . '/config', 0777, true);
         mkdir($this->basePath . '/docs/openapi', 0777, true);
         file_put_contents($this->basePath . '/.env', "APP_ENV=testing\nAPP_DEBUG=false\n");
-        file_put_contents($this->basePath . '/config/database.php', "<?php return ['driver' => 'sqlite', 'database' => ':memory:'];");
-        file_put_contents($this->basePath . '/routes/api.php', "<?php \$router->get('/api/widgets', 'WidgetController@index');");
+        file_put_contents(
+            $this->basePath . '/config/database.php',
+            "<?php return ['driver' => 'sqlite', 'database' => ':memory:'];"
+        );
+        file_put_contents(
+            $this->basePath . '/routes/api.php',
+            "<?php \$router->get('/api/widgets', 'WidgetController@index');"
+        );
     }
 
     protected function tearDown(): void

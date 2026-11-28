@@ -161,7 +161,10 @@ final class SecurityFixesTest extends TestCase
     public function testConfigCacheProducesJsonNotVarExport(): void
     {
         mkdir($this->tempDir, 0777, true);
-        file_put_contents($this->tempDir . '/app.php', '<?php return ["name" => "Siro", "nested" => ["key" => "value"]];');
+        file_put_contents(
+            $this->tempDir . '/app.php',
+            '<?php return ["name" => "Siro", "nested" => ["key" => "value"]];'
+        );
 
         Config::reset();
         Config::load($this->tempDir);
@@ -211,7 +214,10 @@ final class SecurityFixesTest extends TestCase
         mkdir($cacheDir, 0777, true);
 
         $data = ['APP_NAME' => 'Siro', 'DB_HOST' => 'localhost'];
-        $expectedContent = '<?php exit; ?>' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        $expectedContent = '<?php exit; ?>' . json_encode(
+            $data,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        ) . PHP_EOL;
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'env.php';
         file_put_contents($cacheFile, $expectedContent);
 
@@ -242,7 +248,10 @@ final class SecurityFixesTest extends TestCase
         $data = ['DB_PASSWORD' => 'pass', 'APP_KEY' => 'secret', 'JWT_SECRET' => 'jwt'];
         unset($data['APP_KEY'], $data['JWT_SECRET']);
 
-        $expectedContent = '<?php exit; ?>' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        $expectedContent = '<?php exit; ?>' . json_encode(
+            $data,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        ) . PHP_EOL;
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'env.php';
         file_put_contents($cacheFile, $expectedContent);
 
@@ -309,7 +318,11 @@ final class SecurityFixesTest extends TestCase
         $secret = 'test_app_key_for_unit_tests_router_cache_32chars!';
         putenv('APP_KEY=' . $secret);
         $_ENV['APP_KEY'] = $secret;
-        $exported['hmac'] = hash_hmac('sha256', json_encode($exported['static']) . json_encode($exported['dynamic']), $secret);
+        $exported['hmac'] = hash_hmac(
+            'sha256',
+            json_encode($exported['static']) . json_encode($exported['dynamic']),
+            $secret
+        );
         $content = '<?php exit; ?>' . PHP_EOL . json_encode($exported, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         file_put_contents($cacheFile, $content);
 
@@ -396,7 +409,11 @@ final class SecurityFixesTest extends TestCase
 
         $this->assertStringNotContainsString('..', $cleanPath, 'Traversal sequences should be removed');
         $this->assertStringNotContainsString('//', $cleanPath, 'Double slashes should be normalized');
-        $this->assertSame('etc' . $dirSep . 'passwd', $cleanPath, 'Traversal removed, only the relative filename remains');
+        $this->assertSame(
+            'etc' . $dirSep . 'passwd',
+            $cleanPath,
+            'Traversal removed, only the relative filename remains'
+        );
     }
 
     public function testStorageLocalPathRecursiveSanitizationHandlesNestedPatterns(): void

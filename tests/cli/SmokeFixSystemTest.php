@@ -474,7 +474,11 @@ final class SmokeFixSystemTest extends TestCase
         // fixed count would fail on any machine with phpredis installed.
         if (extension_loaded('redis')) {
             $this->assertStringNotContainsString('[WARN] redis not loaded', $output);
-            $this->assertStringContainsString('0 warnings', $output, 'summary must count 0 warnings when redis is loaded');
+            $this->assertStringContainsString(
+                '0 warnings',
+                $output,
+                'summary must count 0 warnings when redis is loaded'
+            );
         } else {
             $this->assertStringContainsString('[WARN] redis not loaded', $output);
             $this->assertStringContainsString('1 warnings', $output, 'summary must count the redis WARN');

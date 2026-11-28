@@ -173,7 +173,11 @@ final class LogReplayTest extends TestCase
         $ref = new \ReflectionClass(LogReplayCommand::class);
         $write = $ref->getMethod('writeAuthFile');
         $write->setAccessible(true);
-        $write->invoke($cmd, $authFile, ['email' => 'a@b.com', 'refresh_token' => 'rt_secret', 'access_token' => 'at_secret']);
+        $write->invoke(
+            $cmd,
+            $authFile,
+            ['email' => 'a@b.com', 'refresh_token' => 'rt_secret', 'access_token' => 'at_secret']
+        );
 
         $raw = file_get_contents($authFile);
         $this->assertStringContainsString('enc:', $raw, 'tokens should be encrypted');

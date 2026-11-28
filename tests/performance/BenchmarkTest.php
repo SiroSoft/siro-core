@@ -103,13 +103,16 @@ final class BenchmarkTest extends TestCase
         if (!is_dir($configDir)) {
             mkdir($configDir, 0775, true);
         }
-        file_put_contents($configDir . DIRECTORY_SEPARATOR . 'database.php', '<?php return ["driver" => "sqlite", "database" => ":memory:"];');
+        file_put_contents(
+            $configDir . DIRECTORY_SEPARATOR . 'database.php',
+            '<?php return ["driver" => "sqlite", "database" => ":memory:"];'
+        );
         return $configDir;
     }
 
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
     //  1. BOOT TIME PERFORMANCE
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
 
     public function testBootTimeCold(): void
     {
@@ -221,9 +224,9 @@ final class BenchmarkTest extends TestCase
         );
     }
 
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
     //  2. REQUEST THROUGHPUT
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
 
     public function testSimpleRouteDispatch(): void
     {
@@ -430,9 +433,9 @@ final class BenchmarkTest extends TestCase
         Database::purgeAll();
     }
 
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
     //  3. MEMORY USAGE
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
 
     public function testPeakMemoryPerRequest(): void
     {
@@ -515,9 +518,9 @@ final class BenchmarkTest extends TestCase
         );
     }
 
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
     //  4. CACHE PERFORMANCE
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
 
     public function testConfigCacheSpeedup(): void
     {
@@ -654,9 +657,9 @@ final class BenchmarkTest extends TestCase
         $this->assertGreaterThan(0, $avgNoCache + $avgCached, 'Query cache test should complete');
     }
 
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
     //  5. STRESS TESTING
-    // ═══════════════════════════════════════════
+    // ═════════════════════════════════════
 
     public function testManyRoutesRegistration(): void
     {

@@ -130,13 +130,29 @@ final class ThrottleTierTest extends TestCase
         $next = fn () => Response::success();
 
         $user7 = ['id' => 7, 'type' => 'user'];
-        $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $user7), $next, 'byuser')->statusCode());
-        $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $user7), $next, 'byuser')->statusCode());
-        $this->assertSame(429, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $user7), $next, 'byuser')->statusCode());
+        $this->assertSame(200, $this->middleware->handle(
+            $this->makeRequest('10.0.0.1', '/api/test', $user7),
+            $next,
+            'byuser'
+        )->statusCode());
+        $this->assertSame(200, $this->middleware->handle(
+            $this->makeRequest('10.0.0.1', '/api/test', $user7),
+            $next,
+            'byuser'
+        )->statusCode());
+        $this->assertSame(429, $this->middleware->handle(
+            $this->makeRequest('10.0.0.1', '/api/test', $user7),
+            $next,
+            'byuser'
+        )->statusCode());
 
         // A different user on the same IP has a fresh counter.
         $user8 = ['id' => 8, 'type' => 'user'];
-        $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $user8), $next, 'byuser')->statusCode());
+        $this->assertSame(200, $this->middleware->handle(
+            $this->makeRequest('10.0.0.1', '/api/test', $user8),
+            $next,
+            'byuser'
+        )->statusCode());
     }
 
     public function testApiKeyStrategySeparatesKeys(): void
@@ -145,11 +161,23 @@ final class ThrottleTierTest extends TestCase
         $next = fn () => Response::success();
 
         $key5 = ['id' => 9, 'type' => 'api_key', 'key_id' => 5];
-        $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $key5), $next, 'bykey')->statusCode());
-        $this->assertSame(429, $this->middleware->handle($this->makeRequest('10.0.0.2', '/api/test', $key5), $next, 'bykey')->statusCode());
+        $this->assertSame(200, $this->middleware->handle(
+            $this->makeRequest('10.0.0.1', '/api/test', $key5),
+            $next,
+            'bykey'
+        )->statusCode());
+        $this->assertSame(429, $this->middleware->handle(
+            $this->makeRequest('10.0.0.2', '/api/test', $key5),
+            $next,
+            'bykey'
+        )->statusCode());
 
         $key6 = ['id' => 9, 'type' => 'api_key', 'key_id' => 6];
-        $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $key6), $next, 'bykey')->statusCode());
+        $this->assertSame(200, $this->middleware->handle(
+            $this->makeRequest('10.0.0.1', '/api/test', $key6),
+            $next,
+            'bykey'
+        )->statusCode());
     }
 
     public function testCallableKeyStrategy(): void
@@ -157,9 +185,15 @@ final class ThrottleTierTest extends TestCase
         ThrottleMiddleware::define('tenant', 1, 1, static fn (Request $r): string => 'tenant-7');
         $next = fn () => Response::success();
 
-        $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.1'), $next, 'tenant')->statusCode());
+        $this->assertSame(
+            200,
+            $this->middleware->handle($this->makeRequest('10.0.0.1'), $next, 'tenant')->statusCode()
+        );
         // A different IP shares the counter: the key comes from the resolver.
-        $this->assertSame(429, $this->middleware->handle($this->makeRequest('10.0.0.2'), $next, 'tenant')->statusCode());
+        $this->assertSame(
+            429,
+            $this->middleware->handle($this->makeRequest('10.0.0.2'), $next, 'tenant')->statusCode()
+        );
     }
 
     public function testPlanMappingSwitchesLimiter(): void
@@ -171,10 +205,18 @@ final class ThrottleTierTest extends TestCase
 
         $partnerUser = ['id' => 1, 'type' => 'api_key', 'key_id' => 1, 'plan' => 'partner'];
         for ($i = 0; $i < 3; $i++) {
-            $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $partnerUser), $next, 'api')->statusCode());
+            $this->assertSame(200, $this->middleware->handle(
+                $this->makeRequest('10.0.0.1', '/api/test', $partnerUser),
+                $next,
+                'api'
+            )->statusCode());
         }
         // 4th request hits the partner tier (3/min), not the api tier (600/min).
-        $this->assertSame(429, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $partnerUser), $next, 'api')->statusCode());
+        $this->assertSame(429, $this->middleware->handle(
+            $this->makeRequest('10.0.0.1', '/api/test', $partnerUser),
+            $next,
+            'api'
+        )->statusCode());
 
         // No plan: the route limiter applies.
         $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.9'), $next, 'api')->statusCode());
@@ -187,15 +229,26 @@ final class ThrottleTierTest extends TestCase
         $next = fn () => Response::success();
 
         $goldUser = ['id' => 1, 'type' => 'api_key', 'key_id' => 1, 'plan' => 'gold'];
-        $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $goldUser), $next, 'api')->statusCode());
-        $this->assertSame(429, $this->middleware->handle($this->makeRequest('10.0.0.1', '/api/test', $goldUser), $next, 'api')->statusCode());
+        $this->assertSame(200, $this->middleware->handle(
+            $this->makeRequest('10.0.0.1', '/api/test', $goldUser),
+            $next,
+            'api'
+        )->statusCode());
+        $this->assertSame(429, $this->middleware->handle(
+            $this->makeRequest('10.0.0.1', '/api/test', $goldUser),
+            $next,
+            'api'
+        )->statusCode());
     }
 
     public function testLegacyNumericLimitStillWorks(): void
     {
         $next = fn () => Response::success();
         for ($i = 0; $i < 5; $i++) {
-            $this->assertSame(200, $this->middleware->handle($this->makeRequest('10.0.0.5'), $next, 5, 1)->statusCode());
+            $this->assertSame(
+                200,
+                $this->middleware->handle($this->makeRequest('10.0.0.5'), $next, 5, 1)->statusCode()
+            );
         }
         $this->assertSame(429, $this->middleware->handle($this->makeRequest('10.0.0.5'), $next, 5, 1)->statusCode());
     }

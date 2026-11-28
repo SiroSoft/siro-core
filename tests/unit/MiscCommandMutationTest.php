@@ -28,8 +28,10 @@ final class MiscCommandMutationTest extends TestCase
         Env::reset();
         putenv('APP_ENV=testing');
         $this->basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_misc_' . uniqid('', true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily' . DIRECTORY_SEPARATOR . date('Y-m'), 0777, true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces', 0777, true);
+        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'daily' . DIRECTORY_SEPARATOR . date('Y-m'), 0777, true);
+        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'traces', 0777, true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework', 0777, true);
     }
 
@@ -72,8 +74,12 @@ final class MiscCommandMutationTest extends TestCase
 
     public function testLogTailReadsLines(): void
     {
-        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily' . DIRECTORY_SEPARATOR . date('Y-m');
-        file_put_contents($dir . DIRECTORY_SEPARATOR . 'request-001.log', "GET /a 200 10ms\nPOST /b 500 200ms\nerror occurred\n");
+        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'daily' . DIRECTORY_SEPARATOR . date('Y-m');
+        file_put_contents(
+            $dir . DIRECTORY_SEPARATOR . 'request-001.log',
+            "GET /a 200 10ms\nPOST /b 500 200ms\nerror occurred\n"
+        );
 
         $cmd = new LogTailCommand($this->basePath);
         ob_start();
@@ -86,7 +92,8 @@ final class MiscCommandMutationTest extends TestCase
 
     public function testLogTailOtherType(): void
     {
-        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily' . DIRECTORY_SEPARATOR . date('Y-m');
+        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'daily' . DIRECTORY_SEPARATOR . date('Y-m');
         file_put_contents($dir . DIRECTORY_SEPARATOR . 'error-001.log', "fatal: boom\n");
 
         $cmd = new LogTailCommand($this->basePath);
@@ -105,7 +112,8 @@ final class MiscCommandMutationTest extends TestCase
 
     public function testLogCleanupDeletesOld(): void
     {
-        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         $old = $traces . DIRECTORY_SEPARATOR . 'old.json';
         $new = $traces . DIRECTORY_SEPARATOR . 'new.json';
         file_put_contents($old, '{}');
@@ -123,7 +131,8 @@ final class MiscCommandMutationTest extends TestCase
 
     public function testLogCleanupDryRun(): void
     {
-        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         $old = $traces . DIRECTORY_SEPARATOR . 'old2.json';
         file_put_contents($old, '{}');
         touch($old, time() - 30 * 86400);
@@ -148,13 +157,17 @@ final class MiscCommandMutationTest extends TestCase
 
     public function testEnvCacheSuccess(): void
     {
-        file_put_contents($this->basePath . DIRECTORY_SEPARATOR . '.env', "APP_ENV=testing\nDB_CONNECTION=sqlite\nAPP_KEY=0123456789abcdef0123456789abcdef\n");
+        file_put_contents(
+            $this->basePath . DIRECTORY_SEPARATOR . '.env',
+            "APP_ENV=testing\nDB_CONNECTION=sqlite\nAPP_KEY=0123456789abcdef0123456789abcdef\n"
+        );
         $cmd = new EnvCacheCommand($this->basePath);
         ob_start();
         $code = $cmd->run([]);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' .
+            DIRECTORY_SEPARATOR . 'env.php');
     }
 
     public function testDoctorNoEnv(): void
@@ -169,7 +182,11 @@ final class MiscCommandMutationTest extends TestCase
 
     public function testDoctorWithEnv(): void
     {
-        file_put_contents($this->basePath . DIRECTORY_SEPARATOR . '.env', "APP_ENV=production\nAPP_DEBUG=false\nDB_CONNECTION=sqlite\nJWT_SECRET=this_is_a_very_long_and_secure_jwt_secret_key_1234\n");
+        file_put_contents(
+            $this->basePath . DIRECTORY_SEPARATOR . '.env',
+            "APP_ENV=production\nAPP_DEBUG=false\nDB_CONNECTION=sqlite\n" .
+            "JWT_SECRET=this_is_a_very_long_and_secure_jwt_secret_key_1234\n"
+        );
         $cmd = new DoctorCommand($this->basePath);
         ob_start();
         $code = $cmd->run(['--prod']);

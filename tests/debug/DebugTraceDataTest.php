@@ -61,8 +61,14 @@ final class DebugTraceDataTest extends TestCase
             price REAL NOT NULL DEFAULT 0
         )');
 
-        Database::execute('INSERT INTO trace_test_products (name, price) VALUES (:n, :p)', ['n' => 'Product A', 'p' => 10.5]);
-        Database::execute('INSERT INTO trace_test_products (name, price) VALUES (:n, :p)', ['n' => 'Product B', 'p' => 20.0]);
+        Database::execute(
+            'INSERT INTO trace_test_products (name, price) VALUES (:n, :p)',
+            ['n' => 'Product A', 'p' => 10.5]
+        );
+        Database::execute(
+            'INSERT INTO trace_test_products (name, price) VALUES (:n, :p)',
+            ['n' => 'Product B', 'p' => 20.0]
+        );
     }
 
     protected function tearDown(): void
@@ -90,8 +96,13 @@ final class DebugTraceDataTest extends TestCase
      * Simulate request with full trace capture.
      * This emulates App::run() trace enrichment logic.
      */
-    private function simulate(string $method, string $path, array $body = [], array $headers = [], ?\Closure $handler = null): array
-    {
+    private function simulate(
+        string $method,
+        string $path,
+        array $body = [],
+        array $headers = [],
+        ?\Closure $handler = null
+    ): array {
         // Ensure router exists
         if (Route::getRouter() === null) {
             Route::setRouter(new Router());
@@ -161,7 +172,10 @@ final class DebugTraceDataTest extends TestCase
             return $traceData;
         }
 
-        TraceData::setResponseBody((string) json_encode($response->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        TraceData::setResponseBody((string) json_encode(
+            $response->payload(),
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        ));
 
         // Collect captured queries
         $captured = Database::getCapturedQueries();
@@ -243,7 +257,10 @@ final class DebugTraceDataTest extends TestCase
     public function testTraceCapturesInsertQuery(): void
     {
         $trace = $this->simulate('POST', '/trace/insert', ['name' => 'New', 'price' => 99], [], function () {
-            Database::execute('INSERT INTO trace_test_products (name, price) VALUES (:n, :p)', ['n' => 'New', 'p' => 99]);
+            Database::execute(
+                'INSERT INTO trace_test_products (name, price) VALUES (:n, :p)',
+                ['n' => 'New', 'p' => 99]
+            );
             return ['id' => (int) Database::connection()->lastInsertId()];
         });
 
@@ -286,9 +303,15 @@ final class DebugTraceDataTest extends TestCase
 
     public function testTraceCapturesAuthHeader(): void
     {
-        $trace = $this->simulate('GET', '/trace/auth', [], ['Authorization' => 'Bearer my_test_token', 'X-Custom' => 'val'], function () {
-            return ['ok' => true];
-        });
+        $trace = $this->simulate(
+            'GET',
+            '/trace/auth',
+            [],
+            ['Authorization' => 'Bearer my_test_token', 'X-Custom' => 'val'],
+            function () {
+                return ['ok' => true];
+            }
+        );
 
         $this->assertArrayHasKey('auth_header', $trace);
         $this->assertStringContainsString('[REDACTED]', $trace['auth_header']);

@@ -70,7 +70,8 @@ final class MakePostmanCommandMutationTest extends TestCase
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Resources', 0777, true);
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
+            "APP_ENV=testing\nAPP_DEBUG=true\n" . "APP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
@@ -82,19 +83,38 @@ final class MakePostmanCommandMutationTest extends TestCase
     {
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php',
-            "<?php\n\$router->get('/api/users', 'UserController@index');\n\$router->post('/api/users', 'UserController@store');\n\$router->get('/api/users/{id}', 'UserController@show');\n\$router->delete('/api/users/{id}', 'UserController@delete');\n\$router->post('/api/auth/login', 'AuthController@login');\n\$router->post('/api/auth/register', 'AuthController@register');\n\$router->get('/api/secure', 'UserController@index')->middleware('auth');\n\$router->post('/api/auth/refresh', 'AuthController@login')->middleware('auth');\n"
+            "<?php\n\$router->get('/api/users', 'UserController@index');\n\$" .
+                "router->post('/api/users', 'UserController@store');\n\$" .
+                "router->get('/api/users/{id}', 'UserController@show');\n\$" .
+                "router->delete('/api/users/{id}', 'UserController@delete');\n\$" .
+                "router->post('/api/auth/login', 'AuthController@login');\n\$" .
+                "router->post('/api/auth/register', 'AuthController@register');\n\$" .
+                "router->get('/api/secure', 'UserController@index')->middleware('auth');\n\$" .
+                "router->post('/api/auth/refresh', " . "'AuthController@login')->middleware('auth');\n"
         );
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'UserController.php',
-            "<?php\nclass UserController {\n    public function index(): Response { return response(); }\n    public function store(Request \$r): Response { \$r->validate(['name' => 'required|string|max:50', 'email' => 'required|email']); return response(); }\n    public function show(int \$id): Response { return response(); }\n    public function delete(int \$id): Response { return response(); }\n}\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR .
+                'UserController.php',
+            "<?php\nclass UserController {\n    public function index(): Response { return " .
+                "response(); }\n    public function store(Request \$r): Response { \$" .
+                "r->validate(['name' => 'required|string|max:50', 'email' => " .
+                "'required|email']); return response(); }\n    public function show(int \$id): " .
+                "Response { return response(); }\n    public function delete(int \$id): " .
+                "Response { return response(); }\n" . "}\n"
         );
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AuthController.php',
-            "<?php\nclass AuthController {\n    public function login(Request \$r): Response { \$r->validate(['email' => 'required|email', 'password' => 'required|string']); return response(); }\n    public function register(Request \$r): Response { return response(); }\n}\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR .
+                'AuthController.php',
+            "<?php\nclass AuthController {\n    public function login(Request \$r): " .
+                "Response { \$r->validate(['email' => 'required|email', 'password' => " .
+                "'required|string']); return response(); }\n    public function " .
+                "register(Request \$r): Response { return response(); }\n" . "}\n"
         );
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'UserResource.php',
-            "<?php\nclass UserResource {\n    public function toArray(): array {\n        return ['id' => \$this->id, 'name' => \$this->name, 'email' => \$this->email];\n    }\n}\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR .
+                'UserResource.php',
+            "<?php\nclass UserResource {\n    public function toArray(): array {\n        " .
+                "return ['id' => \$this->id, 'name' => \$this->name, 'email' => \$" . "this->email];\n    }\n" . "}\n"
         );
     }
 
@@ -107,7 +127,8 @@ final class MakePostmanCommandMutationTest extends TestCase
         ob_end_clean();
         $this->assertSame(0, $code);
 
-        $file = $this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'postman' . DIRECTORY_SEPARATOR . 'collection.json';
+        $file = $this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'postman' . DIRECTORY_SEPARATOR .
+            'collection.json';
         $this->assertFileExists($file);
         $json = json_decode((string) file_get_contents($file), true);
         $this->assertSame('Siro API', $json['info']['name']);
@@ -123,8 +144,10 @@ final class MakePostmanCommandMutationTest extends TestCase
         $code = $cmd->run(['--tag=User', '--method=GET', '--path=/api/users', '--flow=crud']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'postman' . DIRECTORY_SEPARATOR . 'collection.json');
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'postman' .
+            DIRECTORY_SEPARATOR . 'collection.json');
+        $this->assertFileExists($this
+            ->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json');
     }
 
     public function testGenerateCustomOutput(): void
@@ -147,7 +170,8 @@ final class MakePostmanCommandMutationTest extends TestCase
         $code = $cmd->run(['--flow=auth']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $json = json_decode((string) file_get_contents($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'postman' . DIRECTORY_SEPARATOR . 'collection.json'), true);
+        $json = json_decode((string) file_get_contents($this->basePath . DIRECTORY_SEPARATOR . 'docs' .
+            DIRECTORY_SEPARATOR . 'postman' . DIRECTORY_SEPARATOR . 'collection.json'), true);
         $this->assertArrayHasKey('event', $json);
     }
 }

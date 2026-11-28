@@ -141,7 +141,8 @@ final class ApiKeyMutationTest extends TestCase
         $token = 'legacy-token-value-1234';
         $tokenHash = hash('sha256', $token);
         Database::execute(
-            'INSERT INTO api_keys (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+            'INSERT INTO api_keys (name, token_hash, ' .
+                'token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
              VALUES (?, ?, NULL, ?, ?, ?, 0, NULL)',
             ['Legacy', $tokenHash, 'read', 1, time()]
         );
@@ -308,7 +309,8 @@ final class ApiKeyMutationTest extends TestCase
         $token = 'sha256-only-token-abc';
         $tokenHash = hash('sha256', $token);
         Database::execute(
-            'INSERT INTO api_keys (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+            'INSERT INTO api_keys (name, token_hash, ' .
+                'token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
              VALUES (?, ?, ?, ?, ?, ?, 0, NULL)',
             ['ShaOnly', $tokenHash, '', 'read', 1, time()]
         );

@@ -32,7 +32,8 @@ final class MiddlewareZeroMutationTest extends TestCase
             'database' => ':memory:',
             'slow_query_threshold' => 500,
         ]);
-        Database::execute('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, password TEXT, created_at TEXT, updated_at TEXT)');
+        Database::execute('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email ' .
+            'TEXT, password TEXT, created_at TEXT, updated_at ' . 'TEXT)');
         ZUser::resetStatic();
         CspMiddleware::nonce();
     }
@@ -89,7 +90,10 @@ final class MiddlewareZeroMutationTest extends TestCase
         $mw = new EtagMiddleware();
         $first = $mw->handle($this->makeRequest(), fn () => Response::success(['a' => 1]));
         $etag = $first->getHeader('ETag');
-        $resp = $mw->handle($this->makeRequest('GET', '/api/test', ['if-none-match' => $etag]), fn () => Response::success(['a' => 1]));
+        $resp = $mw->handle(
+            $this->makeRequest('GET', '/api/test', ['if-none-match' => $etag]),
+            fn () => Response::success(['a' => 1])
+        );
         $this->assertSame(304, $resp->statusCode());
     }
 
@@ -145,25 +149,5 @@ final class MiddlewareZeroMutationTest extends TestCase
     public function testControllerClassExists(): void
     {
         $this->assertTrue(class_exists(Controller::class));
-    }
-}
-
-final class ZUser extends Model
-{
-    protected string $table = 'users';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name', 'email', 'password'];
-
-    public static function resetStatic(): void
-    {
-        $ref = new \ReflectionClass(self::class);
-        foreach (['identityMap', 'lastInsertId', 'queryLog'] as $prop) {
-            if ($ref->hasProperty($prop)) {
-                $p = $ref->getProperty($prop);
-                $p->setAccessible(true);
-                $p->setValue(null, []);
-            }
-        }
     }
 }

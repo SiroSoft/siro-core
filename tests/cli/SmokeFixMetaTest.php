@@ -123,7 +123,11 @@ final class SmokeFixMetaTest extends TestCase
         $this->assertSame(1, $exit, 'help <unknown> should exit 1');
         $this->assertStringContainsString('Unknown command:', $output);
         $this->assertStringContainsString('khong-co-lenh-nay', $output);
-        $this->assertStringNotContainsString('PHP Micro-Framework', $output, 'help <unknown> must not fall back to the general help screen');
+        $this->assertStringNotContainsString(
+            'PHP Micro-Framework',
+            $output,
+            'help <unknown> must not fall back to the general help screen'
+        );
     }
 
     #[Test]

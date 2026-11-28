@@ -156,10 +156,16 @@ final class CorsEtagIdempotencyMutationTest extends TestCase
     public function testEtagLastModifiedMatch(): void
     {
         $mw = new EtagMiddleware();
-        $resp = $mw->handle(new Request('GET', '/api/data'), fn () => Response::success(['data' => 'x'])->header('Last-Modified', 'Wed, 21 Oct 2024 07:28:00 GMT'));
+        $resp = $mw->handle(
+            new Request('GET', '/api/data'),
+            fn () => Response::success(['data' => 'x'])->header('Last-Modified', 'Wed, 21 Oct 2024 07:28:00 GMT')
+        );
         $this->assertSame(200, $resp->statusCode());
         $req2 = new Request('GET', '/api/data', [], ['if-modified-since' => 'Wed, 21 Oct 2024 07:28:00 GMT']);
-        $resp2 = $mw->handle($req2, fn () => Response::success(['data' => 'x'])->header('Last-Modified', 'Wed, 21 Oct 2024 07:28:00 GMT'));
+        $resp2 = $mw->handle(
+            $req2,
+            fn () => Response::success(['data' => 'x'])->header('Last-Modified', 'Wed, 21 Oct 2024 07:28:00 GMT')
+        );
         $this->assertSame(304, $resp2->statusCode());
     }
 

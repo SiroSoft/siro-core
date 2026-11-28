@@ -38,11 +38,14 @@ final class SeedCommandNamespaceTest extends TestCase
         file_put_contents($this->dbPath, '');
         file_put_contents(
             $this->basePath . '/config/database.php',
-            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . $this->dbPath . "', 'slow_query_threshold' => 500];\n"
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . $this
+                ->dbPath . "', 'slow_query_threshold' => 500];\n"
         );
         file_put_contents(
             $this->basePath . '/.env',
-            "APP_ENV=testing\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_seed_12345\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_12345678\nDB_CONNECTION=sqlite\nDB_DATABASE=" . $this->dbPath . "\n"
+            "APP_ENV=testing\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_seed_12345\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_12345678\n" . "DB_CONNECTION=sqlite\n" .
+                "DB_DATABASE=" . $this->dbPath . "\n"
         );
     }
 
@@ -67,7 +70,8 @@ final class SeedCommandNamespaceTest extends TestCase
         @unlink($marker);
         file_put_contents(
             $this->basePath . '/database/seeders/Dev2NsSeederA.php',
-            "<?php\nnamespace Database\\Seeders;\nclass Dev2NsSeederA {\n    public function run(): void {\n        file_put_contents('" . $marker . "', 'ok');\n    }\n}\n"
+            "<?php\nnamespace Database\\Seeders;\nclass Dev2NsSeederA {\n    public " .
+                "function run(): void {\n        " . "file_put_contents('" . $marker . "', 'ok');\n    }\n}\n"
         );
         putenv('SEED_PATH=database/seeders');
         $cmd = new SeedCommand($this->basePath);
@@ -85,7 +89,8 @@ final class SeedCommandNamespaceTest extends TestCase
         @unlink($marker);
         file_put_contents(
             $this->basePath . '/database/seeders/Dev2NsSeederB.php',
-            "<?php\nnamespace Database\\Seeders;\nclass Dev2NsSeederB {\n    public function run(): void {\n        file_put_contents('" . $marker . "', 'ok');\n    }\n}\n"
+            "<?php\nnamespace Database\\Seeders;\nclass Dev2NsSeederB {\n    public " .
+                "function run(): void {\n        " . "file_put_contents('" . $marker . "', 'ok');\n    }\n}\n"
         );
         putenv('SEED_PATH=database/seeders');
         $cmd = new SeedCommand($this->basePath);
@@ -103,11 +108,13 @@ final class SeedCommandNamespaceTest extends TestCase
         @unlink($marker);
         file_put_contents(
             $this->basePath . '/database/seeders/Dev2NsSeederC.php',
-            "<?php\nnamespace Database\\Seeders;\nclass Dev2NsSeederC {\n    public function run(): void {\n        file_put_contents('" . $marker . "', 'ok');\n    }\n}\n"
+            "<?php\nnamespace Database\\Seeders;\nclass Dev2NsSeederC {\n    public " .
+                "function run(): void {\n        " . "file_put_contents('" . $marker . "', 'ok');\n    }\n}\n"
         );
         file_put_contents(
             $this->basePath . '/database/seeders/DatabaseSeeder.php',
-            "<?php\nnamespace Database\\Seeders;\nclass DatabaseSeeder {\n    /** @var array<int, string> */\n    public array \$calls = [Dev2NsSeederC::class];\n}\n"
+            "<?php\nnamespace Database\\Seeders;\nclass DatabaseSeeder {\n    /** @var " .
+                "array<int, string> */\n    public array \$calls = [Dev2NsSeederC::class];\n" . "}\n"
         );
         putenv('SEED_PATH=database/seeders');
         $cmd = new SeedCommand($this->basePath);
@@ -125,7 +132,8 @@ final class SeedCommandNamespaceTest extends TestCase
         @unlink($marker);
         file_put_contents(
             $this->basePath . '/database/seeds/Dev2GlobalSeeder.php',
-            "<?php\nclass Dev2GlobalSeeder {\n    public function run(): void {\n        file_put_contents('" . $marker . "', 'ok');\n    }\n}\n"
+            "<?php\nclass Dev2GlobalSeeder {\n    public function run(): void {\n        file_put_contents('" .
+                $marker . "', 'ok');\n    }\n}\n"
         );
         $cmd = new SeedCommand($this->basePath);
         ob_start();

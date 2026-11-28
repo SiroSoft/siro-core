@@ -37,7 +37,8 @@ final class DebugWorkflowTest extends TestCase
         parent::setUp();
         putenv('APP_ENV=local');
         $this->basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_workflow_' . uniqid('', true);
-        $this->tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $this->tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         mkdir($this->tracesDir, 0777, true);
 
         $this->routerFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_wf_router_' . uniqid('', true) . '.php';
@@ -152,7 +153,11 @@ PHP;
         $nul = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
         $descriptors = [0 => ['pipe', 'r'], 1 => ['file', $nul, 'w'], 2 => ['file', $nul, 'w']];
         $pipes = [];
-        $this->serverProc = proc_open([PHP_BINARY, '-S', '127.0.0.1:' . $this->port, $this->routerFile], $descriptors, $pipes);
+        $this->serverProc = proc_open(
+            [PHP_BINARY, '-S', '127.0.0.1:' . $this->port, $this->routerFile],
+            $descriptors,
+            $pipes
+        );
         $this->serverPipes = $pipes;
         $ok = false;
         for ($i = 0; $i < 20; $i++) {
@@ -638,7 +643,8 @@ PHP;
         $this->fakeProjects[] = $dir;
         $vendorBin = $dir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin';
         mkdir($vendorBin, 0777, true);
-        $shim = "#!/usr/bin/env php\n<?php\necho \"PHPUnit (shim) ran with args: \" . implode(' ', array_slice(\$argv, 1)) . \"\\n\";\nexit($exitCode);\n";
+        $shim = "#!/usr/bin/env php\n<?php\necho \"PHPUnit (shim) ran with args: \" . " .
+            "implode(' ', array_slice(\$argv, 1)) . \"\\n\";\n" . "exit(" . $exitCode . ");\n";
         $shimPath = $vendorBin . DIRECTORY_SEPARATOR . 'phpunit';
         file_put_contents($shimPath, $shim);
         // TestRunCommand invokes the file directly (no `php` prefix) — needs exec bit on Unix

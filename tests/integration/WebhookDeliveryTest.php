@@ -126,7 +126,10 @@ final class WebhookDeliveryTest extends TestCase
         $queued = $dispatcher->dispatch('order.created', ['order_id' => 1]);
 
         $this->assertSame(1, $queued);
-        Queue::assertPushed(WebhookDeliveryJob::class, static fn (array $data): bool => $data['url'] === 'https://example.com/orders');
+        Queue::assertPushed(
+            WebhookDeliveryJob::class,
+            static fn (array $data): bool => $data['url'] === 'https://example.com/orders'
+        );
         Queue::assertNotPushed('other-job');
         $jobs = Queue::getFakedJobs();
         $this->assertCount(1, $jobs);
@@ -154,7 +157,10 @@ final class WebhookDeliveryTest extends TestCase
         $queued = $dispatcher->dispatch('order.created', ['order_id' => 2], 'https://example.com/adhoc');
 
         $this->assertSame(1, $queued);
-        Queue::assertPushed(WebhookDeliveryJob::class, static fn (array $data): bool => $data['url'] === 'https://example.com/adhoc');
+        Queue::assertPushed(
+            WebhookDeliveryJob::class,
+            static fn (array $data): bool => $data['url'] === 'https://example.com/adhoc'
+        );
     }
 
     public function testDispatcherRejectsInvalidUrl(): void
@@ -211,7 +217,9 @@ final class WebhookDeliveryTest extends TestCase
         mkdir($configDir, 0777, true);
         file_put_contents(
             $configDir . '/webhooks.php',
-            "<?php return ['endpoints' => [['url' => 'https://example.com/cfg', 'secret' => 'cfg-secret', 'events' => ['order.created']]], 'default_secret' => '', 'max_attempts' => 3, 'timeout' => 10];"
+            "<?php return ['endpoints' => [['url' => 'https://example.com/cfg', 'secret' " .
+                "=> 'cfg-secret', 'events' => ['order.created']]], 'default_secret' => '', " .
+                "'max_attempts' => 3, 'timeout' => " . "10];"
         );
         Config::load($configDir);
 
@@ -219,7 +227,10 @@ final class WebhookDeliveryTest extends TestCase
         $queued = WebhookDispatcher::fromConfig()->dispatch('order.created', ['order_id' => 3]);
 
         $this->assertSame(1, $queued);
-        Queue::assertPushed(WebhookDeliveryJob::class, static fn (array $data): bool => $data['url'] === 'https://example.com/cfg');
+        Queue::assertPushed(
+            WebhookDeliveryJob::class,
+            static fn (array $data): bool => $data['url'] === 'https://example.com/cfg'
+        );
         unlink($configDir . '/webhooks.php');
         rmdir($configDir);
     }
@@ -359,7 +370,8 @@ final class WebhookDeliveryTest extends TestCase
         // purges connections before forking).
         Database::purgeAll();
         $worker = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'fixtures' . DIRECTORY_SEPARATOR . 'webhook-worker.php';
-        $cmd = 'timeout 30 php8.4 ' . escapeshellarg($worker) . ' ' . escapeshellarg($dbFile) . ' ' . $maxCalls . ' 2>&1';
+        $cmd = 'timeout 30 php8.4 ' . escapeshellarg($worker) . ' ' . escapeshellarg($dbFile) . ' ' . $maxCalls .
+            ' 2>&1';
         $output = [];
         $code = 0;
         exec($cmd, $output, $code);
@@ -396,14 +408,21 @@ final class WebhookDeliveryTest extends TestCase
 
         $receiver = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'fixtures' . DIRECTORY_SEPARATOR . 'webhook-receiver.php';
         $docroot = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'fixtures';
-        $descriptors = [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']];
+        $descriptors = [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'],
+            2 => ['file', '/dev/null', 'w']];
         $env = [
             'PATH' => (string) getenv('PATH'),
             'WEBHOOK_TEST_SECRET' => self::SECRET,
             'WEBHOOK_TEST_LOG' => $this->logFile,
             'WEBHOOK_TEST_ALWAYS_FAIL' => $alwaysFail ? '1' : '0',
         ];
-        $process = proc_open(['php8.4', '-S', '127.0.0.1:' . $port, '-t', $docroot, $receiver], $descriptors, $pipes, $docroot, $env);
+        $process = proc_open(
+            ['php8.4', '-S', '127.0.0.1:' . $port, '-t', $docroot, $receiver],
+            $descriptors,
+            $pipes,
+            $docroot,
+            $env
+        );
         if (!is_resource($process)) {
             $this->markTestSkipped('Could not start webhook receiver server.');
         }

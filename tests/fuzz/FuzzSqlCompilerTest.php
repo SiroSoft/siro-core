@@ -138,7 +138,8 @@ final class FuzzSqlCompilerTest extends TestCase
             ['*'], 'users',
             [],
             [],
-            [['type' => 'INNER', 'table' => 'profiles', 'first' => 'users.id', 'operator' => '=', 'second' => 'profiles.user_id']],
+            [['type' => 'INNER', 'table' => 'profiles', 'first' => 'users.id', 'operator' => '=',
+                'second' => 'profiles.user_id']],
             [], [], null, null,
             [],
         ];
@@ -263,12 +264,16 @@ final class FuzzSqlCompilerTest extends TestCase
     public static function provideJoinsInputs(): iterable
     {
         yield 'empty' => [[]];
-        yield 'inner join' => [[['type' => 'INNER', 'table' => 'profiles', 'first' => 'users.id', 'operator' => '=', 'second' => 'profiles.user_id']]];
-        yield 'left join' => [[['type' => 'LEFT', 'table' => 'posts', 'first' => 'users.id', 'operator' => '=', 'second' => 'posts.user_id']]];
+        yield 'inner join' => [[['type' => 'INNER', 'table' => 'profiles', 'first' => 'users.id', 'operator' => '=',
+            'second' => 'profiles.user_id']]];
+        yield 'left join' => [[['type' => 'LEFT', 'table' => 'posts', 'first' => 'users.id', 'operator' => '=',
+            'second' => 'posts.user_id']]];
         yield 'multiple joins' => [
             [
-                ['type' => 'INNER', 'table' => 'profiles', 'first' => 'users.id', 'operator' => '=', 'second' => 'profiles.user_id'],
-                ['type' => 'LEFT', 'table' => 'posts', 'first' => 'users.id', 'operator' => '=', 'second' => 'posts.user_id'],
+                ['type' => 'INNER', 'table' => 'profiles', 'first' => 'users.id', 'operator' => '=',
+                    'second' => 'profiles.user_id'],
+                ['type' => 'LEFT', 'table' => 'posts', 'first' => 'users.id', 'operator' => '=',
+                    'second' => 'posts.user_id'],
             ],
         ];
     }

@@ -51,9 +51,13 @@ final class SmokeFixGateTest extends TestCase
         );
         file_put_contents(
             $this->tempDir . '/config/database.php',
-            '<?php return ["driver" => "sqlite", "database" => "' . $this->tempDir . '/storage/test.db", "charset" => "utf8mb4"];'
+            '<?php return ["driver" => "sqlite", "database" => "' . $this
+                ->tempDir . '/storage/test.db", "charset" => "utf8mb4"];'
         );
-        file_put_contents($this->tempDir . '/config/app.php', '<?php return ["name" => "SmokeFixGate", "env" => "testing"];');
+        file_put_contents(
+            $this->tempDir . '/config/app.php',
+            '<?php return ["name" => "SmokeFixGate", "env" => "testing"];'
+        );
 
         // Controllers exist so make:openapi fallback mode can derive
         // routes from them (no routes/*.php => fallback).
@@ -295,7 +299,11 @@ PHP);
         $this->assertArrayHasKey('/api/auth/{id}', $paths, '/api/auth/{id} must survive');
         $this->assertArrayNotHasKey('/api/user', $paths, 'non-auth paths must be filtered out');
         $this->assertArrayNotHasKey('/api/user/{id}', $paths, 'non-auth paths must be filtered out');
-        $this->assertSame('Auth', $paths['/api/auth']['get']['tags'][0], 'bare /api/auth must be tagged Auth, not Auths');
+        $this->assertSame(
+            'Auth',
+            $paths['/api/auth']['get']['tags'][0],
+            'bare /api/auth must be tagged Auth, not Auths'
+        );
     }
 
     public function testPostmanFlowAuthKeepsBareAuthPath(): void
@@ -396,7 +404,11 @@ PHP);
         [$exit, $output] = $this->runCmd(['siro', 'make:test', '--from-trace=tr1', '--ignore=id,created_at']);
         $this->assertSame(0, $exit, 'make:test --from-trace --ignore should exit 0: ' . $output);
         $ignored = (string) file_get_contents($generated);
-        $this->assertStringNotContainsString("assertArrayHasKey('id', \$body)", $ignored, '--ignore=id must drop the id assertion');
+        $this->assertStringNotContainsString(
+            "assertArrayHasKey('id', \$body)",
+            $ignored,
+            '--ignore=id must drop the id assertion'
+        );
         $this->assertStringContainsString("assertArrayHasKey('name', \$body)", $ignored, 'non-ignored keys must stay');
         $this->assertNotSame($plain, $ignored, '--ignore must change the generated file');
     }

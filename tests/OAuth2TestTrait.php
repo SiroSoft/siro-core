@@ -26,16 +26,20 @@ trait OAuth2TestTrait
     private static string $oauthEncryptionKey = '';
     private static string $oauthDbFile = '';
 
-    /** @var array{client_id: string, client_secret: string, name: string, redirect_uris: array<int, string>, grants: array<int, string>, scopes: string, is_confidential: bool} */
+    /** @var array{client_id: string, client_secret: string, name: string, redirect_uris: array<int, string>, grants: ar
+     * ray<int, string>, scopes: string, is_confidential: bool} */
     private array $oauthClient = [];
 
-    /** @var array{client_id: string, client_secret: string, name: string, redirect_uris: array<int, string>, grants: array<int, string>, scopes: string, is_confidential: bool} */
+    /** @var array{client_id: string, client_secret: string, name: string, redirect_uris: array<int, string>, grants: ar
+     * ray<int, string>, scopes: string, is_confidential: bool} */
     private array $oauthPublicClient = [];
 
-    /** @var array{client_id: string, client_secret: string, name: string, redirect_uris: array<int, string>, grants: array<int, string>, scopes: string, is_confidential: bool} */
+    /** @var array{client_id: string, client_secret: string, name: string, redirect_uris: array<int, string>, grants: ar
+     * ray<int, string>, scopes: string, is_confidential: bool} */
     private static array $oauthClientStatic = [];
 
-    /** @var array{client_id: string, client_secret: string, name: string, redirect_uris: array<int, string>, grants: array<int, string>, scopes: string, is_confidential: bool} */
+    /** @var array{client_id: string, client_secret: string, name: string, redirect_uris: array<int, string>, grants: ar
+     * ray<int, string>, scopes: string, is_confidential: bool} */
     private static array $oauthPublicClientStatic = [];
 
     private static function setUpOAuth2Class(): void
@@ -120,7 +124,10 @@ trait OAuth2TestTrait
         // it being present. This trait overwrites it per test with a random
         // value; leaving the last random value satisfies the ambient contract
         // (any 32+ char test secret works).
-        foreach (['OAUTH_PRIVATE_KEY_PATH', 'OAUTH_PUBLIC_KEY_PATH', 'OAUTH_ENCRYPTION_KEY', 'OAUTH_PRIVATE_KEY', 'OAUTH_PUBLIC_KEY'] as $key) {
+        foreach (
+            ['OAUTH_PRIVATE_KEY_PATH', 'OAUTH_PUBLIC_KEY_PATH', 'OAUTH_ENCRYPTION_KEY', 'OAUTH_PRIVATE_KEY',
+            'OAUTH_PUBLIC_KEY'] as $key
+        ) {
             putenv($key);
             unset($_ENV[$key]);
         }

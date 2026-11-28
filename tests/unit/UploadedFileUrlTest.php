@@ -52,7 +52,8 @@ final class UploadedFileUrlTest extends TestCase
 
     public function testExtensionDetection(): void
     {
-        $f = new UploadedFile(['name' => 'REPORT.PDF', 'tmp_name' => '', 'type' => 'application/pdf', 'size' => 1, 'error' => 0]);
+        $f = new UploadedFile(['name' => 'REPORT.PDF', 'tmp_name' => '', 'type' => 'application/pdf', 'size' => 1,
+            'error' => 0]);
         $this->assertSame('pdf', $f->extension());
         // isPdf/isImage require a real upload (is_uploaded_file) — not testable here
         $this->assertFalse($f->isPdf());

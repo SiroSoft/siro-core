@@ -33,9 +33,13 @@ final class DbHealthMutationTest extends TestCase
         file_put_contents($this->dbPath, '');
         file_put_contents(
             $this->basePath . '/config/database.php',
-            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . $this->dbPath . "', 'slow_query_threshold' => 500];\n"
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . $this
+                ->dbPath . "', 'slow_query_threshold' => 500];\n"
         );
-        file_put_contents($this->basePath . '/.env', "APP_ENV=testing\nDB_CONNECTION=sqlite\nDB_DATABASE=" . $this->dbPath . "\n");
+        file_put_contents(
+            $this->basePath . '/.env',
+            "APP_ENV=testing\nDB_CONNECTION=sqlite\nDB_DATABASE=" . $this->dbPath . "\n"
+        );
     }
 
     protected function tearDown(): void
@@ -97,7 +101,9 @@ final class DbHealthMutationTest extends TestCase
         }
         file_put_contents(
             $this->basePath . '/config/database.php',
-            "<?php\nreturn ['driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3307, 'database' => 'siro_test', 'username' => 'root', 'password' => '', 'charset' => 'utf8mb4'];\n"
+            "<?php\nreturn ['driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3307, " .
+                "'database' => 'siro_test', 'username' => 'root', 'password' => '', 'charset' " . "=> " .
+                "'utf8mb4'];\n"
         );
         $cmd = new DbHealthCommand($this->basePath);
         ob_start();

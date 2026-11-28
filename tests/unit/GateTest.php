@@ -96,12 +96,3 @@ final class GateTest extends TestCase
         $this->assertFalse(Gate::allows('orders.view', ['id' => 8], ['user_id' => 7]));
     }
 }
-
-final class GateOrderPolicy
-{
-    /** @param array<string, mixed> $user @param array<string, mixed> $order */
-    public static function view(?array $user, array $order): bool
-    {
-        return ($user['id'] ?? null) === ($order['user_id'] ?? null);
-    }
-}

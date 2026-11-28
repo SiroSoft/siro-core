@@ -75,7 +75,9 @@ final class EscapedMutantsTest extends TestCase
         $hash = password_hash($token, PASSWORD_BCRYPT);
         $now = time();
         Database::execute(
-            "INSERT INTO " . ApiKey::$table . " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO " . ApiKey::$table .
+                " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) " .
+                "VALUES (?, ?, ?, ?, ?, ?, " . "?)",
             ['exp-exact', hash('sha256', $token), $hash, 'read', 1, $now, $now]
         );
         $found = ApiKey::findByToken($token);
@@ -97,7 +99,9 @@ final class EscapedMutantsTest extends TestCase
         $token = bin2hex(random_bytes(16));
         $hash = password_hash($token, PASSWORD_BCRYPT);
         Database::execute(
-            "INSERT INTO " . ApiKey::$table . " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO " . ApiKey::$table .
+                " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) " .
+                "VALUES (?, ?, ?, ?, ?, ?, " . "?)",
             ['exp-after', hash('sha256', $token), $hash, 'read', 1, time(), time() + 1]
         );
         $found = ApiKey::findByToken($token);
@@ -121,7 +125,9 @@ final class EscapedMutantsTest extends TestCase
         $token = bin2hex(random_bytes(16));
         $hash = password_hash($token, PASSWORD_BCRYPT);
         Database::execute(
-            "INSERT INTO " . ApiKey::$table . " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO " . ApiKey::$table .
+                " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) " .
+                "VALUES (?, ?, ?, ?, ?, ?, " . "?)",
             ['scope-trim', hash('sha256', $token), $hash, 'read,write', 1, time(), 0]
         );
         $found = ApiKey::findByToken($token);

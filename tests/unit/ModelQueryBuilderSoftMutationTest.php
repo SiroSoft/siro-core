@@ -25,7 +25,8 @@ final class ModelQueryBuilderSoftMutationTest extends TestCase
             'database' => ':memory:',
             'slow_query_threshold' => 500,
         ]);
-        Database::execute('CREATE TABLE ms_users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT)');
+        Database::execute('CREATE TABLE ms_users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ' .
+            'created_at TEXT, updated_at TEXT, deleted_at ' . 'TEXT)');
         Database::table('ms_users')->insert(['name' => 'Alice']);
         Database::table('ms_users')->insert(['name' => 'Bob']);
         Database::table('ms_users')->insert(['name' => 'Carol']);
@@ -81,27 +82,5 @@ final class ModelQueryBuilderSoftMutationTest extends TestCase
         $u = MSUser::find(1);
         $u->delete();
         $this->assertCount(2, MSUser::query()->get());
-    }
-}
-
-final class MSUser extends Model
-{
-    use SoftDeletes;
-
-    protected string $table = 'ms_users';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
-
-    public static function resetStatic(): void
-    {
-        $ref = new \ReflectionClass(self::class);
-        foreach (['identityMap', 'lastInsertId', 'queryLog'] as $prop) {
-            if ($ref->hasProperty($prop)) {
-                $p = $ref->getProperty($prop);
-                $p->setAccessible(true);
-                $p->setValue(null, []);
-            }
-        }
     }
 }

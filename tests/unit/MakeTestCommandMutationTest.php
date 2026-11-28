@@ -27,7 +27,8 @@ final class MakeTestCommandMutationTest extends TestCase
         $this->basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_mt_' . uniqid('', true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature', 0777, true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Unit', 0777, true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces', 0777, true);
+        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'traces', 0777, true);
     }
 
     protected function tearDown(): void
@@ -74,7 +75,8 @@ final class MakeTestCommandMutationTest extends TestCase
         $code = $cmd->run(['Calculator', '--unit']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Unit' . DIRECTORY_SEPARATOR . 'CalculatorTest.php');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Unit' .
+            DIRECTORY_SEPARATOR . 'CalculatorTest.php');
     }
 
     public function testMakeFeatureTest(): void
@@ -84,7 +86,8 @@ final class MakeTestCommandMutationTest extends TestCase
         $code = $cmd->run(['OrderController']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature' . DIRECTORY_SEPARATOR . 'OrderControllerTest.php');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature' .
+            DIRECTORY_SEPARATOR . 'OrderControllerTest.php');
     }
 
     public function testSanitizesName(): void
@@ -94,7 +97,8 @@ final class MakeTestCommandMutationTest extends TestCase
         $code = $cmd->run(['Bad Name!', '--unit']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Unit' . DIRECTORY_SEPARATOR . 'BadNameTest.php');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Unit' .
+            DIRECTORY_SEPARATOR . 'BadNameTest.php');
     }
 
     public function testFromTraceNotFound(): void
@@ -109,7 +113,8 @@ final class MakeTestCommandMutationTest extends TestCase
     public function testFromTraceInvalid(): void
     {
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces' . DIRECTORY_SEPARATOR . 'bad-trace.json',
+            $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+                'traces' . DIRECTORY_SEPARATOR . 'bad-trace.json',
             'not-json'
         );
         $cmd = new MakeTestCommand($this->basePath);
@@ -122,7 +127,8 @@ final class MakeTestCommandMutationTest extends TestCase
     public function testFromTraceGeneratesTest(): void
     {
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces' . DIRECTORY_SEPARATOR . 'trace-123.json',
+            $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+                'traces' . DIRECTORY_SEPARATOR . 'trace-123.json',
             (string) json_encode([
                 'method' => 'POST',
                 'path' => '/api/users',
@@ -138,13 +144,15 @@ final class MakeTestCommandMutationTest extends TestCase
         $code = $cmd->run(['--from-trace=trace-123', '--ignore=id,created_at']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature' . DIRECTORY_SEPARATOR . 'FromTracetrace_123Test.php');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature' .
+            DIRECTORY_SEPARATOR . 'FromTracetrace_123Test.php');
     }
 
     public function testFromTraceGetNoAuth(): void
     {
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces' . DIRECTORY_SEPARATOR . 'get-ok.json',
+            $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+                'traces' . DIRECTORY_SEPARATOR . 'get-ok.json',
             (string) json_encode([
                 'method' => 'GET',
                 'path' => '/health',
@@ -158,6 +166,7 @@ final class MakeTestCommandMutationTest extends TestCase
         $code = $cmd->run(['--from-trace=get-ok']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature' . DIRECTORY_SEPARATOR . 'FromTraceget_okTest.php');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Feature' .
+            DIRECTORY_SEPARATOR . 'FromTraceget_okTest.php');
     }
 }

@@ -33,7 +33,9 @@ final class CommandSmokeTest extends TestCase
         }
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=local\nAPP_URL=http://localhost\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_testing_1234\nAPP_KEY=0123456789abcdef0123456789abcdef\n"
+            "APP_ENV=local\nAPP_URL=http://localhost\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_testing_1234\n" .
+                "APP_KEY=0123456789abcdef0123456789abcdef\n"
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
@@ -41,7 +43,8 @@ final class CommandSmokeTest extends TestCase
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php',
-            "<?php\n\$router->get('/health', fn () => 'ok');\n\$router->get('/users/{id}', function (\$id) { return ['id' => \$id]; });\n"
+            "<?php\n\$router->get('/health', fn () => 'ok');\n\$router->get('/users/{id}', " .
+                "function (\$id) { return ['id' => \$id]; " . "});\n"
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'schedule.php',
@@ -105,11 +108,13 @@ final class CommandSmokeTest extends TestCase
     {
         $down = new DownCommand($this->basePath);
         $this->assertSame(0, $down->run(['--message=Maintenance', '--retry=30', '--allow=1.2.3.4']));
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' .
+            DIRECTORY_SEPARATOR . 'down');
 
         $up = new UpCommand($this->basePath);
         $this->assertSame(0, $up->run([]));
-        $this->assertFileDoesNotExist($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down');
+        $this->assertFileDoesNotExist($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR .
+            'framework' . DIRECTORY_SEPARATOR . 'down');
 
         // Running up again when already live
         $this->assertSame(0, $up->run([]));
@@ -145,11 +150,13 @@ final class CommandSmokeTest extends TestCase
     {
         $cache = new ConfigCacheCommand($this->basePath);
         $this->assertSame(0, $cache->run([]));
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'config.php');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' .
+            DIRECTORY_SEPARATOR . 'config.php');
 
         $clear = new ConfigClearCommand($this->basePath);
         $this->assertSame(0, $clear->run([]));
-        $this->assertFileDoesNotExist($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'config.php');
+        $this->assertFileDoesNotExist($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR .
+            'framework' . DIRECTORY_SEPARATOR . 'config.php');
     }
 
     public function testEnvCacheCommand(): void

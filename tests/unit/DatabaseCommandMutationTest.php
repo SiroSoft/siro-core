@@ -74,7 +74,10 @@ final class DatabaseCommandMutationTest extends TestCase
         $oldCwd = getcwd();
         chdir($this->basePath);
         try {
-            file_put_contents($this->basePath . DIRECTORY_SEPARATOR . '.env', "DB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=old\n");
+            file_put_contents(
+                $this->basePath . DIRECTORY_SEPARATOR . '.env',
+                "DB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=old\n"
+            );
             mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage', 0777, true);
             $cmd = new DatabaseCommand();
             $code = $cmd->run(['init']);
@@ -86,7 +89,8 @@ final class DatabaseCommandMutationTest extends TestCase
         $env = (string) file_get_contents($this->basePath . DIRECTORY_SEPARATOR . '.env');
         $this->assertStringContainsString('DB_CONNECTION=sqlite', $env);
         $this->assertStringContainsString('DB_DATABASE=storage/app/database.sqlite', $env);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'database.sqlite');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app' .
+            DIRECTORY_SEPARATOR . 'database.sqlite');
     }
 
     public function testInitSqliteAppendsWhenMissing(): void

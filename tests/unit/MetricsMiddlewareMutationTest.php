@@ -59,7 +59,10 @@ final class MetricsMiddlewareMutationTest extends TestCase
 
     public function testNormalizeHash64(): void
     {
-        $this->assertSame('/hash/{hash}', $this->normalize('/hash/ab12cd34ef56ab78cd90ef12ab34cd56ab12cd34ef56ab78cd90ef12ab34cd56'));
+        $this->assertSame(
+            '/hash/{hash}',
+            $this->normalize('/hash/ab12cd34ef56ab78cd90ef12ab34cd56ab12cd34ef56ab78cd90ef12ab34cd56')
+        );
     }
 
     public function testNormalizePlain(): void

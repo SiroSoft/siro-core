@@ -14,25 +14,6 @@ use Siro\Core\Model;
 use Siro\Core\Request;
 use Siro\Core\Response;
 
-final class AuthUserD extends Model
-{
-    protected string $table = 'amw_users';
-    /** @var array<int, string> */
-    protected array $fillable = ['id', 'name', 'email', 'role', 'status', 'token_version', 'created_at', 'avatar'];
-
-    public static function resetStatic(): void
-    {
-        $ref = new \ReflectionClass(self::class);
-        foreach (['identityMap', 'lastInsertId', 'queryLog'] as $prop) {
-            if ($ref->hasProperty($prop)) {
-                $p = $ref->getProperty($prop);
-                $p->setAccessible(true);
-                $p->setValue(null, []);
-            }
-        }
-    }
-}
-
 /**
  * Strong tests killing AuthMiddleware mutants (full user flow).
  */
@@ -50,7 +31,8 @@ final class AuthMiddlewareDetailedMutationTest extends TestCase
         putenv('AUTH_USER_MODEL=' . AuthUserD::class);
         Database::purgeAll();
         Database::configure(['driver' => 'sqlite', 'database' => ':memory:']);
-        Database::execute('CREATE TABLE amw_users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, role TEXT, status INTEGER, token_version INTEGER, created_at TEXT, avatar TEXT)');
+        Database::execute('CREATE TABLE amw_users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ' .
+            'email TEXT, role TEXT, status INTEGER, token_version INTEGER, created_at ' . 'TEXT, avatar ' . 'TEXT)');
         Database::table('amw_users')->insert([
             'id' => 1,
             'name' => 'Alice',

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Test-only webhook receiver for WebhookDeliveryTest.
  *
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * This file is test infrastructure — never ship it as app code.
  */
+
+declare(strict_types=1);
 
 $autoload = __DIR__ . '/../../vendor/autoload.php';
 if (is_file($autoload)) {

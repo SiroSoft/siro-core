@@ -58,7 +58,8 @@ final class MailEdgeTest extends TestCase
     {
         Mail::fake();
         $projDir = dirname(__DIR__, 2);
-        $attachFile = $projDir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'mail_edge_attach_' . uniqid('', true) . '.txt';
+        $attachFile = $projDir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'mail_edge_attach_' .
+            uniqid('', true) . '.txt';
         file_put_contents($attachFile, 'hello attachment content');
 
         try {

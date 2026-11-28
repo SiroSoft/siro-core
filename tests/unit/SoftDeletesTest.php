@@ -37,9 +37,10 @@ final class SoftDeletesTest extends TestCase
     public function testSoftDeleteSetsDeletedAt(): void
     {
         $model = new class extends Model {
+            use \Siro\Core\DB\SoftDeletes;
+
             protected string $table = 'soft_delete_models';
             protected array $fillable = ['name'];
-            use \Siro\Core\DB\SoftDeletes;
         };
 
         $saved = $model->create(['name' => 'test']);
@@ -50,9 +51,10 @@ final class SoftDeletesTest extends TestCase
     public function testForceDeleteMethodExists(): void
     {
         $model = new class extends Model {
+            use \Siro\Core\DB\SoftDeletes;
+
             protected string $table = 'soft_delete_models';
             protected array $fillable = ['name'];
-            use \Siro\Core\DB\SoftDeletes;
         };
 
         $this->assertTrue(method_exists($model, 'forceDelete'));
@@ -61,9 +63,10 @@ final class SoftDeletesTest extends TestCase
     public function testRestoreClearsDeletedAt(): void
     {
         $model = new class extends Model {
+            use \Siro\Core\DB\SoftDeletes;
+
             protected string $table = 'soft_delete_models';
             protected array $fillable = ['name'];
-            use \Siro\Core\DB\SoftDeletes;
         };
 
         $saved = $model->create(['name' => 'restore_test']);
@@ -77,9 +80,10 @@ final class SoftDeletesTest extends TestCase
     public function testTrashedReturnsCorrectState(): void
     {
         $model = new class extends Model {
+            use \Siro\Core\DB\SoftDeletes;
+
             protected string $table = 'soft_delete_models';
             protected array $fillable = ['name'];
-            use \Siro\Core\DB\SoftDeletes;
         };
 
         $saved = $model->create(['name' => 'trashed_test']);

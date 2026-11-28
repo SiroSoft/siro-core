@@ -142,7 +142,9 @@ final class UncoveredLinesMutationTest extends TestCase
         $token = bin2hex(random_bytes(16));
         $hash = password_hash($token, PASSWORD_BCRYPT);
         Database::execute(
-            "INSERT INTO " . ApiKey::$table . " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO " . ApiKey::$table .
+                " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) " .
+                "VALUES (?, ?, ?, ?, ?, ?, " . "?)",
             ['test-bcrypt', hash('sha256', $token), $hash, 'read', 1, time(), 0]
         );
         $found = ApiKey::findByToken('wrong-token-' . bin2hex(random_bytes(8)));

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Test-only queue worker for WebhookDeliveryTest.
  *
@@ -18,6 +16,8 @@ declare(strict_types=1);
  *
  * This file is test infrastructure — never ship it as app code.
  */
+
+declare(strict_types=1);
 
 $dbFile = $argv[1] ?? '';
 $maxCalls = (int) ($argv[2] ?? 10);

@@ -77,7 +77,10 @@ final class VersionDriftTest extends TestCase
         }
         // A release commit carries exactly one version tag (vX.Y.Z).
         $tags = array_values(array_filter(explode("\n", $tag)));
-        $versionTags = array_values(array_filter($tags, static fn (string $t): bool => (bool) preg_match('/^v\d+\.\d+\.\d+$/', $t)));
+        $versionTags = array_values(array_filter(
+            $tags,
+            static fn (string $t): bool => (bool) preg_match('/^v\d+\.\d+\.\d+$/', $t)
+        ));
         $this->assertNotEmpty($versionTags, 'HEAD is tagged but has no vX.Y.Z tag.');
         $this->assertSame($this->consoleVersion(), ltrim($versionTags[0], 'v'), 'git tag != Console::VERSION');
     }

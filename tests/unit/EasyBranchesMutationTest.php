@@ -32,7 +32,8 @@ final class EasyBranchesMutationTest extends TestCase
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'backups', 0777, true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'config', 0777, true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'public', 0777, true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'backups', 0777, true);
+        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' .
+            DIRECTORY_SEPARATOR . 'backups', 0777, true);
     }
 
     protected function tearDown(): void
@@ -74,7 +75,8 @@ final class EasyBranchesMutationTest extends TestCase
     {
         $this->writeSqliteConfig();
         // pre-create a backup file to exercise list-recent branch
-        $backupDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'backups';
+        $backupDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' .
+            DIRECTORY_SEPARATOR . 'backups';
         file_put_contents($backupDir . DIRECTORY_SEPARATOR . 'backup-old.sqlite', 'x');
 
         $cmd = new DbBackupCommand($this->basePath);

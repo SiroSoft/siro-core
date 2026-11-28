@@ -26,8 +26,10 @@ final class LogCommandsMutationTest extends TestCase
         Env::reset();
         putenv('APP_ENV=testing');
         $this->basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_log_' . uniqid('', true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily' . DIRECTORY_SEPARATOR . date('Y-m'), 0777, true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces', 0777, true);
+        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'daily' . DIRECTORY_SEPARATOR . date('Y-m'), 0777, true);
+        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'traces', 0777, true);
     }
 
     protected function tearDown(): void
@@ -67,7 +69,8 @@ final class LogCommandsMutationTest extends TestCase
 
     public function testLogStatsWithLogs(): void
     {
-        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily' . DIRECTORY_SEPARATOR . date('Y-m');
+        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'daily' . DIRECTORY_SEPARATOR . date('Y-m');
         file_put_contents(
             $dir . DIRECTORY_SEPARATOR . 'request-001.log',
             "GET /api/users 200 45.2ms\nPOST /api/orders 201 150.7ms\nGET /api/error 500 300.1ms\n"
@@ -80,7 +83,8 @@ final class LogCommandsMutationTest extends TestCase
 
     public function testLogStatsOldFileSkipped(): void
     {
-        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily' . DIRECTORY_SEPARATOR . date('Y-m');
+        $dir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'daily' . DIRECTORY_SEPARATOR . date('Y-m');
         $f = $dir . DIRECTORY_SEPARATOR . 'request-old.log';
         file_put_contents($f, "GET /old 200 10ms\n");
         touch($f, time() - 10 * 86400);
@@ -99,7 +103,8 @@ final class LogCommandsMutationTest extends TestCase
 
     public function testLogExportJsonWithFilters(): void
     {
-        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         $t1 = [
             'id' => 'tr-1', 'method' => 'GET', 'path' => '/api/a', 'status' => 200,
             'time_ms' => 50.5, 'timestamp' => date('c'), 'ip' => '1.2.3.4',
@@ -122,7 +127,8 @@ final class LogCommandsMutationTest extends TestCase
 
     public function testLogExportCsvToFile(): void
     {
-        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         file_put_contents($traces . DIRECTORY_SEPARATOR . 'tr-3.json', (string) json_encode([
             'id' => 'tr-3', 'method' => 'GET', 'path' => '/api/x', 'status' => 200, 'time_ms' => 5.0, 'ip' => '1.1.1.1',
         ]));
@@ -148,7 +154,8 @@ final class LogCommandsMutationTest extends TestCase
 
     public function testLogExportUnsupportedFormat(): void
     {
-        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         file_put_contents($traces . DIRECTORY_SEPARATOR . 'tr-4.json', (string) json_encode([
             'id' => 'tr-4', 'method' => 'GET', 'path' => '/', 'status' => 200, 'time_ms' => 1.0,
         ]));
@@ -166,7 +173,8 @@ final class LogCommandsMutationTest extends TestCase
 
     public function testLogExportPostmanFull(): void
     {
-        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $traces = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         file_put_contents($traces . DIRECTORY_SEPARATOR . 'tr-5.json', (string) json_encode([
             'id' => 'tr-5', 'method' => 'POST', 'path' => '/api/login', 'status' => 200,
             'time_ms' => 10.0, 'host' => 'api.example.com',

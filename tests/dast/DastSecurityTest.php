@@ -117,7 +117,8 @@ final class DastSecurityTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function provideHttpMethods(): iterable
     {
-        $methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD', 'TRACE', 'CONNECT', 'PURGE', 'LOCK', 'UNLOCK', 'PROPFIND', 'MKCOL'];
+        $methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD', 'TRACE', 'CONNECT', 'PURGE', 'LOCK',
+            'UNLOCK', 'PROPFIND', 'MKCOL'];
         $paths = ['/', '/test', '/api/users', '/admin', '/.env', '/composer.json', '/vendor/packages.yml'];
         foreach ($methods as $method) {
             foreach ($paths as $path) {

@@ -39,9 +39,12 @@ final class QueryBuilderAdvancedTest extends TestCase
             total REAL DEFAULT 0,
             status TEXT DEFAULT "pending"
         )');
-        Database::table('users')->insert(['name' => 'Alice', 'email' => 'alice@test.com', 'age' => 30, 'role' => 'admin', 'created_at' => '2024-01-10 10:00:00']);
-        Database::table('users')->insert(['name' => 'Bob', 'email' => 'bob@test.com', 'age' => 25, 'role' => 'user', 'created_at' => '2024-02-15 11:00:00']);
-        Database::table('users')->insert(['name' => 'Carol', 'email' => 'carol@test.com', 'age' => 35, 'role' => 'user', 'created_at' => '2024-03-20 12:00:00']);
+        Database::table('users')->insert(['name' => 'Alice', 'email' => 'alice@test.com', 'age' => 30,
+            'role' => 'admin', 'created_at' => '2024-01-10 10:00:00']);
+        Database::table('users')->insert(['name' => 'Bob', 'email' => 'bob@test.com', 'age' => 25, 'role' => 'user',
+            'created_at' => '2024-02-15 11:00:00']);
+        Database::table('users')->insert(['name' => 'Carol', 'email' => 'carol@test.com', 'age' => 35, 'role' => 'user',
+            'created_at' => '2024-03-20 12:00:00']);
     }
 
     protected function tearDown(): void

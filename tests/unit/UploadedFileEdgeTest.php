@@ -29,8 +29,11 @@ final class UploadedFileEdgeTest extends TestCase
         parent::tearDown();
     }
 
-    private function makeFile(string $content = 'file content', string $name = 'file.txt', string $mime = 'text/plain'): UploadedFile
-    {
+    private function makeFile(
+        string $content = 'file content',
+        string $name = 'file.txt',
+        string $mime = 'text/plain'
+    ): UploadedFile {
         $tmp = tempnam(sys_get_temp_dir(), 'upl_');
         file_put_contents($tmp, $content);
         return new UploadedFile([

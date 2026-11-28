@@ -38,11 +38,13 @@ final class MakeCommandsTest extends TestCase
         );
         file_put_contents(
             $this->tempDir . '/routes/api.php',
-            "<?php\n\ndeclare(strict_types=1);\n\$app->router->get('/api/health', function () { return ['success' => true]; });\n"
+            "<?php\n\ndeclare(strict_types=1);\n\$app->router->get('/api/health', function " .
+                "() { return ['success' => true]; " . "});\n"
         );
         file_put_contents(
             $this->tempDir . '/.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_32chars!\n"
+            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\n" .
+                "JWT_SECRET=test_jwt_secret_key_for_unit_tests_32chars!\n"
         );
 
         putenv('SIRO_BASE_PATH=' . $this->tempDir);
@@ -339,21 +341,31 @@ final class MakeCommandsTest extends TestCase
     public static function makeCommandProvider(): array
     {
         return [
-            'make:controller'     => ['make:controller',     ['TestDpCtrl'],         'app/Controllers/TestDpCtrlController.php'],
+            'make:controller'     => ['make:controller',     ['TestDpCtrl'],
+                'app/Controllers/TestDpCtrlController.php'],
             'make:model'          => ['make:model',          ['TestDpModel'],        'app/Models/TestDpModel.php'],
-            'make:migration'      => ['make:migration',      ['create_dp_test_tbl'], 'database/migrations/*dp_test_tbl*'],
-            'make:resource'       => ['make:resource',       ['TestDpRes'],          'app/Resources/TestDpResResource.php'],
-            'make:seeder'         => ['make:seeder',         ['TestDpSeed'],         'database/seeds/TestDpSeedSeeder.php'],
+            'make:migration'      => ['make:migration',      ['create_dp_test_tbl'],
+                'database/migrations/*dp_test_tbl*'],
+            'make:resource'       => ['make:resource',       ['TestDpRes'],
+                'app/Resources/TestDpResResource.php'],
+            'make:seeder'         => ['make:seeder',         ['TestDpSeed'],
+                'database/seeds/TestDpSeedSeeder.php'],
             'make:test'           => ['make:test',           ['TestDpTest'],         'tests/Feature/TestDpTest.php'],
             'make:job'            => ['make:job',            ['TestDpJobX'],         'app/Jobs/TestDpJobXJob.php'],
             'make:mail'           => ['make:mail',           ['TestDpMailX'],        'app/Mails/TestDpMailXMail.php'],
-            'make:event'          => ['make:event',          ['TestDpEventX'],       'app/Events/TestDpEventXEvent.php'],
+            'make:event'          => ['make:event',          ['TestDpEventX'],
+                'app/Events/TestDpEventXEvent.php'],
             'make:lang'           => ['make:lang',           ['en', 'dp_lang'],      'storage/lang/en/dp_lang.php'],
-            'make:factory'        => ['make:factory',        ['TestDpFct'],          'database/factories/TestDpFctFactory.php'],
-            'make:service'        => ['make:service',        ['TestDpSvc'],          'app/Services/TestDpSvcService.php'],
-            'make:repository'     => ['make:repository',     ['TestDpRep'],          'app/Repositories/TestDpRepRepository.php'],
-            'make:middleware'     => ['make:middleware',     ['TestDpMdw'],          'app/Middleware/TestDpMdwMiddleware.php'],
-            'make:listener'       => ['make:listener',       ['TestDpLst'],          'app/Listeners/TestDpLstListener.php'],
+            'make:factory'        => ['make:factory',        ['TestDpFct'],
+                'database/factories/TestDpFctFactory.php'],
+            'make:service'        => ['make:service',        ['TestDpSvc'],
+                'app/Services/TestDpSvcService.php'],
+            'make:repository'     => ['make:repository',     ['TestDpRep'],
+                'app/Repositories/TestDpRepRepository.php'],
+            'make:middleware'     => ['make:middleware',     ['TestDpMdw'],
+                'app/Middleware/TestDpMdwMiddleware.php'],
+            'make:listener'       => ['make:listener',       ['TestDpLst'],
+                'app/Listeners/TestDpLstListener.php'],
         ];
     }
 

@@ -272,7 +272,8 @@ PHP
 
     public function testLoginFlow(): void
     {
-        [$exit, $output] = $this->runCmd(['POST', '/auth/login', 'email=a@b.com', 'password=123456', '--login', '--as=admin']);
+        [$exit, $output] = $this->runCmd(['POST', '/auth/login', 'email=a@b.com', 'password=123456', '--login',
+            '--as=admin']);
         $this->assertContains($exit, [0, 1]);
     }
 
@@ -293,7 +294,8 @@ PHP
         $historyFile = $this->basePath . '/storage/api-test-history.json';
         $entries = [];
         for ($i = 0; $i < 150; $i++) {
-            $entries[] = ['time' => 'x', 'method' => 'GET', 'path' => "/p$i", 'fields' => [], 'headers' => [], 'status' => 200, 'duration_ms' => 1, 'memory_mb' => 1, 'as' => null];
+            $entries[] = ['time' => 'x', 'method' => 'GET', 'path' => "/p$i", 'fields' => [], 'headers' => [],
+                'status' => 200, 'duration_ms' => 1, 'memory_mb' => 1, 'as' => null];
         }
         file_put_contents($historyFile, json_encode($entries));
         $this->runCmd(['GET', '/health']);
@@ -320,7 +322,8 @@ PHP
     {
         // Route returns a Response with plain text content (non-JSON body)
         $routes = (string) file_get_contents($this->basePath . '/routes/api.php');
-        $routes .= "\n\$router->get('/plain', function () { return \\Siro\\Core\\Response::raw('plain text response'); });\n";
+        $routes .= "\n\$router->get('/plain', function () { return \\Siro\\Core\\R" .
+            "esponse::raw('plain text response'); " . "});\n";
         file_put_contents($this->basePath . '/routes/api.php', $routes);
         [$exit, $output] = $this->runCmd(['GET', '/plain']);
         $this->assertSame(0, $exit);
@@ -412,8 +415,10 @@ PHP
             'multi' => [
                 'name' => 'multi',
                 'requests' => [
-                    ['method' => 'GET', 'path' => '/health', 'fields' => [], 'headers' => [], 'content_type' => 'json', 'as' => null],
-                    ['method' => 'POST', 'path' => '/echo', 'fields' => ['x' => '1'], 'headers' => [], 'content_type' => 'json', 'as' => null],
+                    ['method' => 'GET', 'path' => '/health', 'fields' => [], 'headers' => [], 'content_type' => 'json',
+                        'as' => null],
+                    ['method' => 'POST', 'path' => '/echo', 'fields' => ['x' => '1'], 'headers' => [],
+                        'content_type' => 'json', 'as' => null],
                 ],
             ],
         ];
@@ -469,9 +474,11 @@ PHP
     {
         // /auth/login route returns success:true + token → login succeeds
         $routes = (string) file_get_contents($this->basePath . '/routes/api.php');
-        $routes .= "\n\$router->post('/api/auth/login', function () { return ['success' => true, 'data' => ['token' => 'login_token_1234567890']]; });\n";
+        $routes .= "\n\$router->post('/api/auth/login', function () { return ['success' => true, " .
+            "'data' => ['token' => 'login_token_1234567890']]; " . "});\n";
         file_put_contents($this->basePath . '/routes/api.php', $routes);
-        [$exit, $output] = $this->runCmd(['POST', '/api/auth/login', 'email=a@b.com', 'password=x', '--login', '--as=admin']);
+        [$exit, $output] = $this->runCmd(['POST', '/api/auth/login', 'email=a@b.com', 'password=x', '--login',
+            '--as=admin']);
         $this->assertSame(0, $exit, $output);
         $this->assertStringContainsString('Login successful', $output);
     }
@@ -480,9 +487,11 @@ PHP
     {
         // Route returns 400 → login fails
         $routes = (string) file_get_contents($this->basePath . '/routes/api.php');
-        $routes .= "\n\$router->post('/api/auth/login', function () { return \\Siro\\Core\\Response::error('bad credentials', 400); });\n";
+        $routes .= "\n\$router->post('/api/auth/login', function () { return \\Siro\\Core\\R" .
+            "esponse::error('bad credentials', 400); " . "});\n";
         file_put_contents($this->basePath . '/routes/api.php', $routes);
-        [$exit, $output] = $this->runCmd(['POST', '/api/auth/login', 'email=a@b.com', 'password=x', '--login', '--as=admin']);
+        [$exit, $output] = $this->runCmd(['POST', '/api/auth/login', 'email=a@b.com', 'password=x', '--login',
+            '--as=admin']);
         $this->assertSame(1, $exit);
         $this->assertStringContainsString('Login failed', $output);
     }
@@ -531,7 +540,8 @@ PHP
     {
         // Route throws a ValidationException → response built from it (line 544-545)
         $routes = (string) file_get_contents($this->basePath . '/routes/api.php');
-        $routes .= "\n\$router->get('/valerr', function () { throw new \\Siro\\Core\\ValidationException(['name' => 'required']); });\n";
+        $routes .= "\n\$router->get('/valerr', function () { throw new \\Siro\\Core\\V" .
+            "alidationException(['name' => 'required']); " . "});\n";
         file_put_contents($this->basePath . '/routes/api.php', $routes);
         [$exit, $output] = $this->runCmd(['GET', '/valerr']);
         $this->assertContains($exit, [0, 1]);
@@ -594,7 +604,8 @@ PHP
             $errstr = '';
             $conn = @fsockopen('127.0.0.1', $whPort, $errno, $errstr, 2);
             if ($conn !== false) {
-                fwrite($conn, "POST /webhook HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\n\r\n{\"event\":\"test$i\"}");
+                fwrite($conn, "POST /webhook HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r" .
+                    "\n\r\n{\"event\":\"" . "test" . $i . "\"}");
                 fclose($conn);
             }
             usleep(300000);
@@ -672,7 +683,8 @@ PHP
             'fail' => [
                 'name' => 'fail',
                 'requests' => [
-                    ['method' => 'GET', 'path' => '/nonexistent-route-xyz', 'fields' => [], 'headers' => [], 'content_type' => 'json', 'as' => null],
+                    ['method' => 'GET', 'path' => '/nonexistent-route-xyz', 'fields' => [], 'headers' => [],
+                        'content_type' => 'json', 'as' => null],
                 ],
             ],
         ];
@@ -689,7 +701,8 @@ PHP
             'api' => [
                 'name' => 'api',
                 'requests' => [
-                    ['method' => 'POST', 'path' => '/echo', 'fields' => [], 'headers' => [], 'content_type' => 'json', 'as' => null],
+                    ['method' => 'POST', 'path' => '/echo', 'fields' => [], 'headers' => [], 'content_type' => 'json',
+                        'as' => null],
                 ],
             ],
         ];
@@ -782,7 +795,8 @@ PHP
         // Remove the storage dir so the token-save mkdir runs (line 618)
         // The /json route returns a token; --as=admin triggers the save
         $routes = (string) file_get_contents($this->basePath . '/routes/api.php');
-        $routes .= "\n\$router->get('/token', function () { return ['success' => true, 'data' => ['token' => 'abcdefghij1234567890']]; });\n";
+        $routes .= "\n\$router->get('/token', function () { return ['success' => true, 'data' => " .
+            "['token' => 'abcdefghij1234567890']]; " . "});\n";
         file_put_contents($this->basePath . '/routes/api.php', $routes);
         // Remove auth file so the save path runs fresh
         @unlink($this->basePath . '/storage/api-test-auth.json');

@@ -116,10 +116,20 @@ final class NewLiveCommandMutationTest extends TestCase
     {
         mkdir($dir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers', 0777, true);
         mkdir($dir . DIRECTORY_SEPARATOR . 'routes', 0777, true);
-        mkdir($dir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces', 0777, true);
-        file_put_contents($dir . DIRECTORY_SEPARATOR . 'composer.json', json_encode(['name' => 'sirosoft/api', 'description' => 'Siro API Framework']));
+        mkdir(
+            $dir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces',
+            0777,
+            true
+        );
+        file_put_contents(
+            $dir . DIRECTORY_SEPARATOR . 'composer.json',
+            json_encode(['name' => 'sirosoft/api', 'description' => 'Siro API Framework'])
+        );
         file_put_contents($dir . DIRECTORY_SEPARATOR . 'composer.lock', '{"description":"framework lock"}');
-        file_put_contents($dir . DIRECTORY_SEPARATOR . '.env.example', "APP_NAME=SiroPHP\nAPP_ENV=local\nJWT_SECRET=change-me\n");
+        file_put_contents(
+            $dir . DIRECTORY_SEPARATOR . '.env.example',
+            "APP_NAME=SiroPHP\nAPP_ENV=local\nJWT_SECRET=change-me\n"
+        );
         file_put_contents($dir . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'web.php', "<?php\n");
     }
 

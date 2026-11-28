@@ -85,19 +85,3 @@ final class ContainerInjectTest extends TestCase
         $this->assertSame(3600, $svc->ttl);
     }
 }
-
-final class InjectTtlService
-{
-    public function __construct(
-        #[Inject('config.jwt.ttl')] public readonly int $ttl = 3600,
-    ) {
-    }
-}
-
-final class InjectKeyService
-{
-    public function __construct(
-        #[Inject('services.payment.key')] public readonly string $apiKey = '',
-    ) {
-    }
-}

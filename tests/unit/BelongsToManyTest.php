@@ -33,7 +33,8 @@ final class BelongsToManyTest extends TestCase
             $pdo = $this->pdo();
             $pdo->exec('CREATE TABLE IF NOT EXISTS btm_users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))');
             $pdo->exec('CREATE TABLE IF NOT EXISTS btm_roles (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))');
-            $pdo->exec('CREATE TABLE IF NOT EXISTS btm_role_user (user_id INT, role_id INT, created_at TEXT, PRIMARY KEY(user_id, role_id))');
+            $pdo->exec('CREATE TABLE IF NOT EXISTS btm_role_user (user_id INT, role_id INT, ' .
+                'created_at TEXT, PRIMARY KEY(user_id, ' . 'role_id))');
             $pdo->exec("INSERT IGNORE INTO btm_users (id, name) VALUES (1, 'U1'), (2, 'U2')");
             $pdo->exec("INSERT IGNORE INTO btm_roles (id, name) VALUES (1, 'admin'), (2, 'editor')");
         } catch (\Throwable $e) {
@@ -56,7 +57,12 @@ final class BelongsToManyTest extends TestCase
 
     private function pdo(): PDO
     {
-        return new PDO('mysql:host=127.0.0.1;port=3307;dbname=siro_test', 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        return new PDO(
+            'mysql:host=127.0.0.1;port=3307;dbname=siro_test',
+            'root',
+            '',
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
     }
 
     public function testAttachAndGet(): void
@@ -126,25 +132,4 @@ final class BelongsToManyTest extends TestCase
         $this->assertSame('btm_role_user', $rel->getPivotTable());
         $this->assertNotEmpty($rel->getPivotColumns());
     }
-}
-
-final class BTMUser extends Model
-{
-    protected string $table = 'btm_users';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
-
-    public function roles(): \Siro\Core\DB\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(BTMRole::class, 'btm_role_user', 'user_id', 'role_id')->withPivot(['created_at']);
-    }
-}
-
-final class BTMRole extends Model
-{
-    protected string $table = 'btm_roles';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
 }

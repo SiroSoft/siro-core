@@ -61,7 +61,13 @@ final class IdempotencyMiddlewareDetailedTest extends TestCase
 
     public function testPassesWithValidKeyOnPost(): void
     {
-        $request = new Request('POST', '/api/orders', [], ['Idempotency-Key' => '550e8400-e29b-41d4-a716-446655440000'], ['product' => 1]);
+        $request = new Request(
+            'POST',
+            '/api/orders',
+            [],
+            ['Idempotency-Key' => '550e8400-e29b-41d4-a716-446655440000'],
+            ['product' => 1]
+        );
         $response = $this->middleware->handle($request, fn () => Response::created(['id' => 1], 'Order created'));
         $this->assertSame(201, $response->statusCode());
     }

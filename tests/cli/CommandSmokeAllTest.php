@@ -55,9 +55,18 @@ final class CommandSmokeAllTest extends TestCase
             . 'CORS_ALLOWED_ORIGINS=*' . "\n"
         );
 
-        file_put_contents(self::$tempProject . '/config/database.php', '<?php return ["driver" => "sqlite", "database" => ":memory:"];');
-        file_put_contents(self::$tempProject . '/config/app.php', '<?php return ["name" => "SiroSmokeTest", "env" => "testing"];');
-        file_put_contents(self::$tempProject . '/routes/api.php', "<?php\n\$router->get('/api/health', function () { return ['success' => true]; });\n");
+        file_put_contents(
+            self::$tempProject . '/config/database.php',
+            '<?php return ["driver" => "sqlite", "database" => ":memory:"];'
+        );
+        file_put_contents(
+            self::$tempProject . '/config/app.php',
+            '<?php return ["name" => "SiroSmokeTest", "env" => "testing"];'
+        );
+        file_put_contents(
+            self::$tempProject . '/routes/api.php',
+            "<?php\n\$router->get('/api/health', function () { return ['success' => true]; });\n"
+        );
     }
 
     public static function tearDownAfterClass(): void
@@ -146,12 +155,28 @@ final class CommandSmokeAllTest extends TestCase
         $this->assertNotEmpty($output, "Command '{$command} --help' should produce output");
 
         // Help should not trigger file writes (no "Generated:" or "Created:" in output)
-        $this->assertStringNotContainsString('Generated:', $output, "Command '{$command} --help' should not generate files");
-        $this->assertStringNotContainsString('Created:', $output, "Command '{$command} --help' should not create files");
+        $this->assertStringNotContainsString(
+            'Generated:',
+            $output,
+            "Command '{$command} --help' should not generate files"
+        );
+        $this->assertStringNotContainsString(
+            'Created:',
+            $output,
+            "Command '{$command} --help' should not create files"
+        );
 
         // Must not throw exceptions
-        $this->assertStringNotContainsString('Exception', $output, "Command '{$command} --help' should not throw exceptions");
-        $this->assertStringNotContainsString('Fatal error', $output, "Command '{$command} --help' should not produce fatal errors");
+        $this->assertStringNotContainsString(
+            'Exception',
+            $output,
+            "Command '{$command} --help' should not throw exceptions"
+        );
+        $this->assertStringNotContainsString(
+            'Fatal error',
+            $output,
+            "Command '{$command} --help' should not produce fatal errors"
+        );
     }
 
     #[DataProvider('allCommandsProvider')]
@@ -185,7 +210,11 @@ final class CommandSmokeAllTest extends TestCase
         $output = ob_get_clean();
 
         $this->assertIsInt($exitCode, "Global command '{$command}' must return int");
-        $this->assertSame(0, $exitCode, "Global command '{$command}' should exit 0. Output: " . substr($output, 0, 300));
+        $this->assertSame(
+            0,
+            $exitCode,
+            "Global command '{$command}' should exit 0. Output: " . substr($output, 0, 300)
+        );
         $this->assertNotEmpty($output, "Global command '{$command}' should produce output");
     }
 

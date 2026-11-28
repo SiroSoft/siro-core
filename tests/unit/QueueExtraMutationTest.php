@@ -76,8 +76,14 @@ final class QueueExtraMutationTest extends TestCase
 
     public function testRetryFailedAll(): void
     {
-        Database::execute('INSERT INTO failed_jobs (job, data, error, failed_at) VALUES (?, ?, ?, ?)', ['QEJob', '{}', 'e1', date('c')]);
-        Database::execute('INSERT INTO failed_jobs (job, data, error, failed_at) VALUES (?, ?, ?, ?)', ['QEJob', '{"a":1}', 'e2', date('c')]);
+        Database::execute(
+            'INSERT INTO failed_jobs (job, data, error, failed_at) VALUES (?, ?, ?, ?)',
+            ['QEJob', '{}', 'e1', date('c')]
+        );
+        Database::execute(
+            'INSERT INTO failed_jobs (job, data, error, failed_at) VALUES (?, ?, ?, ?)',
+            ['QEJob', '{"a":1}', 'e2', date('c')]
+        );
         $this->assertTrue(Queue::retryFailed('all'));
         $this->assertSame(0, Queue::failedCount());
         $this->assertSame(2, Queue::pendingCount());
@@ -100,7 +106,10 @@ final class QueueExtraMutationTest extends TestCase
     public function testGetFailedJobsLimit(): void
     {
         for ($i = 0; $i < 5; $i++) {
-            Database::execute('INSERT INTO failed_jobs (job, data, error, failed_at) VALUES (?, ?, ?, ?)', ['Q', '{}', 'e', date('c')]);
+            Database::execute(
+                'INSERT INTO failed_jobs (job, data, error, failed_at) VALUES (?, ?, ?, ?)',
+                ['Q', '{}', 'e', date('c')]
+            );
         }
         $jobs = Queue::getFailedJobs(2);
         $this->assertCount(2, $jobs);
@@ -113,12 +122,5 @@ final class QueueExtraMutationTest extends TestCase
         Queue::push(QEJob::class, ['a' => 1]);
         $this->expectException(\PHPUnit\Framework\AssertionFailedError::class);
         Queue::assertNotPushed(QEJob::class);
-    }
-}
-
-final class QEJob
-{
-    public function handle(): void
-    {
     }
 }

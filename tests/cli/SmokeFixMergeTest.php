@@ -71,7 +71,8 @@ final class SmokeFixMergeTest extends TestCase
             'migrate --force-record' => ['migrate', '[--force-record]'],
             'migrate:fresh --force' => ['migrate:fresh', '[--seed] [--force]'],
             'db:seed [class]' => ['db:seed', '[class]'],
-            'make:postman flags' => ['make:postman', '[--output=] [--host=] [--tag=TAG] [--method=] [--path=] [--flow=auth|crud]'],
+            'make:postman flags' => ['make:postman',
+                '[--output=] [--host=] [--tag=TAG] [--method=] [--path=] [--flow=auth|crud]'],
             'make:test --unit' => ['make:test', '[--unit]'],
             'test:run flags' => ['test:run', '[--filter=name]'],
             'api:test --login' => ['api:test', '[--login]'],
@@ -126,9 +127,21 @@ final class SmokeFixMergeTest extends TestCase
         [$exit, $output] = $this->runConsole(['siro', 'api:why', 'POST', '/api/orders']);
         $this->assertSame(0, $exit, 'api:why should exit 0 with a matching trace');
         // Own costs: handler 550.0ms (slow), Auth 1.0ms, Cors 3.0ms — exactly one slow flag.
-        $this->assertSame(1, substr_count($output, '⚠ slow'), 'only the handler row should be flagged slow, not every middleware');
-        $this->assertStringContainsString('1.0ms', $output, 'AuthMiddleware own cost must be shown, not its inclusive time');
-        $this->assertStringContainsString('3.0ms', $output, 'CorsMiddleware own cost must be shown, not its inclusive time');
+        $this->assertSame(
+            1,
+            substr_count($output, '⚠ slow'),
+            'only the handler row should be flagged slow, not every middleware'
+        );
+        $this->assertStringContainsString(
+            '1.0ms',
+            $output,
+            'AuthMiddleware own cost must be shown, not its inclusive time'
+        );
+        $this->assertStringContainsString(
+            '3.0ms',
+            $output,
+            'CorsMiddleware own cost must be shown, not its inclusive time'
+        );
     }
 
     // ==================== MAKE-M3: make:postman --tag substring ====================
@@ -143,7 +156,10 @@ final class SmokeFixMergeTest extends TestCase
             @mkdir($this->tempDir . '/' . $dir, 0777, true);
         }
         file_put_contents($this->tempDir . '/.env', "APP_ENV=testing\nAPP_DEBUG=true\nDB_CONNECTION=sqlite\n");
-        file_put_contents($this->tempDir . '/config/database.php', '<?php return ["driver" => "sqlite", "database" => ":memory:"];');
+        file_put_contents(
+            $this->tempDir . '/config/database.php',
+            '<?php return ["driver" => "sqlite", "database" => ":memory:"];'
+        );
         file_put_contents($this->tempDir . '/routes/api.php', <<<'PHP'
 <?php
 

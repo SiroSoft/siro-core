@@ -156,7 +156,8 @@ final class QueueWorkTest extends TestCase
 
     public function testFlushFailedClearsAll(): void
     {
-        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e', 'failed_at' => date('Y-m-d H:i:s')]);
+        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e',
+            'failed_at' => date('Y-m-d H:i:s')]);
         $this->assertSame(1, Queue::failedCount());
         Queue::flushFailed();
         $this->assertSame(0, Queue::failedCount());
@@ -165,7 +166,8 @@ final class QueueWorkTest extends TestCase
     public function testGetFailedJobsRespectsLimit(): void
     {
         for ($i = 0; $i < 5; $i++) {
-            Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => "e$i", 'failed_at' => date('Y-m-d H:i:s')]);
+            Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => "e$i",
+                'failed_at' => date('Y-m-d H:i:s')]);
         }
         $this->assertCount(5, Queue::getFailedJobs(10));
         $this->assertCount(2, Queue::getFailedJobs(2));
@@ -173,7 +175,8 @@ final class QueueWorkTest extends TestCase
 
     public function testRetryFailedById(): void
     {
-        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e', 'failed_at' => date('Y-m-d H:i:s')]);
+        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e',
+            'failed_at' => date('Y-m-d H:i:s')]);
         $id = (int) Database::connection()->lastInsertId();
         $this->assertTrue(Queue::retryFailed($id));
         $this->assertSame(0, Database::table('failed_jobs')->count());
@@ -183,28 +186,5 @@ final class QueueWorkTest extends TestCase
     public function testRetryFailedUnknownId(): void
     {
         $this->assertFalse(Queue::retryFailed(99999));
-    }
-}
-
-final class QWTestJob implements QueueInterface
-{
-    public function handle(array $data = []): void
-    {
-        // no-op success
-    }
-}
-
-final class QWThrowingJob implements QueueInterface
-{
-    public function handle(array $data = []): void
-    {
-        throw new \RuntimeException('boom');
-    }
-}
-
-final class QWNotQueueInterface
-{
-    public function handle(array $data = []): void
-    {
     }
 }

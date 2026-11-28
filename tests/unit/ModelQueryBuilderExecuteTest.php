@@ -178,31 +178,3 @@ final class ModelQueryBuilderExecuteTest extends TestCase
         $this->assertSame('Alice', $user->name ?? null);
     }
 }
-
-final class MqUser extends Model
-{
-    protected string $table = 'users';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name', 'email'];
-
-    use \Siro\Core\DB\SoftDeletes;
-
-    public function posts(): \Siro\Core\DB\Relations\HasMany
-    {
-        return $this->hasMany(MqPost::class, 'user_id');
-    }
-}
-
-final class MqPost extends Model
-{
-    protected string $table = 'posts';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['user_id', 'title', 'views'];
-
-    public function user(): \Siro\Core\DB\Relations\BelongsTo
-    {
-        return $this->belongsTo(MqUser::class, 'user_id');
-    }
-}

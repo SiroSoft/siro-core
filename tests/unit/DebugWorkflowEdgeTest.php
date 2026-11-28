@@ -23,7 +23,8 @@ final class DebugWorkflowEdgeTest extends TestCase
     {
         parent::setUp();
         $this->basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_wfedge_' . uniqid('', true);
-        $this->tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $this->tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         mkdir($this->tracesDir, 0777, true);
     }
 
@@ -627,7 +628,11 @@ final class DebugWorkflowEdgeTest extends TestCase
         $m = $ref->getMethod('analyzeQuery');
         $m->setAccessible(true);
         ob_start();
-        $m->invoke($cmd, ['sql' => 'SELECT * FROM users', 'time_ms' => 10, 'rows' => 5], ['trace_id' => 't1', 'method' => 'GET', 'path' => '/api/users']);
+        $m->invoke(
+            $cmd,
+            ['sql' => 'SELECT * FROM users', 'time_ms' => 10, 'rows' => 5],
+            ['trace_id' => 't1', 'method' => 'GET', 'path' => '/api/users']
+        );
         $output = ob_get_clean();
         $this->assertStringContainsString('Query Analysis', (string) $output);
     }
@@ -664,7 +669,11 @@ final class DebugWorkflowEdgeTest extends TestCase
         $m = $ref->getMethod('analyzeQuery');
         $m->setAccessible(true);
         ob_start();
-        $m->invoke($cmd, ['sql' => 'SELECT * FROM users WHERE email = ?', 'time_ms' => 10, 'rows' => 5], ['trace_id' => 't1', 'method' => 'GET', 'path' => '/api/users']);
+        $m->invoke(
+            $cmd,
+            ['sql' => 'SELECT * FROM users WHERE email = ?', 'time_ms' => 10, 'rows' => 5],
+            ['trace_id' => 't1', 'method' => 'GET', 'path' => '/api/users']
+        );
         $output = ob_get_clean();
         $this->assertStringContainsString('Query Analysis', (string) $output);
     }
@@ -904,8 +913,3 @@ final class DebugWorkflowEdgeTest extends TestCase
 namespace Siro\Core\Tests\Unit;
 
 use Siro\Core\Model;
-
-class WorkflowN1Model extends Model
-{
-    protected string $table = 'workflow_n1';
-}

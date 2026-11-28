@@ -56,7 +56,9 @@ final class CliTest extends TestCase
     public function testConsoleCanBeInstantiated(): void
     {
         $this->assertInstanceOf(Console::class, $this->console);
-    }    // ==================== COMMAND REGISTRY INVENTORY ====================
+    }
+
+    // ==================== COMMAND REGISTRY INVENTORY ====================
 
     /**
      * Dynamically reads registered commands from Console.php source.
@@ -197,7 +199,11 @@ final class CliTest extends TestCase
             $runMethod = $handlerRef->getMethod('run');
             $returnType = $runMethod->getReturnType();
             $this->assertNotNull($returnType, "run() in '{$info['handler']}' must have return type");
-            $this->assertStringContainsString('int', $returnType->getName(), "run() in '{$info['handler']}' must return int");
+            $this->assertStringContainsString(
+                'int',
+                $returnType->getName(),
+                "run() in '{$info['handler']}' must return int"
+            );
         }
     }
 
@@ -211,7 +217,8 @@ final class CliTest extends TestCase
     public function testExpectedGroupsExist(): void
     {
         $groups = $this->getGroups();
-        $expected = ['Make / Generate', 'New Project', 'Database', 'Logs', 'Test', 'Queue & Schedule', 'Server & Deploy', 'System & Config'];
+        $expected = ['Make / Generate', 'New Project', 'Database', 'Logs', 'Test', 'Queue & Schedule',
+            'Server & Deploy', 'System & Config'];
         foreach ($expected as $group) {
             $this->assertArrayHasKey($group, $groups, "Expected group '{$group}' not found");
         }
@@ -228,7 +235,11 @@ final class CliTest extends TestCase
         }
 
         $ungrouped = array_diff(array_keys($registry), $groupedCmds);
-        $this->assertCount(0, $ungrouped, 'All commands should be grouped; ungrouped: ' . implode(', ', array_keys($ungrouped)));
+        $this->assertCount(
+            0,
+            $ungrouped,
+            'All commands should be grouped; ungrouped: ' . implode(', ', array_keys($ungrouped))
+        );
     }
 
     // ==================== ALIASES ====================
@@ -244,7 +255,11 @@ final class CliTest extends TestCase
     {
         $registry = $this->getRegistry();
         foreach ($this->getAliases() as $alias => $target) {
-            $this->assertArrayHasKey($target, $registry, "Alias '{$alias}' -> '{$target}' points to non-existent command");
+            $this->assertArrayHasKey(
+                $target,
+                $registry,
+                "Alias '{$alias}' -> '{$target}' points to non-existent command"
+            );
         }
     }
 
@@ -300,7 +315,10 @@ final class CliTest extends TestCase
 
     public function testHelpForCommandReturnsZero(): void
     {
-        foreach (['make:auth', 'make:crud', 'make:model', 'migrate', 'serve', 'test', 'doctor', 'benchmark', 'route:list'] as $cmd) {
+        foreach (
+            ['make:auth', 'make:crud', 'make:model', 'migrate', 'serve', 'test', 'doctor', 'benchmark',
+            'route:list'] as $cmd
+        ) {
             $this->assertEquals(0, $this->console->run(['siro', $cmd, '--help']), "'{$cmd} --help' failed");
         }
     }
@@ -325,7 +343,10 @@ final class CliTest extends TestCase
 
     public function testAllLogCommandsHaveHelp(): void
     {
-        foreach (['log:trace', 'log:replay', 'log:export', 'log:cleanup', 'log:slow', 'log:tail', 'log:stats', 'log:top', 'debug:last'] as $cmd) {
+        foreach (
+            ['log:trace', 'log:replay', 'log:export', 'log:cleanup', 'log:slow', 'log:tail', 'log:stats',
+            'log:top', 'debug:last'] as $cmd
+        ) {
             $this->assertEquals(0, $this->console->run(['siro', $cmd, '--help']), "'{$cmd} --help' failed");
         }
     }
