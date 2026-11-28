@@ -15,7 +15,7 @@
   route file cannot be loaded instead of silently skipping it (the S-07
   schedule workaround is no longer needed); `log:export` CSV no longer
   triggers the PHP 8.4 `fputcsv()` deprecation (explicit `$escape`).
-- The `Cli` testsuite is now declared in `phpunit.xml`, so the 534
+- The `Cli` testsuite is now declared in `phpunit.xml`, so the 654
   tests in `tests/cli/` (including all smoke-fix regression tests) run
   in `scripts/release-check.php` instead of only standalone. The
   `Unit` testsuite was already declared and counted. Fixed the one
@@ -34,6 +34,11 @@
   generator output), and 1 `MultipleClasses` in
   `LogReplayExecutionTest` (`App\Models\User` is asserted by
   `class_exists` and has no PSR-4 mapping to split into).
+- Docs: `KNOWN_ISSUES.md` and `COVERAGE.md` updated to v1.5.2 (F-D item
+  6) — per-release fixed-issue sections for v1.5.0/v1.5.1/v1.5.2,
+  Current Limitations refreshed, coverage % kept at the v0.40.0
+  baseline with an explicit not-re-measured note (no xdebug/pcov
+  driver on this machine).
 
 ## v1.5.2 (2026-11-28)
 

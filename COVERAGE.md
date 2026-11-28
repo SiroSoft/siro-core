@@ -1,19 +1,45 @@
 # Code Coverage Baseline — siro-core
 
-## Tổng quan (v1.4.1, 2026-11-25)
+## Tổng quan (v1.5.2, 2026-11-28)
 
-> Các số dưới đây là baseline đo lần cuối ở v0.40.0 (2026-08-20), chưa đo lại
-> trong v1.4.1 — patch này không đổi code đo coverage, chỉ sửa lỗi nhỏ + test mới.
+> **Chưa đo lại coverage ở v1.5.2 — các % dưới đây vẫn là baseline đo lần
+> cuối ở v0.40.0 (2026-08-20), giữ nguyên, không bịa số mới.** Máy hiện tại
+> (2026-11-28, PHP 8.4.28) không có coverage driver: `php8.4 -m` không có
+> xdebug lẫn pcov, và full suite ~22.462 test chạy coverage sẽ rất lâu.
+> Muốn đo lại: `apt-get install -y php8.4-xdebug` (hoặc pcov) rồi chạy
+> `vendor/bin/phpunit --coverage-text`.
+>
+> Mốc thay thế đã verify ở v1.5.2: `scripts/release-check.php` exit 0 —
+> **22.462 tests / 41.090 assertions, 0 failures** (28/11/2026; gồm
+> 3.520 Unit + 654 Cli + Integration/Fuzz/Security/DAST), PHPStan level
+> max 0 lỗi, boot min 0,43–0,44 ms.
 
 | Metric | Giá trị |
 |--------|---------|
-| **Statements** | **80.00%** (14,294 / 17,867) |
-| **Methods** | ~75% |
-| **Classes** | ~70% |
+| **Statements** | **80.00%** (14,294 / 17,867) — baseline v0.40.0, chưa đo lại |
+| **Methods** | ~75% — baseline v0.40.0, chưa đo lại |
+| **Classes** | ~70% — baseline v0.40.0, chưa đo lại |
 
 > Coverage measured via `phpunit --coverage-clover` + Xdebug on cloud server (Ubuntu 24.04, PHP 8.3.6).
 
+## Thay đổi từ baseline (v0.40.0 → v1.5.2)
+
+Số test mới thêm từ sau baseline (lấy từ CHANGELOG, không phải số coverage):
+
+| Nhóm | Test mới |
+|------|----------|
+| OAuth2 bridge (G2, v1.5.0) | 53 (28 unit + 16 security + 9 E2E) |
+| Auto-CRUD + filter/sort (G3, v1.5.0) | 61 tests / 130 assertions |
+| Signed webhooks (G5, v1.5.0) | 27 (16 unit + 11 integration) |
+| CLI smoke fixes (v1.5.1) | 132 regression tests; `tests/cli/` (654 tests) nay chạy trong gate qua testsuite `Cli` mới trong `phpunit.xml` |
+| Boot fix (v1.5.2) | 3 regression tests |
+| O2/O3 fixes (v1.5.1) | unit + E2E + 1 regression test |
+| `json` cast compatibility (v1.4.0) | 25 `ModelJsonCast` tests |
+| **Full suite** | **21.504 tests (v1.4.0) → 22.462 tests (v1.5.2)** |
+
 ## Tiến độ cải thiện
+
+> Bảng dưới là từ baseline v0.40.0, giữ nguyên để đối chiếu — chưa đo lại ở v1.5.2.
 
 | Class | Trước | Sau | Test mới |
 |-------|-------|-----|----------|
@@ -34,6 +60,8 @@
 
 ## Mutation Testing
 
+> Số dưới là từ baseline v0.40.0, chưa đo lại ở v1.5.2.
+
 | Scope | Mutants | Killed | Escaped | Not Covered | MSI |
 |-------|:-------:|:------:|:-------:|:-----------:|:---:|
 | Auth | 152 | 125 | 20 | 7 | **82%** |
@@ -45,6 +73,10 @@
 ## Cách chạy coverage
 
 ```bash
+# Cài xdebug (Linux, PHP 8.4 — máy hiện tại chưa có driver, 2026-11-28)
+sudo apt-get install -y php8.4-xdebug
+# hoặc pcov: sudo apt-get install -y php8.4-pcov
+
 # Cài xdebug (Windows)
 # tải php_xdebug-3.3.x-8.2-vs16-nts-x86_64.dll vào ext/
 # thêm vào php.ini: zend_extension=xdebug  +  xdebug.mode=coverage
@@ -60,6 +92,8 @@ php vendor/bin/infection --min-msi=80 --threads=4
 ```
 
 ## Mục tiêu v1.0
+
+> Đạt ở baseline v0.40.0; chưa đo lại ở v1.5.2.
 
 - [x] `Queue` ≥ 20% lines (đạt 20.64%)
 - [x] `Storage` ≥ 40% lines (đạt 40.64%)
