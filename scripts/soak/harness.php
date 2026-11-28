@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -98,8 +99,11 @@ if ($mode === 'external') {
         $serverProc = proc_open($cmd, $desc, $serverPipes);
         $serverPid = is_resource($serverProc) ? get_resource_id($serverProc) : 'unknown';
     } else {
-        $cmd = sprintf('php -S 127.0.0.1:%d "%s" > "%s/soak_server.log" 2>&1 & echo $!',
-            $port, $appScript, $storageDir
+        $cmd = sprintf(
+            'php -S 127.0.0.1:%d "%s" > "%s/soak_server.log" 2>&1 & echo $!',
+            $port,
+            $appScript,
+            $storageDir
         );
         $serverPid = trim(shell_exec($cmd) ?: '');
     }
@@ -300,7 +304,8 @@ while (microtime(true) < $deadline) {
         $lastMetricsWrite = microtime(true);
 
         // Write sample to disk
-        file_put_contents($storageDir . '/soak_samples.jsonl',
+        file_put_contents(
+            $storageDir . '/soak_samples.jsonl',
             json_encode($sample) . "\n",
             LOCK_EX | FILE_APPEND
         );

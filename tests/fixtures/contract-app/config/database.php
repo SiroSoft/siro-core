@@ -1,1 +1,3 @@
-<?php return ['driver' => 'sqlite', 'database' => ':memory:'];
+<?php
+
+return ['driver' => 'sqlite', 'database' => ':memory:'];

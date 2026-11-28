@@ -185,7 +185,9 @@ final class CollectionComprehensiveTest extends TestCase
     {
         $collection = new Collection([1, 2, 3]);
         $sum = 0;
-        $result = $collection->each(function ($item) use (&$sum) { $sum += $item; });
+        $result = $collection->each(function ($item) use (&$sum) {
+            $sum += $item;
+        });
         $this->assertEquals(6, $sum);
         $this->assertSame($collection, $result);
     }

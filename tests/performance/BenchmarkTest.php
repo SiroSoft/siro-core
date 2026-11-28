@@ -122,8 +122,11 @@ final class BenchmarkTest extends TestCase
         $elapsed = (microtime(true) - $start) * 1000;
 
         echo sprintf("\n Cold boot:             %8.3f ms", $elapsed);
-        $this->assertLessThan(10.0, $elapsed,
-            'Cold boot should be < 10ms, got: ' . round($elapsed, 3) . 'ms');
+        $this->assertLessThan(
+            10.0,
+            $elapsed,
+            'Cold boot should be < 10ms, got: ' . round($elapsed, 3) . 'ms'
+        );
     }
 
     public function testBootTimeWarm(): void
@@ -148,10 +151,18 @@ final class BenchmarkTest extends TestCase
         $min = min($times);
         $max = max($times);
         $effective = $avg - ($times[0] / count($times)); // subtract cold start overhead
-        echo sprintf("\n Warm boot avg:         %8.4f ms  (min: %.4f, max: %.4f, n=%d)",
-            $avg, $min, $max, self::ITERS);
-        $this->assertLessThan(5.0, $avg,
-            'Warm boot avg should be < 5ms, got: ' . round($avg, 3) . 'ms');
+        echo sprintf(
+            "\n Warm boot avg:         %8.4f ms  (min: %.4f, max: %.4f, n=%d)",
+            $avg,
+            $min,
+            $max,
+            self::ITERS
+        );
+        $this->assertLessThan(
+            5.0,
+            $avg,
+            'Warm boot avg should be < 5ms, got: ' . round($avg, 3) . 'ms'
+        );
     }
 
     public function testRouteLoadingTime(): void
@@ -163,7 +174,8 @@ final class BenchmarkTest extends TestCase
         for ($i = 0; $i < 100; $i++) {
             $routeCode .= sprintf(
                 '$router->get("/route/%d", function() { return ["id" => %d]; });' . "\n",
-                $i, $i
+                $i,
+                $i
             );
         }
         file_put_contents($routesFile, '<?php ' . $routeCode);
@@ -178,8 +190,11 @@ final class BenchmarkTest extends TestCase
 
         $avg = array_sum($times) / count($times);
         echo sprintf("\n Route loading (101):    %8.4f ms  (n=%d)", $avg, self::ITERS);
-        $this->assertLessThan(5.0, $avg,
-            'Route loading should be < 5ms, got: ' . round($avg, 3) . 'ms');
+        $this->assertLessThan(
+            5.0,
+            $avg,
+            'Route loading should be < 5ms, got: ' . round($avg, 3) . 'ms'
+        );
     }
 
     public function testContainerResolutionTime(): void
@@ -199,8 +214,11 @@ final class BenchmarkTest extends TestCase
 
         $avg = array_sum($times) / count($times);
         echo sprintf("\n Container::make:        %8.4f ms  (n=%d)", $avg, self::ITERS);
-        $this->assertLessThan(0.1, $avg,
-            'Container resolution should be < 0.1ms, got: ' . round($avg, 3) . 'ms');
+        $this->assertLessThan(
+            0.1,
+            $avg,
+            'Container resolution should be < 0.1ms, got: ' . round($avg, 3) . 'ms'
+        );
     }
 
     // ═══════════════════════════════════════════
@@ -228,10 +246,17 @@ final class BenchmarkTest extends TestCase
 
         $avg = array_sum($times) / count($times);
         $opsPerSec = $avg > 0 ? 1000 / $avg : 0;
-        echo sprintf("\n Simple route dispatch:  %8.4f ms  (%.0f ops/sec, n=%d)",
-            $avg, $opsPerSec, self::ITERS);
-        $this->assertLessThan(1.0, $avg,
-            'Route dispatch avg should be < 1ms, got: ' . round($avg, 3) . 'ms');
+        echo sprintf(
+            "\n Simple route dispatch:  %8.4f ms  (%.0f ops/sec, n=%d)",
+            $avg,
+            $opsPerSec,
+            self::ITERS
+        );
+        $this->assertLessThan(
+            1.0,
+            $avg,
+            'Route dispatch avg should be < 1ms, got: ' . round($avg, 3) . 'ms'
+        );
     }
 
     public function testDynamicRouteDispatch(): void
@@ -255,10 +280,17 @@ final class BenchmarkTest extends TestCase
 
         $avg = array_sum($times) / count($times);
         $opsPerSec = $avg > 0 ? 1000 / $avg : 0;
-        echo sprintf("\n Dynamic route dispatch: %8.4f ms  (%.0f ops/sec, n=%d)",
-            $avg, $opsPerSec, self::ITERS);
-        $this->assertLessThan(2.0, $avg,
-            'Dynamic route dispatch avg should be < 2ms, got: ' . round($avg, 3) . 'ms');
+        echo sprintf(
+            "\n Dynamic route dispatch: %8.4f ms  (%.0f ops/sec, n=%d)",
+            $avg,
+            $opsPerSec,
+            self::ITERS
+        );
+        $this->assertLessThan(
+            2.0,
+            $avg,
+            'Dynamic route dispatch avg should be < 2ms, got: ' . round($avg, 3) . 'ms'
+        );
     }
 
     public function testMiddlewarePipelinePerformance(): void
@@ -289,10 +321,18 @@ final class BenchmarkTest extends TestCase
 
         $avg = array_sum($times) / count($times);
         $perLayer = $avg / ($middlewareCount + 1);
-        echo sprintf("\n Middleware pipeline (%d): %8.4f ms  (%.4f ms/layer, n=%d)",
-            $middlewareCount, $avg, $perLayer, self::ITERS);
-        $this->assertLessThan(5.0, $avg,
-            'Middleware pipeline (10) should be < 5ms, got: ' . round($avg, 3) . 'ms');
+        echo sprintf(
+            "\n Middleware pipeline (%d): %8.4f ms  (%.4f ms/layer, n=%d)",
+            $middlewareCount,
+            $avg,
+            $perLayer,
+            self::ITERS
+        );
+        $this->assertLessThan(
+            5.0,
+            $avg,
+            'Middleware pipeline (10) should be < 5ms, got: ' . round($avg, 3) . 'ms'
+        );
     }
 
     public function testJsonSerializationPerformance(): void
@@ -414,10 +454,16 @@ final class BenchmarkTest extends TestCase
 
         $delta = $memoryAfter - $memoryBefore;
         $peakDelta = $peakAfter - $peakBefore;
-        echo sprintf("\n Memory per request:       %8.2f KB  (peak: %.2f KB)",
-            $delta / 1024, $peakDelta / 1024);
-        $this->assertLessThan(512 * 1024, $delta,
-            'Memory delta per request should be < 512KB');
+        echo sprintf(
+            "\n Memory per request:       %8.2f KB  (peak: %.2f KB)",
+            $delta / 1024,
+            $peakDelta / 1024
+        );
+        $this->assertLessThan(
+            512 * 1024,
+            $delta,
+            'Memory delta per request should be < 512KB'
+        );
     }
 
     public function testMemoryLeak(): void
@@ -434,8 +480,11 @@ final class BenchmarkTest extends TestCase
         $memoryAfter = memory_get_usage(true);
         $leak = $memoryAfter - $memoryBefore;
         echo sprintf("\n Memory leak (100 boots):  %8.2f KB", $leak / 1024);
-        $this->assertLessThan(1024 * 1024, $leak,
-            'Memory leak over 100 boots should be < 1MB, got: ' . round($leak / 1024, 2) . 'KB');
+        $this->assertLessThan(
+            1024 * 1024,
+            $leak,
+            'Memory leak over 100 boots should be < 1MB, got: ' . round($leak / 1024, 2) . 'KB'
+        );
     }
 
     public function testStaticStateAccumulation(): void
@@ -446,15 +495,24 @@ final class BenchmarkTest extends TestCase
 
         for ($i = 0; $i < 100; $i++) {
             $router = new Router();
-            $router->get('/test' . $i, function () { return ['ok' => true]; });
+            $router->get('/test' . $i, function () {
+                return ['ok' => true];
+            });
         }
 
         $aliasesAfter = count(Router::getMiddlewareAliases());
 
-        echo sprintf("\n Static middleware aliases: before=%d, after=%d (delta=%d)",
-            $aliasesBefore, $aliasesAfter, $aliasesAfter - $aliasesBefore);
-        $this->assertSame($aliasesBefore, $aliasesAfter,
-            'Static middleware aliases should not grow after 100 iterations');
+        echo sprintf(
+            "\n Static middleware aliases: before=%d, after=%d (delta=%d)",
+            $aliasesBefore,
+            $aliasesAfter,
+            $aliasesAfter - $aliasesBefore
+        );
+        $this->assertSame(
+            $aliasesBefore,
+            $aliasesAfter,
+            'Static middleware aliases should not grow after 100 iterations'
+        );
     }
 
     // ═══════════════════════════════════════════
@@ -496,8 +554,11 @@ final class BenchmarkTest extends TestCase
         $speedup = $avgWithout > 0 && $avgWith > 0 ? $avgWithout / $avgWith : 0;
         echo sprintf("\n Config load (no cache):   %8.4f ms", $avgWithout);
         echo sprintf("\n Config load (cached):     %8.4f ms  (%.1fx speedup)", $avgWith, $speedup);
-        $this->assertGreaterThan(1.0, $speedup,
-            'Config cache should provide speedup (got ' . round($speedup, 1) . 'x)');
+        $this->assertGreaterThan(
+            1.0,
+            $speedup,
+            'Config cache should provide speedup (got ' . round($speedup, 1) . 'x)'
+        );
     }
 
     public function testRouteCacheSpeedup(): void
@@ -538,8 +599,11 @@ final class BenchmarkTest extends TestCase
         echo sprintf("\n Route register (200):     %8.4f ms", $avgRegister);
         echo sprintf("\n Route load from cache:    %8.4f ms  (%.1fx speedup)", $avgCache, $speedup);
         if ($avgRegister > $avgCache) {
-            $this->assertGreaterThan(1.0, $speedup,
-                'Route cache loading should be faster than registration');
+            $this->assertGreaterThan(
+                1.0,
+                $speedup,
+                'Route cache loading should be faster than registration'
+            );
         } else {
             echo '  [note: cache load is JSON decode bound]';
             $this->assertTrue(true);
@@ -603,7 +667,9 @@ final class BenchmarkTest extends TestCase
             $r = new Router();
             $start = microtime(true);
             for ($i = 0; $i < self::MANY_ROUTES; $i++) {
-                $r->get('/route/' . $i, function () use ($i) { return ['id' => $i]; });
+                $r->get('/route/' . $i, function () use ($i) {
+                    return ['id' => $i];
+                });
             }
             $times[] = (microtime(true) - $start) * 1000;
         }
@@ -611,18 +677,25 @@ final class BenchmarkTest extends TestCase
         $avg = array_sum($times) / count($times);
         $perRoute = $avg / self::MANY_ROUTES;
         echo sprintf("\n Register %d routes:     %8.4f ms total  (%.4f ms/route)", self::MANY_ROUTES, $avg, $perRoute);
-        $this->assertLessThan(100.0, $avg,
-            '1000 route registration should be < 100ms');
+        $this->assertLessThan(
+            100.0,
+            $avg,
+            '1000 route registration should be < 100ms'
+        );
     }
 
     public function testManyRouteDispatchLookup(): void
     {
         $router = new Router();
         for ($i = 0; $i < self::MANY_ROUTES; $i++) {
-            $handler = function () use ($i) { return Response::success(['id' => $i]); };
+            $handler = function () use ($i) {
+                return Response::success(['id' => $i]);
+            };
             $router->get('/route/' . $i, $handler);
         }
-        $router->get('/route/lookup-final', function () { return Response::success(['ok' => true]); });
+        $router->get('/route/lookup-final', function () {
+            return Response::success(['ok' => true]);
+        });
 
         for ($i = 0; $i < self::WARMUP; $i++) {
             $router->dispatch(new Request('GET', '/route/lookup-final'));
@@ -638,8 +711,11 @@ final class BenchmarkTest extends TestCase
 
         $avg = array_sum($times) / count($times);
         echo sprintf("\n Dispatch among %d routes: %8.4f ms  (n=%d)", self::MANY_ROUTES, $avg, self::ITERS);
-        $this->assertLessThan(1.0, $avg,
-            'Dispatch among 1000 routes should be < 1ms');
+        $this->assertLessThan(
+            1.0,
+            $avg,
+            'Dispatch among 1000 routes should be < 1ms'
+        );
     }
 
     public function testLargePayloadProcessing(): void
@@ -675,8 +751,11 @@ final class BenchmarkTest extends TestCase
         echo sprintf("\n 100KB payload encode:     %8.4f ms", $avgEnc);
         echo sprintf("\n 100KB payload decode:     %8.4f ms", $avgDec);
         echo sprintf("\n Response payload access:  %8.4f ms", $avgSer);
-        $this->assertLessThan(10.0, $avgEnc,
-            '100KB payload encode should be < 10ms');
+        $this->assertLessThan(
+            10.0,
+            $avgEnc,
+            '100KB payload encode should be < 10ms'
+        );
     }
 
     public function testStaticVsDynamicRoutePerformance(): void
@@ -717,8 +796,11 @@ final class BenchmarkTest extends TestCase
         $ratio = $avgDynamic > 0 && $avgStatic > 0 ? $avgDynamic / $avgStatic : 0;
         echo sprintf("\n Static route dispatch:    %8.4f ms", $avgStatic);
         echo sprintf("\n Dynamic route dispatch:   %8.4f ms  (static is %.1fx faster)", $avgDynamic, $ratio);
-        $this->assertLessThan($avgDynamic * 1.5, $avgStatic,
-            'Static route should be at least as fast as dynamic route');
+        $this->assertLessThan(
+            $avgDynamic * 1.5,
+            $avgStatic,
+            'Static route should be at least as fast as dynamic route'
+        );
     }
 
     public function testConcurrentSessionSimulation(): void
@@ -744,8 +826,11 @@ final class BenchmarkTest extends TestCase
 
         $avg = array_sum($times) / count($times);
         echo sprintf("\n Session dispatch (50 sessions): %8.4f ms  (n=%d)", $avg, self::ITERS);
-        $this->assertLessThan(1.0, $avg,
-            'Session dispatch should be < 1ms');
+        $this->assertLessThan(
+            1.0,
+            $avg,
+            'Session dispatch should be < 1ms'
+        );
     }
 
     public function testRateLimiterOverhead(): void
@@ -793,10 +878,17 @@ final class BenchmarkTest extends TestCase
         $avgWithout = array_sum($timesWithout) / count($timesWithout);
         $avgWith = array_sum($timesWith) / count($timesWith);
         $overhead = $avgWith - $avgWithout;
-        echo sprintf("\n Rate limiter overhead:     %8.4f ms  (without: %.4f, with: %.4f)",
-            $overhead, $avgWithout, $avgWith);
-        $this->assertLessThan(2.0, $overhead,
-            'Rate limiter overhead should be < 2ms');
+        echo sprintf(
+            "\n Rate limiter overhead:     %8.4f ms  (without: %.4f, with: %.4f)",
+            $overhead,
+            $avgWithout,
+            $avgWith
+        );
+        $this->assertLessThan(
+            2.0,
+            $overhead,
+            'Rate limiter overhead should be < 2ms'
+        );
     }
 
     public function testFullAppLifecyclePerformance(): void
@@ -837,10 +929,17 @@ final class BenchmarkTest extends TestCase
 
         $avg = array_sum($times) / count($times);
         $opsPerSec = $avg > 0 ? 1000 / $avg : 0;
-        echo sprintf("\n Full app lifecycle:       %8.4f ms  (%.0f req/sec, n=%d)",
-            $avg, $opsPerSec, self::ITERS);
-        $this->assertLessThan(10.0, $avg,
-            'Full app lifecycle should be < 10ms');
+        echo sprintf(
+            "\n Full app lifecycle:       %8.4f ms  (%.0f req/sec, n=%d)",
+            $avg,
+            $opsPerSec,
+            self::ITERS
+        );
+        $this->assertLessThan(
+            10.0,
+            $avg,
+            'Full app lifecycle should be < 10ms'
+        );
     }
 
     public function testResponseBuildTime(): void
@@ -856,8 +955,11 @@ final class BenchmarkTest extends TestCase
 
         $avg = array_sum($times) / count($times);
         echo sprintf("\n Response build:           %8.4f ms  (n=%d)", $avg, self::ITERS);
-        $this->assertLessThan(0.1, $avg,
-            'Response build should be < 0.1ms');
+        $this->assertLessThan(
+            0.1,
+            $avg,
+            'Response build should be < 0.1ms'
+        );
     }
 
     public function testRouteCacheHitPerformance(): void
@@ -882,7 +984,9 @@ final class BenchmarkTest extends TestCase
 
         for ($i = 0; $i < self::ITERS; $i++) {
             $r = new Router();
-            $r->get('/cached-route', function () { return Response::success(['data' => 'cached']); });
+            $r->get('/cached-route', function () {
+                return Response::success(['data' => 'cached']);
+            });
             $r->setRouteCacheTTL('GET', '/cached-route', 300);
             $cacheKey = 'route:GET:/cached-route';
             Cache::forget($cacheKey);
@@ -894,7 +998,9 @@ final class BenchmarkTest extends TestCase
 
         for ($i = 0; $i < self::ITERS; $i++) {
             $r2 = new Router();
-            $r2->get('/cached-route', function () { return Response::success(['data' => 'cached']); });
+            $r2->get('/cached-route', function () {
+                return Response::success(['data' => 'cached']);
+            });
             $r2->setRouteCacheTTL('GET', '/cached-route', 300);
             $req3 = new Request('GET', '/cached-route');
             $r2->dispatch($req3);
@@ -909,7 +1015,10 @@ final class BenchmarkTest extends TestCase
         $speedup = $avgMiss > 0 && $avgHit > 0 ? $avgMiss / $avgHit : 0;
         echo sprintf("\n Route dispatch (miss):    %8.4f ms", $avgMiss);
         echo sprintf("\n Route dispatch (hit):     %8.4f ms  (%.1fx speedup)", $avgHit, $speedup);
-        $this->assertGreaterThan(1.0, $speedup,
-            'Route cache hit should be faster than miss');
+        $this->assertGreaterThan(
+            1.0,
+            $speedup,
+            'Route cache hit should be faster than miss'
+        );
     }
 }

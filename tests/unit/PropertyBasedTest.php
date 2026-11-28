@@ -7,7 +7,6 @@ namespace Siro\Core\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
-
 final class PropertyBasedTest extends TestCase
 {
     #[DataProvider('provideStrings')]

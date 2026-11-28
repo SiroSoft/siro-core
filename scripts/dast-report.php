@@ -13,7 +13,9 @@ $inputFile = 'dast-results.xml';
 $outputFile = 'php://stdout';
 
 foreach ($argv as $i => $arg) {
-    if ($i === 0) continue;
+    if ($i === 0) {
+        continue;
+    }
     if (str_starts_with($arg, '--input=')) {
         $inputFile = substr($arg, 8);
     } elseif (str_starts_with($arg, '--output=')) {

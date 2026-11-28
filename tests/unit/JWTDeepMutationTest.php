@@ -40,8 +40,13 @@ final class JWTDeepMutationTest extends TestCase
         putenv('JWT_PRIVATE_KEY_PATH=');
         putenv('JWT_PUBLIC_KEY_PATH=');
         putenv('APP_URL=');
-        unset($_ENV['JWT_SECRET'], $_ENV['JWT_KEY_VERSION'], $_ENV['JWT_ALGORITHM'],
-              $_ENV['JWT_PREVIOUS_SECRET'], $_ENV['APP_URL']);
+        unset(
+            $_ENV['JWT_SECRET'],
+            $_ENV['JWT_KEY_VERSION'],
+            $_ENV['JWT_ALGORITHM'],
+            $_ENV['JWT_PREVIOUS_SECRET'],
+            $_ENV['APP_URL']
+        );
         JWT::reset();
         Cache::reset();
     }

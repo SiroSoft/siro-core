@@ -102,7 +102,7 @@ final class QueueTest extends TestCase
     public function testAssertPushedWithCallback(): void
     {
         Queue::push('SendEmail', ['to' => 'admin@example.com', 'subject' => 'Test']);
-        Queue::assertPushed('SendEmail', function($data) {
+        Queue::assertPushed('SendEmail', function ($data) {
             return str_contains($data['to'] ?? '', 'admin');
         });
         $this->assertTrue(true);

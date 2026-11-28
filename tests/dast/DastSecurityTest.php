@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\DAST;
+
 use PHPUnit\Framework\Attributes\DataProvider;
-
-
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Request;
 use Siro\Core\Response;

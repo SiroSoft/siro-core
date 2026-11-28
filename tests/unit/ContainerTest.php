@@ -80,7 +80,10 @@ final class ContainerTest extends TestCase
     public function testCallWithString(): void
     {
         $this->container->bind('callable.test', fn () => new class {
-            public function run(int $x): int { return $x * 2; }
+            public function run(int $x): int
+            {
+ return $x * 2;
+            }
         });
         $result = $this->container->call('callable.test@run', [5]);
         $this->assertSame(10, $result);
@@ -89,7 +92,10 @@ final class ContainerTest extends TestCase
     public function testCallWithArray(): void
     {
         $obj = new class {
-            public function greet(string $name): string { return "Hello $name"; }
+            public function greet(string $name): string
+            {
+                return "Hello $name";
+            }
         };
         $result = $this->container->call([$obj, 'greet'], ['World']);
         $this->assertSame('Hello World', $result);

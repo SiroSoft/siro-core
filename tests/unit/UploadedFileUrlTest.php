@@ -76,7 +76,7 @@ final class UploadedFileUrlTest extends TestCase
         if (!getenv('APP_KEY') && !getenv('JWT_SECRET')) {
             $this->markTestSkipped('APP_KEY or JWT_SECRET not configured');
         }
-        
+
         $signed = URL::signed('/api/verify', ['id' => 5], 3600);
         $this->assertStringContainsString('/api/verify', $signed);
         $this->assertStringContainsString('signature=', $signed);
@@ -100,7 +100,7 @@ final class UploadedFileUrlTest extends TestCase
         if (!getenv('APP_KEY') && !getenv('JWT_SECRET')) {
             $this->markTestSkipped('APP_KEY or JWT_SECRET not configured');
         }
-        
+
         $this->assertNull(URL::validate('/api/x', 'badsig'));
     }
 }

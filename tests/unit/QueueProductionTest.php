@@ -329,7 +329,6 @@ final class QueueProductionTest extends TestCase
         $result = Queue::workAll(1);
         $this->assertSame(0, $result);
     }
-
 }
 
 // ============================================================================

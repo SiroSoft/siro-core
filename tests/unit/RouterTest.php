@@ -12,7 +12,7 @@ use Siro\Core\Response;
 
 /**
  * Router Unit Tests
- * 
+ *
  * Tests routing functionality and route matching
  */
 final class RouterTest extends TestCase
@@ -23,10 +23,10 @@ final class RouterTest extends TestCase
     {
         parent::setUp();
         $this->router = new Router();
-        
+
         // Set the router for the Route facade
         Route::setRouter($this->router);
-        
+
         // Clear any existing routes
         Route::clearRoutes();
     }
@@ -36,12 +36,12 @@ final class RouterTest extends TestCase
      */
     public function testGetRouteRegistration(): void
     {
-        Route::get('/test', function() {
+        Route::get('/test', function () {
             return Response::json(['message' => 'GET']);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
         $this->assertNotEmpty($routes);
     }
@@ -51,12 +51,12 @@ final class RouterTest extends TestCase
      */
     public function testPostRouteRegistration(): void
     {
-        Route::post('/test', function() {
+        Route::post('/test', function () {
             return Response::json(['message' => 'POST']);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
         $this->assertNotEmpty($routes);
     }
@@ -66,12 +66,12 @@ final class RouterTest extends TestCase
      */
     public function testPutRouteRegistration(): void
     {
-        Route::put('/test', function() {
+        Route::put('/test', function () {
             return Response::json(['message' => 'PUT']);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
     }
 
@@ -80,12 +80,12 @@ final class RouterTest extends TestCase
      */
     public function testDeleteRouteRegistration(): void
     {
-        Route::delete('/test', function() {
+        Route::delete('/test', function () {
             return Response::json(['message' => 'DELETE']);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
     }
 
@@ -94,12 +94,12 @@ final class RouterTest extends TestCase
      */
     public function testRouteWithParameters(): void
     {
-        Route::get('/users/{id}', function($id) {
+        Route::get('/users/{id}', function ($id) {
             return Response::json(['id' => $id]);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
         $found = false;
         foreach ($routes as $route) {
@@ -116,20 +116,20 @@ final class RouterTest extends TestCase
      */
     public function testMultipleRoutes(): void
     {
-        Route::get('/users', function() {
+        Route::get('/users', function () {
             return Response::json([]);
         });
 
-        Route::post('/users', function() {
+        Route::post('/users', function () {
             return Response::json(['created' => true], 201);
         });
 
-        Route::get('/posts', function() {
+        Route::get('/posts', function () {
             return Response::json([]);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
         $this->assertGreaterThanOrEqual(3, count($routes));
     }
@@ -140,7 +140,7 @@ final class RouterTest extends TestCase
     public function testGetRoutesReturnsArray(): void
     {
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
     }
 
@@ -149,12 +149,12 @@ final class RouterTest extends TestCase
      */
     public function testRouteHasMethodProperty(): void
     {
-        Route::get('/test', function() {
+        Route::get('/test', function () {
             return Response::json([]);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
         if (!empty($routes)) {
             $this->assertArrayHasKey('method', $routes[0]);
@@ -166,12 +166,12 @@ final class RouterTest extends TestCase
      */
     public function testRouteHasPathProperty(): void
     {
-        Route::get('/test-path', function() {
+        Route::get('/test-path', function () {
             return Response::json([]);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
         if (!empty($routes)) {
             $this->assertArrayHasKey('path', $routes[0]);
@@ -193,10 +193,10 @@ final class RouterTest extends TestCase
     public function testMiddlewareSupportExists(): void
     {
         // Route should support middleware
-        $route = Route::get('/test', function() {
+        $route = Route::get('/test', function () {
             return Response::json([]);
         });
-        
+
         $this->assertTrue(method_exists($route, 'middleware'));
     }
 
@@ -206,10 +206,10 @@ final class RouterTest extends TestCase
     public function testCacheSupportExists(): void
     {
         // Route should support caching
-        $route = Route::get('/test', function() {
+        $route = Route::get('/test', function () {
             return Response::json([]);
         });
-        
+
         $this->assertTrue(method_exists($route, 'cache'));
     }
 
@@ -218,12 +218,12 @@ final class RouterTest extends TestCase
      */
     public function testRouteWithMiddleware(): void
     {
-        Route::get('/protected', function() {
+        Route::get('/protected', function () {
             return Response::json(['protected' => true]);
         })->middleware(['auth']);
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
     }
 
@@ -232,12 +232,12 @@ final class RouterTest extends TestCase
      */
     public function testRouteWithCache(): void
     {
-        Route::get('/cached', function() {
+        Route::get('/cached', function () {
             return Response::json(['cached' => true]);
         })->cache(60);
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
     }
 
@@ -248,7 +248,7 @@ final class RouterTest extends TestCase
     {
         // Fresh router should have empty or minimal routes
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
     }
 
@@ -257,12 +257,12 @@ final class RouterTest extends TestCase
      */
     public function testRoutePatternMatching(): void
     {
-        Route::get('/api/users', function() {
+        Route::get('/api/users', function () {
             return Response::json(['api' => true]);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
         $found = false;
         foreach ($routes as $route) {
@@ -279,20 +279,20 @@ final class RouterTest extends TestCase
      */
     public function testDifferentMethodsForSamePath(): void
     {
-        Route::get('/resource', function() {
+        Route::get('/resource', function () {
             return Response::json(['method' => 'GET']);
         });
 
-        Route::post('/resource', function() {
+        Route::post('/resource', function () {
             return Response::json(['method' => 'POST']);
         });
 
-        Route::put('/resource', function() {
+        Route::put('/resource', function () {
             return Response::json(['method' => 'PUT']);
         });
 
         $routes = $this->router->getRoutes();
-        
+
         $this->assertIsArray($routes);
         $this->assertGreaterThanOrEqual(3, count($routes));
     }

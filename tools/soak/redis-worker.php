@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -101,7 +102,13 @@ while (microtime(true) < $deadline) {
 
         error_log(sprintf(
             "[worker] %s | elapsed=%ds | processed=%d | failed=%d | depth=%d | rate=%.1f/s | mem=%dKB",
-            date('H:i:s'), $elapsed, $processed, $failed, $currentDepth, $rate, $mem
+            date('H:i:s'),
+            $elapsed,
+            $processed,
+            $failed,
+            $currentDepth,
+            $rate,
+            $mem
         ));
 
         $lastLogTime = $now;
@@ -112,7 +119,11 @@ $endDepth = (int) $redis->lLen('siro:queue:default');
 $duration = round(microtime(true) - $startTime);
 error_log(sprintf(
     "[worker] COMPLETED | duration=%ds | processed=%d | failed=%d | start_depth=%d end_depth=%d",
-    $duration, $processed, $failed, $startDepth, $endDepth
+    $duration,
+    $processed,
+    $failed,
+    $startDepth,
+    $endDepth
 ));
 
 $redis->close();

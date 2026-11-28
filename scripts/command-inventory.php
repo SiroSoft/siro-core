@@ -1,7 +1,8 @@
 <?php
+
 /**
  * Command Inventory Script — Phase A3
- * 
+ *
  * Reads Console.php and lists all registered commands, imported classes,
  * and any orphan/unregistered classes.
  */
@@ -20,7 +21,7 @@ sort($imported);
 
 // Find all command class files
 $classFiles = glob(__DIR__ . '/../Commands/*.php');
-$classNames = array_map(function($f) {
+$classNames = array_map(function ($f) {
     return basename($f, '.php');
 }, $classFiles);
 sort($classNames);
@@ -34,7 +35,9 @@ echo "Class files: " . count($classNames) . "\n\n";
 $orphanClasses = array_diff($classNames, $imported);
 if (!empty($orphanClasses)) {
     echo "⚠ ORPHAN CLASSES (in Commands/ but not imported in Console.php):\n";
-    foreach ($orphanClasses as $cls) echo "  - $cls\n";
+    foreach ($orphanClasses as $cls) {
+        echo "  - $cls\n";
+    }
     echo "\n";
 }
 
@@ -47,7 +50,9 @@ sort($handlers);
 $unregisteredImports = array_diff($imported, $handlers);
 if (!empty($unregisteredImports)) {
     echo "⚠ UNREGISTERED IMPORTS (imported but not in registry):\n";
-    foreach ($unregisteredImports as $cls) echo "  - $cls\n";
+    foreach ($unregisteredImports as $cls) {
+        echo "  - $cls\n";
+    }
     echo "\n";
 }
 

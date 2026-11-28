@@ -133,7 +133,9 @@ final class DatabaseIntegrationTest extends TestCase
     public function testMySQLConnection(): void
     {
         $pdo = $this->connectMySQL();
-        if ($pdo === null) return;
+        if ($pdo === null) {
+            return;
+        }
         $this->assertInstanceOf(\PDO::class, $pdo);
     }
 
@@ -141,7 +143,9 @@ final class DatabaseIntegrationTest extends TestCase
     public function testMySQLCreateTableAndInsert(): void
     {
         $pdo = $this->connectMySQL();
-        if ($pdo === null) return;
+        if ($pdo === null) {
+            return;
+        }
         $pdo->exec('CREATE TEMPORARY TABLE test_items (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))');
         $pdo->exec("INSERT INTO test_items (name) VALUES ('test1'), ('test2')");
         $rows = $pdo->query('SELECT COUNT(*) as cnt FROM test_items')->fetch();
@@ -152,7 +156,9 @@ final class DatabaseIntegrationTest extends TestCase
     public function testMySQLQueryBuilder(): void
     {
         $pdo = $this->connectMySQL();
-        if ($pdo === null) return;
+        if ($pdo === null) {
+            return;
+        }
         $pdo->exec('CREATE TEMPORARY TABLE test_qb (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), value INT)');
         $pdo->exec("INSERT INTO test_qb (name, value) VALUES ('a', 10), ('b', 20), ('c', 30)");
 
@@ -168,7 +174,9 @@ final class DatabaseIntegrationTest extends TestCase
     public function testPostgreSQLConnection(): void
     {
         $pdo = $this->connectPostgreSQL();
-        if ($pdo === null) return;
+        if ($pdo === null) {
+            return;
+        }
         $this->assertInstanceOf(\PDO::class, $pdo);
     }
 
@@ -176,7 +184,9 @@ final class DatabaseIntegrationTest extends TestCase
     public function testPostgreSQLCreateTableAndInsert(): void
     {
         $pdo = $this->connectPostgreSQL();
-        if ($pdo === null) return;
+        if ($pdo === null) {
+            return;
+        }
         $pdo->exec('CREATE TEMPORARY TABLE test_items_pg (id SERIAL PRIMARY KEY, name VARCHAR(100))');
         $pdo->exec("INSERT INTO test_items_pg (name) VALUES ('test1'), ('test2')");
         $rows = $pdo->query('SELECT COUNT(*) as cnt FROM test_items_pg')->fetch();
@@ -187,7 +197,9 @@ final class DatabaseIntegrationTest extends TestCase
     public function testPostgreSQLQueryBuilderQuoting(): void
     {
         $pdo = $this->connectPostgreSQL();
-        if ($pdo === null) return;
+        if ($pdo === null) {
+            return;
+        }
         $pdo->exec('CREATE TEMPORARY TABLE test_quoting (id SERIAL PRIMARY KEY, name VARCHAR(100), score INT)');
         $pdo->exec("INSERT INTO test_quoting (name, score) VALUES ('x', 100)");
 

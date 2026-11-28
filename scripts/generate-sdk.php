@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 $openApiFile = $argv[1] ?? __DIR__ . '/../storage/openapi.json';
@@ -31,7 +32,9 @@ $models = [];
 foreach ($spec['paths'] as $path => $pathItem) {
     foreach ($pathItem as $method => $operation) {
         $method = strtolower($method);
-        if (!in_array($method, ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'], true)) continue;
+        if (!in_array($method, ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'], true)) {
+            continue;
+        }
 
         $operationId = $operation['operationId'] ?? str_replace(['/', '{', '}'], ['_', '', ''], trim($path, '/')) . '_' . $method;
         $summary = $operation['summary'] ?? $operationId;

@@ -192,7 +192,9 @@ final class DebugTraceDataTest extends TestCase
 
     private function findLatestTraceFile(): ?string
     {
-        if (!is_dir($this->tracesDir)) return null;
+        if (!is_dir($this->tracesDir)) {
+            return null;
+        }
         $it = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->tracesDir, \RecursiveDirectoryIterator::SKIP_DOTS)
         );
@@ -202,7 +204,9 @@ final class DebugTraceDataTest extends TestCase
                 $files[] = (string) $entry->getPathname();
             }
         }
-        if ($files === []) return null;
+        if ($files === []) {
+            return null;
+        }
         rsort($files);
         return $files[0];
     }

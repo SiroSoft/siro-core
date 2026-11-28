@@ -18,7 +18,8 @@ final class MakeCommandsTest extends TestCase
         $this->tempDir = sys_get_temp_dir() . '/siro_make_test_' . bin2hex(random_bytes(4));
         mkdir($this->tempDir, 0777, true);
 
-        foreach ([
+        foreach (
+            [
             'app/Controllers', 'app/Models', 'app/Services', 'app/Repositories',
             'app/Middleware', 'app/Exceptions', 'app/Events', 'app/Jobs',
             'app/Mails', 'app/Listeners', 'app/Resources',
@@ -26,16 +27,23 @@ final class MakeCommandsTest extends TestCase
             'tests/Feature', 'tests/Unit', 'resources/lang/en',
             'storage/lang/en', 'storage/framework', 'routes', 'config',
             'docs', 'public',
-        ] as $dir) {
+            ] as $dir
+        ) {
             mkdir($this->tempDir . '/' . $dir, 0777, true);
         }
 
-        file_put_contents($this->tempDir . '/config/database.php',
-            '<?php return [\'driver\' => \'sqlite\', \'database\' => \':memory:\', \'slow_query_threshold\' => 500];');
-        file_put_contents($this->tempDir . '/routes/api.php',
-            "<?php\n\ndeclare(strict_types=1);\n\$app->router->get('/api/health', function () { return ['success' => true]; });\n");
-        file_put_contents($this->tempDir . '/.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_32chars!\n");
+        file_put_contents(
+            $this->tempDir . '/config/database.php',
+            '<?php return [\'driver\' => \'sqlite\', \'database\' => \':memory:\', \'slow_query_threshold\' => 500];'
+        );
+        file_put_contents(
+            $this->tempDir . '/routes/api.php',
+            "<?php\n\ndeclare(strict_types=1);\n\$app->router->get('/api/health', function () { return ['success' => true]; });\n"
+        );
+        file_put_contents(
+            $this->tempDir . '/.env',
+            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_32chars!\n"
+        );
 
         putenv('SIRO_BASE_PATH=' . $this->tempDir);
         $this->console = new Console($this->tempDir);
@@ -61,11 +69,13 @@ final class MakeCommandsTest extends TestCase
         $code = $this->runSilent(['siro', 'make:auth']);
         $this->assertEquals(0, $code, 'make:auth should exit 0');
 
-        foreach ([
+        foreach (
+            [
             '/app/Controllers/AuthController.php',
             '/app/Models/User.php',
             '/app/Services/UserService.php',
-        ] as $rel) {
+            ] as $rel
+        ) {
             $f = $this->tempDir . $rel;
             $this->assertFileExists($f, "Missing $rel");
             $this->assertValidPhp($f);
@@ -153,14 +163,16 @@ final class MakeCommandsTest extends TestCase
         $code = $this->runSilent(['siro', 'make:crud', 'TestFull', '--force']);
         $this->assertEquals(0, $code);
 
-        foreach ([
+        foreach (
+            [
             '/app/Models/TestFull.php',
             '/app/Repositories/TestFullRepository.php',
             '/app/Services/TestFullService.php',
             '/app/Controllers/TestFullController.php',
             '/app/Resources/TestFullResource.php',
             '/tests/Feature/TestFullTest.php',
-        ] as $rel) {
+            ] as $rel
+        ) {
             $file = $this->tempDir . $rel;
             $this->assertFileExists($file, "Missing $rel");
             $this->assertValidPhp($file);
@@ -379,14 +391,19 @@ final class MakeCommandsTest extends TestCase
 
     private function rrmdir(string $dir): void
     {
-        if (!is_dir($dir)) return;
+        if (!is_dir($dir)) {
+            return;
+        }
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($files as $file) {
-            if ($file->isDir()) rmdir($file->getRealPath());
-            else unlink($file->getRealPath());
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+            } else {
+                unlink($file->getRealPath());
+            }
         }
         rmdir($dir);
     }

@@ -334,7 +334,7 @@ final class AuthFixesTest extends TestCase
 
     public function testForceFillCannotBeCalledPublicly(): void
     {
-        $model = new class(['name' => 'test']) extends Model {
+        $model = new class (['name' => 'test']) extends Model {
             protected array $fillable = ['name'];
         };
 
@@ -344,7 +344,7 @@ final class AuthFixesTest extends TestCase
 
     public function testForceFillWorksViaReflection(): void
     {
-        $model = new class(['name' => 'test']) extends Model {
+        $model = new class (['name' => 'test']) extends Model {
             protected array $fillable = ['name'];
         };
 
@@ -376,7 +376,7 @@ final class AuthFixesTest extends TestCase
         $reflection = new \ReflectionMethod(Model::class, 'forceFill');
         $reflection->setAccessible(true);
 
-        $model = new class(['name' => 'original']) extends Model {
+        $model = new class (['name' => 'original']) extends Model {
             protected array $fillable = ['name'];
         };
 

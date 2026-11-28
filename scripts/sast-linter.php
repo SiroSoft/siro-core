@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -68,8 +69,14 @@ final class SastLinter
         }
     }
 
-    public function getErrorCount(): int { return $this->errors; }
-    public function getWarningCount(): int { return $this->warnings; }
+    public function getErrorCount(): int
+    {
+        return $this->errors;
+    }
+    public function getWarningCount(): int
+    {
+        return $this->warnings;
+    }
 }
 
 // Run the linter
@@ -83,7 +90,9 @@ $excludeDirs = [
 foreach ($dirsToScan as $dir) {
     $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
     foreach ($iterator as $file) {
-        if (!$file->isFile() || $file->getExtension() !== 'php') continue;
+        if (!$file->isFile() || $file->getExtension() !== 'php') {
+            continue;
+        }
         $path = $file->getPathname();
         $skip = false;
         foreach ($excludeDirs as $ex) {
@@ -92,7 +101,9 @@ foreach ($dirsToScan as $dir) {
                 break;
             }
         }
-        if ($skip) continue;
+        if ($skip) {
+            continue;
+        }
         $linter->scanFile($path);
     }
 }

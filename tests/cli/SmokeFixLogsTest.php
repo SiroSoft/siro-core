@@ -29,16 +29,20 @@ class SmokeFixLogsTest extends TestCase
         mkdir($this->tempDir . '/storage/logs/main', 0777, true);
         $monthDir = $this->tempDir . '/storage/logs/daily/' . date('Y-m');
         mkdir($monthDir, 0777, true);
-        file_put_contents($monthDir . '/request-' . date('Y-m-d') . '.log',
+        file_put_contents(
+            $monthDir . '/request-' . date('Y-m-d') . '.log',
             "[2026-11-27 10:00:00] GET /api/users 200 15.20ms\n"
-            . "[2026-11-27 10:01:00] GET /api/orders 500 250.00ms\n");
+            . "[2026-11-27 10:01:00] GET /api/orders 500 250.00ms\n"
+        );
         file_put_contents($this->tempDir . '/.env', "APP_ENV=testing\nAPP_DEBUG=true\n");
 
         $this->writeTrace('fx_get200', 'GET', '/api/products', 200, 12, '{}');
         $this->writeTrace('fx_post201', 'POST', '/api/products', 201, 45, '{"name":"Widget","price":9.99}');
         $this->writeTrace('fx_slow', 'GET', '/api/reports', 200, 850, '{}');
-        file_put_contents($this->tempDir . '/storage/logs/main/slow.log',
-            "[2026-11-27 15:30:03] GET /api/reports 850.0ms slow\n");
+        file_put_contents(
+            $this->tempDir . '/storage/logs/main/slow.log',
+            "[2026-11-27 15:30:03] GET /api/reports 850.0ms slow\n"
+        );
 
         $this->console = new Console($this->tempDir);
     }
@@ -77,10 +81,12 @@ class SmokeFixLogsTest extends TestCase
         if (!is_dir($dir)) {
             return;
         }
-        foreach (new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        ) as $f) {
+        foreach (
+            new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            ) as $f
+        ) {
             $f->isDir() ? rmdir($f->getPathname()) : unlink($f->getPathname());
         }
         rmdir($dir);
@@ -155,9 +161,11 @@ class SmokeFixLogsTest extends TestCase
         foreach (glob($this->tempDir . '/storage/logs/traces/*.json') ?: [] as $f) {
             unlink($f);
         }
-        file_put_contents($this->tempDir . '/storage/logs/main/slow.log',
+        file_put_contents(
+            $this->tempDir . '/storage/logs/main/slow.log',
             "[2026-11-27 15:30:03] GET /api/reports 850.0ms slow\n"
-            . "[2026-11-27 15:31:03] GET /api/heavy 1500.0ms slow\n");
+            . "[2026-11-27 15:31:03] GET /api/heavy 1500.0ms slow\n"
+        );
         [$exit, $output] = $this->runCmd(['siro', 'log:slow', '--min=1000']);
         $this->assertSame(0, $exit);
         $this->assertStringContainsString('1500.0ms', $output);
@@ -210,8 +218,12 @@ class SmokeFixLogsTest extends TestCase
             . 'require ' . var_export($autoload, true) . ";\n"
             . '$c = new \\Siro\\Core\\Console($argv[1]);' . "\n"
             . 'exit($c->run([\'siro\', \'log:tail\', \'--follow\']));' . "\n");
-        $cmd = sprintf('timeout -k 2 5 %s %s %s < /dev/null 2>&1',
-            escapeshellarg(PHP_BINARY), escapeshellarg($runner), escapeshellarg($this->tempDir));
+        $cmd = sprintf(
+            'timeout -k 2 5 %s %s %s < /dev/null 2>&1',
+            escapeshellarg(PHP_BINARY),
+            escapeshellarg($runner),
+            escapeshellarg($this->tempDir)
+        );
         exec($cmd, $out, $code);
         $this->assertSame(124, $code, 'log:tail --follow must exit on SIGTERM (timeout exit 124), got ' . $code);
         $this->assertStringContainsString('Watching for new entries', implode("\n", $out));

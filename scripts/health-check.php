@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -65,7 +66,9 @@ $allPass = true;
 $results = [];
 foreach ($checks as $key => $c) {
     $results[$key] = ['status' => $c['pass'] ? 'ok' : 'fail', 'detail' => $c['detail']];
-    if (!$c['pass']) $allPass = false;
+    if (!$c['pass']) {
+        $allPass = false;
+    }
 }
 
 if ($format === 'json') {
@@ -83,7 +86,9 @@ echo "PHP: " . PHP_VERSION . "\n\n";
 foreach ($checks as $c) {
     $symbol = $c['pass'] ? 'PASS' : 'FAIL';
     echo "  [$symbol] {$c['label']}";
-    if ($c['detail'] !== '') echo " ({$c['detail']})";
+    if ($c['detail'] !== '') {
+        echo " ({$c['detail']})";
+    }
     echo "\n";
 }
 echo "\n" . ($allPass ? 'All checks passed' : 'Some checks failed') . "\n";

@@ -29,14 +29,20 @@ class DbQueueCacheTest extends TestCase
         mkdir($this->tempDir . '/app', 0777, true);
         mkdir($this->tempDir . '/routes', 0777, true);
 
-        file_put_contents($this->tempDir . '/.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nDB_CONNECTION=sqlite\nDB_DATABASE=:memory:\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_only_32chars!!\n");
+        file_put_contents(
+            $this->tempDir . '/.env',
+            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nDB_CONNECTION=sqlite\nDB_DATABASE=:memory:\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_only_32chars!!\n"
+        );
 
-        file_put_contents($this->tempDir . '/config/database.php',
-            '<?php return ["driver" => "sqlite", "database" => ":memory:", "charset" => "utf8mb4", "slow_query_threshold" => 500];');
+        file_put_contents(
+            $this->tempDir . '/config/database.php',
+            '<?php return ["driver" => "sqlite", "database" => ":memory:", "charset" => "utf8mb4", "slow_query_threshold" => 500];'
+        );
 
-        file_put_contents($this->tempDir . '/routes/schedule.php',
-            "<?php\n\ndeclare(strict_types=1);\n");
+        file_put_contents(
+            $this->tempDir . '/routes/schedule.php',
+            "<?php\n\ndeclare(strict_types=1);\n"
+        );
 
         // Reset all singletons to isolate tests
         Env::reset();
@@ -163,14 +169,19 @@ class DbQueueCacheTest extends TestCase
 
     private function rrmdir(string $dir): void
     {
-        if (!is_dir($dir)) return;
+        if (!is_dir($dir)) {
+            return;
+        }
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($files as $file) {
-            if ($file->isDir()) rmdir($file->getRealPath());
-            else unlink($file->getRealPath());
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+            } else {
+                unlink($file->getRealPath());
+            }
         }
         rmdir($dir);
     }

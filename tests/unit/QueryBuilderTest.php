@@ -9,7 +9,7 @@ use Siro\Core\DB\QueryBuilder;
 
 /**
  * QueryBuilder Unit Tests
- * 
+ *
  * Tests database query builder functionality
  */
 final class QueryBuilderTest extends TestCase

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * A3.6 — Command Classification
  * Classifies all 95 registered commands by side-effect type.

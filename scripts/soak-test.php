@@ -27,11 +27,17 @@ $verifyTraces = false;
 $tracesDir = null;
 
 foreach ($argv as $arg) {
-    if (str_starts_with($arg, '--base='))          $base = substr($arg, 7);
-    elseif (str_starts_with($arg, '--requests='))  $total = max(1, (int) substr($arg, 11));
-    elseif (str_starts_with($arg, '--concurrency=')) $concurrency = max(1, (int) substr($arg, 14));
-    elseif (str_starts_with($arg, '--traces-dir=')) $tracesDir = substr($arg, 13);
-    elseif ($arg === '--verify-traces')            $verifyTraces = true;
+    if (str_starts_with($arg, '--base=')) {
+        $base = substr($arg, 7);
+    } elseif (str_starts_with($arg, '--requests=')) {
+        $total = max(1, (int) substr($arg, 11));
+    } elseif (str_starts_with($arg, '--concurrency=')) {
+        $concurrency = max(1, (int) substr($arg, 14));
+    } elseif (str_starts_with($arg, '--traces-dir=')) {
+        $tracesDir = substr($arg, 13);
+    } elseif ($arg === '--verify-traces') {
+        $verifyTraces = true;
+    }
 }
 
 if ($tracesDir === null) {
@@ -131,7 +137,9 @@ while ($totalSent < $total || count($inflight) > 0) {
         $statusCounts[$code] = ($statusCounts[$code] ?? 0) + 1;
         $lat = (microtime(true) - $info['start']) * 1000;
         $latencies[] = $lat;
-        if ($code !== 200) $errors++;
+        if ($code !== 200) {
+            $errors++;
+        }
         curl_multi_remove_handle($mh, $info['ch']);
         curl_close($info['ch']);
         unset($inflight[$id]);

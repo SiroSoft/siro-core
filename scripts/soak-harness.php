@@ -39,19 +39,30 @@ $port = 18080;
 $baseUrl = "http://127.0.0.1:{$port}";
 
 foreach ($argv as $arg) {
-    if (str_starts_with($arg, '--mode='))        $mode = substr($arg, 7);
-    elseif (str_starts_with($arg, '--hours='))   $hours = max(1, (int) substr($arg, 8));
-    elseif (str_starts_with($arg, '--concurrency=')) $concurrency = max(1, (int) substr($arg, 14));
-    elseif (str_starts_with($arg, '--output='))  $outputDir = substr($arg, 9);
-    elseif (str_starts_with($arg, '--port='))    $port = (int) substr($arg, 7);
-    elseif (str_starts_with($arg, '--duration=')) { /* handled below */ }
+    if (str_starts_with($arg, '--mode=')) {
+        $mode = substr($arg, 7);
+    } elseif (str_starts_with($arg, '--hours=')) {
+        $hours = max(1, (int) substr($arg, 8));
+    } elseif (str_starts_with($arg, '--concurrency=')) {
+        $concurrency = max(1, (int) substr($arg, 14));
+    } elseif (str_starts_with($arg, '--output=')) {
+        $outputDir = substr($arg, 9);
+    } elseif (str_starts_with($arg, '--port=')) {
+        $port = (int) substr($arg, 7);
+    } elseif (str_starts_with($arg, '--duration=')) {
+/* handled below */
+    }
 }
 
 $durationSeconds = ($mode === 'short') ? 300 : ($hours * 3600);
 foreach ($argv as $arg) {
-    if (str_starts_with($arg, '--duration=')) $durationSeconds = max(30, (int) substr($arg, 11));
+    if (str_starts_with($arg, '--duration=')) {
+        $durationSeconds = max(30, (int) substr($arg, 11));
+    }
 }
-if ($mode === 'full') $durationSeconds = $hours * 3600;
+if ($mode === 'full') {
+    $durationSeconds = $hours * 3600;
+}
 
 $sampleInterval = ($mode === 'short') ? 10 : 60;
 
@@ -391,8 +402,14 @@ class SoakMetrics
         }
     }
 
-    public function recordDbFailure(): void  { $this->dbFailures++; }
-    public function recordCacheError(): void  { $this->cacheErrors++; }
+    public function recordDbFailure(): void
+    {
+        $this->dbFailures++;
+    }
+    public function recordCacheError(): void
+    {
+        $this->cacheErrors++;
+    }
 
     public function getSummary(): array
     {
@@ -426,7 +443,9 @@ class SoakMetrics
         }
 
         $postWarmup = array_slice($memSamples, $warmupIdx);
-        if (empty($postWarmup)) $postWarmup = $memSamples;
+        if (empty($postWarmup)) {
+            $postWarmup = $memSamples;
+        }
         $postWarmupFirst = $postWarmup[0] ?? $memFirst;
         $postWarmupLast = end($postWarmup) ?: $memLast;
         $postWarmupPeak = empty($postWarmup) ? 0 : max($postWarmup);
@@ -616,8 +635,7 @@ file_put_contents($routerFile, '<?php' . "\n" .
     '$app = new \Siro\Core\App(' . var_export($projectDir, true) . ');' . "\n" .
     '$app->boot();' . "\n" .
     '$app->loadRoutes(' . var_export($projectDir . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php', true) . ');' . "\n" .
-    '$app->run();' . "\n"
-);
+    '$app->run();' . "\n");
 
 // Start built-in PHP server
 echo "Starting PHP built-in server on port {$port}...\n";
@@ -685,9 +703,12 @@ while (time() < $endTime) {
         $summary = $metrics->getSummary();
         printf(
             "  [%ds elapsed, %ds remaining] req=%d ok=%d fail=%d 5xx=%d server_mem=%s\n",
-            $elapsed, max(0, $endTime - time()),
-            $summary['total_requests'], $summary['success_count'],
-            $summary['failure_count'], $summary['http_5xx'],
+            $elapsed,
+            max(0, $endTime - time()),
+            $summary['total_requests'],
+            $summary['success_count'],
+            $summary['failure_count'],
+            $summary['http_5xx'],
             number_format($summary['server_memory']['last'] ?? 0)
         );
     }
@@ -759,8 +780,11 @@ proc_terminate($serverProc);
 proc_close($serverProc);
 
 // Recursive cleanup helper
-function soakRmDir(string $dir): void {
-    if (!is_dir($dir)) return;
+function soakRmDir(string $dir): void
+{
+    if (!is_dir($dir)) {
+        return;
+    }
     $items = array_diff(scandir($dir), ['.', '..']);
     foreach ($items as $item) {
         $path = $dir . DIRECTORY_SEPARATOR . $item;

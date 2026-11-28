@@ -9,7 +9,7 @@ use Siro\Core\Request;
 
 /**
  * Request Unit Tests
- * 
+ *
  * Tests all request input methods and helpers
  */
 final class RequestTest extends TestCase
@@ -19,7 +19,7 @@ final class RequestTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create a mock request with test data
         $_GET = ['page' => '2', 'search' => 'test'];
         $_POST = [
@@ -33,7 +33,7 @@ final class RequestTest extends TestCase
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/test';
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
-        
+
         $this->request = Request::fromGlobals();
     }
 
@@ -50,7 +50,7 @@ final class RequestTest extends TestCase
     public function testIntHelperReturnsInteger(): void
     {
         $age = $this->request->int('age');
-        
+
         $this->assertIsInt($age);
         $this->assertEquals(25, $age);
     }
@@ -58,7 +58,7 @@ final class RequestTest extends TestCase
     public function testIntHelperWithDefault(): void
     {
         $missing = $this->request->int('missing', 42);
-        
+
         $this->assertIsInt($missing);
         $this->assertEquals(42, $missing);
     }
@@ -69,7 +69,7 @@ final class RequestTest extends TestCase
     public function testStringHelperReturnsString(): void
     {
         $name = $this->request->string('name');
-        
+
         $this->assertIsString($name);
         $this->assertEquals('John Doe', $name);
     }
@@ -77,7 +77,7 @@ final class RequestTest extends TestCase
     public function testStringHelperWithDefault(): void
     {
         $missing = $this->request->string('missing', 'default');
-        
+
         $this->assertIsString($missing);
         $this->assertEquals('default', $missing);
     }
@@ -88,7 +88,7 @@ final class RequestTest extends TestCase
     public function testBoolHelperReturnsBoolean(): void
     {
         $active = $this->request->bool('active');
-        
+
         $this->assertIsBool($active);
         $this->assertTrue($active);
     }
@@ -97,7 +97,7 @@ final class RequestTest extends TestCase
     {
         $_POST['inactive'] = '0';
         $inactive = $this->request->bool('inactive');
-        
+
         $this->assertIsBool($inactive);
         $this->assertFalse($inactive);
     }
@@ -108,7 +108,7 @@ final class RequestTest extends TestCase
     public function testArrayHelperReturnsArray(): void
     {
         $items = $this->request->array('items');
-        
+
         $this->assertIsArray($items);
         $this->assertCount(2, $items);
         $this->assertEquals(['item1', 'item2'], $items);
@@ -117,7 +117,7 @@ final class RequestTest extends TestCase
     public function testArrayHelperWithDefault(): void
     {
         $missing = $this->request->array('missing', ['default']);
-        
+
         $this->assertIsArray($missing);
         $this->assertEquals(['default'], $missing);
     }
@@ -128,7 +128,7 @@ final class RequestTest extends TestCase
     public function testFloatHelperReturnsFloat(): void
     {
         $price = $this->request->float('price');
-        
+
         $this->assertIsFloat($price);
         $this->assertEquals(99.99, $price);
     }
@@ -136,7 +136,7 @@ final class RequestTest extends TestCase
     public function testFloatHelperWithDefault(): void
     {
         $missing = $this->request->float('missing', 0.0);
-        
+
         $this->assertIsFloat($missing);
         $this->assertEquals(0.0, $missing);
     }
@@ -147,7 +147,7 @@ final class RequestTest extends TestCase
     public function testQueryIntHelperReturnsInteger(): void
     {
         $page = $this->request->queryInt('page');
-        
+
         $this->assertIsInt($page);
         $this->assertEquals(2, $page);
     }
@@ -155,7 +155,7 @@ final class RequestTest extends TestCase
     public function testQueryIntHelperWithDefault(): void
     {
         $missing = $this->request->queryInt('missing', 1);
-        
+
         $this->assertIsInt($missing);
         $this->assertEquals(1, $missing);
     }
@@ -166,7 +166,7 @@ final class RequestTest extends TestCase
     public function testQueryStringHelperReturnsString(): void
     {
         $search = $this->request->queryString('search');
-        
+
         $this->assertIsString($search);
         $this->assertEquals('test', $search);
     }
@@ -174,7 +174,7 @@ final class RequestTest extends TestCase
     public function testQueryStringHelperWithDefault(): void
     {
         $missing = $this->request->queryString('missing', 'default');
-        
+
         $this->assertIsString($missing);
         $this->assertEquals('default', $missing);
     }
@@ -185,7 +185,7 @@ final class RequestTest extends TestCase
     public function testOnlyReturnsSelectedFields(): void
     {
         $data = $this->request->only(['name', 'email']);
-        
+
         $this->assertIsArray($data);
         $this->assertArrayHasKey('name', $data);
         $this->assertArrayHasKey('email', $data);
@@ -196,7 +196,7 @@ final class RequestTest extends TestCase
     public function testOnlyWithNonExistentKeys(): void
     {
         $data = $this->request->only(['name', 'nonexistent']);
-        
+
         $this->assertArrayHasKey('name', $data);
         $this->assertArrayNotHasKey('nonexistent', $data);
     }
@@ -223,7 +223,7 @@ final class RequestTest extends TestCase
     public function testInputRetrievesPostData(): void
     {
         $name = $this->request->input('name');
-        
+
         $this->assertEquals('John Doe', $name);
     }
 
@@ -233,7 +233,7 @@ final class RequestTest extends TestCase
     public function testInputWithDefault(): void
     {
         $missing = $this->request->input('missing', 'default');
-        
+
         $this->assertEquals('default', $missing);
     }
 
@@ -243,7 +243,7 @@ final class RequestTest extends TestCase
     public function testQueryRetrievesGetData(): void
     {
         $page = $this->request->query('page');
-        
+
         $this->assertEquals('2', $page);
     }
 
@@ -253,7 +253,7 @@ final class RequestTest extends TestCase
     public function testAllReturnsAllInput(): void
     {
         $all = $this->request->all();
-        
+
         $this->assertIsArray($all);
         $this->assertArrayHasKey('name', $all);
         $this->assertArrayHasKey('email', $all);

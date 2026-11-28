@@ -150,14 +150,16 @@ final class CommandSupportTest extends TestCase
     public function testWriteVariants(): void
     {
         $p = $this->support();
-        foreach ([
+        foreach (
+            [
             'callInfo' => 'info',
             'callSuccess' => 'success',
             'callError' => 'error',
             'callWarn' => 'warn',
             'callHighlight' => 'highlight',
             'callComment' => 'comment',
-        ] as $method => $text) {
+            ] as $method => $text
+        ) {
             ob_start();
             $p->{$method}($text . ' message');
             $out = ob_get_clean();

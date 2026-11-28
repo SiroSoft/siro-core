@@ -469,8 +469,7 @@ XML);
         int $settleSeconds = 2,
         int $waitSeconds = 5,
         ?string $runnerPath = null
-    ): array
-    {
+    ): array {
         $runner = $runnerPath ?? $this->writeRunner($project);
         $log = $project . '/daemon.log';
         $descriptors = [

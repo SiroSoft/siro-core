@@ -6,7 +6,6 @@ namespace Siro\Core\Tests\Cli;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-
 use Siro\Core\Console;
 use Siro\Core\Env;
 use Siro\Core\Config;

@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 $basePath = dirname(__DIR__);
@@ -33,7 +34,9 @@ if (is_file($phpdocBin)) {
     $excludeDirs = ['vendor', 'tests', 'scripts', 'storage', 'docs', '.phpdoc'];
     $filter = function (\SplFileInfo $file) use ($excludeDirs): bool {
         foreach ($excludeDirs as $ex) {
-            if (str_starts_with($file->getPathname(), $basePath . DIRECTORY_SEPARATOR . $ex)) return false;
+            if (str_starts_with($file->getPathname(), $basePath . DIRECTORY_SEPARATOR . $ex)) {
+                return false;
+            }
         }
         return $file->getExtension() === 'php';
     };
@@ -50,12 +53,18 @@ if (is_file($phpdocBin)) {
 
     foreach ($it as $file) {
         $content = @file_get_contents($file->getPathname());
-        if ($content === false || $content === '') continue;
+        if ($content === false || $content === '') {
+            continue;
+        }
         $tokens = @token_get_all($content);
-        if (!is_array($tokens)) continue;
+        if (!is_array($tokens)) {
+            continue;
+        }
         $depth = 0;
         foreach ($tokens as $i => $token) {
-            if (!is_array($token)) continue;
+            if (!is_array($token)) {
+                continue;
+            }
             if ($token[0] === T_DOC_COMMENT) {
                 $docblockCount++;
             }

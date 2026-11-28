@@ -66,7 +66,11 @@ final class EscapedMutantsTest extends TestCase
         if (!$container->has('db.default')) {
             $this->markTestSkipped('Database not configured');
         }
-        try { ApiKey::ensureTable(); } catch (\Throwable) { $this->markTestSkipped('Cannot create table'); }
+        try {
+            ApiKey::ensureTable();
+        } catch (\Throwable) {
+            $this->markTestSkipped('Cannot create table');
+        }
         $token = bin2hex(random_bytes(16));
         $hash = password_hash($token, PASSWORD_BCRYPT);
         $now = time();
@@ -85,7 +89,11 @@ final class EscapedMutantsTest extends TestCase
         if (!$container->has('db.default')) {
             $this->markTestSkipped('Database not configured');
         }
-        try { ApiKey::ensureTable(); } catch (\Throwable) { $this->markTestSkipped('Cannot create table'); }
+        try {
+            ApiKey::ensureTable();
+        } catch (\Throwable) {
+            $this->markTestSkipped('Cannot create table');
+        }
         $token = bin2hex(random_bytes(16));
         $hash = password_hash($token, PASSWORD_BCRYPT);
         Database::execute(
@@ -105,7 +113,11 @@ final class EscapedMutantsTest extends TestCase
         if (!$container->has('db.default')) {
             $this->markTestSkipped('Database not configured');
         }
-        try { ApiKey::ensureTable(); } catch (\Throwable) { $this->markTestSkipped('Cannot create table'); }
+        try {
+            ApiKey::ensureTable();
+        } catch (\Throwable) {
+            $this->markTestSkipped('Cannot create table');
+        }
         $token = bin2hex(random_bytes(16));
         $hash = password_hash($token, PASSWORD_BCRYPT);
         Database::execute(
@@ -185,7 +197,10 @@ final class EscapedMutantsTest extends TestCase
         $container = Container::getInstance();
         $container->clear();
         $container->instance('auth.resolver', new class {
-            public function __invoke(Request $req): array { return ['id' => 99, 'role' => 'user']; }
+            public function __invoke(Request $req): array
+            {
+                return ['id' => 99, 'role' => 'user'];
+            }
         });
         $guard = new AuthGuard();
         $token = JWT::encodeAccess(99, 1);
@@ -202,7 +217,10 @@ final class EscapedMutantsTest extends TestCase
         $container = Container::getInstance();
         $container->clear();
         $container->instance('auth.resolver', new class {
-            public function __invoke(Request $req): array { return ['id' => 1, 'role' => 'admin']; }
+            public function __invoke(Request $req): array
+            {
+                return ['id' => 1, 'role' => 'admin'];
+            }
         });
         $guard = new AuthGuard();
         $request = new Request('GET', '/');
@@ -232,7 +250,11 @@ final class EscapedMutantsTest extends TestCase
         if (!$container->has('db.default')) {
             $this->markTestSkipped('Database not configured');
         }
-        try { \Siro\Core\Auth\Idempotency::createTable(); } catch (\Throwable) { $this->markTestSkipped('Cannot create table'); }
+        try {
+            \Siro\Core\Auth\Idempotency::createTable();
+        } catch (\Throwable) {
+            $this->markTestSkipped('Cannot create table');
+        }
         $result = \Siro\Core\Auth\Idempotency::cleanup();
         $this->assertIsInt($result);
         $this->assertGreaterThanOrEqual(0, $result);
@@ -244,7 +266,11 @@ final class EscapedMutantsTest extends TestCase
         if (!$container->has('db.default')) {
             $this->markTestSkipped('Database not configured');
         }
-        try { \Siro\Core\Auth\Idempotency::createTable(); } catch (\Throwable) { $this->markTestSkipped('Cannot create table'); }
+        try {
+            \Siro\Core\Auth\Idempotency::createTable();
+        } catch (\Throwable) {
+            $this->markTestSkipped('Cannot create table');
+        }
         $result = \Siro\Core\Auth\Idempotency::cleanup(time() - 86400);
         $this->assertIsInt($result);
     }
@@ -294,7 +320,10 @@ final class EscapedMutantsTest extends TestCase
         JWT::reset();
         $container = Container::getInstance();
         $container->instance('auth.resolver', new class {
-            public function __invoke(Request $req): array { return ['id' => 1, 'role' => 'user']; }
+            public function __invoke(Request $req): array
+            {
+                return ['id' => 1, 'role' => 'user'];
+            }
         });
         $token = JWT::encodeAccess(1, 1);
         $mw = new AuthMiddleware();

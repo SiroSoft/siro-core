@@ -30,7 +30,9 @@ final class ApiContractCommandTest extends TestCase
     private function remove(string $dir): void
     {
         foreach (scandir($dir) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..') continue;
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
             $path = $dir . DIRECTORY_SEPARATOR . $entry;
             is_dir($path) ? $this->remove($path) : unlink($path);
         }
@@ -64,8 +66,10 @@ final class ApiContractCommandTest extends TestCase
      */
     public function testStandardScheduleFileLoadsWithoutFailure(): void
     {
-        file_put_contents($this->basePath . '/routes/schedule.php',
-            "<?php\n\$schedule->command('queue:work --tries=3')->dailyAt('02:30');\n");
+        file_put_contents(
+            $this->basePath . '/routes/schedule.php',
+            "<?php\n\$schedule->command('queue:work --tries=3')->dailyAt('02:30');\n"
+        );
         file_put_contents($this->basePath . '/docs/openapi/openapi.json', json_encode([
             'paths' => [
                 '/api/widgets' => ['get' => ['responses' => ['200' => ['description' => 'ok']]]],
@@ -84,8 +88,10 @@ final class ApiContractCommandTest extends TestCase
      */
     public function testThrowingRouteFileFailsWithFileNamed(): void
     {
-        file_put_contents($this->basePath . '/routes/broken.php',
-            "<?php throw new \\RuntimeException('boom');\n");
+        file_put_contents(
+            $this->basePath . '/routes/broken.php',
+            "<?php throw new \\RuntimeException('boom');\n"
+        );
         file_put_contents($this->basePath . '/docs/openapi/openapi.json', json_encode([
             'paths' => [
                 '/api/widgets' => ['get' => ['responses' => ['200' => ['description' => 'ok']]]],

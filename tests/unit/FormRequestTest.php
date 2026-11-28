@@ -15,7 +15,7 @@ final class FormRequestTest extends TestCase
     {
         $request = new Request('POST', '/test', [], [], ['email' => 'test@example.com', 'name' => 'John']);
 
-        $form = new class($request) extends FormRequest {
+        $form = new class ($request) extends FormRequest {
             public function rules(): array
             {
                 return [
@@ -34,7 +34,7 @@ final class FormRequestTest extends TestCase
     {
         $request = new Request('POST', '/test', [], [], ['email' => 'not-an-email']);
 
-        $form = new class($request) extends FormRequest {
+        $form = new class ($request) extends FormRequest {
             public function rules(): array
             {
                 return [
@@ -50,7 +50,7 @@ final class FormRequestTest extends TestCase
     public function testAuthorizeReturnsTrueByDefault(): void
     {
         $request = new Request('GET', '/test');
-        $form = new class($request) extends FormRequest {
+        $form = new class ($request) extends FormRequest {
             public function rules(): array
             {
                 return ['id' => 'required|integer'];
@@ -63,7 +63,7 @@ final class FormRequestTest extends TestCase
     public function testMessagesCanBeCustomized(): void
     {
         $request = new Request('POST', '/test', [], [], ['email' => '']);
-        $form = new class($request) extends FormRequest {
+        $form = new class ($request) extends FormRequest {
             public function rules(): array
             {
                 return ['email' => 'required'];
@@ -81,7 +81,7 @@ final class FormRequestTest extends TestCase
     public function testGetReturnsValue(): void
     {
         $request = new Request('POST', '/test', [], [], ['key' => 'value']);
-        $form = new class($request) extends FormRequest {
+        $form = new class ($request) extends FormRequest {
             public function rules(): array
             {
                 return ['key' => 'required'];
@@ -95,7 +95,7 @@ final class FormRequestTest extends TestCase
     public function testGetReturnsDefaultForMissing(): void
     {
         $request = new Request('GET', '/test');
-        $form = new class($request) extends FormRequest {
+        $form = new class ($request) extends FormRequest {
             public function rules(): array
             {
                 return [];

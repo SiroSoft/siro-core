@@ -1,4 +1,5 @@
 <?php
+
 // Line 74 = "public static function encodeAccess(...)" — signature line.
 // Infection maps default-param mutants to the SIGNATURE line attribution.
 // If signature lines have no attribution, default-param mutants are "not covered".

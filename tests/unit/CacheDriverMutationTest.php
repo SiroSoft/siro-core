@@ -251,7 +251,9 @@ final class CacheDriverMutationTest extends TestCase
         $d = new FileDriver($dir . DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
         $d->set('k', 'v', 5);
         $this->assertSame('v', $d->get('k'));
-        foreach (glob($dir . '/*') ?: [] as $f) { @unlink($f); }
+        foreach (glob($dir . '/*') ?: [] as $f) {
+            @unlink($f);
+        }
         @rmdir($dir);
     }
 
@@ -272,7 +274,11 @@ final class CacheDriverMutationTest extends TestCase
             $ref->setAccessible(true);
             $this->assertSame(120, $ref->getValue($ci));
         } finally {
-            if ($backup === null) { unset($_ENV['CACHE_TTL']); } else { $_ENV['CACHE_TTL'] = $backup; }
+            if ($backup === null) {
+                unset($_ENV['CACHE_TTL']);
+            } else {
+                $_ENV['CACHE_TTL'] = $backup;
+            }
         }
     }
 
@@ -287,7 +293,11 @@ final class CacheDriverMutationTest extends TestCase
             $ref->setAccessible(true);
             $this->assertSame(1, $ref->getValue($ci), 'max(1, 0) must clamp to 1');
         } finally {
-            if ($backup === null) { unset($_ENV['CACHE_TTL']); } else { $_ENV['CACHE_TTL'] = $backup; }
+            if ($backup === null) {
+                unset($_ENV['CACHE_TTL']);
+            } else {
+                $_ENV['CACHE_TTL'] = $backup;
+            }
         }
     }
 }

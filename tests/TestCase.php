@@ -69,7 +69,9 @@ abstract class TestCase extends BaseTestCase
         }
 
         $files = glob(rtrim($migrationsDir, '/') . '/*.php');
-        if (!$files) return;
+        if (!$files) {
+            return;
+        }
 
         sort($files);
 

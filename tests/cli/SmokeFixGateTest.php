@@ -34,19 +34,25 @@ final class SmokeFixGateTest extends TestCase
         Logger::reset();
 
         $this->tempDir = sys_get_temp_dir() . '/siro_smoke_fix_gate_' . bin2hex(random_bytes(4));
-        foreach ([
+        foreach (
+            [
             'app/Controllers', 'app/Resources', 'app/Models', 'routes', 'config',
             'storage/logs/traces', 'storage/framework', 'docs', 'tests/Feature',
-        ] as $dir) {
+            ] as $dir
+        ) {
             mkdir($this->tempDir . '/' . $dir, 0777, true);
         }
 
-        file_put_contents($this->tempDir . '/.env',
+        file_put_contents(
+            $this->tempDir . '/.env',
             "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=testing_app_key_for_hmac_32chars!!\n"
             . "DB_CONNECTION=sqlite\nDB_DATABASE=" . $this->tempDir . "/storage/test.db\n"
-            . "SIRO_OPENAPI_ENABLED=true\n");
-        file_put_contents($this->tempDir . '/config/database.php',
-            '<?php return ["driver" => "sqlite", "database" => "' . $this->tempDir . '/storage/test.db", "charset" => "utf8mb4"];');
+            . "SIRO_OPENAPI_ENABLED=true\n"
+        );
+        file_put_contents(
+            $this->tempDir . '/config/database.php',
+            '<?php return ["driver" => "sqlite", "database" => "' . $this->tempDir . '/storage/test.db", "charset" => "utf8mb4"];'
+        );
         file_put_contents($this->tempDir . '/config/app.php', '<?php return ["name" => "SmokeFixGate", "env" => "testing"];');
 
         // Controllers exist so make:openapi fallback mode can derive
@@ -167,7 +173,8 @@ PHP);
         $task = new ScheduleTask('command', 'queue:work');
         $this->assertSame('queue:work', $task->describe());
 
-        $task = new ScheduleTask('call', function () {});
+        $task = new ScheduleTask('call', function () {
+        });
         $this->assertSame('Closure', $task->describe());
     }
 

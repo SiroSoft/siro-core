@@ -36,7 +36,9 @@ final class ApiStabilityTest extends TestCase
         }
         foreach (self::SOURCE_DIRS as $dir) {
             $path = $root . '/' . $dir;
-            if (!is_dir($path)) continue;
+            if (!is_dir($path)) {
+                continue;
+            }
             $rii = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)
             );
@@ -55,7 +57,9 @@ final class ApiStabilityTest extends TestCase
         $total = 0;
         foreach (self::sourceFiles() as $file) {
             $content = file_get_contents($file);
-            if ($content === false) continue;
+            if ($content === false) {
+                continue;
+            }
             preg_match_all('/public\s+function\s+(?!__)[A-Za-z0-9_]+/i', $content, $m);
             $total += count($m[0]);
         }

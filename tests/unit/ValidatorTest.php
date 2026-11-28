@@ -9,7 +9,7 @@ use Siro\Core\Validator;
 
 /**
  * Validator Unit Tests
- * 
+ *
  * Tests all validation rules and edge cases
  */
 final class ValidatorTest extends TestCase

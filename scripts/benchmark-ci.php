@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 $baselineFile = __DIR__ . '/../storage/benchmark/baseline.json';
@@ -56,7 +57,9 @@ foreach ($current as $name => $value) {
     } elseif ($baselineValue === 0.0) {
         $delta = $value > 0 ? 100 : 0;
         $status = $value > 0 ? 'FAIL' : 'PASS';
-        if ($value > 0) $failed = true;
+        if ($value > 0) {
+            $failed = true;
+        }
     } else {
         $delta = (($value - $baselineValue) / $baselineValue) * 100;
         if ($delta > 10) {
@@ -71,7 +74,9 @@ foreach ($current as $name => $value) {
         }
     }
 
-    echo sprintf("%-45s %-15s %-15s %-10.1f %s\n", $name,
+    echo sprintf(
+        "%-45s %-15s %-15s %-10.1f %s\n",
+        $name,
         $isFirstRun ? '-' : number_format($baselineValue, 4),
         number_format($value, 4),
         $isFirstRun ? 0 : $delta,

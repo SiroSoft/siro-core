@@ -6,7 +6,6 @@ namespace Siro\Core\Tests\Cli;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-
 use Siro\Core\Console;
 use Siro\Core\App;
 
@@ -483,14 +482,19 @@ PHP);
 
     private function rrmdir(string $dir): void
     {
-        if (!is_dir($dir)) return;
+        if (!is_dir($dir)) {
+            return;
+        }
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($files as $file) {
-            if ($file->isDir()) rmdir($file->getRealPath());
-            else unlink($file->getRealPath());
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+            } else {
+                unlink($file->getRealPath());
+            }
         }
         rmdir($dir);
     }

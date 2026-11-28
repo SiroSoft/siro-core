@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+
 use PHPUnit\Framework\Attributes\DataProvider;
-
-
 use Siro\Core\Tests\TestCase;
 use Siro\Core\DB\SqlCompiler;
 
@@ -91,13 +90,29 @@ final class FuzzSqlCompilerTest extends TestCase
 
     #[DataProvider('provideBuildSelectInputs')]
     public function testBuildSelectQueryNeverThrows(
-        array $columns, string $table, array $wheres, array $havings,
-        array $joins, array $groups, array $orders, ?int $limit, ?int $offset, array $bindings
+        array $columns,
+        string $table,
+        array $wheres,
+        array $havings,
+        array $joins,
+        array $groups,
+        array $orders,
+        ?int $limit,
+        ?int $offset,
+        array $bindings
     ): void {
         try {
             [$sql, $b] = $this->compiler->buildSelectQuery(
-                $columns, $table, $wheres, $havings,
-                $joins, $groups, $orders, $limit, $offset, $bindings
+                $columns,
+                $table,
+                $wheres,
+                $havings,
+                $joins,
+                $groups,
+                $orders,
+                $limit,
+                $offset,
+                $bindings
             );
             $this->assertIsString($sql);
             $this->assertIsArray($b);

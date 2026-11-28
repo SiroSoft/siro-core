@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+
 use PHPUnit\Framework\Attributes\DataProvider;
-
-
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Model;
 
@@ -111,7 +110,7 @@ final class FuzzModelTest extends TestCase
     #[DataProvider('provideHiddenSerialization')]
     public function testHiddenAttributesNeverThrow(array $hidden, array $data): void
     {
-        $model = new class($hidden) extends Model {
+        $model = new class ($hidden) extends Model {
             protected string $table = 'fuzz_models';
             protected array $fillable = ['*'];
             public function __construct(array $hiddenFields = [])

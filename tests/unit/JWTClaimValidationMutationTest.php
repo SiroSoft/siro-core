@@ -34,8 +34,10 @@ final class JWTClaimValidationMutationTest extends TestCase
             define('BASE_PATH', dirname(__DIR__, 2));
         }
         Env::reset();
-        foreach (['JWT_SECRET', 'JWT_PREVIOUS_SECRET', 'JWT_ALGORITHM', 'JWT_KEY_VERSION',
-                  'JWT_PUBLIC_KEY', 'JWT_PUBLIC_KEY_PATH', 'JWT_PRIVATE_KEY', 'JWT_PRIVATE_KEY_PATH', 'APP_URL'] as $k) {
+        foreach (
+            ['JWT_SECRET', 'JWT_PREVIOUS_SECRET', 'JWT_ALGORITHM', 'JWT_KEY_VERSION',
+                  'JWT_PUBLIC_KEY', 'JWT_PUBLIC_KEY_PATH', 'JWT_PRIVATE_KEY', 'JWT_PRIVATE_KEY_PATH', 'APP_URL'] as $k
+        ) {
             putenv($k);
             unset($_ENV[$k]);
         }
@@ -47,8 +49,10 @@ final class JWTClaimValidationMutationTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (['JWT_SECRET', 'JWT_PREVIOUS_SECRET', 'JWT_ALGORITHM', 'JWT_KEY_VERSION',
-                  'JWT_PUBLIC_KEY', 'JWT_PUBLIC_KEY_PATH', 'JWT_PRIVATE_KEY', 'JWT_PRIVATE_KEY_PATH', 'APP_URL'] as $k) {
+        foreach (
+            ['JWT_SECRET', 'JWT_PREVIOUS_SECRET', 'JWT_ALGORITHM', 'JWT_KEY_VERSION',
+                  'JWT_PUBLIC_KEY', 'JWT_PUBLIC_KEY_PATH', 'JWT_PRIVATE_KEY', 'JWT_PRIVATE_KEY_PATH', 'APP_URL'] as $k
+        ) {
             putenv($k);
             unset($_ENV[$k]);
         }

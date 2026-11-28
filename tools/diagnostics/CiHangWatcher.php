@@ -4,7 +4,7 @@
  * Standalone script: run in background while PHPUnit executes.
  * Monitors PHPUnit's JUnit XML output file for progress.
  * If no new test completes in 60 seconds, writes a diagnostic.
- * 
+ *
  * Usage: php tools/diagnostics/CiHangWatcher.php <junit-xml-path> <timeout-seconds>
  */
 
@@ -22,9 +22,9 @@ $checkInterval = 5;
 
 while (true) {
     sleep($checkInterval);
-    
+
     $currentSize = is_file($watchFile) ? filesize($watchFile) : 0;
-    
+
     if ($currentSize > $lastSize) {
         $delta = $currentSize - $lastSize;
         $elapsed = time() - $lastChange;
@@ -32,11 +32,11 @@ while (true) {
         $lastSize = $currentSize;
         $lastChange = time();
     }
-    
+
     $idle = time() - $lastChange;
     if ($idle >= $timeout) {
         file_put_contents($logFile, "[" . date('H:i:s') . "] STALL DETECTED — no XML changes for {$idle}s\n", FILE_APPEND);
-        
+
         // Read last few lines of XML to find last completed test
         if (is_file($watchFile) && $currentSize > 0) {
             $content = file_get_contents($watchFile);
@@ -47,24 +47,24 @@ while (true) {
                 file_put_contents($logFile, "Total completed tests: " . count($matches) . "\n", FILE_APPEND);
             }
         }
-        
+
         $lastChange = time(); // reset to avoid flooding
     }
-    
+
     // Check if PHPUnit process is still running
     $psOutput = shell_exec('pgrep -f "phpunit.*phpunit-ci.xml" 2>/dev/null');
     if (empty(trim($psOutput ?? ''))) {
         file_put_contents($logFile, "[" . date('H:i:s') . "] PHPUnit process not found — exited\n", FILE_APPEND);
         break;
     }
-    
+
     // Also check total elapsed
     $totalElapsed = time() - (int)($startTime ?? time());
     if ($totalElapsed > 1800) {
         file_put_contents($logFile, "[" . date('H:i:s') . "] Total time exceeded 30min — stopping watcher\n", FILE_APPEND);
         break;
     }
-    
+
     if (!isset($startTime)) {
         $startTime = time();
     }

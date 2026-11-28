@@ -57,7 +57,9 @@ final class DebugWorkflowTest extends TestCase
                 for ($i = 0; $i < 20; $i++) {
                     usleep(100000);
                     $status = proc_get_status($this->serverProc);
-                    if (!$status['running']) break;
+                    if (!$status['running']) {
+                        break;
+                    }
                 }
                 // Force kill if still running (Unix only)
                 if ($status['running'] && function_exists('posix_kill')) {
