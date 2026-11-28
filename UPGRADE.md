@@ -11,6 +11,16 @@ against v0.41.x continues to work unchanged.
 
 ---
 
+## v1.5.1 → v1.5.2 (2026-11-28)
+
+**There are no breaking changes from v1.5.1 to v1.5.2.** This is a
+performance patch: `App::discoverPackageProviders()` no longer parses the
+whole `vendor/composer/installed.json` on every boot when no package declares
+a provider (boot min 1.72–1.83 ms → 0.43–0.44 ms). No API changes; no
+migration needed.
+
+---
+
 ## v1.5.0 → v1.5.1 (2026-11-28)
 
 **There are no breaking changes from v1.5.0 to v1.5.1.** This is a bug-fix

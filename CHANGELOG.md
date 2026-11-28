@@ -1,10 +1,6 @@
 # Changelog — siro-core
 
-## Unreleased
-
-> NOTE: the first `## vX.Y.Z` heading below must stay the released version
-> (VersionDriftTest + release-check enforce `CHANGELOG head ===
-> Console::VERSION`). The v1.5.2 version bump happens at release time.
+## v1.5.2 (2026-11-28)
 
 ### Fixed
 - Boot time (F-B, re-score 27/11): `App::discoverPackageProviders()` no
