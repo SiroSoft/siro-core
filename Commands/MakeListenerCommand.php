@@ -27,7 +27,9 @@ final class MakeListenerCommand implements \Siro\Core\Commands\CommandInterface
             $class .= $suffix;
         }
 
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Listeners' . DIRECTORY_SEPARATOR . $class . '.php';
+        $path = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Listeners' . DIRECTORY_SEPARATOR .
+            $class . '.php';
 
         if (!is_dir(dirname($path))) {
             mkdir(dirname($path), 0775, true);

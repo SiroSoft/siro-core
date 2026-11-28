@@ -34,8 +34,10 @@ final class JWTClaimValidationMutationTest extends TestCase
             define('BASE_PATH', dirname(__DIR__, 2));
         }
         Env::reset();
-        foreach (['JWT_SECRET', 'JWT_PREVIOUS_SECRET', 'JWT_ALGORITHM', 'JWT_KEY_VERSION',
-                  'JWT_PUBLIC_KEY', 'JWT_PUBLIC_KEY_PATH', 'JWT_PRIVATE_KEY', 'JWT_PRIVATE_KEY_PATH', 'APP_URL'] as $k) {
+        foreach (
+            ['JWT_SECRET', 'JWT_PREVIOUS_SECRET', 'JWT_ALGORITHM', 'JWT_KEY_VERSION',
+                  'JWT_PUBLIC_KEY', 'JWT_PUBLIC_KEY_PATH', 'JWT_PRIVATE_KEY', 'JWT_PRIVATE_KEY_PATH', 'APP_URL'] as $k
+        ) {
             putenv($k);
             unset($_ENV[$k]);
         }
@@ -47,8 +49,10 @@ final class JWTClaimValidationMutationTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (['JWT_SECRET', 'JWT_PREVIOUS_SECRET', 'JWT_ALGORITHM', 'JWT_KEY_VERSION',
-                  'JWT_PUBLIC_KEY', 'JWT_PUBLIC_KEY_PATH', 'JWT_PRIVATE_KEY', 'JWT_PRIVATE_KEY_PATH', 'APP_URL'] as $k) {
+        foreach (
+            ['JWT_SECRET', 'JWT_PREVIOUS_SECRET', 'JWT_ALGORITHM', 'JWT_KEY_VERSION',
+                  'JWT_PUBLIC_KEY', 'JWT_PUBLIC_KEY_PATH', 'JWT_PRIVATE_KEY', 'JWT_PRIVATE_KEY_PATH', 'APP_URL'] as $k
+        ) {
             putenv($k);
             unset($_ENV[$k]);
         }
@@ -71,7 +75,10 @@ final class JWTClaimValidationMutationTest extends TestCase
     {
         $secret ??= self::SECRET;
         $b64 = static fn (string $v): string => rtrim(strtr(base64_encode($v), '+/', '-_'), '=');
-        $header = $b64((string) json_encode(['alg' => 'HS256', 'typ' => 'JWT'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $header = $b64((string) json_encode(
+            ['alg' => 'HS256', 'typ' => 'JWT'],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        ));
         $payload = $b64((string) json_encode($claims, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $sig = $b64(hash_hmac('sha256', $header . '.' . $payload, $secret, true));
 
@@ -149,7 +156,13 @@ final class JWTClaimValidationMutationTest extends TestCase
         putenv('JWT_ALGORITHM=RS256');
         putenv('JWT_PRIVATE_KEY=' . $privateKey);
         putenv('JWT_PUBLIC_KEY_PATH=/nonexistent/public.pem');
-        unset($_ENV['JWT_ALGORITHM'], $_ENV['JWT_PRIVATE_KEY'], $_ENV['JWT_PUBLIC_KEY'], $_ENV['JWT_PUBLIC_KEY_PATH'], $_ENV['JWT_SECRET']);
+        unset(
+            $_ENV['JWT_ALGORITHM'],
+            $_ENV['JWT_PRIVATE_KEY'],
+            $_ENV['JWT_PUBLIC_KEY'],
+            $_ENV['JWT_PUBLIC_KEY_PATH'],
+            $_ENV['JWT_SECRET']
+        );
         Env::reset();
         JWT::reset();
 
@@ -176,7 +189,13 @@ final class JWTClaimValidationMutationTest extends TestCase
         putenv('JWT_PRIVATE_KEY=' . $privateKey);
         putenv('JWT_PUBLIC_KEY=');
         putenv('JWT_PUBLIC_KEY_PATH=' . $path);
-        unset($_ENV['JWT_ALGORITHM'], $_ENV['JWT_PRIVATE_KEY'], $_ENV['JWT_PUBLIC_KEY'], $_ENV['JWT_PUBLIC_KEY_PATH'], $_ENV['JWT_SECRET']);
+        unset(
+            $_ENV['JWT_ALGORITHM'],
+            $_ENV['JWT_PRIVATE_KEY'],
+            $_ENV['JWT_PUBLIC_KEY'],
+            $_ENV['JWT_PUBLIC_KEY_PATH'],
+            $_ENV['JWT_SECRET']
+        );
         Env::reset();
         JWT::reset();
 
@@ -194,7 +213,13 @@ final class JWTClaimValidationMutationTest extends TestCase
         putenv('JWT_ALGORITHM=RS256');
         putenv('JWT_PRIVATE_KEY=' . $privateKey);
         putenv('JWT_PUBLIC_KEY=this-is-not-pem-material');
-        unset($_ENV['JWT_ALGORITHM'], $_ENV['JWT_PRIVATE_KEY'], $_ENV['JWT_PUBLIC_KEY'], $_ENV['JWT_PUBLIC_KEY_PATH'], $_ENV['JWT_SECRET']);
+        unset(
+            $_ENV['JWT_ALGORITHM'],
+            $_ENV['JWT_PRIVATE_KEY'],
+            $_ENV['JWT_PUBLIC_KEY'],
+            $_ENV['JWT_PUBLIC_KEY_PATH'],
+            $_ENV['JWT_SECRET']
+        );
         Env::reset();
         JWT::reset();
 

@@ -102,7 +102,8 @@ final class Request
 
     public static function fromGlobals(): self
     {
-        $method = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
+        $method = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD']) ?
+            $_SERVER['REQUEST_METHOD'] : 'GET';
         $uriStr = $_SERVER['REQUEST_URI'] ?? '/';
         $uri = is_string($uriStr) ? $uriStr : '/';
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
@@ -116,7 +117,8 @@ final class Request
         $maxBodySize = (int) (\Siro\Core\Env::get('MAX_BODY_SIZE_MB', '2')) * 1024 * 1024;
 
         // Validate request size using ACTUAL content length, not just header
-        $contentLength = isset($_SERVER['CONTENT_LENGTH']) && is_numeric($_SERVER['CONTENT_LENGTH']) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
+        $contentLength = isset($_SERVER['CONTENT_LENGTH']) && is_numeric($_SERVER['CONTENT_LENGTH']) ?
+            (int) $_SERVER['CONTENT_LENGTH'] : 0;
 
         // BLOCK: Content-Length header can be spoofed, validate actual body size
         if ($contentLength > 0 && $contentLength > $maxBodySize) {
@@ -772,7 +774,8 @@ final class Request
 
         if (isset($_SERVER['PHP_AUTH_USER'])) {
             $authUser = is_string($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '';
-            $authPw = isset($_SERVER['PHP_AUTH_PW']) && is_string($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : '';
+            $authPw = isset($_SERVER['PHP_AUTH_PW']) && is_string($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] :
+                '';
             $headers['authorization'] = 'Basic ' . base64_encode($authUser . ':' . $authPw);
         }
 

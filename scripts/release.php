@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Automated release helper — Siro.
  *
@@ -18,6 +16,8 @@ declare(strict_types=1);
  *   3. Prepend CHANGELOG section placeholder (if missing)
  *   4. Print tag/push commands (or run if not --dry-run)
  */
+
+declare(strict_types=1);
 
 $version = $argv[1] ?? '';
 $dryRun = in_array('--dry-run', $argv, true);
@@ -103,7 +103,8 @@ if ($dryRun) {
     echo implode("\n", array_slice($cOut, -2)) . "\n";
     exec('git push origin ' . escapeshellarg($branch) . ' 2>&1', $pOut, $pCode);
     echo "  Push branch: " . ($pCode === 0 ? '✅' : '⚠ (kiểm tra remote)') . "\n";
-    exec('git tag -a v' . escapeshellarg($version) . ' -m ' . escapeshellarg("v{$version} — release") . ' 2>&1', $tOut, $tCode);
+    exec('git tag -a v' . escapeshellarg($version) . ' -m ' . escapeshellarg("v{$version} — release")
+            . ' 2>&1', $tOut, $tCode);
     exec('git push origin v' . escapeshellarg($version) . ' 2>&1', $tpOut, $tpCode);
     echo "  Push tag: " . ($tpCode === 0 ? '✅' : '⚠ (kiểm tra remote)') . "\n";
 }

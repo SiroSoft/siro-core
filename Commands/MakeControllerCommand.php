@@ -34,7 +34,9 @@ final class MakeControllerCommand implements \Siro\Core\Commands\CommandInterfac
             $this->write('Controller name must contain letters. Example: php siro make:controller UserController');
             return 1;
         }
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . $class . '.php';
+        $path = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR .
+            $class . '.php';
 
         if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
             $this->write('Skipped: app/Controllers/' . $class . '.php');

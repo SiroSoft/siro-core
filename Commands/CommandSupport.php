@@ -298,7 +298,8 @@ trait CommandSupport
         $datePath = date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR . date('d');
         $candidates = [
             $tracesDir . DIRECTORY_SEPARATOR . $traceId . '.json',
-            $tracesDir . DIRECTORY_SEPARATOR . $datePath . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . $traceId . '.json',
+            $tracesDir . DIRECTORY_SEPARATOR . $datePath . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . $traceId .
+                '.json',
         ];
         foreach ($candidates as $pattern) {
             if (str_contains($pattern, '*')) {
@@ -321,6 +322,7 @@ trait CommandSupport
 
     protected function getTracesDir(string $basePath): string
     {
-        return $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        return $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'traces';
     }
 }

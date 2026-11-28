@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+
 use PHPUnit\Framework\Attributes\DataProvider;
-
-
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Model;
 use Siro\Core\DB\EagerLoader;

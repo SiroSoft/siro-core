@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * OAuth2 configuration (siro-core v1.5.0, direction B: league/oauth2-server).
  *
@@ -13,6 +11,8 @@ declare(strict_types=1);
  * which writes OAUTH_PRIVATE_KEY_PATH / OAUTH_PUBLIC_KEY_PATH /
  * OAUTH_ENCRYPTION_KEY into .env.
  */
+
+declare(strict_types=1);
 
 return [
     // Scopes an app may grant. A client with an empty allowlist may use all

@@ -102,9 +102,13 @@ final class CacheTest extends TestCase
 
     private function removeDir(string $dir): void
     {
-        if (!is_dir($dir)) return;
+        if (!is_dir($dir)) {
+            return;
+        }
         foreach (scandir($dir) ?: [] as $item) {
-            if ($item === '.' || $item === '..') continue;
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
             $path = $dir . DIRECTORY_SEPARATOR . $item;
             is_dir($path) ? $this->removeDir($path) : unlink($path);
         }

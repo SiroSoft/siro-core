@@ -62,17 +62,23 @@ final class MySQLCommandsTest extends TestCase
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'config', 0777, true);
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
-            "<?php\nreturn ['driver' => 'mysql', 'host' => '" . self::HOST . "', 'port' => " . self::PORT . ", 'username' => '" . self::USER . "', 'password' => '" . self::pass() . "', 'database' => '" . self::DB . "'];\n"
+            "<?php\nreturn ['driver' => 'mysql', 'host' => '" . self::HOST . "', 'port' => " . self::PORT .
+                ", 'username' => '" . self::USER . "', 'password' => '" . self::pass() . "', 'database' => '" .
+                self::DB . "'];\n"
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=testing\nDB_CONNECTION=mysql\nDB_HOST=" . self::HOST . "\nDB_PORT=" . self::PORT . "\nDB_DATABASE=" . self::DB . "\nDB_USERNAME=" . self::USER . "\nDB_PASSWORD=" . self::pass() . "\n"
+            "APP_ENV=testing\nDB_CONNECTION=mysql\nDB_HOST=" . self::HOST . "\nDB_PORT=" . self::PORT .
+                "\nDB_DATABASE=" . self::DB . "\nDB_USERNAME=" . self::USER . "\nDB_PASSWORD=" . self::pass() . "\n"
         );
         // Ensure test tables exist
         $pdo = $this->pdo();
-        $pdo->exec("CREATE TABLE IF NOT EXISTS siro_users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100))");
-        $pdo->exec("CREATE TABLE IF NOT EXISTS siro_orders (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, total DECIMAL(10,2))");
-        $pdo->exec("INSERT IGNORE INTO siro_users (id, name, email) VALUES (1, 'Alice', 'a@test.com'), (2, 'Bob', 'b@test.com')");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS siro_users (id INT AUTO_INCREMENT PRIMARY KEY, " .
+            "name VARCHAR(100), email " . "VARCHAR(100))");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS siro_orders (id INT AUTO_INCREMENT PRIMARY KEY, " .
+            "user_id INT, total " . "DECIMAL(10,2))");
+        $pdo->exec("INSERT IGNORE INTO siro_users (id, name, email) VALUES (1, 'Alice', " .
+            "'a@test.com'), (2, 'Bob', " . "'b@test.com')");
     }
 
     protected function tearDown(): void
@@ -162,7 +168,8 @@ final class MySQLCommandsTest extends TestCase
     public function testDbWhyMysqlSlow(): void
     {
         // Write a trace with a slow query so --slow lists it
-        $tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         mkdir($tracesDir, 0777, true);
         file_put_contents(
             $tracesDir . DIRECTORY_SEPARATOR . 't1.json',

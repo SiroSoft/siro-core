@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 /**
  * SiroPHP Focused Soak Evaluator
@@ -7,6 +6,8 @@ declare(strict_types=1);
  * Reads metrics.jsonl and produces the final verdict.
  * Separates expected (injected) 5xx from unexpected 5xx.
  */
+
+declare(strict_types=1);
 
 $metricsFile = $argv[1] ?? __DIR__ . '/../storage/metrics-focused.jsonl';
 $logFile = __DIR__ . '/../storage/soak_queue_log.jsonl';
@@ -98,15 +99,33 @@ foreach ($metrics as $m) {
     }
     if (isset($data['result'])) {
         $r = $data['result'];
-        if ($r === 'db_select') $counts['db_selects']++;
-        if ($r === 'db_write') $counts['db_writes']++;
-        if (str_contains($r, 'error')) $counts['db_errors']++;
-        if ($r === 'dispatched') $counts['queue_dispatched']++;
-        if ($r === 'dispatch_error') $counts['queue_execution_error']++;
-        if ($r === 'validated') $counts['validation_ok']++;
-        if ($r === 'validation_error') $counts['validation_errors']++;
-        if ($r === 'trace') $counts['trace_lifecycle']++;
-        if ($r === 'session') $counts['session_ops']++;
+        if ($r === 'db_select') {
+            $counts['db_selects']++;
+        }
+        if ($r === 'db_write') {
+            $counts['db_writes']++;
+        }
+        if (str_contains($r, 'error')) {
+            $counts['db_errors']++;
+        }
+        if ($r === 'dispatched') {
+            $counts['queue_dispatched']++;
+        }
+        if ($r === 'dispatch_error') {
+            $counts['queue_execution_error']++;
+        }
+        if ($r === 'validated') {
+            $counts['validation_ok']++;
+        }
+        if ($r === 'validation_error') {
+            $counts['validation_errors']++;
+        }
+        if ($r === 'trace') {
+            $counts['trace_lifecycle']++;
+        }
+        if ($r === 'session') {
+            $counts['session_ops']++;
+        }
     }
 
     if (isset($m['redis_error']) && $m['redis_error']) {
@@ -116,10 +135,16 @@ foreach ($metrics as $m) {
     // Memory tracking
     if (isset($m['memory']) && is_int($m['memory'])) {
         $mem = $m['memory'];
-        if ($memories['start'] === null) $memories['start'] = $mem;
+        if ($memories['start'] === null) {
+            $memories['start'] = $mem;
+        }
         $memories['end'] = $mem;
-        if ($mem < $memories['min']) $memories['min'] = $mem;
-        if ($mem > $memories['max']) $memories['max'] = $mem;
+        if ($mem < $memories['min']) {
+            $memories['min'] = $mem;
+        }
+        if ($mem > $memories['max']) {
+            $memories['max'] = $mem;
+        }
         $memories['sum'] += $mem;
         $memories['count']++;
     }
@@ -134,7 +159,9 @@ if (file_exists($logFile)) {
         if ($qr) {
             $queueStats['executed']++;
             if (isset($qr['memory'])) {
-                if ($queueStats['memory_start'] === null) $queueStats['memory_start'] = $qr['memory'];
+                if ($queueStats['memory_start'] === null) {
+                    $queueStats['memory_start'] = $qr['memory'];
+                }
                 $queueStats['memory_end'] = $qr['memory'];
             }
         }

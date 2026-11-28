@@ -1,13 +1,19 @@
 <?php
+
 declare(strict_types=1);
+
 $basePath = dirname(__DIR__, 2);
 require_once $basePath . '/vendor/autoload.php';
 
 // Load .env
 if (file_exists($basePath . '/.env')) {
     foreach (file($basePath . '/.env', FILE_IGNORE_NEW_LINES) as $line) {
-        if (trim($line) === '' || $line[0] === '#') continue;
-        if (strpos($line, '=') === false) continue;
+        if (trim($line) === '' || $line[0] === '#') {
+            continue;
+        }
+        if (strpos($line, '=') === false) {
+            continue;
+        }
         [$key, $val] = explode('=', $line, 2);
         $key = trim($key);
         $val = trim($val);

@@ -111,11 +111,3 @@ final class RouterMutationTest extends TestCase
         $this->assertSame(404, $resp->statusCode());
     }
 }
-
-class RTestController
-{
-    public function index(): Response
-    {
-        return Response::success(['ok' => 1]);
-    }
-}

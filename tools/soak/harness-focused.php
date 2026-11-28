@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 /**
  * SiroPHP Focused Soak — Harness
@@ -8,14 +7,20 @@ declare(strict_types=1);
  * Expected duration: 60 minutes.
  */
 
+declare(strict_types=1);
+
 $target = 'http://127.0.0.1:8088';
 $duration = 3600; // 60 minutes
 $metricsFile = __DIR__ . '/../storage/metrics-focused.jsonl';
 
 // Parse args
 foreach ($argv as $i => $arg) {
-    if ($arg === '--target' && isset($argv[$i + 1])) $target = $argv[$i + 1];
-    if ($arg === '--duration' && isset($argv[$i + 1])) $duration = (int)$argv[$i + 1];
+    if ($arg === '--target' && isset($argv[$i + 1])) {
+        $target = $argv[$i + 1];
+    }
+    if ($arg === '--duration' && isset($argv[$i + 1])) {
+        $duration = (int)$argv[$i + 1];
+    }
 }
 
 $startTime = time();
@@ -66,7 +71,9 @@ curl_setopt_array($ch, [
 
 while (time() < $endTime) {
     foreach ($endpoints as [$method, $route, $body]) {
-        if (time() >= $endTime) break;
+        if (time() >= $endTime) {
+            break;
+        }
 
         $url = $target . $route;
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -113,8 +120,15 @@ while (time() < $endTime) {
         if ($totalRequests % 100 === 0) {
             $elapsed_so_far = time() - $startTime;
             $remaining = $endTime - time();
-            printf("\r[%ds] Requests: %d | Last: %s %s → %d | Remaining: %ds   ",
-                $elapsed_so_far, $totalRequests, $method, $route, $httpCode, $remaining);
+            printf(
+                "\r[%ds] Requests: %d | Last: %s %s → %d | Remaining: %ds   ",
+                $elapsed_so_far,
+                $totalRequests,
+                $method,
+                $route,
+                $httpCode,
+                $remaining
+            );
         }
     }
 }

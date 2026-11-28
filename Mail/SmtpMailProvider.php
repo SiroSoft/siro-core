@@ -134,7 +134,14 @@ final class SmtpMailProvider implements MailProvider
         $errno = 0;
         $errstr = '';
         $context = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true]]);
-        $socket = @stream_socket_client($prefix . $host . ':' . $port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
+        $socket = @stream_socket_client(
+            $prefix . $host . ':' . $port,
+            $errno,
+            $errstr,
+            30,
+            STREAM_CLIENT_CONNECT,
+            $context
+        );
 
         if ($socket === false) {
             throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");
@@ -220,8 +227,13 @@ final class SmtpMailProvider implements MailProvider
      *
      * @param array<int, array{path: string, name: string, mime: string}> $attachments
      */
-    private function buildMultipartBody(string $boundary, string $body, string $contentType, string $charset, array $attachments): string
-    {
+    private function buildMultipartBody(
+        string $boundary,
+        string $body,
+        string $contentType,
+        string $charset,
+        array $attachments
+    ): string {
         $result = "This is a multi-part message in MIME format.\r\n\r\n";
         $result .= "--{$boundary}\r\n";
         $result .= "Content-Type: {$contentType}; charset={$charset}\r\n";

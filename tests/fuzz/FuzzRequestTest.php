@@ -3,17 +3,22 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+
 use PHPUnit\Framework\Attributes\DataProvider;
-
-
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Request;
 
 final class FuzzRequestTest extends TestCase
 {
     #[DataProvider('provideConstructorParams')]
-    public function testConstructorNeverThrows(string $method, string $path, array $query, array $headers, array $body, string $ip): void
-    {
+    public function testConstructorNeverThrows(
+        string $method,
+        string $path,
+        array $query,
+        array $headers,
+        array $body,
+        string $ip
+    ): void {
         $request = new Request($method, $path, $query, $headers, $body, $ip);
         $this->assertInstanceOf(Request::class, $request);
         $this->assertSame(strtoupper($method), $request->method());
@@ -80,7 +85,13 @@ final class FuzzRequestTest extends TestCase
     public static function provideInputVariations(): iterable
     {
         yield 0 => [new Request('GET', '/', ['p' => '1'], ['Accept' => 'text/html'], ['name' => 'test'])];
-        yield 1 => [new Request('POST', '/submit', [], ['Content-Type' => 'application/json'], ['email' => 'test@test.com'])];
+        yield 1 => [new Request(
+            'POST',
+            '/submit',
+            [],
+            ['Content-Type' => 'application/json'],
+            ['email' => 'test@test.com']
+        )];
         yield 2 => [new Request()];
         yield 3 => [new Request('', '')];
     }

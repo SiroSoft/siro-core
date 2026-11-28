@@ -37,7 +37,8 @@ final class AppRunTest extends TestCase
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage', 0777, true);
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
+            "APP_ENV=testing\nAPP_DEBUG=true\n" . "APP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',

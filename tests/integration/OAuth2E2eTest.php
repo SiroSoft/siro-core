@@ -33,7 +33,8 @@ final class OAuth2E2eTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         self::$tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_oauth2_e2e_' . uniqid('', true);
-        $fixture = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'fixtures' . DIRECTORY_SEPARATOR . 'oauth2-app';
+        $fixture = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'fixtures' . DIRECTORY_SEPARATOR .
+            'oauth2-app';
         self::copyDir($fixture, self::$tmpDir);
         mkdir(self::$tmpDir . '/storage/logs', 0777, true);
         mkdir(self::$tmpDir . '/storage/framework', 0777, true);
@@ -340,7 +341,10 @@ final class OAuth2E2eTest extends TestCase
         $this->assertStringStartsWith($callback, $location);
 
         // Follow the redirect for real: the fixture /callback echoes the code.
-        $cb = $this->http('GET', (string) parse_url($location, PHP_URL_PATH) . '?' . (string) parse_url($location, PHP_URL_QUERY));
+        $cb = $this->http(
+            'GET',
+            (string) parse_url($location, PHP_URL_PATH) . '?' . (string) parse_url($location, PHP_URL_QUERY)
+        );
         $this->assertSame(200, $cb['status'], $cb['body']);
         $this->assertSame('abc', $cb['json']['state'] ?? null);
         $code = (string) ($cb['json']['code'] ?? '');

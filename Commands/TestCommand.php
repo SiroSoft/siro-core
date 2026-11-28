@@ -40,7 +40,8 @@ final class TestCommand implements \Siro\Core\Commands\CommandInterface
             }
         }
 
-        $phpunit = $this->basePath . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'phpunit';
+        $phpunit = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'phpunit';
 
         if (!is_file($phpunit)) {
             $this->write('PHPUnit not found. Run: composer install --dev');
@@ -58,13 +59,16 @@ final class TestCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         if ($coverage) {
-            $cmd .= ' --coverage-html=' . escapeshellarg($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'coverage');
+            $cmd .= ' --coverage-html=' . escapeshellarg($this
+                ->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'coverage');
             $this->write('Running tests with coverage report...');
             $this->write('Report will be available at: storage/coverage/index.html');
             $this->write('');
         }
 
-        $this->write('Running: vendor/bin/phpunit' . ($filter ? " --filter={$filter}" : '') . ($suite ? " --testsuite={$suite}" : ''));
+        $this
+            ->write('Running: vendor/bin/phpunit' . ($filter ? " --filter={$filter}" : '') . ($suite ?
+            " --testsuite={$suite}" : ''));
         $this->write('');
 
         // Run from the project root (TQ-M9): phpunit discovers

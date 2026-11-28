@@ -1345,7 +1345,8 @@ class QueryBuilder
      * @param int $perPage Items per page
      * @param array{id?: int|string, created_at?: string}|null $cursor
      * @param string $order 'asc' or 'desc'
-     * @return array{data: array<int, array<string, mixed>>, meta: array<string, mixed>, next_cursor: array<string, mixed>|null}
+     * @return array{data: array<int, array<string, mixed>>, meta: array<string, mixed>, next_cursor: array<string,
+     * mixed>|null}
      */
     public function cursorPaginate(int $perPage = 15, ?array $cursor = null, string $order = 'asc'): array
     {
@@ -1363,12 +1364,20 @@ class QueryBuilder
             if ($order === 'ASC') {
                 $clone = $clone->whereRaw(
                     "(created_at > :cursor_created_at_1 OR (created_at = :cursor_created_at_2 AND id > :cursor_id_3))",
-                    ['cursor_created_at_1' => $cursorCreatedAt, 'cursor_created_at_2' => $cursorCreatedAt, 'cursor_id_3' => $cursorId]
+                    [
+                        'cursor_created_at_1' => $cursorCreatedAt,
+                        'cursor_created_at_2' => $cursorCreatedAt,
+                        'cursor_id_3' => $cursorId
+                    ]
                 );
             } else {
                 $clone = $clone->whereRaw(
                     "(created_at < :cursor_created_at_1 OR (created_at = :cursor_created_at_2 AND id < :cursor_id_3))",
-                    ['cursor_created_at_1' => $cursorCreatedAt, 'cursor_created_at_2' => $cursorCreatedAt, 'cursor_id_3' => $cursorId]
+                    [
+                        'cursor_created_at_1' => $cursorCreatedAt,
+                        'cursor_created_at_2' => $cursorCreatedAt,
+                        'cursor_id_3' => $cursorId
+                    ]
                 );
             }
         }
@@ -1445,8 +1454,13 @@ class QueryBuilder
         ];
     }
 
-    private function addWhere(string $boolean, string $column, mixed $operatorOrValue, mixed $value, bool $hasExplicitValue): self
-    {
+    private function addWhere(
+        string $boolean,
+        string $column,
+        mixed $operatorOrValue,
+        mixed $value,
+        bool $hasExplicitValue
+    ): self {
         [$operator, $resolvedValue] = $this->resolveOperatorAndValue($operatorOrValue, $value, $hasExplicitValue);
 
         // Handle null comparisons: = NULL → IS NULL, !=/<> NULL → IS NOT NULL
@@ -1454,7 +1468,8 @@ class QueryBuilder
             $this->wheres[] = [
                 'type' => 'raw',
                 'boolean' => $boolean,
-                'sql' => $this->compiler->quoteIdentifier(trim($column)) . ' IS' . ($operator === '=' ? '' : ' NOT') . ' NULL',
+                'sql' => $this->compiler
+                    ->quoteIdentifier(trim($column)) . ' IS' . ($operator === '=' ? '' : ' NOT') . ' NULL',
             ];
             return $this;
         }
@@ -1555,8 +1570,13 @@ class QueryBuilder
         return $this;
     }
 
-    private function addHaving(string $boolean, string $column, mixed $operatorOrValue, mixed $value, bool $hasExplicitValue): self
-    {
+    private function addHaving(
+        string $boolean,
+        string $column,
+        mixed $operatorOrValue,
+        mixed $value,
+        bool $hasExplicitValue
+    ): self {
         [$operator, $resolvedValue] = $this->resolveOperatorAndValue($operatorOrValue, $value, $hasExplicitValue);
         $param = 'h_' . $this->havingCounter;
         $this->havingCounter++;

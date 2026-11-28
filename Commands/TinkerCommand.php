@@ -32,11 +32,12 @@ final class TinkerCommand implements CommandInterface
             return 1;
         }
 
-        // Tinker requires an interactive TTY. Exit gracefully when STDIN
-        // is not a terminal (CI runners, piped input, cron, etc.).
+        // Tinker requires an interactive TTY. Refuse with a non-zero
+        // exit when STDIN is not a terminal (CI runners, piped input,
+        // cron, etc.) — a refusal is not a success (D1, CLI eval §3).
         if (function_exists('posix_isatty') && !posix_isatty(STDIN)) {
             $this->write('Tinker requires an interactive terminal.');
-            return 0;
+            return 1;
         }
 
         $historyFile = $this->getHistoryFile();
@@ -134,7 +135,8 @@ final class TinkerCommand implements CommandInterface
             $elapsed = (microtime(true) - $start) * 1000;
             $queries = $this->queryCount();
             $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
-            $this->write('  [31m✗[0m  ' . $caught->getMessage() . '  [90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')[0m');
+            $this->write('  [31m✗[0m  ' . $caught
+                ->getMessage() . '  [90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')[0m');
             restore_error_handler();
             return;
         }
@@ -146,7 +148,8 @@ final class TinkerCommand implements CommandInterface
         $qStr = $queries > 0 ? ' · ' . $queries . 'q' : '';
 
         if ($result !== null) {
-            $this->write('  [32m✓[0m  ' . $this->render($result) . '  [90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')[0m');
+            $this->write('  [32m✓[0m  ' . $this
+                ->render($result) . '  [90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')[0m');
         } elseif ($queries > 0) {
             $this->write('  [32m✓[0m  ' . '  [90m(' . number_format($elapsed, 2) . 'ms' . $qStr . ')[0m');
         }
@@ -268,9 +271,15 @@ final class TinkerCommand implements CommandInterface
         $this->write('  ' . str_repeat('─', 44));
         $this->write('');
         $this->write('  Type any PHP, available by default:');
-        $this->write('    [96mUser[0m, [96mProduct[0m, [96mCategory[0m, [96mPost[0m, [96mOrder[0m, [96mTag[0m');
-        $this->write('    [96mDB[0m, [96mCache[0m, [96mConfig[0m, [96mRoute[0m, [96mQueue[0m, [96mEvent[0m, [96mMail[0m');
-        $this->write('    [96mHash[0m, [96mStr[0m, [96mValidator[0m, [96mLang[0m, [96mStorage[0m, [96mLog[0m, [96mEncrypter[0m');
+        $this
+            ->write('    [96mUser[0m, [96mProduct[0m, [96mCategory[0m, [96mPost[0m, [96mOrder[0m, ' .
+            '[96mTag[0m');
+        $this
+            ->write('    [96mDB[0m, [96mCache[0m, [96mConfig[0m, [96mRoute[0m, [96mQueue[0m, ' .
+            '[96mEvent[0m, [96mMail[0m');
+        $this
+            ->write('    [96mHash[0m, [96mStr[0m, [96mValidator[0m, [96mLang[0m, [96mStorage[0m, ' .
+            '[96mLog[0m, [96mEncrypter[0m');
         $this->write('');
         $this->write('  [90mShortcuts:[0m');
         $this->write('    [36mdb[0m      Show database connection & query stats');
@@ -318,10 +327,15 @@ final class TinkerCommand implements CommandInterface
     private function showVars(): void
     {
         $this->write('  [90mCore classes available in context:[0m');
-        $this->write('    [96mDB[0m, [96mCache[0m, [96mConfig[0m, [96mRoute[0m, [96mQueue[0m, [96mEvent[0m');
-        $this->write('    [96mMail[0m, [96mHash[0m, [96mStr[0m, [96mValidator[0m, [96mLang[0m, [96mStorage[0m, [96mLog[0m, [96mEncrypter[0m');
+        $this
+            ->write('    [96mDB[0m, [96mCache[0m, [96mConfig[0m, [96mRoute[0m, [96mQueue[0m, [96mEvent[0m');
+        $this
+            ->write('    [96mMail[0m, [96mHash[0m, [96mStr[0m, [96mValidator[0m, [96mLang[0m, ' .
+            '[96mStorage[0m, [96mLog[0m, [96mEncrypter[0m');
         $this->write('  [90mModels (if exist):[0m');
-        $this->write('    [96mUser[0m, [96mProduct[0m, [96mCategory[0m, [96mPost[0m, [96mOrder[0m, [96mTag[0m');
+        $this
+            ->write('    [96mUser[0m, [96mProduct[0m, [96mCategory[0m, [96mPost[0m, [96mOrder[0m, ' .
+            '[96mTag[0m');
     }
 
     private function readLine(string $prompt): ?string

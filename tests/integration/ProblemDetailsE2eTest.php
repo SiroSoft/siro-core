@@ -43,7 +43,8 @@ final class ProblemDetailsE2eTest extends TestCase
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage', 0777, true);
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\nJWT_SECRET=test_jwt_secret_key_for_unit_tests_only_32chars!!\n"
+            "APP_ENV=testing\nAPP_DEBUG=true\n" . "APP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\n" .
+                "JWT_SECRET=test_jwt_secret_key_for_unit_tests_only_32chars!!\n"
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',

@@ -21,7 +21,10 @@ final class CsrfMiddlewareTest extends TestCase
         $_ENV['SESSION_DRIVER'] = 'file';
         putenv('SESSION_DRIVER=file');
         $this->middleware = new CsrfMiddleware();
-        $this->sessionDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'sessions';
+        $this->sessionDir = dirname(
+            __DIR__,
+            2
+        ) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'sessions';
         if (!is_dir($this->sessionDir)) {
             mkdir($this->sessionDir, 0775, true);
         }

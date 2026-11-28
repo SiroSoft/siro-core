@@ -6,6 +6,21 @@ namespace Siro\Core\Commands;
 
 use Siro\Core\App;
 
+/**
+ * @phpstan-type AttributeFields array{
+ *     body: array<string, array{
+ *         rules: array<int, string>,
+ *         type: string,
+ *         description: string,
+ *         required: bool,
+ *     }>,
+ *     query: array<string, array{
+ *         type: string,
+ *         description: string,
+ *         required: bool,
+ *     }>,
+ * }
+ */
 final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
 {
     use CommandSupport;
@@ -154,7 +169,9 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         // Honor --output=<full path>; fall back to docs/openapi/openapi.json
         $outputFile = $this->outputFile !== ''
             ? $this->outputFile
-            : $this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' . DIRECTORY_SEPARATOR . 'openapi.json';
+            : $this
+                ->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' . DIRECTORY_SEPARATOR .
+                'openapi.json';
         $outputDir = dirname($outputFile);
         if (!is_dir($outputDir)) {
             mkdir($outputDir, 0775, true);
@@ -329,7 +346,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
             if ($schemaName !== null) {
                 $operation['requestBody'] = [
                     'required' => true,
-                    'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' . $schemaName]]],
+                    'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' .
+                        $schemaName]]],
                 ];
             }
         }
@@ -374,7 +392,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
             $last = substr($tag, -1);
             $tag = match (true) {
                 str_ends_with($tag, 'y') => substr($tag, 0, -1) . 'ies',
-                $last === 's' || $last === 'x' || $last === 'z' || str_ends_with($tag, 'sh') || str_ends_with($tag, 'ch') => $tag . 'es',
+                $last === 's' || $last === 'x' || $last === 'z' || str_ends_with($tag, 'sh') ||
+                    str_ends_with($tag, 'ch') => $tag . 'es',
                 default => $tag . 's',
             };
             $this->tags[$tag] = $tag;
@@ -748,8 +767,7 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
      * Attribute declarations win over source-scanning patterns; the patterns
      * below remain as fallback for undecorated handlers.
      *
-     * @return array{body: array<string, array{rules: array<int, string>, type: string, description: string, required: bool}>,
-     * query: array<string, array{type: string, description: string, required: bool}>}
+     * @return AttributeFields
      */
     private function extractAttributeFields(string $handler): array
     {
@@ -777,7 +795,14 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
             }
             $rules = $body->rules !== '' ? explode('|', $body->rules) : [$this->attributeTypeToRule($body->type)];
             $rules = array_values(array_filter($rules, static fn ($r): bool => $r !== ''));
-            if ($body->required && !in_array('required', $rules, true) && !in_array('nullable', $rules, true) && !in_array('sometimes', $rules, true)) {
+            if (
+                $body
+                ->required && !in_array('required', $rules, true) && !in_array('nullable', $rules, true) && !in_array(
+                    'sometimes',
+                    $rules,
+                    true
+                )
+            ) {
                 array_unshift($rules, 'required');
             }
             $result['body'][$body->key] = [
@@ -846,7 +871,14 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         $content = (string) file_get_contents($controllerFile);
 
         $method = $m[2];
-        if (!preg_match('/function\s+' . preg_quote($method, '/') . '\s*\([^)]*\)\s*(?::\s*[^{]+)?\{/', $content, $methodMatch, PREG_OFFSET_CAPTURE)) {
+        if (
+            !preg_match(
+                '/function\s+' . preg_quote($method, '/') . '\s*\([^)]*\)\s*(?::\s*[^{]+)?\{/',
+                $content,
+                $methodMatch,
+                PREG_OFFSET_CAPTURE
+            )
+        ) {
             return [];
         }
         $startPos = $methodMatch[0][1];
@@ -890,7 +922,13 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         // Pattern 4: inline $this->validate([...]) or $this->service->foo($this->validate([...]))
-        if ($rules === [] && preg_match('/\$this\s*->\w+\s*\(\s*\$this\s*->validate\s*\((\[[^]]+\])\s*\)\s*\)/s', $body, $vMatch)) {
+        if (
+            $rules === [] && preg_match(
+                '/\$this\s*->\w+\s*\(\s*\$this\s*->validate\s*\((\[[^]]+\])\s*\)\s*\)/s',
+                $body,
+                $vMatch
+            )
+        ) {
             preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $vMatch[1], $pairs);
             foreach ($pairs[1] as $i => $field) {
                 $rules[$field] = explode('|', $pairs[2][$i]);
@@ -938,7 +976,14 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
                 $requestFile = $this->basePath . '/app/Http/Requests/' . $requestClass . '.php';
                 if (file_exists($requestFile)) {
                     $reqContent = (string) file_get_contents($requestFile);
-                    if (preg_match('/public\s+function\s+rules\s*\(\s*\)\s*(?::\s*array\s*)?\{/', $reqContent, $rulesMatch, PREG_OFFSET_CAPTURE)) {
+                    if (
+                        preg_match(
+                            '/public\s+function\s+rules\s*\(\s*\)\s*(?::\s*array\s*)?\{/',
+                            $reqContent,
+                            $rulesMatch,
+                            PREG_OFFSET_CAPTURE
+                        )
+                    ) {
                         $body = $this->extractMethodBody($reqContent, (int) $rulesMatch[0][1]);
                         if (preg_match('/return\s*\[([^]]+)\]\s*;/s', $body, $returnMatch)) {
                             preg_match_all('/\'(\w+)\'\s*=>\s*\'([^\']+)\'/', $returnMatch[1], $pairs);
@@ -1098,10 +1143,12 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
             $desc = match ($method) {
                 'post' => $resource . ' created successfully',
                 'put', 'patch' => $resource . ' updated successfully',
-                default => ($method === 'get' && str_contains($path, '{') ? $resource . ' details' : 'List of ' . $resource),
+                default => ($method === 'get' && str_contains($path, '{') ? $resource . ' details' : 'List of ' .
+                    $resource),
             };
             $responses[$successCode] = ['description' => $desc,
-                'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' . $responseSchema]]]];
+                'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/' .
+                    $responseSchema]]]];
         } else {
             $responses[$successCode] = ['description' => 'Successful operation'];
         }
@@ -1111,7 +1158,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         }
         if (in_array($method, ['post', 'put', 'patch'])) {
             $responses['422'] = ['description' => 'Validation error',
-                'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ValidationErrorResponse']]]];
+                'content' => ['application/json' => ['schema' => ['$ref' =>
+                    '#/components/schemas/ValidationErrorResponse']]]];
         }
         $responses['401'] = ['description' => 'Unauthorized — missing or invalid JWT token'];
         $responses['403'] = ['description' => 'Forbidden — insufficient permissions'];
@@ -1194,7 +1242,11 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
                     'meta' => [
                         'type' => 'object',
                         'properties' => [
-                            'timestamp' => ['type' => 'string', 'format' => 'date-time', 'example' => '2026-05-29T12:00:00+00:00'],
+                            'timestamp' => [
+                                'type' => 'string',
+                                'format' => 'date-time',
+                                'example' => '2026-05-29T12:00:00+00:00'
+                            ],
                         ],
                     ],
                 ],
@@ -1225,7 +1277,11 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
                     'per_page' => ['type' => 'integer', 'example' => 20],
                     'total' => ['type' => 'integer', 'example' => 100],
                     'last_page' => ['type' => 'integer', 'example' => 5],
-                    'timestamp' => ['type' => 'string', 'format' => 'date-time', 'example' => '2026-05-29T12:00:00+00:00'],
+                    'timestamp' => [
+                        'type' => 'string',
+                        'format' => 'date-time',
+                        'example' => '2026-05-29T12:00:00+00:00'
+                    ],
                 ],
             ],
             'AuthTokenResponse' => [
@@ -1383,11 +1439,31 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
             $base = basename($file, 'Controller.php');
             $resource = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $base));
 
-            $routes[] = ['method' => 'GET', 'path' => '/api/' . $resource, 'handler' => "App\\Controllers\\{$base}Controller@index"];
-            $routes[] = ['method' => 'GET', 'path' => "/api/{$resource}/{id}", 'handler' => "App\\Controllers\\{$base}Controller@show"];
-            $routes[] = ['method' => 'POST', 'path' => '/api/' . $resource, 'handler' => "App\\Controllers\\{$base}Controller@store"];
-            $routes[] = ['method' => 'PUT', 'path' => "/api/{$resource}/{id}", 'handler' => "App\\Controllers\\{$base}Controller@update"];
-            $routes[] = ['method' => 'DELETE', 'path' => "/api/{$resource}/{id}", 'handler' => "App\\Controllers\\{$base}Controller@delete"];
+            $routes[] = [
+                'method' => 'GET',
+                'path' => '/api/' . $resource,
+                'handler' => "App\\Controllers\\{$base}Controller@index"
+            ];
+            $routes[] = [
+                'method' => 'GET',
+                'path' => "/api/{$resource}/{id}",
+                'handler' => "App\\Controllers\\{$base}Controller@show"
+            ];
+            $routes[] = [
+                'method' => 'POST',
+                'path' => '/api/' . $resource,
+                'handler' => "App\\Controllers\\{$base}Controller@store"
+            ];
+            $routes[] = [
+                'method' => 'PUT',
+                'path' => "/api/{$resource}/{id}",
+                'handler' => "App\\Controllers\\{$base}Controller@update"
+            ];
+            $routes[] = [
+                'method' => 'DELETE',
+                'path' => "/api/{$resource}/{id}",
+                'handler' => "App\\Controllers\\{$base}Controller@delete"
+            ];
         }
         return $routes;
     }
@@ -1460,7 +1536,8 @@ final class MakeOpenApiCommand implements \Siro\Core\Commands\CommandInterface
         $swaggerHtml = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' .
             '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Siro API Docs</title>' .
             '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css"></head>' .
-            '<body><div id="swagger-ui"></div><script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>' .
+            '<body><div id="swagger-ui"></div><script ' .
+                'src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>' .
             '<script>SwaggerUIBundle({url:"/openapi.json",dom_id:"#swagger-ui",deepLinking:true,' .
             'presets:[SwaggerUIBundle.presets.apis,SwaggerUIBundle.SwaggerUIStandalonePreset],' .
             'layout:"BaseLayout",docExpansion:"list"})</script></body></html>';

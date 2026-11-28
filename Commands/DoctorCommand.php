@@ -98,7 +98,14 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface
         // Check JWT_SECRET
         $jwtSecret = (string) Env::get('JWT_SECRET', '');
         $jwtOk = strlen($jwtSecret) >= 32 && !str_contains(strtolower($jwtSecret), 'change_this');
-        $this->printCheck('JWT_SECRET', strlen($jwtSecret) >= 32 ? 'Configured (' . strlen($jwtSecret) . ' chars)' : 'Not configured or too short', $jwtOk);
+        $this
+            ->printCheck(
+                'JWT_SECRET',
+                strlen($jwtSecret) >= 32
+                    ? 'Configured (' . strlen($jwtSecret) . ' chars)'
+                    : 'Not configured or too short',
+                $jwtOk
+            );
         if (!$jwtOk) {
             $allPassed = false;
         }
@@ -155,15 +162,26 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface
 
             // Check log directory is NOT inside public/
             $publicDir = $this->basePath . DIRECTORY_SEPARATOR . 'public';
-            $logInsidePublic = str_starts_with(realpath($logDir) ?: $logDir, rtrim(realpath($publicDir) ?: $publicDir, DIRECTORY_SEPARATOR));
-            $this->printCheck('Logs outside public/', $logInsidePublic ? '⚠ INSIDE public/' : 'OK (outside)', !$logInsidePublic);
+            $logInsidePublic = str_starts_with(
+                realpath($logDir) ?: $logDir,
+                rtrim(realpath($publicDir) ?: $publicDir, DIRECTORY_SEPARATOR)
+            );
+            $this
+                ->printCheck(
+                    'Logs outside public/',
+                    $logInsidePublic ? '⚠ INSIDE public/' : 'OK (outside)',
+                    !$logInsidePublic
+                );
             if ($logInsidePublic) {
                 $allPassed = false;
             }
 
             // Check .htaccess protection (Apache)
             $htaccess = $logDir . DIRECTORY_SEPARATOR . '.htaccess';
-            $htaccessOk = file_exists($htaccess) && str_contains((string) file_get_contents($htaccess), 'Deny from all');
+            $htaccessOk = file_exists($htaccess) && str_contains(
+                (string) file_get_contents($htaccess),
+                'Deny from all'
+            );
             $this->printCheck('Log Protection (.htaccess/Apache)', $htaccessOk ? 'Protected' : 'Missing', $htaccessOk);
             if (!$htaccessOk) {
                 $allPassed = false;
@@ -202,7 +220,8 @@ final class DoctorCommand implements \Siro\Core\Commands\CommandInterface
         // Check Database Connection (required in production)
         $this->write("\nDatabase Connection Test:\n");
         try {
-            $databaseConfigPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+            $databaseConfigPath = $this
+                ->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
             if (!is_file($databaseConfigPath)) {
                 throw new \RuntimeException('Database configuration file is missing.');
             }

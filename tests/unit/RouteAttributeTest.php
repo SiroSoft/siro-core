@@ -100,7 +100,8 @@ PHP
         $routes = $router->getRoutes();
         $routePaths = array_map(fn($r) => $r['method'] . ' ' . $r['path'], $routes);
 
-        $expected = ['GET /api/products', 'POST /api/products', 'GET /api/products/{id}', 'PUT /api/products/{id}', 'DELETE /api/products/{id}'];
+        $expected = ['GET /api/products', 'POST /api/products', 'GET /api/products/{id}', 'PUT /api/products/{id}',
+            'DELETE /api/products/{id}'];
         foreach ($expected as $e) {
             $this->assertContains($e, $routePaths, "Missing route: {$e}");
         }

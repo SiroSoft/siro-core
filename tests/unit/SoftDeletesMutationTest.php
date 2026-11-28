@@ -39,9 +39,10 @@ final class SoftDeletesMutationTest extends TestCase
     private function makeModel(): Model
     {
         return new class extends Model {
+            use \Siro\Core\DB\SoftDeletes;
+
             protected string $table = 'sd_models';
             protected array $fillable = ['name'];
-            use \Siro\Core\DB\SoftDeletes;
         };
     }
 

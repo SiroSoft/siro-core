@@ -116,8 +116,13 @@ final class TestClient
      * @param array<string, mixed> $query
      * @param array<string, string> $extraHeaders
      */
-    public function call(string $method, string $path, array $body = [], array $query = [], array $extraHeaders = []): TestResponse
-    {
+    public function call(
+        string $method,
+        string $path,
+        array $body = [],
+        array $query = [],
+        array $extraHeaders = []
+    ): TestResponse {
         $headers = $this->headers;
         foreach ($extraHeaders as $name => $value) {
             $headers[strtolower((string) $name)] = (string) $value;

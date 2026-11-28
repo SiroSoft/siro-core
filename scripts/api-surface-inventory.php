@@ -1,4 +1,5 @@
 <?php
+
 /**
  * A4 — Public API Surface Inventory
  *
@@ -27,12 +28,16 @@ $iterator = new RecursiveIteratorIterator(
     new RecursiveDirectoryIterator($srcDir, RecursiveDirectoryIterator::SKIP_DOTS)
 );
 foreach ($iterator as $file) {
-    if ($file->getExtension() !== 'php') continue;
+    if ($file->getExtension() !== 'php') {
+        continue;
+    }
     $path = $file->getPathname();
-    if (str_contains($path, '/vendor/') || str_contains($path, '/tests/') ||
+    if (
+        str_contains($path, '/vendor/') || str_contains($path, '/tests/') ||
         str_contains($path, '/scripts/') || str_contains($path, '/coverage/') ||
         str_contains($path, '/storage/') || str_contains($path, '\\vendor\\') ||
-        str_contains($path, '\\tests\\') || str_contains($path, '\\scripts\\')) {
+        str_contains($path, '\\tests\\') || str_contains($path, '\\scripts\\')
+    ) {
         continue;
     }
     $phpFiles[] = $path;
@@ -48,7 +53,9 @@ $traits = [];
 
 foreach ($phpFiles as $file) {
     $content = file_get_contents($file);
-    if ($content === false) continue;
+    if ($content === false) {
+        continue;
+    }
 
     $relativePath = str_replace($basePath . '/', '', str_replace($basePath . '\\', '', $file));
 
@@ -57,7 +64,8 @@ foreach ($phpFiles as $file) {
     $namespace = $nsMatch[1] ?? '';
 
     // Extract class
-    preg_match_all('/(?:abstract\s+|final\s+)?class\s+(\w+)(?:\s+extends\s+\w+)?(?:\s+implements\s+[\w\\\\,\s]+)?/', $content, $classMatches);
+    preg_match_all('/(?:abstract\s+|final\s+)?class\s+(\w+)'
+        . '(?:\s+extends\s+\w+)?(?:\s+implements\s+[\w\\\\,\s]+)?/', $content, $classMatches);
     foreach ($classMatches[1] as $cls) {
         $classes[] = ['name' => $cls, 'namespace' => $namespace, 'file' => $relativePath];
     }
@@ -97,7 +105,9 @@ foreach ($publicApiClasses as $name) {
         if ($cls['name'] === $name) {
             $fullPath = $basePath . '/' . $cls['file'];
             $content = file_get_contents($fullPath);
-            if ($content === false) continue;
+            if ($content === false) {
+                continue;
+            }
 
             // Count public methods
             preg_match_all('/public\s+(?:static\s+)?function\s+(\w+)/', $content, $methodMatches);
@@ -127,7 +137,9 @@ echo "=== ENVIRONMENT VARIABLES ===\n\n";
 $envVars = [];
 foreach ($phpFiles as $file) {
     $content = file_get_contents($file);
-    if ($content === false) continue;
+    if ($content === false) {
+        continue;
+    }
     preg_match_all("/Env::get\(\s*'([A-Z_]+)'/", $content, $envMatches);
     foreach ($envMatches[1] as $var) {
         $envVars[$var] = true;
@@ -146,7 +158,8 @@ echo "\nTotal env vars: " . count($envVars) . "\n\n";
 // 5. Extract CLI commands (from Console.php)
 echo "=== CLI COMMANDS ===\n\n";
 $consoleContent = file_get_contents($basePath . '/Console.php');
-preg_match_all("/'([a-z][a-z0-9:_-]+)'\s*=>\s*\['handler'\s*=>\s*(\w+)::class,\s*'desc'\s*=>\s*'([^']*)'/", $consoleContent, $cmdMatches);
+preg_match_all("/'([a-z][a-z0-9:_-]+)'\s*=>\s*\['handler'\s*=>\s*(\w+)::class,"
+    . "\s*'desc'\s*=>\s*'([^']*)'/", $consoleContent, $cmdMatches);
 $commands = [];
 $count = count($cmdMatches[1]);
 for ($i = 0; $i < $count; $i++) {

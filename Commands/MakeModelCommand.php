@@ -36,7 +36,9 @@ final class MakeModelCommand implements \Siro\Core\Commands\CommandInterface
             return 1;
         }
 
-        $modelPath = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR . $name . '.php';
+        $modelPath = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR . $name .
+            '.php';
 
         if (!is_dir(dirname($modelPath))) {
             mkdir(dirname($modelPath), 0775, true);

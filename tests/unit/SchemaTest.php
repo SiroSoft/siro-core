@@ -164,7 +164,9 @@ final class SchemaTest extends TestCase
         $b->primary(['order_id', 'product_id']);
         $sql = $b->compileCreate();
         $this->assertSame(
-            "CREATE TABLE IF NOT EXISTS `test` (\n  `order_id` INT NOT NULL,\n  `product_id` INT NOT NULL,\n  PRIMARY KEY (`order_id`, `product_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+            "CREATE TABLE IF NOT EXISTS `test` (\n  `order_id` INT NOT NULL,\n  " .
+                "`product_id` INT NOT NULL,\n  PRIMARY KEY (`order_id`, `product_id`)\n) " . "ENGINE=InnoDB DEFAULT " .
+                "CHARSET=utf8mb4",
             $sql[0]
         );
     }

@@ -179,7 +179,10 @@ final class OAuthClient
     public static function redirectUris(array $row): array
     {
         $decoded = json_decode((string) ($row['redirect_uris'] ?? '[]'), true);
-        return is_array($decoded) ? array_values(array_map(static fn (mixed $v): string => is_scalar($v) ? (string) $v : '', $decoded)) : [];
+        return is_array($decoded) ? array_values(array_map(
+            static fn (mixed $v): string => is_scalar($v) ? (string) $v : '',
+            $decoded
+        )) : [];
     }
 
     /**
@@ -189,7 +192,10 @@ final class OAuthClient
     public static function grants(array $row): array
     {
         $decoded = json_decode((string) ($row['grants'] ?? '[]'), true);
-        return is_array($decoded) ? array_values(array_map(static fn (mixed $v): string => is_scalar($v) ? (string) $v : '', $decoded)) : [];
+        return is_array($decoded) ? array_values(array_map(
+            static fn (mixed $v): string => is_scalar($v) ? (string) $v : '',
+            $decoded
+        )) : [];
     }
 
     /**

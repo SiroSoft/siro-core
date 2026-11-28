@@ -31,7 +31,8 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
             mkdir($postmanDir, 0775, true);
         }
         $output = $postmanDir . DIRECTORY_SEPARATOR . 'collection.json';
-        $publicOutput = $this->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json';
+        $publicOutput = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json';
         $host = 'localhost:8080';
         $hostScheme = 'http';
         $filterTag = null;
@@ -226,7 +227,8 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
                             '    return; // Skip auth for auth endpoints',
                             '}',
                             '',
-                            'const loginUrl = pm.variables.get("base_url") + "' . ((string) ($authEndpoint['path'] ?? '/api/auth/login')) . '";',
+                            'const loginUrl = pm.variables.get("base_url") + "' . ((string) ($authEndpoint['path'] ??
+                                '/api/auth/login')) . '";',
                             'const loginData = {',
                             '    email: "admin@example.com",',
                             '    password: "password",',
@@ -260,7 +262,8 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
             return 1;
         }
 
-        $publicOutput = $this->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json';
+        $publicOutput = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'postman_collection.json';
         if (!is_dir(dirname($publicOutput))) {
             mkdir(dirname($publicOutput), 0775, true);
         }
@@ -315,7 +318,8 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
             $last = substr($tag, -1);
             return match (true) {
                 str_ends_with($tag, 'y') => substr($tag, 0, -1) . 'ies',
-                $last === 's' || $last === 'x' || $last === 'z' || str_ends_with($tag, 'sh') || str_ends_with($tag, 'ch') => $tag . 'es',
+                $last === 's' || $last === 'x' || $last === 'z' || str_ends_with($tag, 'sh') ||
+                    str_ends_with($tag, 'ch') => $tag . 'es',
                 default => $tag . 's',
             };
         }
@@ -350,7 +354,8 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
             return null;
         }
 
-        $pattern = '/function\s+' . preg_quote($methodName, '/') . '\s*\([^)]*\)\s*:\s*Response\s*\{.*?\$request->validate\(\s*\[(.*?)\]\s*\)/s';
+        $pattern = '/function\s+' . preg_quote($methodName, '/') .
+            '\s*\([^)]*\)\s*:\s*Response\s*\{.*?\$request->validate\(\s*\[(.*?)\]\s*\)/s';
         preg_match($pattern, $source, $matches);
 
         if (!isset($matches[1])) {
@@ -380,7 +385,9 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
 
         $parts = explode('@', $handler);
         $controllerClass = str_replace('\\', DIRECTORY_SEPARATOR, $parts[0]);
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . basename($controllerClass) . '.php';
+        $path = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR .
+            basename($controllerClass) . '.php';
 
         if (is_file($path)) {
             return $path;
@@ -465,7 +472,8 @@ final class MakePostmanCommand implements \Siro\Core\Commands\CommandInterface
             'code' => (int) ($method === 'post' ? 201 : 200),
             'body' => json_encode([
                 'success' => true,
-                'message' => ($method === 'post' ? 'Created' : ($method === 'get' ? ($isList ? 'Fetched' : 'Found') : 'Updated')),
+                'message' => ($method === 'post' ? 'Created' : ($method === 'get' ? ($isList ? 'Fetched' : 'Found') :
+                    'Updated')),
                 'data' => $data,
                 'meta' => $isList ? ['page' => 1, 'per_page' => 20, 'total' => 50, 'last_page' => 3] : null,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),

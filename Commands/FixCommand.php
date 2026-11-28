@@ -100,7 +100,11 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface
             if (is_string($response) && $response !== '') {
                 $decoded = json_decode($response, true);
                 if (is_array($decoded)) {
-                    $this->write('  Response: ' . (string) json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    $this
+                        ->write('  Response: ' . (string) json_encode(
+                            $decoded,
+                            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                        ));
                 } else {
                     $this->write('  Response: ' . substr($response, 0, 200));
                 }
@@ -168,7 +172,8 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface
             $this->write('  ⚠ Skipping replay: history contains unexpected characters.');
             return;
         }
-        $cmd = 'php ' . escapeshellarg($this->basePath . DIRECTORY_SEPARATOR . 'siro') . ' ' . escapeshellarg($lastTest) . ' 2>&1';
+        $cmd = 'php ' . escapeshellarg($this
+            ->basePath . DIRECTORY_SEPARATOR . 'siro') . ' ' . escapeshellarg($lastTest) . ' 2>&1';
         $output = shell_exec($cmd);
         if ($output !== null) {
             $lines = explode("\n", (string) $output);
@@ -178,11 +183,21 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface
                     $statusLine = trim($line);
                     if (str_contains($statusLine, '200') || str_contains($statusLine, '201')) {
                         $this->write('  ✅ ' . $statusLine . ' — FIX SUCCESSFUL');
-                    } elseif (str_contains($statusLine, '422') || str_contains($statusLine, '400') || str_contains($statusLine, '401')) {
+                    } elseif (
+                        str_contains($statusLine, '422') || str_contains($statusLine, '400') || str_contains(
+                            $statusLine,
+                            '401'
+                        )
+                    ) {
                         $this->write('  ❌ ' . $statusLine . ' — still failing');
                         // Show the error
                         foreach ($lines as $l) {
-                            if (str_contains($l, '❌') || str_contains($l, 'Validation failed') || str_contains($l, 'error')) {
+                            if (
+                                str_contains($l, '❌') || str_contains($l, 'Validation failed') || str_contains(
+                                    $l,
+                                    'error'
+                                )
+                            ) {
                                 $this->write('     ' . trim($l));
                             }
                         }
@@ -231,7 +246,8 @@ final class FixCommand implements \Siro\Core\Commands\CommandInterface
 
     private function getLastApiTest(): ?string
     {
-        $historyFile = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'api-test-history.json';
+        $historyFile = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'api-test-history.json';
         if (file_exists($historyFile)) {
             $history = json_decode((string) file_get_contents($historyFile), true);
             if (is_array($history) && $history !== []) {

@@ -35,7 +35,8 @@ final class SqlCompiler
         $key = $connectionName ?? $this->connectionName ?? 'default';
         if (!isset(self::$driverNames[$key])) {
             try {
-                $driver = Database::connection($connectionName ?? $this->connectionName)->getAttribute(\PDO::ATTR_DRIVER_NAME);
+                $driver = Database::connection($connectionName ?? $this->connectionName)
+                    ->getAttribute(\PDO::ATTR_DRIVER_NAME);
                 self::$driverNames[$key] = is_string($driver) ? $driver : 'mysql';
             } catch (\Throwable) {
                 self::$driverNames[$key] = 'mysql';
@@ -157,7 +158,8 @@ final class SqlCompiler
      *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
      *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
-     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string,
+     * clause?:JoinClause}> $joins
      * @param array<int, string|RawExpression> $groups
      * @param array<int, array{column:string, direction:string}> $orders
      * @param array<string, mixed> $bindings
@@ -229,7 +231,8 @@ final class SqlCompiler
      *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
      *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
-     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string,
+     * clause?:JoinClause}> $joins
      * @param array<int, string|RawExpression> $groups
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
@@ -257,7 +260,10 @@ final class SqlCompiler
             . $this->compileGroupBy($groups)
             . $havingSql;
 
-        return ['SELECT COUNT(*) AS aggregate FROM (' . $subQuery . ') AS siro_count_table', [...$whereBindings, ...$havingBindings]];
+        return [
+            'SELECT COUNT(*) AS aggregate FROM (' . $subQuery . ') AS siro_count_table',
+            [...$whereBindings, ...$havingBindings]
+        ];
     }
 
     /**
@@ -267,7 +273,8 @@ final class SqlCompiler
      *     |array{type:'column', boolean:string, first:string, operator:string, second:string}
      *     |array{type:'nested', boolean:string, query:QueryBuilder}> $wheres
      * @param array<int, array{boolean:string, column:string, operator:string, param:string}> $havings
-     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string,
+     * clause?:JoinClause}> $joins
      * @param array<int, string|RawExpression> $groups
      * @param array<string, mixed> $bindings
      * @return array{0: string, 1: array<int|string, mixed>}
@@ -286,25 +293,29 @@ final class SqlCompiler
         [$havingSql, $havingBindings] = $this->compileHaving($havings, $bindings);
 
         if ($groups === []) {
-            $sql = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteTable($table));
+            $sql = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this
+                ->quoteIdentifier($column), $this->quoteTable($table));
             $sql .= $this->compileJoins($joins) . $whereSql . $havingSql;
             return [$sql, [...$whereBindings, ...$havingBindings]];
         }
 
-        $subQuery = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this->quoteIdentifier($column), $this->quoteTable($table))
+        $subQuery = sprintf('SELECT %s(%s) AS aggregate FROM %s', strtoupper($function), $this
+            ->quoteIdentifier($column), $this->quoteTable($table))
             . $this->compileJoins($joins)
             . $whereSql
             . $this->compileGroupBy($groups)
             . $havingSql;
 
         return [
-            'SELECT ' . strtoupper($function) . '(aggregate) AS aggregate FROM (' . $subQuery . ') AS siro_aggregate_table',
+            'SELECT ' . strtoupper($function) . '(aggregate) AS aggregate FROM (' . $subQuery .
+                ') AS siro_aggregate_table',
             [...$whereBindings, ...$havingBindings],
         ];
     }
 
     /**
-     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string, clause?:JoinClause}> $joins
+     * @param array<int, array{type:string, table:string, first?:string, operator?:string, second?:string,
+     * clause?:JoinClause}> $joins
      */
     public function compileJoins(array $joins): string
     {
@@ -460,7 +471,9 @@ final class SqlCompiler
                     $holderParts[] = ':' . $param;
                     $resultBindings[$param] = $bindings[$param];
                 }
-                $parts[] = $prefix . $this->quoteIdentifier($where['column']) . ($where['not'] ? ' NOT IN (' : ' IN (') . implode(', ', $holderParts) . ')';
+                $parts[] = $prefix . $this
+                    ->quoteIdentifier($where['column']) . ($where['not'] ? ' NOT IN (' : ' IN (') .
+                    implode(', ', $holderParts) . ')';
                 continue;
             }
 
@@ -472,7 +485,8 @@ final class SqlCompiler
                 continue;
             }
 
-            $parts[] = $prefix . $this->quoteIdentifier($where['column']) . ' ' . $where['operator'] . ' :' . $where['param'];
+            $parts[] = $prefix . $this
+                ->quoteIdentifier($where['column']) . ' ' . $where['operator'] . ' :' . $where['param'];
             $resultBindings[$where['param']] = $bindings[$where['param']];
         }
 
@@ -508,7 +522,8 @@ final class SqlCompiler
                 continue;
             }
 
-            $parts[] = $prefix . $this->quoteIdentifier($having['column']) . ' ' . $having['operator'] . ' :' . $having['param'];
+            $parts[] = $prefix . $this
+                ->quoteIdentifier($having['column']) . ' ' . $having['operator'] . ' :' . $having['param'];
             $resultBindings[$having['param']] = $bindings[$having['param']];
         }
 
@@ -566,7 +581,8 @@ final class SqlCompiler
 
         $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
         $driver = $this->detectDriver();
-        $returning = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? ' RETURNING ' . $this->quoteIdentifier($primaryKey) : '';
+        $returning = in_array($driver, ['pgsql', 'postgres', 'postgresql'], true) ? ' RETURNING ' . $this
+            ->quoteIdentifier($primaryKey) : '';
 
         $sql = sprintf(
             'INSERT INTO %s (%s) VALUES (%s)%s',

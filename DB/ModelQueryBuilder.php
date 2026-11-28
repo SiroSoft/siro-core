@@ -379,9 +379,10 @@ final class ModelQueryBuilder extends QueryBuilder
         $innerTable = $resolved[$segCount - 1]->getTable();
         $prevTable = $resolved[$segCount - 2]->getTable();
         $prevModel = $resolved[$segCount - 2];
-        /** @var \Siro\Core\DB\Relations\HasOne|\Siro\Core\DB\Relations\HasMany|\Siro\Core\DB\Relations\BelongsTo|\Siro\Core\DB\Relations\BelongsToMany $lastRel */
+        /** @var Relations\HasOne|Relations\HasMany|Relations\BelongsTo|Relations\BelongsToMany $lastRel */
         $lastRel = $this->resolveRelation($relations[$segCount - 1]);
-        [$innerCond,] = $this->buildRelationCondition($lastRel, $prevModel, $prevTable, $innerTable, $segments[$segCount - 1]);
+        [$innerCond,] = $this
+            ->buildRelationCondition($lastRel, $prevModel, $prevTable, $innerTable, $segments[$segCount - 1]);
 
         $innerQb->selectRaw('1')->whereRaw($innerCond);
         if ($callback !== null) {
@@ -398,7 +399,7 @@ final class ModelQueryBuilder extends QueryBuilder
             $parentModel = $i > 0 ? $resolved[$i - 1] : $model;
             $parentTable = $i > 0 ? $resolved[$i - 1]->getTable() : $currentTable;
 
-            /** @var \Siro\Core\DB\Relations\HasOne|\Siro\Core\DB\Relations\HasMany|\Siro\Core\DB\Relations\BelongsTo|\Siro\Core\DB\Relations\BelongsToMany $currentRel */
+            /** @var Relations\HasOne|Relations\HasMany|Relations\BelongsTo|Relations\BelongsToMany $currentRel */
             $currentRel = $this->resolveRelation($relations[$i]);
             [$cond,] = $this->buildRelationCondition($currentRel, $parentModel, $parentTable, $relTable, $segments[$i]);
 
@@ -430,7 +431,7 @@ final class ModelQueryBuilder extends QueryBuilder
      * Resolve the related model from a relation object.
      */
     /**
-     * @return \Siro\Core\DB\Relations\HasOne|\Siro\Core\DB\Relations\HasMany|\Siro\Core\DB\Relations\BelongsTo|\Siro\Core\DB\Relations\BelongsToMany|null
+     * @return Relations\HasOne|Relations\HasMany|Relations\BelongsTo|Relations\BelongsToMany|null
      */
     private function resolveRelation(mixed $rel): mixed
     {
@@ -462,11 +463,16 @@ final class ModelQueryBuilder extends QueryBuilder
     /**
      * Build the JOIN condition for a relation.
      *
-     * @param \Siro\Core\DB\Relations\HasOne|\Siro\Core\DB\Relations\HasMany|\Siro\Core\DB\Relations\BelongsTo|\Siro\Core\DB\Relations\BelongsToMany $rel
+     * @param Relations\HasOne|Relations\HasMany|Relations\BelongsTo|Relations\BelongsToMany $rel
      * @return array{0: string, 1: ModelQueryBuilder}
      */
-    private function buildRelationCondition(object $rel, \Siro\Core\Model $parentModel, string $parentTable, string $relTable, string $relName): array
-    {
+    private function buildRelationCondition(
+        object $rel,
+        \Siro\Core\Model $parentModel,
+        string $parentTable,
+        string $relTable,
+        string $relName
+    ): array {
         if ($rel instanceof \Siro\Core\DB\Relations\BelongsTo) {
             /** @var class-string<\Siro\Core\Model> $relClass */
             $relClass = $rel->getRelatedClass();
@@ -729,20 +735,25 @@ final class ModelQueryBuilder extends QueryBuilder
                 continue;
             }
 
-            $rel = $this->resolveRelation(method_exists($modelInstance, $relation) ? $modelInstance->{$relation}() : null);
+            $rel = $this->resolveRelation(method_exists($modelInstance, $relation) ? $modelInstance
+                ->{$relation}() : null);
             if ($rel === null) {
                 continue;
             }
             $relatedModel = $this->resolveRelationModel($rel);
             $relTable = $relatedModel->getTable();
 
-            [$cond] = $this->buildRelationCondition($rel, $modelInstance, $modelInstance->getTable(), $relTable, $relation);
+            [$cond] = $this->buildRelationCondition($rel, $modelInstance, $modelInstance
+                ->getTable(), $relTable, $relation);
 
             $localIds = [];
             $idKey = 'id';
             if ($rel instanceof \Siro\Core\DB\Relations\BelongsTo) {
                 $idKey = $rel->getForeignKey();
-            } elseif ($rel instanceof \Siro\Core\DB\Relations\HasOne || $rel instanceof \Siro\Core\DB\Relations\HasMany) {
+            } elseif (
+                $rel instanceof \Siro\Core\DB\Relations\HasOne ||
+                $rel instanceof \Siro\Core\DB\Relations\HasMany
+            ) {
                 $idKey = $rel->getLocalKey();
             }
             foreach ($models as $m) {

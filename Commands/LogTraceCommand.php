@@ -100,7 +100,8 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('  Trace: ' . $traceId);
         $this->write(str_repeat('-', 56));
         $this->write('  Time:    ' . $this->safeStr($data['timestamp'] ?? '?'));
-        $this->write('  Method:  ' . $this->safeStr($data['method'] ?? '?') . ' ' . $this->safeStr($data['path'] ?? '?'));
+        $this->write('  Method:  ' . $this->safeStr($data['method'] ?? '?') . ' ' . $this
+            ->safeStr($data['path'] ?? '?'));
         $statusVal = $data['status'] ?? 0;
         $statusNum = is_numeric($statusVal) ? (int) $statusVal : 0;
         $statusColor = $statusNum >= 500 ? 'red' : ($statusNum >= 400 ? 'yellow' : ($statusNum >= 200 ? 'green' : ''));
@@ -121,7 +122,11 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface
             if ($full) {
                 $formatted = json_decode($displayBody, true);
                 if (is_array($formatted)) {
-                    $prettyJson = $this->safeStr(json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    $prettyJson = $this
+                        ->safeStr(json_encode(
+                            $formatted,
+                            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                        ));
                     foreach (explode("\n", $prettyJson) as $line) {
                         $this->write('    ' . $line);
                     }
@@ -141,7 +146,11 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface
             if ($full) {
                 $formatted = json_decode($displayBody, true);
                 if (is_array($formatted)) {
-                    $prettyJson = $this->safeStr(json_encode($formatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    $prettyJson = $this
+                        ->safeStr(json_encode(
+                            $formatted,
+                            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                        ));
                     foreach (explode("\n", $prettyJson) as $line) {
                         $this->write('    ' . $line);
                     }
@@ -232,7 +241,9 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface
         usort($files, fn(string $a, string $b) => filemtime($b) <=> filemtime($a));
 
         $count = 0;
-        $this->write(str_pad('Trace ID', 20) . ' ' . str_pad('Method', 8) . ' ' . str_pad('Status', 7) . ' ' . str_pad('Time', 8) . ' Path');
+        $this
+            ->write(str_pad('Trace ID', 20) . ' ' . str_pad('Method', 8) . ' ' . str_pad('Status', 7) . ' ' .
+            str_pad('Time', 8) . ' Path');
         $this->write(str_repeat('-', 70));
 
         foreach ($files as $file) {
@@ -288,7 +299,12 @@ final class LogTraceCommand implements \Siro\Core\Commands\CommandInterface
                     ? $this->colorize($s, 'yellow')
                     : ($sNum >= 200 ? $this->colorize($s, 'green') : $s));
 
-            $this->write(str_pad(substr($id, 0, 20), 20) . ' ' . str_pad($m, 8) . ' ' . str_pad($sColored, 7) . ' ' . str_pad($t, 8) . ' ' . $p);
+            $this
+                ->write(str_pad(substr(
+                    $id,
+                    0,
+                    20
+                ), 20) . ' ' . str_pad($m, 8) . ' ' . str_pad($sColored, 7) . ' ' . str_pad($t, 8) . ' ' . $p);
             $count++;
         }
 

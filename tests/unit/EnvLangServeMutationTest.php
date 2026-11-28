@@ -91,7 +91,10 @@ final class EnvLangServeMutationTest extends TestCase
         // requested environment was never applied (SYS-M2 fix, 27/11/2026).
         $this->assertSame(1, $code);
         $this->assertFileDoesNotExist($this->basePath . DIRECTORY_SEPARATOR . '.env');
-        $this->assertSame('RESTORED', (string) file_get_contents($this->basePath . DIRECTORY_SEPARATOR . '.env.backup'));
+        $this->assertSame(
+            'RESTORED',
+            (string) file_get_contents($this->basePath . DIRECTORY_SEPARATOR . '.env.backup')
+        );
     }
 
     public function testEnvSwitchSuccess(): void
@@ -124,7 +127,8 @@ final class EnvLangServeMutationTest extends TestCase
         $code = $cmd->run(['en']);
         $out = ob_get_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'en' . DIRECTORY_SEPARATOR . 'messages.php');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' .
+            DIRECTORY_SEPARATOR . 'en' . DIRECTORY_SEPARATOR . 'messages.php');
         $this->assertStringContainsString('messages', (string) $out);
     }
 
@@ -135,7 +139,8 @@ final class EnvLangServeMutationTest extends TestCase
         $code = $cmd->run(['vi', 'validation']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $f = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'vi' . DIRECTORY_SEPARATOR . 'validation.php';
+        $f = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR .
+            'vi' . DIRECTORY_SEPARATOR . 'validation.php';
         $this->assertFileExists($f);
         $this->assertStringContainsString('Thông báo', (string) file_get_contents($f));
     }
@@ -147,13 +152,20 @@ final class EnvLangServeMutationTest extends TestCase
         $code = $cmd->run(['fr', 'custom']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'fr' . DIRECTORY_SEPARATOR . 'custom.php');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' .
+            DIRECTORY_SEPARATOR . 'fr' . DIRECTORY_SEPARATOR . 'custom.php');
     }
 
     public function testMakeLangSkipOnExisting(): void
     {
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'en', 0777, true);
-        file_put_contents($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'en' . DIRECTORY_SEPARATOR . 'messages.php', 'EXISTING');
+        mkdir(
+            $this
+            ->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'en',
+            0777,
+            true
+        );
+        file_put_contents($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' .
+            DIRECTORY_SEPARATOR . 'en' . DIRECTORY_SEPARATOR . 'messages.php', 'EXISTING');
 
         $cmd = new MakeLangCommand($this->basePath);
         ob_start();
@@ -161,7 +173,8 @@ final class EnvLangServeMutationTest extends TestCase
         $out = ob_get_clean();
         $this->assertSame(0, $code);
         $this->assertStringContainsString('Skipped', (string) $out);
-        $this->assertSame('EXISTING', (string) file_get_contents($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'en' . DIRECTORY_SEPARATOR . 'messages.php'));
+        $this->assertSame('EXISTING', (string) file_get_contents($this->basePath . DIRECTORY_SEPARATOR . 'storage' .
+            DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'en' . DIRECTORY_SEPARATOR . 'messages.php'));
     }
 
     public function testServeInvalidHost(): void

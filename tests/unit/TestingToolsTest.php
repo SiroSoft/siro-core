@@ -26,7 +26,8 @@ final class TestingToolsTest extends TestCase
         Env::reset();
         Database::purgeAll();
         Database::configure(['driver' => 'sqlite', 'database' => ':memory:']);
-        Database::execute('CREATE TABLE tool_users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, role TEXT DEFAULT "user", created_at TEXT, updated_at TEXT)');
+        Database::execute('CREATE TABLE tool_users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ' .
+            'email TEXT, role TEXT DEFAULT "user", created_at TEXT, updated_at ' . 'TEXT)');
     }
 
     protected function tearDown(): void
@@ -94,7 +95,8 @@ final class TestingToolsTest extends TestCase
             $created = $request->validate(['name' => 'required|string']);
             return Response::created(['name' => $created['name']], 'Created');
         });
-        $router->get('/api/me', static fn (Request $request): Response => Response::success(['role' => $request->user()['role'] ?? 'guest']));
+        $router->get('/api/me', static fn (Request $request): Response => Response::success(['role' => $request
+            ->user()['role'] ?? 'guest']));
 
         $client = TestClient::through($router);
         $client->get('/api/tools')->assertOk()->assertJsonCount(0, 'data.items');
@@ -116,25 +118,5 @@ final class TestingToolsTest extends TestCase
     {
         $router = new Router();
         TestClient::through($router)->delete('/api/gone')->assertNotFound();
-    }
-}
-
-final class ToolUser extends Model
-{
-    protected string $table = 'tool_users';
-    protected array $fillable = ['name', 'email', 'role'];
-}
-
-final class ToolUserFactory extends Factory
-{
-    protected string $model = ToolUser::class;
-
-    public function definition(): array
-    {
-        return [
-            'name' => Faker::vnFullName(),
-            'email' => Faker::email(),
-            'role' => 'user',
-        ];
     }
 }

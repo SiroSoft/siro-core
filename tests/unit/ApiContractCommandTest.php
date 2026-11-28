@@ -18,8 +18,14 @@ final class ApiContractCommandTest extends TestCase
         mkdir($this->basePath . '/config', 0777, true);
         mkdir($this->basePath . '/docs/openapi', 0777, true);
         file_put_contents($this->basePath . '/.env', "APP_ENV=testing\nAPP_DEBUG=false\n");
-        file_put_contents($this->basePath . '/config/database.php', "<?php return ['driver' => 'sqlite', 'database' => ':memory:'];");
-        file_put_contents($this->basePath . '/routes/api.php', "<?php \$router->get('/api/widgets', 'WidgetController@index');");
+        file_put_contents(
+            $this->basePath . '/config/database.php',
+            "<?php return ['driver' => 'sqlite', 'database' => ':memory:'];"
+        );
+        file_put_contents(
+            $this->basePath . '/routes/api.php',
+            "<?php \$router->get('/api/widgets', 'WidgetController@index');"
+        );
     }
 
     protected function tearDown(): void
@@ -30,7 +36,9 @@ final class ApiContractCommandTest extends TestCase
     private function remove(string $dir): void
     {
         foreach (scandir($dir) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..') continue;
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
             $path = $dir . DIRECTORY_SEPARATOR . $entry;
             is_dir($path) ? $this->remove($path) : unlink($path);
         }
@@ -56,6 +64,48 @@ final class ApiContractCommandTest extends TestCase
         [$code, $output] = $this->runCommand(['--spec=' . $this->basePath . '/missing.json']);
         $this->assertSame(1, $code);
         $this->assertStringContainsString('not found', strtolower($output));
+    }
+
+    /**
+     * A standard routes/schedule.php (uses $schedule, fixed by S-07)
+     * loads fine and must not trip the unloadable-file failure.
+     */
+    public function testStandardScheduleFileLoadsWithoutFailure(): void
+    {
+        file_put_contents(
+            $this->basePath . '/routes/schedule.php',
+            "<?php\n\$schedule->command('queue:work --tries=3')->dailyAt('02:30');\n"
+        );
+        file_put_contents($this->basePath . '/docs/openapi/openapi.json', json_encode([
+            'paths' => [
+                '/api/widgets' => ['get' => ['responses' => ['200' => ['description' => 'ok']]]],
+            ],
+        ]));
+        [$code, $output] = $this->runCommand([]);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('1 passed', $output);
+        $this->assertStringNotContainsString('Could not load route file', $output);
+    }
+
+    /**
+     * A route file that throws must FAIL the check with the file named
+     * (CLI eval §3: the old S-07 workaround silently skipped it, which
+     * could false-pass a contract against routes never loaded).
+     */
+    public function testThrowingRouteFileFailsWithFileNamed(): void
+    {
+        file_put_contents(
+            $this->basePath . '/routes/broken.php',
+            "<?php throw new \\RuntimeException('boom');\n"
+        );
+        file_put_contents($this->basePath . '/docs/openapi/openapi.json', json_encode([
+            'paths' => [
+                '/api/widgets' => ['get' => ['responses' => ['200' => ['description' => 'ok']]]],
+            ],
+        ]));
+        [$code, $output] = $this->runCommand([]);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('Could not load route file(s): broken.php: boom', $output);
     }
 
     /** @return array{int, string} */

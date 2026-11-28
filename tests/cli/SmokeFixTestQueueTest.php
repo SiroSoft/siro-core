@@ -73,7 +73,10 @@ final class SmokeFixTestQueueTest extends TestCase
 
     private function writeProjectBase(string $dir, string $dbDatabase): void
     {
-        foreach (['storage/framework', 'storage/logs/traces', 'storage/cache', 'storage/app', 'routes', 'config', 'app'] as $d) {
+        foreach (
+            ['storage/framework', 'storage/logs/traces', 'storage/cache', 'storage/app', 'routes', 'config',
+            'app'] as $d
+        ) {
             mkdir($dir . '/' . $d, 0777, true);
         }
         file_put_contents(
@@ -85,7 +88,10 @@ final class SmokeFixTestQueueTest extends TestCase
         );
         file_put_contents(
             $dir . '/config/database.php',
-            '<?php return ["driver" => "sqlite", "database" => ' . var_export($dbDatabase, true) . ', "charset" => "utf8mb4", "slow_query_threshold" => 500];'
+            '<?php return ["driver" => "sqlite", "database" => ' . var_export(
+                $dbDatabase,
+                true
+            ) . ', "charset" => "utf8mb4", "slow_query_threshold" => 500];'
         );
         file_put_contents($dir . '/config/app.php', '<?php return ["name" => "SiroSmokeFix", "env" => "testing"];');
         file_put_contents($dir . '/routes/schedule.php', "<?php\n\ndeclare(strict_types=1);\n");
@@ -383,7 +389,8 @@ XML);
         $pdo->exec('CREATE TABLE jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, job TEXT, data TEXT, '
             . 'attempts INTEGER DEFAULT 0, max_attempts INTEGER DEFAULT 3, available_at INTEGER, '
             . 'locked_until INTEGER, timeout INTEGER DEFAULT 60, priority INTEGER DEFAULT 0, created_at TEXT)');
-        $pdo->exec('CREATE TABLE failed_jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, job TEXT, data TEXT, error TEXT, failed_at TEXT)');
+        $pdo->exec('CREATE TABLE failed_jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, job TEXT, ' .
+            'data TEXT, error TEXT, failed_at ' . 'TEXT)');
         $pdo = null;
         return $dir;
     }
@@ -391,7 +398,8 @@ XML);
     private function insertFailingJob(string $project, int $maxAttempts): void
     {
         $pdo = new \PDO('sqlite:' . $project . '/storage/test.db');
-        $stmt = $pdo->prepare('INSERT INTO jobs (job, data, attempts, max_attempts, available_at, created_at) VALUES (?, ?, 0, ?, ?, datetime("now"))');
+        $stmt = $pdo->prepare('INSERT INTO jobs (job, data, attempts, max_attempts, available_at, ' .
+            'created_at) VALUES (?, ?, 0, ?, ?, ' . 'datetime("now"))');
         // Unregistered class: Queue::work() fails it via the whitelist check.
         $stmt->execute(['App\\Jobs\\NoSuchJobXYZ', '[]', $maxAttempts, time()]);
         $pdo = null;
@@ -423,7 +431,12 @@ XML);
         $this->assertSame(0, $counts['failed'], '--tries=5 must not let a max_attempts=1 job fail after 1 attempt');
         $this->assertSame(1, $counts['jobs']);
         $this->assertSame(1, $counts['attempts']);
-        $this->assertSame(5, $counts['max']);
+        // --tries is a runtime override (Queue::setMaxAttemptsOverride),
+        // not a rewrite of the stored row: the stored max_attempts stays
+        // 1. The old UPDATE-based implementation rewrote it to 5; the
+        // override also covers jobs pushed after the worker started and
+        // works for the redis driver too (CliSmallFixesTest).
+        $this->assertSame(1, $counts['max']);
     }
 
     public function testQueueWorkWithoutTriesKeepsRowMaxAttempts(): void
@@ -458,9 +471,14 @@ XML);
      * @param list<string> $args
      * @return list<int>
      */
-    private function startAssertRunningThenSigterm(string $project, array $args, int $settleSeconds = 2, int $waitSeconds = 5): array
-    {
-        $runner = $this->writeRunner($project);
+    private function startAssertRunningThenSigterm(
+        string $project,
+        array $args,
+        int $settleSeconds = 2,
+        int $waitSeconds = 5,
+        ?string $runnerPath = null
+    ): array {
+        $runner = $runnerPath ?? $this->writeRunner($project);
         $log = $project . '/daemon.log';
         $descriptors = [
             0 => ['file', '/dev/null', 'r'],
@@ -488,7 +506,10 @@ XML);
             } while (time() < $deadline);
             if ($exitCode === null) {
                 proc_terminate($proc, SIGKILL);
-                $this->fail('process ignored SIGTERM (still running after ' . $waitSeconds . 's): ' . implode(' ', $args));
+                $this->fail('process ignored SIGTERM (still running after ' . $waitSeconds . 's): ' . implode(
+                    ' ',
+                    $args
+                ));
             }
             $this->assertSame(0, $exitCode, 'process must exit 0 on SIGTERM: ' . implode(' ', $args));
             return $children;
@@ -535,8 +556,42 @@ XML);
     public function testQueueDaemonWorkersTwoStopsChildrenOnSigterm(): void
     {
         $project = $this->makeQueueProject();
-        $children = $this->startAssertRunningThenSigterm($project, ['queue:work', '--daemon', '--workers=2', '--sleep=1']);
+        $children = $this->startAssertRunningThenSigterm(
+            $project,
+            ['queue:work', '--daemon', '--workers=2', '--sleep=1']
+        );
         $this->assertCount(2, $children, 'daemon --workers=2 must fork exactly 2 children');
+        foreach ($children as $child) {
+            $this->assertPidDead($child);
+        }
+    }
+
+    // ==================== workAll() parent (CLI eval §3) ====================
+
+    private function writeWorkAllRunner(string $project): string
+    {
+        $runner = $project . '/run-workall.php';
+        file_put_contents($runner, "<?php\ndeclare(strict_types=1);\n"
+            . "\$project = \$argv[1];\ndefine('BASE_PATH', \$project);\n"
+            . "require '" . $this->worktree . "/vendor/autoload.php';\n"
+            . "\$app = new \\Siro\\Core\\App(\$project);\n\$app->boot();\n"
+            . "exit(\\Siro\\Core\\Queue::workAll(2));\n");
+        return $runner;
+    }
+
+    /**
+     * Queue::workAll(2) must stop on SIGTERM like queue:work --daemon
+     * does. Before the fix the parent blocked in pcntl_waitpid(), which
+     * swallows SIGTERM (same root cause as TQ-M13): the parent and both
+     * children stayed alive forever. Verified live pre-fix with a
+     * manual probe (parent + 2 children alive 5s after SIGTERM).
+     */
+    public function testWorkAllWorkersTwoStopsOnSigterm(): void
+    {
+        $project = $this->makeQueueProject();
+        $runner = $this->writeWorkAllRunner($project);
+        $children = $this->startAssertRunningThenSigterm($project, [], 2, 5, $runner);
+        $this->assertCount(2, $children, 'workAll(2) must fork exactly 2 children');
         foreach ($children as $child) {
             $this->assertPidDead($child);
         }
@@ -551,6 +606,9 @@ XML);
     public function testApiTestWebhookStopsOnSigterm(): void
     {
         $project = $this->makeApiProject();
-        $this->startAssertRunningThenSigterm($project, ['api:test', 'GET', '/health/live', '--webhook', '--port=18133']);
+        $this->startAssertRunningThenSigterm(
+            $project,
+            ['api:test', 'GET', '/health/live', '--webhook', '--port=18133']
+        );
     }
 }

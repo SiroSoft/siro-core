@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Fixture app for OAuth2 end-to-end tests (tests/integration/OAuth2E2eTest.php).
  *
@@ -14,6 +12,8 @@ declare(strict_types=1);
  * The authorize endpoint auto-approves ONLY with ?auto_approve=1 — this is a
  * test fixture, never a production pattern.
  */
+
+declare(strict_types=1);
 
 $autoload = getenv('SIRO_VENDOR_AUTOLOAD');
 if ($autoload === false || $autoload === '') {

@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+
 use PHPUnit\Framework\Attributes\DataProvider;
-
-
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Router;
 use Siro\Core\Route;
@@ -166,7 +165,9 @@ final class FuzzRouterTest extends TestCase
     /** @return iterable<string, array{mixed}> */
     public static function provideHandlerTypes(): iterable
     {
-        yield 'closure' => [function () { return Response::json(['ok' => true]); }];
+        yield 'closure' => [function () {
+            return Response::json(['ok' => true]);
+        }];
         yield 'string handler' => ['App\Controllers\HomeController@index'];
         yield 'array handler' => [['App\Controllers\HomeController', 'index']];
         yield 'non-existent class' => ['NonExistentClass@method'];

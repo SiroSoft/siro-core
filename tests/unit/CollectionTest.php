@@ -71,7 +71,9 @@ final class CollectionTest extends TestCase
     {
         $col = new Collection([1, 2, 3]);
         $sum = 0;
-        $col->each(function ($v) use (&$sum) { $sum += $v; });
+        $col->each(function ($v) use (&$sum) {
+            $sum += $v;
+        });
         $this->assertSame(6, $sum);
     }
 

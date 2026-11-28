@@ -16,7 +16,8 @@ use PHPUnit\Framework\TestCase;
 final class ApiStabilityTest extends TestCase
 {
     /** @var list<string> Top-level source directories (PSR-4 under Siro\Core). */
-    private const SOURCE_DIRS = ['Auth', 'Cache', 'Commands', 'DB', 'Lite', 'Logger', 'Middleware', 'Observers', 'Queue', 'Debug'];
+    private const SOURCE_DIRS = ['Auth', 'Cache', 'Commands', 'DB', 'Lite', 'Logger', 'Middleware', 'Observers',
+        'Queue', 'Debug'];
 
     private const ROOT_EXCLUDE = ['benchmark.php', 'preload.php'];
 
@@ -36,7 +37,9 @@ final class ApiStabilityTest extends TestCase
         }
         foreach (self::SOURCE_DIRS as $dir) {
             $path = $root . '/' . $dir;
-            if (!is_dir($path)) continue;
+            if (!is_dir($path)) {
+                continue;
+            }
             $rii = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)
             );
@@ -55,12 +58,16 @@ final class ApiStabilityTest extends TestCase
         $total = 0;
         foreach (self::sourceFiles() as $file) {
             $content = file_get_contents($file);
-            if ($content === false) continue;
+            if ($content === false) {
+                continue;
+            }
             preg_match_all('/public\s+function\s+(?!__)[A-Za-z0-9_]+/i', $content, $m);
             $total += count($m[0]);
         }
         $this->assertGreaterThan(100, $total, 'Sanity: expected a large public API surface');
-        $baseline = 929; // snapshot at v1.5.0 (actual: 929; +31 vs 1.4.2: Auth +23 OAuth2, Commands +7, Middleware +1); update after each major release
+        $baseline = 929;
+            // snapshot at v1.5.0 (actual: 929; +31 vs 1.4.2: Auth +23 OAuth2, Commands +7, Middleware +1); update after
+            // each major release
         $this->assertLessThanOrEqual(
             (int) ($baseline * 1.15),
             $total,
@@ -70,7 +77,11 @@ final class ApiStabilityTest extends TestCase
 
     public function testCorePublicClassesExist(): void
     {
-        foreach (['Request', 'Response', 'Router', 'App', 'Model', 'Collection', 'Validator', 'DB', 'Schema', 'Env', 'Config', 'Event', 'Queue', 'Mail', 'Storage', 'Hash', 'Encrypter', 'Logger', 'Container', 'Console', 'Audit'] as $class) {
+        foreach (
+            ['Request', 'Response', 'Router', 'App', 'Model', 'Collection', 'Validator', 'DB', 'Schema', 'Env',
+            'Config', 'Event', 'Queue', 'Mail', 'Storage', 'Hash', 'Encrypter', 'Logger', 'Container', 'Console',
+            'Audit'] as $class
+        ) {
             $this->assertTrue(
                 class_exists('Siro\\Core\\' . $class) || interface_exists('Siro\\Core\\' . $class),
                 "Public class Siro\\Core\\{$class} missing"

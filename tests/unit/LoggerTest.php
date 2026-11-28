@@ -38,7 +38,7 @@ final class LoggerTest extends TestCase
         $this->assertDirectoryExists($logs . DIRECTORY_SEPARATOR . 'traces');
     }
 
-public function testSanitizeHeaders(): void
+    public function testSanitizeHeaders(): void
     {
         $headers = ['authorization' => 'Bearer token123', 'content-type' => 'application/json'];
         $sanitized = Logger::sanitizeHeaders($headers);
@@ -48,9 +48,13 @@ public function testSanitizeHeaders(): void
 
     private function removeDir(string $dir): void
     {
-        if (!is_dir($dir)) return;
+        if (!is_dir($dir)) {
+            return;
+        }
         foreach (scandir($dir) ?: [] as $item) {
-            if ($item === '.' || $item === '..') continue;
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
             $path = $dir . DIRECTORY_SEPARATOR . $item;
             is_dir($path) ? $this->removeDir($path) : unlink($path);
         }

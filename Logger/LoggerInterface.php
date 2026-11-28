@@ -12,7 +12,15 @@ interface LoggerInterface
     public function reset(): void;
     /** @param array{headers?: array<int, string>, body?: array<int, string>, query?: array<int, string>} $config */
     public function setSanitizeConfig(array $config): void;
-    public function request(string $method, string $path, int $status, float $timeMs, string $ip = '', string $traceId = '', string $userAgent = ''): void;
+    public function request(
+        string $method,
+        string $path,
+        int $status,
+        float $timeMs,
+        string $ip = '',
+        string $traceId = '',
+        string $userAgent = ''
+    ): void;
     public function slowRequest(string $method, string $path, int $status, float $timeMs): void;
     public function error(Throwable|string $error): void;
     public function warning(string $message): void;

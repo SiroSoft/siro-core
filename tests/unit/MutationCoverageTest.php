@@ -51,8 +51,13 @@ final class MutationCoverageTest extends TestCase
         putenv('JWT_PRIVATE_KEY_PATH=');
         putenv('JWT_PUBLIC_KEY_PATH=');
         putenv('APP_URL=');
-        unset($_ENV['JWT_SECRET'], $_ENV['JWT_KEY_VERSION'], $_ENV['JWT_ALGORITHM'],
-              $_ENV['JWT_PREVIOUS_SECRET'], $_ENV['APP_URL']);
+        unset(
+            $_ENV['JWT_SECRET'],
+            $_ENV['JWT_KEY_VERSION'],
+            $_ENV['JWT_ALGORITHM'],
+            $_ENV['JWT_PREVIOUS_SECRET'],
+            $_ENV['APP_URL']
+        );
         JWT::reset();
         Cache::reset();
         // Fresh container so auth.resolver/auth.provider bindings from other
@@ -132,7 +137,8 @@ final class MutationCoverageTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Token expired');
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => 0, 'type' => 'access', 'jti' => 'zero-exp']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => 0, 'type' => 'access',
+            'jti' => 'zero-exp']);
         JWT::decode($token);
     }
 
@@ -140,14 +146,16 @@ final class MutationCoverageTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Token expired');
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => -100, 'type' => 'access', 'jti' => 'neg-exp']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => -100, 'type' => 'access',
+            'jti' => 'neg-exp']);
         JWT::decode($token);
     }
 
     public function testTokenWithNonNumericExpIsExpired(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => 'not-a-number', 'type' => 'access', 'jti' => 'str-exp']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => 'not-a-number', 'type' => 'access',
+            'jti' => 'str-exp']);
         JWT::decode($token);
     }
 
@@ -155,14 +163,16 @@ final class MutationCoverageTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('sub');
-        $token = JWT::encode(['sub' => 0, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'zero-sub']);
+        $token = JWT::encode(['sub' => 0, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'zero-sub']);
         JWT::decode($token);
     }
 
     public function testTokenWithNonNumericSubRejected(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => 'abc', 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'str-sub']);
+        $token = JWT::encode(['sub' => 'abc', 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'str-sub']);
         JWT::decode($token);
     }
 
@@ -170,7 +180,8 @@ final class MutationCoverageTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Invalid token type');
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'invalid', 'jti' => 'bad-type']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'invalid',
+            'jti' => 'bad-type']);
         JWT::decode($token);
     }
 
@@ -241,13 +252,15 @@ final class MutationCoverageTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('future');
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() + 120, 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'future-iat']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() + 120, 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'future-iat']);
         JWT::decode($token);
     }
 
     public function testTokenWithNbfExactlyNowAccepted(): void
     {
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'nbf' => time(), 'jti' => 'nbf-exact']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'nbf' => time(), 'jti' => 'nbf-exact']);
         $claims = JWT::decode($token);
         $this->assertSame(1, $claims['sub']);
     }
@@ -255,7 +268,8 @@ final class MutationCoverageTest extends TestCase
     public function testTokenWithNbfOneSecondFutureRejected(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'nbf' => time() + 1, 'jti' => 'nbf-1s']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'nbf' => time() + 1, 'jti' => 'nbf-1s']);
         JWT::decode($token);
     }
 
@@ -266,7 +280,8 @@ final class MutationCoverageTest extends TestCase
         Env::reset();
         JWT::reset();
         $this->expectException(\RuntimeException::class);
-        JWT::decode('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInZlciI6MSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjo5OTk5OTk5OTk5fQ.fakesignature');
+        JWT::decode('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInZlciI6MSwidHlwZSI6ImFjY2Vzc' .
+            'yIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjo5OTk5OTk5OTk5fQ.fakesignatur' . 'e');
     }
 
     public function testRotateKeyWithoutEnvFileStillUpdatesVersion(): void

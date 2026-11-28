@@ -27,7 +27,9 @@ final class MakeMiddlewareCommand implements \Siro\Core\Commands\CommandInterfac
             $class .= $suffix;
         }
 
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Middleware' . DIRECTORY_SEPARATOR . $class . '.php';
+        $path = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Middleware' . DIRECTORY_SEPARATOR .
+            $class . '.php';
 
         if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
             $this->write('Skipped: app/Middleware/' . $class . '.php');

@@ -27,7 +27,8 @@ final class RouteMatcher
     /**
      * @param array<string, array<string, array{path:string,handler:callable|array{0:class-string,1:string}|string,
      *     middleware:array<int,callable|string>,cache_ttl:int}>> $staticRoutes
-     * @param array<string, array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,
+     * @param array<string, array<int,
+     * array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,
      *     middleware:array<int,callable|string>,cache_ttl:int}>> $dynamicRoutes
      * @param array<string, array<string, string>> $whereConstraints
      */
@@ -104,7 +105,8 @@ final class RouteMatcher
     }
 
     /**
-     * @param array<int, array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,
+     * @param array<int,
+     * array{path:string,segments:array<int,string>,handler:callable|array{0:class-string,1:string}|string,
      *     middleware:array<int,callable|string>,cache_ttl:int}> $routes
      * @param array<int, string> $pathSegments
      * @return array{path:string,handler:callable|array{0:class-string,1:string}|string,middleware:array<int,callable|string>,cache_ttl:int,params?:array<string,string>}|null
@@ -199,7 +201,10 @@ final class RouteMatcher
                     'method' => $method,
                     'path' => $path,
                     'handler' => self::handlerToString($route['handler']),
-                    'middleware' => implode(', ', array_map(fn (mixed $m): string => self::middlewareToString($m), $route['middleware'])),
+                    'middleware' => implode(
+                        ', ',
+                        array_map(fn (mixed $m): string => self::middlewareToString($m), $route['middleware'])
+                    ),
                     'cache_ttl' => $route['cache_ttl'],
                 ];
                 if ($where !== []) {
@@ -217,7 +222,10 @@ final class RouteMatcher
                     'method' => $method,
                     'path' => $route['path'],
                     'handler' => self::handlerToString($route['handler']),
-                    'middleware' => implode(', ', array_map(fn (mixed $m): string => self::middlewareToString($m), $route['middleware'])),
+                    'middleware' => implode(
+                        ', ',
+                        array_map(fn (mixed $m): string => self::middlewareToString($m), $route['middleware'])
+                    ),
                     'cache_ttl' => $route['cache_ttl'],
                 ];
                 if ($where !== []) {

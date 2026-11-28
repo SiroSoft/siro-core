@@ -25,7 +25,8 @@ final class SendMailJob implements QueueInterface
         $to = isset($data['to']) && is_scalar($data['to']) ? (string) $data['to'] : '';
         $subject = isset($data['subject']) && is_scalar($data['subject']) ? (string) $data['subject'] : '';
         $body = isset($data['body']) && is_scalar($data['body']) ? (string) $data['body'] : '';
-        $contentType = isset($data['content_type']) && is_scalar($data['content_type']) ? (string) $data['content_type'] : 'text/plain';
+        $contentType = isset($data['content_type']) && is_scalar($data['content_type']) ?
+            (string) $data['content_type'] : 'text/plain';
 
         $mail = Mail::to($to)->subject($subject);
 

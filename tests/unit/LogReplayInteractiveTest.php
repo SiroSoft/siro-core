@@ -27,7 +27,8 @@ final class LogReplayInteractiveTest extends TestCase
             define('BASE_PATH', dirname(__DIR__, 2));
         }
         $this->basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_lri_' . uniqid('', true);
-        $this->tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $this->tracesDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' .
+            DIRECTORY_SEPARATOR . 'traces';
         mkdir($this->tracesDir, 0777, true);
         putenv('APP_ENV=local');
         Env::reset();
@@ -190,7 +191,8 @@ final class LogReplayInteractiveTest extends TestCase
     public function testAuthModeWithStoredFile(): void
     {
         $this->writeTrace('tr-stored', $this->baseTrace('tr-stored'));
-        $authPath = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . '.auth';
+        $authPath = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . '.auth';
         @mkdir(dirname($authPath), 0777, true);
         file_put_contents($authPath, (string) json_encode(['token' => 'tok1']));
         [$exit] = $this->runCmd(['tr-stored', '--auth']);

@@ -30,7 +30,10 @@ final class ConfigSchemaMutationTest extends TestCase
         $this->basePath = sys_get_temp_dir() . '/siro_cfg_' . uniqid();
         mkdir($this->basePath . '/config', 0777, true);
         mkdir($this->basePath . '/storage/framework', 0777, true);
-        file_put_contents($this->basePath . '/config/database.php', "<?php\nreturn ['driver' => 'sqlite', 'database' => ':memory:'];\n");
+        file_put_contents(
+            $this->basePath . '/config/database.php',
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => ':memory:'];\n"
+        );
     }
 
     protected function tearDown(): void

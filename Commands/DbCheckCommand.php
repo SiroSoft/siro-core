@@ -109,7 +109,8 @@ final class DbCheckCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $this->write('  ' . str_repeat('-', 40));
-        $status = $allOk ? '✅ Database integrity OK. No action required.' : '❌ Issues detected. Consider restore from backup.';
+        $status = $allOk ? '✅ Database integrity OK. No action required.' :
+            '❌ Issues detected. Consider restore from backup.';
         $this->write('  ' . $status);
         $this->write('');
 
@@ -140,7 +141,8 @@ final class DbCheckCommand implements \Siro\Core\Commands\CommandInterface
         $allOk = true;
 
         try {
-            $stmt = $pdo->query('CHECK TABLE users, products, categories, orders, posts, tags, refresh_tokens, api_keys, jobs');
+            $stmt = $pdo
+                ->query('CHECK TABLE users, products, categories, orders, posts, tags, refresh_tokens, api_keys, jobs');
             if ($stmt !== false) {
                 $this->write('  ✅ CHECK TABLE completed');
             }
@@ -150,7 +152,9 @@ final class DbCheckCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         try {
-            $fkStmt = $pdo->query("SELECT TABLE_NAME AS t FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE()");
+            $fkStmt = $pdo
+                ->query("SELECT TABLE_NAME AS t FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE " .
+                "CONSTRAINT_SCHEMA = DATABASE()");
             $fkCount = $fkStmt !== false ? $fkStmt->rowCount() : 0;
             $this->write('  📊 Foreign key constraints: ' . $fkCount);
         } catch (\Throwable $e) {
@@ -159,7 +163,8 @@ final class DbCheckCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         try {
-            $idxStmt = $pdo->query("SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE table_schema = DATABASE()");
+            $idxStmt = $pdo
+                ->query("SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE table_schema = DATABASE()");
             $idxRow = $idxStmt !== false ? $idxStmt->fetch(\PDO::FETCH_ASSOC) : false;
             $indexes = is_array($idxRow) && is_scalar($idxRow['c'] ?? null) ? (int) $idxRow['c'] : 0;
             $this->write('  📊 Indexes: ' . $indexes . ' defined');
@@ -168,7 +173,8 @@ final class DbCheckCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $this->write('  ' . str_repeat('-', 40));
-        $status = $allOk ? '✅ Database integrity OK. No action required.' : '❌ Issues detected. Consider restore from backup.';
+        $status = $allOk ? '✅ Database integrity OK. No action required.' :
+            '❌ Issues detected. Consider restore from backup.';
         $this->write('  ' . $status);
         $this->write('');
 

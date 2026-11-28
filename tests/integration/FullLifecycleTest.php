@@ -134,7 +134,10 @@ final class FullLifecycleTest extends TestCase
         Database::configure(['driver' => 'sqlite', 'database' => ':memory:']);
         Database::execute('CREATE TABLE crud_test (id INTEGER PRIMARY KEY, name TEXT, value INTEGER)');
 
-        Database::execute('INSERT INTO crud_test (name, value) VALUES (:name, :value)', ['name' => 'test', 'value' => 42]);
+        Database::execute(
+            'INSERT INTO crud_test (name, value) VALUES (:name, :value)',
+            ['name' => 'test', 'value' => 42]
+        );
         $rows = Database::select('SELECT * FROM crud_test WHERE name = :name', ['name' => 'test']);
         $this->assertCount(1, $rows);
         $this->assertEquals(42, $rows[0]['value']);

@@ -212,7 +212,8 @@ class BelongsToMany
     public function sync(array $relatedIds): void
     {
         $current = Database::select(
-            "SELECT {$this->relatedKey} FROM {$this->quoteIdentifier($this->pivotTable)} WHERE {$this->quoteIdentifier($this->foreignKey)} = ?",
+            "SELECT {$this->relatedKey} FROM {$this->quoteIdentifier($this->pivotTable)} WHERE " .
+                "{$this->quoteIdentifier($this->foreignKey)} = ?",
             [$this->localValue]
         );
         $existingIds = [];

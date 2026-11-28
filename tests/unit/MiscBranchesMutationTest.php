@@ -36,7 +36,8 @@ final class MiscBranchesMutationTest extends TestCase
         mkdir($this->basePath . '/storage/framework/backups', 0777, true);
         mkdir($this->basePath . '/database/seeds', 0777, true);
         mkdir($this->basePath . '/config', 0777, true);
-        file_put_contents($this->basePath . '/.env', "APP_NAME=Test\nAPP_ENV=testing\nAPP_DEBUG=true\nJWT_SECRET=this_is_a_long_secret_32chars!!\nDB_CONNECTION=sqlite\n");
+        file_put_contents($this->basePath . '/.env', "APP_NAME=Test\nAPP_ENV=testing\nAPP_DEBUG=true\n" .
+            "JWT_SECRET=this_is_a_long_secret_32chars!!\n" . "DB_CONNECTION=sqlite\n");
     }
 
     protected function tearDown(): void

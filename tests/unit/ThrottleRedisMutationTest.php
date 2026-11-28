@@ -34,6 +34,7 @@ final class ThrottleRedisMutationTest extends TestCase
     {
         putenv('APP_ENV');
         putenv('REDIS_PREFIX');
+        unset($_ENV['REDIS_PREFIX']);
         Env::reset();
         Cache::reset();
         parent::tearDown();
@@ -132,9 +133,19 @@ final class ThrottleRedisMutationTest extends TestCase
             $this->markTestSkipped('Redis not available');
         }
         $mw = new ThrottleMiddleware();
-        $resp = $mw->handle($this->makeRequest('10.20.30.80', '/api/users/12345'), fn () => Response::success(), 100, 1);
+        $resp = $mw->handle(
+            $this->makeRequest('10.20.30.80', '/api/users/12345'),
+            fn () => Response::success(),
+            100,
+            1
+        );
         $this->assertSame(200, $resp->statusCode());
-        $resp2 = $mw->handle($this->makeRequest('10.20.30.80', '/api/users/99999'), fn () => Response::success(), 100, 1);
+        $resp2 = $mw->handle(
+            $this->makeRequest('10.20.30.80', '/api/users/99999'),
+            fn () => Response::success(),
+            100,
+            1
+        );
         $this->assertSame(200, $resp2->statusCode());
     }
 
@@ -154,7 +165,12 @@ final class ThrottleRedisMutationTest extends TestCase
             $this->markTestSkipped('Redis not available');
         }
         $mw = new ThrottleMiddleware();
-        $resp = $mw->handle($this->makeRequest('10.20.30.95', '/api/reset-header'), fn () => Response::success(), 100, 2);
+        $resp = $mw->handle(
+            $this->makeRequest('10.20.30.95', '/api/reset-header'),
+            fn () => Response::success(),
+            100,
+            2
+        );
         $headers = $resp->headers();
         $this->assertArrayHasKey('X-RateLimit-Reset', $headers);
         $this->assertGreaterThan(time(), (int) $headers['X-RateLimit-Reset']);

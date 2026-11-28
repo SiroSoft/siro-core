@@ -25,8 +25,10 @@ final class ModelQueryBuilderRelMutationTest extends TestCase
             'database' => ':memory:',
             'slow_query_threshold' => 500,
         ]);
-        Database::execute('CREATE TABLE mr_owners (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT)');
-        Database::execute('CREATE TABLE mr_pets (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id INTEGER, name TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT)');
+        Database::execute('CREATE TABLE mr_owners (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ' .
+            'created_at TEXT, updated_at TEXT, deleted_at ' . 'TEXT)');
+        Database::execute('CREATE TABLE mr_pets (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id INTEGER, ' .
+            'name TEXT, created_at TEXT, updated_at TEXT, deleted_at ' . 'TEXT)');
         Database::table('mr_owners')->insert(['name' => 'Alice']);
         Database::table('mr_owners')->insert(['name' => 'Bob']);
         Database::table('mr_pets')->insert(['owner_id' => 1, 'name' => 'Rex']);
@@ -101,54 +103,5 @@ final class ModelQueryBuilderRelMutationTest extends TestCase
     public function testFindReturnsNull(): void
     {
         $this->assertNull(MROwner::find(999));
-    }
-}
-
-final class MROwner extends Model
-{
-    use SoftDeletes;
-
-    protected string $table = 'mr_owners';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
-
-    public function pets(): \Siro\Core\DB\Relations\HasMany
-    {
-        return $this->hasMany(MRPet::class, 'owner_id');
-    }
-
-    public static function resetStatic(): void
-    {
-        $ref = new \ReflectionClass(self::class);
-        foreach (['identityMap', 'lastInsertId', 'queryLog'] as $prop) {
-            if ($ref->hasProperty($prop)) {
-                $p = $ref->getProperty($prop);
-                $p->setAccessible(true);
-                $p->setValue(null, []);
-            }
-        }
-    }
-}
-
-final class MRPet extends Model
-{
-    use SoftDeletes;
-
-    protected string $table = 'mr_pets';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['owner_id', 'name'];
-
-    public static function resetStatic(): void
-    {
-        $ref = new \ReflectionClass(self::class);
-        foreach (['identityMap', 'lastInsertId', 'queryLog'] as $prop) {
-            if ($ref->hasProperty($prop)) {
-                $p = $ref->getProperty($prop);
-                $p->setAccessible(true);
-                $p->setValue(null, []);
-            }
-        }
     }
 }

@@ -131,8 +131,12 @@ final class EagerLoader
      * @param array<int, Model> $models
      * @param array<int, string> $columns
      */
-    private function loadBelongsToMany(array $models, Relations\BelongsToMany $rel, string $relation, array $columns): void
-    {
+    private function loadBelongsToMany(
+        array $models,
+        Relations\BelongsToMany $rel,
+        string $relation,
+        array $columns
+    ): void {
         $relatedClass = $rel->getRelatedClass();
         $pivotTable = $rel->getPivotTable();
         $foreignKey = $rel->getForeignKey();
@@ -162,7 +166,8 @@ final class EagerLoader
         }
 
         $selectCols = $columns !== ['*']
-            ? implode(', ', array_map(fn (string $c) => 'r.' . $rel->quoteIdentifier(trim(strval(preg_replace('/^r\./', '', $c)))), $columns))
+            ? implode(', ', array_map(fn (string $c) => 'r.' . $rel
+                ->quoteIdentifier(trim(strval(preg_replace('/^r\./', '', $c)))), $columns))
             : 'r.*';
         $pivotCols = 'p.' . $relatedKey . ' AS pivot_related_id, p.' . $foreignKey . ' AS pivot_foreign_id';
 

@@ -96,12 +96,16 @@ final class CommandSupportTest extends TestCase
 
     public function testFindTraceFilesEmptyDir(): void
     {
-        $this->assertSame([], $this->support()->callFindTraceFiles($this->tracesDir . DIRECTORY_SEPARATOR . 'nonexistent'));
+        $this->assertSame(
+            [],
+            $this->support()->callFindTraceFiles($this->tracesDir . DIRECTORY_SEPARATOR . 'nonexistent')
+        );
     }
 
     public function testFindTraceFilesFindsJson(): void
     {
-        $sub = $this->tracesDir . DIRECTORY_SEPARATOR . '2024' . DIRECTORY_SEPARATOR . '01' . DIRECTORY_SEPARATOR . 'abc';
+        $sub = $this
+            ->tracesDir . DIRECTORY_SEPARATOR . '2024' . DIRECTORY_SEPARATOR . '01' . DIRECTORY_SEPARATOR . 'abc';
         mkdir($sub, 0777, true);
         file_put_contents($sub . DIRECTORY_SEPARATOR . 'trace1.json', '{}');
         file_put_contents($sub . DIRECTORY_SEPARATOR . 'trace1.txt', 'not json');
@@ -112,7 +116,8 @@ final class CommandSupportTest extends TestCase
 
     public function testFindRecentTraceFiles(): void
     {
-        $sub = $this->tracesDir . DIRECTORY_SEPARATOR . '2024' . DIRECTORY_SEPARATOR . '01' . DIRECTORY_SEPARATOR . 'abc';
+        $sub = $this
+            ->tracesDir . DIRECTORY_SEPARATOR . '2024' . DIRECTORY_SEPARATOR . '01' . DIRECTORY_SEPARATOR . 'abc';
         mkdir($sub, 0777, true);
         file_put_contents($sub . DIRECTORY_SEPARATOR . 'a.json', '{}');
         file_put_contents($sub . DIRECTORY_SEPARATOR . 'b.json', '{}');
@@ -122,7 +127,10 @@ final class CommandSupportTest extends TestCase
 
     public function testFindRecentTraceFilesEmpty(): void
     {
-        $this->assertSame([], $this->support()->callFindRecentTraceFiles($this->tracesDir . DIRECTORY_SEPARATOR . 'nonexistent', 5));
+        $this->assertSame(
+            [],
+            $this->support()->callFindRecentTraceFiles($this->tracesDir . DIRECTORY_SEPARATOR . 'nonexistent', 5)
+        );
         $this->assertSame([], $this->support()->callFindRecentTraceFiles($this->tracesDir, 0));
     }
 
@@ -135,7 +143,8 @@ final class CommandSupportTest extends TestCase
 
     public function testFindTraceByIdNested(): void
     {
-        $sub = $this->tracesDir . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR . date('d') . DIRECTORY_SEPARATOR . 'abc';
+        $sub = $this->tracesDir . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m') .
+            DIRECTORY_SEPARATOR . date('d') . DIRECTORY_SEPARATOR . 'abc';
         mkdir($sub, 0777, true);
         file_put_contents($sub . DIRECTORY_SEPARATOR . 'nested.json', '{}');
         $found = $this->support()->callFindTraceById($this->tracesDir, 'nested');
@@ -150,14 +159,16 @@ final class CommandSupportTest extends TestCase
     public function testWriteVariants(): void
     {
         $p = $this->support();
-        foreach ([
+        foreach (
+            [
             'callInfo' => 'info',
             'callSuccess' => 'success',
             'callError' => 'error',
             'callWarn' => 'warn',
             'callHighlight' => 'highlight',
             'callComment' => 'comment',
-        ] as $method => $text) {
+            ] as $method => $text
+        ) {
             ob_start();
             $p->{$method}($text . ' message');
             $out = ob_get_clean();
@@ -187,82 +198,5 @@ final class CommandSupportTest extends TestCase
         $m->setAccessible(true);
         $result = $m->invoke($cmd, '/base', '/base/file.php');
         $this->assertFalse($result);
-    }
-}
-
-final class CssSupportProxy
-{
-    use \Siro\Core\Commands\CommandSupport;
-
-    public function callTable(array $headers, array $rows): void
-    {
-        $this->table($headers, $rows);
-    }
-
-    public function callInfo(string $m): void
-    {
-        $this->info($m);
-    }
-
-    public function callSuccess(string $m): void
-    {
-        $this->success($m);
-    }
-
-    public function callError(string $m): void
-    {
-        $this->error($m);
-    }
-
-    public function callWarn(string $m): void
-    {
-        $this->warn($m);
-    }
-
-    public function callHighlight(string $m): void
-    {
-        $this->highlight($m);
-    }
-
-    public function callComment(string $m): void
-    {
-        $this->comment($m);
-    }
-
-    public function callStudly(string $v): string
-    {
-        return $this->studly($v);
-    }
-
-    public function callSingular(string $v): string
-    {
-        return $this->singular($v);
-    }
-
-    public function callPlural(string $v): string
-    {
-        return $this->plural($v);
-    }
-
-    public function callSafeStr(mixed $v, string $d = ''): string
-    {
-        return $this->safeStr($v, $d);
-    }
-
-    /** @return array<int, string> */
-    public function callFindTraceFiles(string $dir): array
-    {
-        return $this->findTraceFiles($dir);
-    }
-
-    /** @return array<int, string> */
-    public function callFindRecentTraceFiles(string $dir, int $limit): array
-    {
-        return $this->findRecentTraceFiles($dir, $limit);
-    }
-
-    public function callFindTraceById(string $dir, string $id): ?string
-    {
-        return $this->findTraceById($dir, $id);
     }
 }

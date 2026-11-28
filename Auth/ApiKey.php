@@ -55,7 +55,8 @@ final class ApiKey
         $bcryptHash = password_hash($token, PASSWORD_DEFAULT);
 
         Database::execute(
-            "INSERT INTO " . self::$table . " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+            "INSERT INTO " . self::$table .
+                " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [$name, $hashedToken, $bcryptHash, $scopes, $userId ?? 0, $createdAt, $expiresAt, null]
         );

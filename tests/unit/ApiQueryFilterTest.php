@@ -310,24 +310,3 @@ final class ApiQueryFilterTest extends TestCase
         ApiQueryFilter::parse($this->request([]), ApiFilterProduct::class, $config);
     }
 }
-
-final class ApiFilterCategory extends Model
-{
-    protected string $table = 'api_filter_categories';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['id', 'name'];
-}
-
-final class ApiFilterProduct extends Model
-{
-    protected string $table = 'api_filter_products';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['id', 'name', 'price', 'status', 'category_id'];
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(ApiFilterCategory::class, 'category_id');
-    }
-}

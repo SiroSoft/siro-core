@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 namespace Siro\Core\Tests\Fuzz;
+
 use PHPUnit\Framework\Attributes\DataProvider;
-
-
 use Siro\Core\Tests\TestCase;
 use Siro\Core\Model;
 use Siro\Core\DB\Relations\BelongsToMany;
@@ -45,7 +44,12 @@ final class FuzzOrmRelationsTest extends TestCase
 
     #[DataProvider('provideBelongsToManyConstruction')]
     public function testBelongsToManyConstructionNeverThrows(
-        string $relatedClass, string $pivotTable, string $foreignKey, string $relatedKey, string $localKey, int|string $localValue
+        string $relatedClass,
+        string $pivotTable,
+        string $foreignKey,
+        string $relatedKey,
+        string $localKey,
+        int|string $localValue
     ): void {
         $rel = new BelongsToMany($relatedClass, $pivotTable, $foreignKey, $relatedKey, $localKey, $localValue);
         $this->assertInstanceOf(BelongsToMany::class, $rel);

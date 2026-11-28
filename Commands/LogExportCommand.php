@@ -48,7 +48,9 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
             return $this->exportPostman($traceId);
         }
 
-        $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $traceDir = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'traces';
 
         if (!is_dir($traceDir)) {
             $this->write('No traces directory found.');
@@ -107,7 +109,8 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         if ($format === 'json') {
-            $content = $this->safeStr(json_encode($traces, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+            $content = $this
+                ->safeStr(json_encode($traces, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
         } elseif ($format === 'csv') {
             /** @var list<array<string, mixed>> $traces */
             $content = $this->toCsv($traces);
@@ -217,7 +220,10 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
         if ($handle === false) {
             return '';
         }
-        fputcsv($handle, ['timestamp', 'method', 'path', 'status', 'time_ms', 'ip']);
+        // Pass $escape explicitly: PHP 8.4 deprecates relying on its
+        // default ("the $escape parameter must be provided as its default
+        // value will change"). '\\' keeps the historical output exactly.
+        fputcsv($handle, ['timestamp', 'method', 'path', 'status', 'time_ms', 'ip'], ',', '"', '\\');
 
         foreach ($traces as $t) {
             /** @var array<string, mixed> $t */
@@ -228,7 +234,7 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
                 $this->safeStr($t['status'] ?? ''),
                 $this->safeStr($t['time_ms'] ?? ''),
                 $this->safeStr($t['ip'] ?? ''),
-            ]);
+            ], ',', '"', '\\');
         }
 
         rewind($handle);

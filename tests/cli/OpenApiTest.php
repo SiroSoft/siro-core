@@ -6,7 +6,6 @@ namespace Siro\Core\Tests\Cli;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-
 use Siro\Core\Console;
 use Siro\Core\App;
 
@@ -29,8 +28,14 @@ class OpenApiTest extends TestCase
         mkdir($this->tempDir . '/storage/framework', 0777, true);
         mkdir($this->tempDir . '/docs', 0777, true);
 
-        file_put_contents($this->tempDir . '/.env', "APP_ENV=local\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nSIRO_OPENAPI_ENABLED=true\n");
-        file_put_contents($this->tempDir . '/config/database.php', '<?php return ["driver" => "sqlite", "database" => ":memory:"];');
+        file_put_contents(
+            $this->tempDir . '/.env',
+            "APP_ENV=local\nAPP_KEY=testing_app_key_for_hmac_32chars!!\nSIRO_OPENAPI_ENABLED=true\n"
+        );
+        file_put_contents(
+            $this->tempDir . '/config/database.php',
+            '<?php return ["driver" => "sqlite", "database" => ":memory:"];'
+        );
         file_put_contents($this->tempDir . '/config/app.php', '<?php return ["name" => "TestApp", "env" => "local"];');
         file_put_contents($this->tempDir . '/routes/api.php', $this->getTestRoutes());
 
@@ -160,7 +165,11 @@ class OpenApiTest extends TestCase
         $spec = json_decode(file_get_contents($this->specFile), true);
         $postOp = $spec['paths']['/api/users']['post'] ?? [];
 
-        $this->assertArrayHasKey('requestBody', $postOp, 'POST /api/users must have requestBody (from validation rules)');
+        $this->assertArrayHasKey(
+            'requestBody',
+            $postOp,
+            'POST /api/users must have requestBody (from validation rules)'
+        );
         $this->assertArrayHasKey('content', $postOp['requestBody'], 'requestBody must have content');
         $this->assertArrayHasKey('application/json', $postOp['requestBody']['content'], 'Must accept JSON');
     }
@@ -219,7 +228,10 @@ class OpenApiTest extends TestCase
         // Data schemas from controllers
         $hasDataSchema = false;
         foreach ($schemas as $name => $schema) {
-            if (str_contains($name, 'Response') && $name !== 'SuccessResponse' && $name !== 'ErrorResponse' && $name !== 'ValidationErrorResponse') {
+            if (
+                str_contains($name, 'Response') && $name !== 'SuccessResponse' && $name !== 'ErrorResponse'
+                && $name !== 'ValidationErrorResponse'
+            ) {
                 $hasDataSchema = true;
                 break;
             }
@@ -237,7 +249,11 @@ class OpenApiTest extends TestCase
         $specContent = file_get_contents($this->specFile);
 
         // Sensitive fields must NOT appear in the spec
-        $this->assertStringNotContainsString('password_reset_token', $specContent, 'Must not expose password_reset_token');
+        $this->assertStringNotContainsString(
+            'password_reset_token',
+            $specContent,
+            'Must not expose password_reset_token'
+        );
         $this->assertStringNotContainsString('verification_token', $specContent, 'Must not expose verification_token');
         $this->assertStringNotContainsString('deleted_at', $specContent, 'Must not expose deleted_at');
     }
@@ -294,7 +310,11 @@ class OpenApiTest extends TestCase
 
         // Auth flow should ONLY have auth endpoints
         foreach (array_keys($paths) as $path) {
-            $this->assertStringContainsString('/auth/', $path, "Auth flow should only contain auth endpoints, got: {$path}");
+            $this->assertStringContainsString(
+                '/auth/',
+                $path,
+                "Auth flow should only contain auth endpoints, got: {$path}"
+            );
         }
     }
 
@@ -483,14 +503,19 @@ PHP);
 
     private function rrmdir(string $dir): void
     {
-        if (!is_dir($dir)) return;
+        if (!is_dir($dir)) {
+            return;
+        }
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($files as $file) {
-            if ($file->isDir()) rmdir($file->getRealPath());
-            else unlink($file->getRealPath());
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+            } else {
+                unlink($file->getRealPath());
+            }
         }
         rmdir($dir);
     }

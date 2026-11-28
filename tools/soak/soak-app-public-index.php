@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 /**
  * SiroPHP 48h Production Soak — Entry Point
@@ -7,6 +6,8 @@ declare(strict_types=1);
  * Exercises: HTTP, DB (SQLite), Cache (file), Session, Trace
  * Accessed via: Nginx → PHP-FPM (port 8088)
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__);
 

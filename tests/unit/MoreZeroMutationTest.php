@@ -79,9 +79,12 @@ final class MoreZeroMutationTest extends TestCase
     {
         $driver = new RedisQueueDriver();
         $this->assertIsBool($driver->isAvailable());
-        $this->assertNull($driver->pop('q', 1));
-        $driver->push('q', '{}');
-        $driver->release('q', '{}', 1);
+        // Unique queue per run: see LowFilesMutationTest — a fixed 'q'
+        // leaks payloads across tests sharing the live Redis server.
+        $q = 'q-morezero-' . bin2hex(random_bytes(4));
+        $this->assertNull($driver->pop($q, 1));
+        $driver->push($q, '{}');
+        $driver->release($q, '{}', 1);
         $this->assertTrue(true);
     }
 

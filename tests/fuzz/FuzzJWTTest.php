@@ -6,7 +6,6 @@ namespace Siro\Core\Tests\Fuzz;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
-
 use Siro\Core\Auth\JWT;
 
 final class FuzzJWTTest extends TestCase
@@ -40,7 +39,8 @@ final class FuzzJWTTest extends TestCase
         yield 'special chars' => [['sub' => 1, 'ver' => 1, 'sql' => "DROP TABLE users;--"]];
         yield 'boolean values' => [['sub' => 1, 'ver' => 1, 'active' => true, 'deleted' => false]];
         yield 'numeric keys' => [['sub' => 1, 'ver' => 1, 0 => 'zero', 1 => 'one']];
-        yield 'mixed types' => [['sub' => 1, 'ver' => 1, 'str' => 'hello', 'int' => 42, 'float' => 3.14, 'null' => null]];
+        yield 'mixed types' => [['sub' => 1, 'ver' => 1, 'str' => 'hello', 'int' => 42, 'float' => 3.14,
+            'null' => null]];
     }
 
     #[DataProvider('provideRoundtripPayloads')]
@@ -67,15 +67,18 @@ final class FuzzJWTTest extends TestCase
     /** @return iterable<string, array{array}> */
     public static function provideRoundtripPayloads(): iterable
     {
-        yield 'with custom claims' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'name' => 'John', 'role' => 'admin']];
-        yield 'nested arrays' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'meta' => ['key' => 'value', 'count' => 5]]];
+        yield 'with custom claims' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'name' => 'John',
+            'role' => 'admin']];
+        yield 'nested arrays' => [['sub' => 1, 'ver' => 1, 'type' => 'access',
+            'meta' => ['key' => 'value', 'count' => 5]]];
         yield 'empty array values' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'tags' => [], 'data' => null]];
         yield 'unicode chars' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'name' => 'HeartSpade']];
         yield 'very long strings' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'data' => str_repeat('x', 10000)]];
         yield 'special chars' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'sql' => "DROP TABLE users;--"]];
         yield 'boolean values' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'active' => true, 'deleted' => false]];
         yield 'numeric keys' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 0 => 'zero', 1 => 'one']];
-        yield 'mixed types' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'str' => 'hello', 'int' => 42, 'float' => 3.14, 'null' => null]];
+        yield 'mixed types' => [['sub' => 1, 'ver' => 1, 'type' => 'access', 'str' => 'hello', 'int' => 42,
+            'float' => 3.14, 'null' => null]];
     }
 
     #[DataProvider('provideEncodeAccessParams')]

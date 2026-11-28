@@ -30,7 +30,9 @@ final class MakeResourceCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         $class = $this->normalizeResourceClass($name);
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . $class . '.php';
+        $path = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR .
+            $class . '.php';
 
         if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
             $this->write('Skipped: app/Resources/' . $class . '.php');

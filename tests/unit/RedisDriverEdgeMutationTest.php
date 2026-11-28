@@ -16,6 +16,10 @@ use Siro\Core\Cache\Drivers\RedisDriver;
 // NOTE: the base is declared with UNTYPED signatures, matching how phpredis
 // 5.x ships; RedisStub's overrides below declare their own covariant return
 // types, which is legal against both untyped and typed (6.x) parents.
+// phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols -- conditional \Redis
+// polyfill: must run at include-time of this file (before RedisStub extends
+// \Redis) and must stay conditional, so other suites' class_exists(\Redis)
+// skip-guards keep working on machines without ext-redis.
 // @codeCoverageIgnoreStart
 if (!class_exists(\Redis::class)) {
     eval(<<<'PHP'
@@ -64,6 +68,7 @@ namespace {
 PHP);
 }
 // @codeCoverageIgnoreEnd
+// phpcs:enable PSR1.Files.SideEffects.FoundWithSymbols
 
 /**
  * Kills escaped mutants in Cache/Drivers/RedisDriver.php without a live Redis
@@ -150,7 +155,7 @@ final class RedisDriverEdgeMutationTest extends TestCase
         $this->assertSame(['pfx:int'], $this->redis->delArguments);
     }
 
-    // ── flush() without prefix — kills CastInt(l.62) ──────────────────────
+    // ── flush() without prefix — kills CastInt(l.62) ───────────────────
 
     public function testFlushWithoutPrefixReturnsDbSizeAsInt(): void
     {
@@ -159,7 +164,7 @@ final class RedisDriverEdgeMutationTest extends TestCase
         $this->assertTrue($this->redis->flushDbCalled);
     }
 
-    // ── set() — kills IncrementInteger(l.46) mutants ───────────────────────
+    // ── set() — kills IncrementInteger(l.46) mutants ───────────────────
 
     public function testSetUsesAtLeastOneSecondTtl(): void
     {
@@ -179,107 +184,5 @@ final class RedisDriverEdgeMutationTest extends TestCase
     public function testSetReturnsFalseWhenJsonEncodingFails(): void
     {
         $this->assertFalse($this->driver->set('bad', fopen('php://memory', 'r'), 10));
-    }
-}
-
-/**
- * Minimal \Redis stand-in. Extends \Redis so the RedisDriver type-hint keeps
- * working; every method the driver touches is overridden with in-memory
- * behaviour.
- *
- * Signature-compatibility contract (verified against phpredis 5.3.7 and the
- * 6.x signature set that broke CI — Redis::dbSize(): Redis|int|false):
- * - parameters stay UNTYPED: widening/omitting param types is always legal;
- * - overrides declare their OWN covariant return types, each a subset of the
- *   strictest (6.x) native union AND a legal addition over 5.x's untyped
- *   declarations. This survives any phpredis release: a future parent may
- *   only narrow (child ⊇ parent stays valid) or keep types untyped.
- * - omitting the return type instead would be fatal whenever the loaded
- *   parent declares one — exactly the ubuntu CI fatal this file once had.
- *
- * @codeCoverageIgnore
- */
-final class RedisStub extends \Redis
-{
-    /** Satisfied natively via inherited signatures when ext-redis is present. */
-    private const NATIVE = true;
-    /** @var list<array<int, string>|false> */
-    public array $scanBatches = [];
-
-    /** @var list<string> */
-    public array $deletedKeys = [];
-
-    /** @var list<string> */
-    public array $delArguments = [];
-
-    /** @var array<string, string> */
-    public array $store = [];
-
-    /** @var int|string */
-    public $dbSizeValue = 0;
-
-    public bool $flushDbCalled = false;
-
-    public int $lastSetexTtl = 0;
-
-    private int $batchIndex = 0;
-
-    /** @param int|null $iterator */
-    public function scan(&$iterator, $pattern = null, $count = 0, $type = null): array|false
-    {
-        if ($this->batchIndex >= count($this->scanBatches)) {
-            $iterator = 0;
-
-            return [];
-        }
-        $batch = $this->scanBatches[$this->batchIndex++];
-        $iterator = $this->batchIndex < count($this->scanBatches) ? $this->batchIndex : 0;
-
-        return $batch;
-    }
-
-    /** Number of keys removed (phpredis native signature). */
-    public function del($key, ...$otherKeys): int|false
-    {
-        $keys = is_array($key) ? $key : [$key, ...$otherKeys];
-        $removed = 0;
-        foreach ($keys as $k) {
-            $k = (string) $k;
-            $this->delArguments[] = $k;
-            // Keys arriving here come straight from a scan() batch, so they
-            // exist server-side and each counts as removed.
-            $this->deletedKeys[] = $k;
-            unset($this->store[$k]);
-            $removed++;
-        }
-
-        return $removed;
-    }
-
-    /** Stored payload or false on miss (phpredis native). */
-    public function get($key): string|false
-    {
-        return $this->store[$key] ?? false;
-    }
-
-    public function setex($key, $ttl, $value): bool
-    {
-        $this->lastSetexTtl = (int) $ttl;
-        $this->store[$key] = (string) $value;
-
-        return true;
-    }
-
-    public function dbSize(): int
-    {
-        return (int) $this->dbSizeValue;
-    }
-
-    public function flushDB($async = null): bool
-    {
-        $this->flushDbCalled = true;
-        $this->store = [];
-
-        return true;
     }
 }

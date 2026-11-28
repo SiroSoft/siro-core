@@ -40,8 +40,12 @@ final class EventAdvancedTest extends TestCase
     public function testMultipleListeners(): void
     {
         $count = 0;
-        Event::on('test.multi', function () use (&$count) { $count++; });
-        Event::on('test.multi', function () use (&$count) { $count++; });
+        Event::on('test.multi', function () use (&$count) {
+            $count++;
+        });
+        Event::on('test.multi', function () use (&$count) {
+            $count++;
+        });
 
         Event::emit('test.multi');
         $this->assertSame(2, $count);
@@ -50,7 +54,9 @@ final class EventAdvancedTest extends TestCase
     public function testOnceListenerOnlyFiresOnce(): void
     {
         $count = 0;
-        Event::once('test.once', function () use (&$count) { $count++; });
+        Event::once('test.once', function () use (&$count) {
+            $count++;
+        });
 
         Event::emit('test.once');
         Event::emit('test.once');
@@ -60,7 +66,9 @@ final class EventAdvancedTest extends TestCase
     public function testOffRemovesListener(): void
     {
         $count = 0;
-        Event::on('test.off', function () use (&$count) { $count++; });
+        Event::on('test.off', function () use (&$count) {
+            $count++;
+        });
 
         Event::off('test.off');
         Event::emit('test.off');
@@ -95,7 +103,9 @@ final class EventAdvancedTest extends TestCase
     public function testOffWithWildcard(): void
     {
         $count = 0;
-        Event::on('db.*', function () use (&$count) { $count++; });
+        Event::on('db.*', function () use (&$count) {
+            $count++;
+        });
 
         Event::off('db.*');
         Event::emit('db.query');
@@ -104,7 +114,8 @@ final class EventAdvancedTest extends TestCase
 
     public function testHasListenersReturnsTrue(): void
     {
-        Event::on('test.has', function () {});
+        Event::on('test.has', function () {
+        });
         $this->assertTrue(Event::hasListeners('test.has'));
     }
 
@@ -115,13 +126,15 @@ final class EventAdvancedTest extends TestCase
 
     public function testHasListenersWithWildcard(): void
     {
-        Event::on('cache.*', function () {});
+        Event::on('cache.*', function () {
+        });
         $this->assertTrue(Event::hasListeners('cache.*'));
     }
 
     public function testEmitReturnsTrue(): void
     {
-        Event::on('test.true', function () {});
+        Event::on('test.true', function () {
+        });
         $result = Event::emit('test.true');
         $this->assertTrue($result);
     }
@@ -152,7 +165,8 @@ final class EventAdvancedTest extends TestCase
 
     public function testFlushRemovesAllListeners(): void
     {
-        Event::on('test.flush', function () {});
+        Event::on('test.flush', function () {
+        });
         Event::flush();
         $this->assertFalse(Event::hasListeners('test.flush'));
     }
@@ -160,7 +174,9 @@ final class EventAdvancedTest extends TestCase
     public function testComplexWildcard(): void
     {
         $count = 0;
-        Event::on('a.b.*', function () use (&$count) { $count++; });
+        Event::on('a.b.*', function () use (&$count) {
+            $count++;
+        });
 
         Event::emit('a.b.c');
         Event::emit('a.b.d');
@@ -183,8 +199,12 @@ final class EventAdvancedTest extends TestCase
     {
         $core = 0;
         $module = 0;
-        Event::on('payment.captured', function () use (&$core) { $core++; });
-        $handle = Event::on('payment.captured', function () use (&$module) { $module++; });
+        Event::on('payment.captured', function () use (&$core) {
+            $core++;
+        });
+        $handle = Event::on('payment.captured', function () use (&$module) {
+            $module++;
+        });
 
         Event::off('payment.captured', $handle);
         Event::emit('payment.captured');
@@ -198,8 +218,12 @@ final class EventAdvancedTest extends TestCase
     {
         $core = 0;
         $module = 0;
-        Event::on('payment.captured', function () use (&$core) { $core++; });
-        $moduleListener = function () use (&$module) { $module++; };
+        Event::on('payment.captured', function () use (&$core) {
+            $core++;
+        });
+        $moduleListener = function () use (&$module) {
+            $module++;
+        };
         Event::on('payment.captured', $moduleListener);
 
         Event::off('payment.captured', $moduleListener);
@@ -212,8 +236,12 @@ final class EventAdvancedTest extends TestCase
     public function testOffWithoutTargetRemovesAll(): void
     {
         $count = 0;
-        Event::on('test.clear', function () use (&$count) { $count++; });
-        Event::on('test.clear', function () use (&$count) { $count++; });
+        Event::on('test.clear', function () use (&$count) {
+            $count++;
+        });
+        Event::on('test.clear', function () use (&$count) {
+            $count++;
+        });
 
         Event::off('test.clear');
         Event::emit('test.clear');
@@ -224,8 +252,10 @@ final class EventAdvancedTest extends TestCase
 
     public function testHandlesAreUniqueAcrossEvents(): void
     {
-        $a = Event::on('event.a', function () {});
-        $b = Event::on('event.b', function () {});
+        $a = Event::on('event.a', function () {
+        });
+        $b = Event::on('event.b', function () {
+        });
 
         $this->assertNotSame($a, $b);
     }

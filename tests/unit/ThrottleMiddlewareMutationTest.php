@@ -23,12 +23,28 @@ final class ThrottleMiddlewareMutationTest extends TestCase
         putenv('THROTTLE_FALLBACK=file');
         $_ENV['REDIS_PORT'] = '1';
         putenv('REDIS_PORT=1');
+        // Drop any cached shared connection: CacheInstance caches the
+        // first successful connection for the whole process, so forcing
+        // a dead port alone does not take effect once an earlier test
+        // connected to a live server (same pattern as
+        // ThrottleFallbackMutationTest).
+        $ref = new \ReflectionClass(\Siro\Core\Cache\CacheInstance::class);
+        $prop = $ref->getProperty('sharedRedis');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
         $this->rateDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'rate_limit';
         $this->cleanRateFiles();
     }
 
     protected function tearDown(): void
     {
+        // These tests force REDIS_PORT=1 (dead port) to exercise the
+        // fallback path; both putenv and $_ENV must be cleared, because
+        // Env::get() reads $_ENV first — leaking REDIS_PORT=1 breaks
+        // every later redis test in the process.
+        putenv('REDIS_PORT');
+        putenv('THROTTLE_FALLBACK');
+        unset($_ENV['REDIS_PORT'], $_ENV['THROTTLE_FALLBACK']);
         $this->cleanRateFiles();
         parent::tearDown();
     }

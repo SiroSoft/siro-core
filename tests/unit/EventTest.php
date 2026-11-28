@@ -34,8 +34,12 @@ final class EventTest extends TestCase
     public function testMultipleListeners(): void
     {
         $results = [];
-        Event::on('multi.event', function ($p) use (&$results) { $results[] = 'a:' . $p; });
-        Event::on('multi.event', function ($p) use (&$results) { $results[] = 'b:' . $p; });
+        Event::on('multi.event', function ($p) use (&$results) {
+            $results[] = 'a:' . $p;
+        });
+        Event::on('multi.event', function ($p) use (&$results) {
+            $results[] = 'b:' . $p;
+        });
         Event::emit('multi.event', 'test');
         $this->assertSame(['a:test', 'b:test'], $results);
     }
@@ -54,7 +58,9 @@ final class EventTest extends TestCase
     public function testOnceListener(): void
     {
         $count = 0;
-        Event::once('once.event', function () use (&$count) { $count++; });
+        Event::once('once.event', function () use (&$count) {
+            $count++;
+        });
         Event::emit('once.event');
         Event::emit('once.event');
         $this->assertSame(1, $count);
@@ -63,7 +69,9 @@ final class EventTest extends TestCase
     public function testOff(): void
     {
         $count = 0;
-        Event::on('off.event', function () use (&$count) { $count++; });
+        Event::on('off.event', function () use (&$count) {
+            $count++;
+        });
         Event::emit('off.event');
         $this->assertSame(1, $count);
         Event::off('off.event');

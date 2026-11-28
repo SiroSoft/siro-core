@@ -27,8 +27,10 @@ final class MercureHasManyTest extends TestCase
             'charset' => 'utf8mb4',
             'slow_query_threshold' => 500,
         ]);
-        Database::execute('CREATE TABLE authors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, created_at TEXT, updated_at TEXT)');
-        Database::execute('CREATE TABLE books (id INTEGER PRIMARY KEY AUTOINCREMENT, author_id INTEGER, title TEXT, created_at TEXT, updated_at TEXT)');
+        Database::execute('CREATE TABLE authors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ' .
+            'created_at TEXT, updated_at ' . 'TEXT)');
+        Database::execute('CREATE TABLE books (id INTEGER PRIMARY KEY AUTOINCREMENT, author_id INTEGER, ' .
+            'title TEXT, created_at TEXT, updated_at ' . 'TEXT)');
         HMAuthor::create(['name' => 'A']);
         Database::table('books')->insert(['author_id' => 1, 'title' => 'Book 1']);
         Database::table('books')->insert(['author_id' => 1, 'title' => 'Book 2']);
@@ -86,25 +88,4 @@ final class MercureHasManyTest extends TestCase
         $this->assertSame('author_id', $rel->getForeignKey());
         $this->assertSame('id', $rel->getLocalKey());
     }
-}
-
-final class HMAuthor extends Model
-{
-    protected string $table = 'authors';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
-
-    public function books(): HasMany
-    {
-        return $this->hasMany(HMBook::class, 'author_id');
-    }
-}
-
-final class HMBook extends Model
-{
-    protected string $table = 'books';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['author_id', 'title'];
 }

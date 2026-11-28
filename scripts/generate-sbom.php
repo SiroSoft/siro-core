@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 $composerJson = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);

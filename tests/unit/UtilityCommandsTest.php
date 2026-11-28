@@ -25,10 +25,21 @@ final class UtilityCommandsTest extends TestCase
         $this->basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'siro_util_' . uniqid('', true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage', 0777, true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs', 0777, true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily', 0777, true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'main', 0777, true);
+        mkdir(
+            $this
+            ->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'daily',
+            0777,
+            true
+        );
+        mkdir(
+            $this
+            ->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'main',
+            0777,
+            true
+        );
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'scripts', 0777, true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces', 0777, true);
+        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'traces', 0777, true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'routes', 0777, true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'config', 0777, true);
         file_put_contents(
@@ -220,8 +231,14 @@ final class UtilityCommandsTest extends TestCase
 
     public function testLogTraceWithFilters(): void
     {
-        $this->writeTrace('lt2', ['method' => 'POST', 'path' => '/api/orders', 'status' => 422, 'time_ms' => 500, 'ip' => '1.2.3.4']);
-        [$exit, $output] = $this->runCmd(\Siro\Core\Commands\LogTraceCommand::class, ['--status=422', '--method=POST', '--slow', '--limit=5']);
+        $this->writeTrace(
+            'lt2',
+            ['method' => 'POST', 'path' => '/api/orders', 'status' => 422, 'time_ms' => 500, 'ip' => '1.2.3.4']
+        );
+        [$exit, $output] = $this->runCmd(
+            \Siro\Core\Commands\LogTraceCommand::class,
+            ['--status=422', '--method=POST', '--slow', '--limit=5']
+        );
         $this->assertContains($exit, [0, 1]);
     }
 
@@ -277,7 +294,10 @@ final class UtilityCommandsTest extends TestCase
     {
         $this->writeTrace('le4', ['method' => 'POST', 'path' => '/api/orders', 'status' => 201, 'time_ms' => 30]);
         $outFile = $this->basePath . '/storage/export.csv';
-        [$exit, $output] = $this->runCmd(\Siro\Core\Commands\LogExportCommand::class, ['--format=csv', '--output=' . $outFile, '--status=201', '--method=POST', '--slow', '--days=30']);
+        [$exit, $output] = $this->runCmd(
+            \Siro\Core\Commands\LogExportCommand::class,
+            ['--format=csv', '--output=' . $outFile, '--status=201', '--method=POST', '--slow', '--days=30']
+        );
         $this->assertContains($exit, [0, 1]);
     }
 
@@ -367,7 +387,10 @@ final class UtilityCommandsTest extends TestCase
 
     public function testLogTop(): void
     {
-        $this->writeTrace('ltop', ['method' => 'GET', 'path' => '/api/x', 'status' => 200, 'time_ms' => 500, 'queries' => []]);
+        $this->writeTrace(
+            'ltop',
+            ['method' => 'GET', 'path' => '/api/x', 'status' => 200, 'time_ms' => 500, 'queries' => []]
+        );
         [$exit, $output] = $this->runCmd(\Siro\Core\Commands\LogTopCommand::class, []);
         $this->assertContains($exit, [0, 1]);
     }
@@ -387,7 +410,10 @@ final class UtilityCommandsTest extends TestCase
 
     public function testAuditLogWithAction(): void
     {
-        [$exit, $output] = $this->runCmd(\Siro\Core\Commands\AuditLogCommand::class, ['user.manual_reset', '--context=user_id=5']);
+        [$exit, $output] = $this->runCmd(
+            \Siro\Core\Commands\AuditLogCommand::class,
+            ['user.manual_reset', '--context=user_id=5']
+        );
         $this->assertContains($exit, [0, 1]);
     }
 
@@ -421,7 +447,8 @@ final class UtilityCommandsTest extends TestCase
     {
         file_put_contents(
             $this->basePath . '/routes/api.php',
-            "<?php\n\$router->post('/products', [ProductController::class, 'store'])->validate(['name' => 'required|min:2']);\n"
+            "<?php\n\$router->post('/products', [ProductController::class, " . "'store'])->validate(['name' => " .
+                "'required|min:2']);\n"
         );
         [$exit, $output] = $this->runCmd(\Siro\Core\Commands\RouteRulesCommand::class, []);
         $this->assertContains($exit, [0, 1]);
@@ -448,7 +475,8 @@ final class UtilityCommandsTest extends TestCase
     {
         file_put_contents(
             $this->basePath . '/.env',
-            "APP_NAME=Test\nAPP_ENV=testing\nAPP_DEBUG=true\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\nDB_CONNECTION=sqlite\n"
+            "APP_NAME=Test\nAPP_ENV=testing\nAPP_DEBUG=true\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n" . "DB_CONNECTION=sqlite\n"
         );
         [$exit, $output] = $this->runCmd(\Siro\Core\Commands\EnvCheckCommand::class, []);
         $this->assertContains($exit, [0, 1]);

@@ -1,13 +1,13 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Siro PHAR Builder — Build standalone siro.phar
  *
  * Usage: php tools/release/build-phar.php
  * Output: dist/siro.phar
  */
+
+declare(strict_types=1);
 
 $rootDir = dirname(__DIR__);
 $distDir = $rootDir . DIRECTORY_SEPARATOR . 'dist';
@@ -53,7 +53,14 @@ foreach ($coreFiles as $file) {
     if (preg_match('#\.(md|neon|xml|dist|txt|ps1|sh|lock)$#', $relative)) {
         continue;
     }
-    if ($relative === 'phpunit.xml' || $relative === 'phpcs.xml' || $relative === 'psalm.xml' || $relative === 'psalm-baseline.xml' || $relative === 'phpdoc.dist.xml' || $relative === 'depfile.yaml') {
+    if (
+        $relative === 'phpunit.xml'
+            || $relative === 'phpcs.xml'
+            || $relative === 'psalm.xml'
+            || $relative === 'psalm-baseline.xml'
+            || $relative === 'phpdoc.dist.xml'
+            || $relative === 'depfile.yaml'
+    ) {
         continue;
     }
     $phar->addFile($file->getPathname(), $relative);
@@ -71,7 +78,10 @@ if (is_dir($appDir)) {
     foreach ($skeletonFiles as $file) {
         $relative = 'skeleton/' . substr($file->getPathname(), strlen($appDir) + 1);
         // Exclude vendor, storage/logs/traces, .git
-        if (preg_match('#^(skeleton/)?(vendor|\.git|storage/logs|storage/benchmark|storage/sbom|node_modules)/#', $relative)) {
+        if (
+            preg_match('#^(skeleton/)?(vendor|\.git|storage/logs'
+            . '|storage/benchmark|storage/sbom|node_modules)/#', $relative)
+        ) {
             continue;
         }
         if (preg_match('#\.(md|lock)$#', $relative)) {

@@ -171,7 +171,8 @@ final class JWTTest extends TestCase
 
     public function testDecodeTokenWithCustomPayload(): void
     {
-        $payload = ['sub' => 5, 'ver' => 1, 'role' => 'admin', 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'custom'];
+        $payload = ['sub' => 5, 'ver' => 1, 'role' => 'admin', 'iat' => time(), 'exp' => time() + 3600,
+            'type' => 'access', 'jti' => 'custom'];
         $token = JWT::encode($payload);
         $claims = JWT::decode($token);
         $this->assertSame('admin', $claims['role']);

@@ -239,7 +239,9 @@ final class HttpTest extends TestCase
                 $response = Http::get($this->testServerUrl . '/status/500');
                 break;
             } catch (\RuntimeException $e) {
-                if ($i === $maxRetries - 1) throw $e;
+                if ($i === $maxRetries - 1) {
+                    throw $e;
+                }
                 usleep(100000); // 100ms delay
             }
         }

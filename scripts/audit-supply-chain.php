@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 // 'NUL' is a Windows-only device; an unguarded `2>NUL` on Linux creates a

@@ -74,7 +74,10 @@ final class ScopeRepository implements ScopeRepositoryInterface
         if ($requested === []) {
             // No scope (left) requested: grant the default scope if allowed.
             $default = AuthorizationServer::defaultScope();
-            if ($default !== '' && in_array($default, $allowed, true) && in_array($default, $this->allowedScopes, true)) {
+            if (
+                $default !== '' && in_array($default, $allowed, true) && in_array($default, $this
+                ->allowedScopes, true)
+            ) {
                 $entity = new ScopeEntity();
                 $entity->setIdentifier($default);
                 return [$entity];

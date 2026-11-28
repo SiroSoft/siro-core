@@ -30,7 +30,9 @@ final class ResponseApiTest extends TestCase
     {
         if (is_dir($this->projTmp)) {
             foreach (glob($this->projTmp . '/*') ?: [] as $f) {
-                if (is_file($f)) @unlink($f);
+                if (is_file($f)) {
+                    @unlink($f);
+                }
             }
             @rmdir($this->projTmp);
         }

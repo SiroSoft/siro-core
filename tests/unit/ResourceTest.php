@@ -9,7 +9,7 @@ use Siro\Core\Resource;
 
 /**
  * Resource Unit Tests
- * 
+ *
  * Tests resource transformation functionality
  */
 final class ResourceTest extends TestCase
@@ -68,13 +68,13 @@ final class ResourceTest extends TestCase
      */
     public function testResourceConstructorAcceptsArray(): void
     {
-        $resource = new class(['id' => 1, 'name' => 'Test']) extends Resource {
+        $resource = new class (['id' => 1, 'name' => 'Test']) extends Resource {
             public function toArray(): array
             {
                 return $this->data;
             }
         };
-        
+
         $this->assertInstanceOf(Resource::class, $resource);
     }
 
@@ -83,15 +83,15 @@ final class ResourceTest extends TestCase
      */
     public function testResourceMakeReturnsArray(): void
     {
-        $resource = new class(['id' => 1]) extends Resource {
+        $resource = new class (['id' => 1]) extends Resource {
             public function toArray(): array
             {
                 return $this->data;
             }
         };
-        
+
         $result = $resource::make(['id' => 1]);
-        
+
         $this->assertIsArray($result);
     }
 
@@ -100,15 +100,15 @@ final class ResourceTest extends TestCase
      */
     public function testResourceCollectionReturnsArray(): void
     {
-        $resource = new class(['id' => 1]) extends Resource {
+        $resource = new class (['id' => 1]) extends Resource {
             public function toArray(): array
             {
                 return $this->data;
             }
         };
-        
+
         $result = $resource::collection([['id' => 1], ['id' => 2]]);
-        
+
         $this->assertIsArray($result);
         $this->assertCount(2, $result);
     }
@@ -118,20 +118,20 @@ final class ResourceTest extends TestCase
      */
     public function testResourceCollectionOfWithFields(): void
     {
-        $resource = new class(['id' => 1, 'name' => 'Test', 'email' => 'test@example.com']) extends Resource {
+        $resource = new class (['id' => 1, 'name' => 'Test', 'email' => 'test@example.com']) extends Resource {
             public function toArray(): array
             {
                 return $this->data;
             }
         };
-        
+
         $items = [
             ['id' => 1, 'name' => 'John', 'email' => 'john@example.com'],
             ['id' => 2, 'name' => 'Jane', 'email' => 'jane@example.com'],
         ];
-        
+
         $result = $resource::collectionOf($items, ['id', 'name']);
-        
+
         $this->assertIsArray($result);
         $this->assertCount(2, $result);
         $this->assertArrayHasKey('id', $result[0]);

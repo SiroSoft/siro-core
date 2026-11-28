@@ -382,7 +382,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
                 unset($seedData['id'], $seedData['created_at'], $seedData['updated_at']);
                 $this->write('Seed command:');
                 $insertJson = json_encode($seedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-                $this->write('  $db->table("' . $this->safeStr($data['table'] ?? 'table') . '")->insert(' . $insertJson . ');');
+                $this->write('  $db->table("' . $this
+                    ->safeStr($data['table'] ?? 'table') . '")->insert(' . $insertJson . ');');
                 $this->write('  Then run: php siro db:seed');
             }
             return 0;
@@ -492,14 +493,18 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
 
             // Detect changes
             $statusChanged = $statusAfter !== $beforeStatus;
-            $bodyChanged = $beforeNorm !== null && $afterNorm !== null && json_encode($beforeNorm) !== json_encode($afterNorm);
+            $bodyChanged = $beforeNorm !== null && $afterNorm !== null &&
+                json_encode($beforeNorm) !== json_encode($afterNorm);
 
             $this->write('');
             $this->write('  === BEFORE ===');
             $statusColorBefore = $beforeStatus >= 500 ? 31 : ($beforeStatus >= 400 ? 33 : 32);
             $this->write('  Status: ' . "\033[{$statusColorBefore}m{$beforeStatus}\033[0m");
             if ($beforeNorm !== null) {
-                $pretty = (string) json_encode($beforeNorm, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $pretty = (string) json_encode(
+                    $beforeNorm,
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                );
                 $this->write('  Body:');
                 foreach (explode("\n", $pretty) as $line) {
                     $this->write('    ' . $line);
@@ -510,10 +515,16 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
 
             $this->write('');
             $this->write('  === AFTER ===');
-            $statusColorAfter = $statusAfter >= 500 ? 31 : ($statusAfter >= 400 ? 33 : ($statusAfter >= 200 && $statusAfter < 300 ? 32 : 0));
-            $this->write('  Status: ' . ($statusColorAfter ? "\033[{$statusColorAfter}m{$statusAfter}\033[0m" : $statusAfter));
+            $statusColorAfter = $statusAfter >= 500 ? 31 : ($statusAfter >= 400 ? 33 : ($statusAfter >= 200 &&
+                $statusAfter < 300 ? 32 : 0));
+            $this
+                ->write('  Status: ' . ($statusColorAfter ? "\033[{$statusColorAfter}m{$statusAfter}\033[0m" :
+                $statusAfter));
             if ($afterNorm !== null) {
-                $pretty = (string) json_encode($afterNorm, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $pretty = (string) json_encode(
+                    $afterNorm,
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                );
                 $this->write('  Body:');
                 foreach (explode("\n", $pretty) as $line) {
                     $this->write('    ' . $line);
@@ -526,8 +537,13 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
             if (!$statusChanged && !$bodyChanged) {
                 $this->write('  âœ… No changes detected â€” responses match.');
             } elseif ($statusChanged && $statusAfter >= 200 && $statusAfter < 300) {
-                $this->write('  âœ… Status changed from ' . $beforeStatus . ' â†’ ' . $statusAfter . ' â€” likely fixed.');
-            } elseif ($statusAfter >= 200 && $statusAfter < 300 && $afterNorm !== null && ($afterNorm['success'] ?? false) === true) {
+                $this
+                    ->write('  âœ… Status changed from ' . $beforeStatus . ' â†’ ' . $statusAfter .
+                    ' â€” likely fixed.');
+            } elseif (
+                $statusAfter >= 200 && $statusAfter < 300 && $afterNorm !== null && ($afterNorm['success'] ??
+                false) === true
+            ) {
                 $this->write('  âœ… Fixed!');
             } else {
                 $changes = [];
@@ -598,7 +614,10 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
                 $this->write('  Body:');
                 $decodedBody = json_decode($body, true);
                 if (is_array($decodedBody)) {
-                    $prettyBody = (string) json_encode($decodedBody, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    $prettyBody = (string) json_encode(
+                        $decodedBody,
+                        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                    );
                     foreach (explode("\n", $prettyBody) as $line) {
                         $this->write('    ' . $line);
                     }
@@ -635,13 +654,16 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
                         $this->write('  ðŸ”‘ New token acquired [' . $authResult['strategy'] . '] â†’ retrying...');
                         $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
                         $status = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
-                        $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
+                        $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ?
+                            32 : 0));
                         $responseBody = $this->safeStr($result['body'] ?? '{}');
                         $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
                         if ($status >= 200 && $status < 300) {
                             $this->write('  âœ… Replay succeeded with refreshed token.');
                         } elseif ($status >= 400 && $status < 500) {
-                            $this->write('  â„¹ï¸ Auth OK â€” server returned ' . $status . ' (client error, likely bad request data).');
+                            $this
+                                ->write('  â„¹ï¸ Auth OK â€” server returned ' . $status .
+                                ' (client error, likely bad request data).');
                         } else {
                             $this->write('  âš  Replay returned ' . $status . ' even after auth refresh.');
                         }
@@ -656,18 +678,26 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
                                 if ($manualToken !== null) {
                                     $auth = 'Bearer ' . $manualToken;
                                     $this->write('  ðŸ”‘ Logged in as ' . $manualEmail . ' â†’ retrying...');
-                                    $result = $this->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
+                                    $result = $this
+                                        ->executeReplay($method, $url, $body, $headers, $auth, $ct, $data, $insecure);
                                     $status = is_numeric($result['status'] ?? null) ? (int) $result['status'] : 0;
-                                    $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 && $status < 300 ? 32 : 0));
+                                    $statusColor = $status >= 500 ? 31 : ($status >= 400 ? 33 : ($status >= 200 &&
+                                        $status < 300 ? 32 : 0));
                                     $responseBody = $this->safeStr($result['body'] ?? '{}');
-                                    $this->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" : $status));
+                                    $this
+                                        ->write('  Status: ' . ($statusColor ? "\033[{$statusColor}m{$status}\033[0m" :
+                                        $status));
                                     if ($status >= 200 && $status < 300) {
                                         $this->write('  âœ… Replay succeeded.');
                                     } elseif ($status >= 400 && $status < 500) {
-                                        $this->write('  â„¹ï¸ Auth OK â€” server returned ' . $status . ' (client error).');
+                                        $this
+                                            ->write('  â„¹ï¸ Auth OK â€” server returned ' . $status .
+                                            ' (client error).');
                                     }
                                 } else {
-                                    $this->write('  âŒ Login failed. Try: php siro replay ' . $traceId . ' --as=email');
+                                    $this
+                                        ->write('  âŒ Login failed. Try: php siro replay ' . $traceId .
+                                        ' --as=email');
                                 }
                             }
                         }
@@ -677,7 +707,10 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
 
             $decoded = json_decode($responseBody, true);
             if (is_array($decoded)) {
-                $pretty = (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $pretty = (string) json_encode(
+                    $decoded,
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                );
                 $this->write('  Response:');
                 foreach (explode("\n", $pretty) as $line) {
                     $this->write('    ' . $line);
@@ -871,8 +904,14 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
      * @param array<string, string> $headers
      * @param array<string, mixed> $data
      */
-    private function outputCurl(string $method, string $url, string $body, array $headers, string $auth, array $data): void
-    {
+    private function outputCurl(
+        string $method,
+        string $url,
+        string $body,
+        array $headers,
+        string $auth,
+        array $data
+    ): void {
         // Quote a value for curl display (single quotes for cross-platform safety)
         $q = function (string $s): string {
             // Use single quotes to avoid shell escaping issues with JSON
@@ -927,8 +966,15 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
      * @param array<string, string> $headers
      * @param array<string, mixed> $data
      */
-    private function outputCommand(string $format, string $method, string $url, string $body, array $headers, string $auth, array $data): void
-    {
+    private function outputCommand(
+        string $format,
+        string $method,
+        string $url,
+        string $body,
+        array $headers,
+        string $auth,
+        array $data
+    ): void {
         if ($format === 'httpie') {
             $this->outputHttpie($method, $url, $body, $headers, $auth);
         } else {
@@ -988,7 +1034,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
                 $this->editRecursive($value, $fullKey);
                 $data[$key] = $value;
             } else {
-                $display = is_bool($value) ? ($value ? 'true' : 'false') : (is_scalar($value) ? (string) $value : json_encode($value));
+                $display = is_bool($value) ? ($value ? 'true' : 'false') : (is_scalar($value) ? (string) $value :
+                    json_encode($value));
                 $this->write('  ' . $fullKey . ': \033[33m' . $display . '\033[0m');
                 $input = $this->ask("  New value (Enter to keep): ");
                 if ($input !== '') {
@@ -1115,7 +1162,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         // 4) Check response token path from AuthController
-        $authControllerFile = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AuthController.php';
+        $authControllerFile = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR .
+            'AuthController.php';
         if (file_exists($authControllerFile)) {
             $authContent = (string) file_get_contents($authControllerFile);
             // Find pattern: return Response::created(['token' => ..., ...])
@@ -1302,7 +1351,9 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
 
         if (PHP_OS_FAMILY === 'Windows') {
             // Windows: use inline script to read hidden input
-            $psCmd = 'powershell -Command "$p=Read-Host -AsSecureString; $r=[Runtime.InteropServices.Marshal]::PtrToStringAuto(' .
+            $psCmd =
+                'powershell -Command "$p=Read-Host -AsSecureString; ' .
+                '$r=[Runtime.InteropServices.Marshal]::PtrToStringAuto(' .
                 '[Runtime.InteropServices.Marshal]::SecureStringToBSTR($p)); Write-Output $r"';
             $output = shell_exec($psCmd);
             return is_string($output) ? trim($output) : '';
@@ -1369,7 +1420,8 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
                     }
                     $stored['email'] = $email;
                     $stored['access_token'] = $token;
-                    $refreshToken = is_array($result['data'] ?? null) ? ($result['data']['refresh_token'] ?? '') : ($result['refresh_token'] ?? '');
+                    $refreshToken = is_array($result['data'] ?? null) ? ($result['data']['refresh_token'] ?? '') :
+                        ($result['refresh_token'] ?? '');
                     $stored['refresh_token'] = $this->safeStr($refreshToken);
                     // Remove old password if present
                     unset($stored['password']);
@@ -1537,7 +1589,10 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
         $key = (string) \Siro\Core\Env::get('APP_KEY', '');
         if ($key !== '') {
             try {
-                if (isset($data['refresh_token']) && is_string($data['refresh_token']) && $data['refresh_token'] !== '') {
+                if (
+                    isset($data['refresh_token']) && is_string($data['refresh_token']) &&
+                    $data['refresh_token'] !== ''
+                ) {
                     $data['refresh_token'] = 'enc:' . \Siro\Core\Encrypter::encrypt($data['refresh_token']);
                 }
                 if (isset($data['access_token']) && is_string($data['access_token']) && $data['access_token'] !== '') {
@@ -1572,7 +1627,12 @@ final class LogReplayCommand implements \Siro\Core\Commands\CommandInterface
         if ($key !== '') {
             try {
                 foreach (['refresh_token', 'access_token'] as $field) {
-                    if (isset($stored[$field]) && is_string($stored[$field]) && str_starts_with($stored[$field], 'enc:')) {
+                    if (
+                        isset($stored[$field]) && is_string($stored[$field]) && str_starts_with(
+                            $stored[$field],
+                            'enc:'
+                        )
+                    ) {
                         $stored[$field] = \Siro\Core\Encrypter::decrypt(substr($stored[$field], 4));
                     }
                 }

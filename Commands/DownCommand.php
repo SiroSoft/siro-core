@@ -56,7 +56,10 @@ class DownCommand implements \Siro\Core\Commands\CommandInterface
             'allow' => $allow,
         ];
 
-        file_put_contents($dir . DIRECTORY_SEPARATOR . 'down', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        file_put_contents(
+            $dir . DIRECTORY_SEPARATOR . 'down',
+            json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
         $this->write('Application is now in maintenance mode.');
         if ($message !== '') {
             $this->write("  Message: {$message}");

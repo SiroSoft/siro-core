@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 /**
  * B3 — Concurrent Stampede Protection Test (FPM-compatible)
  * Uses background shell curl processes for true concurrency.

@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 /**
  * SiroPHP Soak Test Application
@@ -24,6 +23,8 @@ declare(strict_types=1);
  *   GET  /api/session         — session create/read/update
  *   GET  /metrics             — JSON metrics snapshot
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__, 2);
 
@@ -106,12 +107,14 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
 // Helper: write metrics
-function writeMetrics(string $metricsFile, array $metrics): void {
+function writeMetrics(string $metricsFile, array $metrics): void
+{
     file_put_contents($metricsFile, json_encode($metrics) . "\n", LOCK_EX | FILE_APPEND);
 }
 
 // Helper: JSON response
-function jsonResponse(int $status, mixed $data): never {
+function jsonResponse(int $status, mixed $data): never
+{
     http_response_code($status);
     header('Content-Type: application/json');
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -119,7 +122,8 @@ function jsonResponse(int $status, mixed $data): never {
 }
 
 // Helper: simulate work
-function simulateWork(int $iterations = 100): void {
+function simulateWork(int $iterations = 100): void
+{
     $result = 0;
     for ($i = 0; $i < $iterations; $i++) {
         $result += ($i * $i) % 997;
@@ -297,12 +301,24 @@ try {
 
         // ── Metrics endpoint ──
         $uri === '/metrics' => (function () use (
-            $metricsFile, $requestCount, $successCount, $failCount,
-            $expected4xx, $unexpected4xx, $http5xx,
-            $cacheHits, $cacheMisses, $cacheStampedeCallbacks,
-            $dbOps, $dbErrors,
-            $queueDispatched, $queueProcessed, $queueFailed,
-            $traceResets, $sessionOps, $failuresInjected
+            $metricsFile,
+            $requestCount,
+            $successCount,
+            $failCount,
+            $expected4xx,
+            $unexpected4xx,
+            $http5xx,
+            $cacheHits,
+            $cacheMisses,
+            $cacheStampedeCallbacks,
+            $dbOps,
+            $dbErrors,
+            $queueDispatched,
+            $queueProcessed,
+            $queueFailed,
+            $traceResets,
+            $sessionOps,
+            $failuresInjected
         ) {
             $metrics = [
                 'timestamp' => time(),

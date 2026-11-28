@@ -54,12 +54,16 @@ final class TraceLevel2E2ETest extends TestCase
                 ['sql' => 'SELECT * FROM users WHERE id = 42', 'time_ms' => 8.5, 'rows' => 1],
                 ['sql' => 'SELECT * FROM products WHERE id = 7', 'time_ms' => 3.2, 'rows' => 1],
                 ['sql' => 'SELECT * FROM inventory WHERE product_id = 7', 'time_ms' => 2.8, 'rows' => 1],
-                ['sql' => 'INSERT INTO orders (user_id, product_id, quantity, total, status) VALUES (42, 7, 2, 199.98, \'pending\')', 'time_ms' => 25.4, 'rows' => 1],
-                ['sql' => 'UPDATE inventory SET quantity = quantity - 2 WHERE product_id = 7 AND quantity >= 2', 'time_ms' => 8.1, 'rows' => 1],
-                ['sql' => 'UPDATE users SET last_order_at = \'2026-05-08 14:30:00\' WHERE id = 42', 'time_ms' => 3.2, 'rows' => 1],
+                ['sql' => 'INSERT INTO orders (user_id, product_id, quantity, total, status) VALUES (42, ' .
+                    '7, 2, 199.98, \'pending\'' . ')', 'time_ms' => 25.4, 'rows' => 1],
+                ['sql' => 'UPDATE inventory SET quantity = quantity - 2 WHERE product_id = 7 AND quantity >= 2',
+                    'time_ms' => 8.1, 'rows' => 1],
+                ['sql' => 'UPDATE users SET last_order_at = \'2026-05-08 14:30:00\' WHERE id = 42', 'time_ms' => 3.2,
+                    'rows' => 1],
             ],
             'request_body' => '{"product_id": 7, "quantity": 2, "payment_method": "credit_card"}',
-            'response_body' => '{"success": true, "message": "Order created", "data": {"order_id": 1001, "total": 199.98}}',
+            'response_body' =>
+                '{"success": true, "message": "Order created", "data": {"order_id": 1001, "total": 199.98}}',
             'request_headers' => [
                 'content-type' => 'application/json',
                 'authorization' => 'Bearer eyJhbGciOiJIUzI1NiJ9.REDACTED',
@@ -68,15 +72,22 @@ final class TraceLevel2E2ETest extends TestCase
             'auth_header' => 'Bearer eyJhbGciOiJIUzI1NiJ9.REDACTED',
             'content_type' => 'application/json',
             'outbound_http' => [
-                ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/charges', 'status' => 200, 'duration_ms' => 234.5, 'error' => ''],
-                ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/refunds', 'status' => 0, 'duration_ms' => 1200.0, 'error' => 'Connection timed out'],
+                ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/charges', 'status' => 200,
+                    'duration_ms' => 234.5, 'error' => ''],
+                ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/refunds', 'status' => 0,
+                    'duration_ms' => 1200.0, 'error' => 'Connection timed out'],
             ],
             'queue_jobs' => [
-                ['job' => 'SendOrderConfirmationEmail', 'source_trace_id' => 'siro_checkout_abc123', 'dispatched_at' => '2026-05-08T14:30:01+00:00'],
-                ['job' => 'SyncInventoryToWarehouse', 'source_trace_id' => 'siro_checkout_abc123', 'dispatched_at' => '2026-05-08T14:30:02+00:00'],
+                ['job' => 'SendOrderConfirmationEmail', 'source_trace_id' => 'siro_checkout_abc123',
+                    'dispatched_at' => '2026-05-08T14:30:01+00:00'],
+                ['job' => 'SyncInventoryToWarehouse', 'source_trace_id' => 'siro_checkout_abc123',
+                    'dispatched_at' => '2026-05-08T14:30:02+00:00'],
             ],
         ];
-        file_put_contents($this->traceDir . '/siro_checkout_abc123.json', json_encode($checkoutTrace, JSON_PRETTY_PRINT));
+        file_put_contents(
+            $this->traceDir . '/siro_checkout_abc123.json',
+            json_encode($checkoutTrace, JSON_PRETTY_PRINT)
+        );
     }
 
     protected function tearDown(): void
@@ -325,7 +336,8 @@ final class TraceLevel2E2ETest extends TestCase
 
         // Set new fields
         TraceData::setOutboundHttp([
-            ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/charges', 'status' => 200, 'duration_ms' => 234.5, 'error' => ''],
+            ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/charges', 'status' => 200, 'duration_ms' => 234.5,
+                'error' => ''],
         ]);
         TraceData::setQueueJobs([
             ['job' => 'SendEmail', 'source_trace_id' => 'siro_test', 'dispatched_at' => '2026-05-08T14:30:00+00:00'],
@@ -605,7 +617,8 @@ final class TraceLevel2E2ETest extends TestCase
             'method' => 'GET',
             'path' => '/api/status',
             'outbound_http' => [
-                ['method' => 'GET', 'url' => 'https://api.example.com', 'status' => 200, 'duration_ms' => 10.0, 'error' => ''],
+                ['method' => 'GET', 'url' => 'https://api.example.com', 'status' => 200, 'duration_ms' => 10.0,
+                    'error' => ''],
             ],
         ];
 

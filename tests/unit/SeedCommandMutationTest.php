@@ -37,11 +37,14 @@ final class SeedCommandMutationTest extends TestCase
         file_put_contents($this->dbPath, '');
         file_put_contents(
             $this->basePath . '/config/database.php',
-            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . $this->dbPath . "', 'slow_query_threshold' => 500];\n"
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . $this
+                ->dbPath . "', 'slow_query_threshold' => 500];\n"
         );
         file_put_contents(
             $this->basePath . '/.env',
-            "APP_ENV=testing\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_seed_12345\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_12345678\nDB_CONNECTION=sqlite\nDB_DATABASE=" . $this->dbPath . "\n"
+            "APP_ENV=testing\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_seed_12345\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_12345678\n" . "DB_CONNECTION=sqlite\n" .
+                "DB_DATABASE=" . $this->dbPath . "\n"
         );
     }
 
@@ -81,7 +84,8 @@ final class SeedCommandMutationTest extends TestCase
     {
         file_put_contents(
             $this->basePath . '/database/seeds/UserSeederX.php',
-            "<?php\nclass UserSeederX {\n    public function run(): void {\n        file_put_contents(sys_get_temp_dir() . '/seed_marker.txt', 'ok');\n    }\n}\n"
+            "<?php\nclass UserSeederX {\n    public function run(): void {\n        " .
+                "file_put_contents(sys_get_temp_dir() . '/seed_marker.txt', 'ok');\n    }\n" . "}\n"
         );
         $marker = sys_get_temp_dir() . '/seed_marker.txt';
         @unlink($marker);

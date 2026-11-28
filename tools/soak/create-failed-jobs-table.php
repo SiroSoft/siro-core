@@ -1,4 +1,5 @@
 <?php
+
 // Create failed_jobs table in soak SQLite DB
 $dbPath = dirname(__DIR__, 2) . '/storage/soak.sqlite';
 $pdo = new PDO('sqlite:' . $dbPath);

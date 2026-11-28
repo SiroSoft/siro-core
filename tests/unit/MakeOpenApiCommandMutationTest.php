@@ -72,7 +72,8 @@ final class MakeOpenApiCommandMutationTest extends TestCase
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Resources', 0777, true);
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\nSIRO_OPENAPI_ENABLED=true\n"
+            "APP_ENV=testing\nAPP_DEBUG=true\n" . "APP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n" . "SIRO_OPENAPI_ENABLED=true\n"
         );
     }
 
@@ -84,22 +85,37 @@ final class MakeOpenApiCommandMutationTest extends TestCase
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php',
-            "<?php\n\$router->get('/api/users', 'UserController@index');\n\$router->post('/api/users', 'UserController@store');\n\$router->get('/api/users/{id}', 'UserController@show');\n\$router->put('/api/users/{id}', 'UserController@update');\n\$router->delete('/api/users/{id}', 'UserController@delete');\n\$router->post('/api/auth/login', 'AuthController@login');\n\$router->get('/health', 'HealthController@ready');\n"
+            "<?php\n\$router->get('/api/users', 'UserController@index');\n\$" .
+                "router->post('/api/users', 'UserController@store');\n\$" .
+                "router->get('/api/users/{id}', 'UserController@show');\n\$" .
+                "router->put('/api/users/{id}', 'UserController@update');\n\$" .
+                "router->delete('/api/users/{id}', 'UserController@delete');\n\$" .
+                "router->post('/api/auth/login', 'AuthController@login');\n\$" . "router->get('/health', " .
+                "'HealthController@ready');\n"
         );
     }
 
     private function writeControllers(): void
     {
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'UserController.php',
-            "<?php\nclass UserController {\n    public function index(Request \$r) { \$r->validate(['page' => 'integer']); }\n    public function store(Request \$r) { \$r->validate(['name' => 'required|string|min:2|max:50', 'email' => 'required|email']); }\n    public function show(Request \$r, int \$id) {}\n    public function update(Request \$r, int \$id) { \$r->validate(['name' => 'string']); }\n    public function delete(Request \$r, int \$id) {}\n}\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR .
+                'UserController.php',
+            "<?php\nclass UserController {\n    public function index(Request \$r) { \$" .
+                "r->validate(['page' => 'integer']); }\n    public function store(Request \$r) " .
+                "{ \$r->validate(['name' => 'required|string|min:2|max:50', 'email' => " .
+                "'required|email']); }\n    public function show(Request \$r, int \$id) {}\n   " .
+                " public function update(Request \$r, int \$id) { \$r->validate(['name' => " .
+                "'string']); }\n    public function delete(Request \$r, int \$id) {}\n" . "}\n"
         );
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AuthController.php',
-            "<?php\nclass AuthController {\n    public function login(Request \$r) { \$r->validate(['email' => 'required|email', 'password' => 'required|string']); }\n}\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR .
+                'AuthController.php',
+            "<?php\nclass AuthController {\n    public function login(Request \$r) { \$" .
+                "r->validate(['email' => 'required|email', 'password' => 'required|string']); " . "}\n" . "}\n"
         );
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'HealthController.php',
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR .
+                'HealthController.php',
             "<?php\nclass HealthController {\n    public function ready() { return 'ok'; }\n}\n"
         );
     }
@@ -107,12 +123,16 @@ final class MakeOpenApiCommandMutationTest extends TestCase
     private function writeModelAndResource(): void
     {
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR . 'User.php',
-            "<?php\nclass User {\n    protected \$casts = ['id' => 'int', 'is_active' => 'bool', 'balance' => 'float'];\n    protected \$fillable = ['name', 'email'];\n}\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR .
+                'User.php',
+            "<?php\nclass User {\n    protected \$casts = ['id' => 'int', 'is_active' => " .
+                "'bool', 'balance' => 'float'];\n    protected \$fillable = ['name', " . "'email'];\n" . "}\n"
         );
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'UserResource.php',
-            "<?php\nclass UserResource {\n    public function toArray(): array {\n        return ['id' => \$this->id, 'name' => \$this->name, 'email' => \$this->email];\n    }\n}\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR .
+                'UserResource.php',
+            "<?php\nclass UserResource {\n    public function toArray(): array {\n        " .
+                "return ['id' => \$this->id, 'name' => \$this->name, 'email' => \$" . "this->email];\n    }\n" . "}\n"
         );
     }
 
@@ -130,7 +150,10 @@ final class MakeOpenApiCommandMutationTest extends TestCase
     public function testForceOverridesProduction(): void
     {
         putenv('APP_ENV=production');
-        file_put_contents($this->basePath . DIRECTORY_SEPARATOR . '.env', "APP_ENV=production\nSIRO_OPENAPI_ENABLED=true\n");
+        file_put_contents(
+            $this->basePath . DIRECTORY_SEPARATOR . '.env',
+            "APP_ENV=production\nSIRO_OPENAPI_ENABLED=true\n"
+        );
         $this->writeRoutes();
         $this->writeControllers();
         $cmd = new MakeOpenApiCommand($this->basePath);
@@ -138,7 +161,8 @@ final class MakeOpenApiCommandMutationTest extends TestCase
         $code = $cmd->run(['--force']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' . DIRECTORY_SEPARATOR . 'openapi.json');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' .
+            DIRECTORY_SEPARATOR . 'openapi.json');
     }
 
 
@@ -154,7 +178,8 @@ final class MakeOpenApiCommandMutationTest extends TestCase
         ob_end_clean();
         $this->assertSame(0, $code);
         $this->assertFileExists($out);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'openapi.json');
+        $this
+            ->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'openapi.json');
     }
 
     public function testFallbackRoutesMode(): void
@@ -166,7 +191,8 @@ final class MakeOpenApiCommandMutationTest extends TestCase
         $code = $cmd->run(['--force']);
         ob_end_clean();
         $this->assertSame(0, $code);
-        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' . DIRECTORY_SEPARATOR . 'openapi.json');
+        $this->assertFileExists($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' .
+            DIRECTORY_SEPARATOR . 'openapi.json');
     }
 
     public function testBrokenRoutesExitNonZeroWithoutSpec(): void
@@ -183,7 +209,8 @@ final class MakeOpenApiCommandMutationTest extends TestCase
         $code = $cmd->run(['--force']);
         ob_end_clean();
         $this->assertSame(1, $code);
-        $this->assertFileDoesNotExist($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' . DIRECTORY_SEPARATOR . 'openapi.json');
+        $this->assertFileDoesNotExist($this->basePath . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'openapi' .
+            DIRECTORY_SEPARATOR . 'openapi.json');
     }
 
     public function testOpenApiEnabledViaEnv(): void

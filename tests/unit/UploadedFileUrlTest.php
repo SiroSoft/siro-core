@@ -52,7 +52,8 @@ final class UploadedFileUrlTest extends TestCase
 
     public function testExtensionDetection(): void
     {
-        $f = new UploadedFile(['name' => 'REPORT.PDF', 'tmp_name' => '', 'type' => 'application/pdf', 'size' => 1, 'error' => 0]);
+        $f = new UploadedFile(['name' => 'REPORT.PDF', 'tmp_name' => '', 'type' => 'application/pdf', 'size' => 1,
+            'error' => 0]);
         $this->assertSame('pdf', $f->extension());
         // isPdf/isImage require a real upload (is_uploaded_file) — not testable here
         $this->assertFalse($f->isPdf());
@@ -76,7 +77,7 @@ final class UploadedFileUrlTest extends TestCase
         if (!getenv('APP_KEY') && !getenv('JWT_SECRET')) {
             $this->markTestSkipped('APP_KEY or JWT_SECRET not configured');
         }
-        
+
         $signed = URL::signed('/api/verify', ['id' => 5], 3600);
         $this->assertStringContainsString('/api/verify', $signed);
         $this->assertStringContainsString('signature=', $signed);
@@ -100,7 +101,7 @@ final class UploadedFileUrlTest extends TestCase
         if (!getenv('APP_KEY') && !getenv('JWT_SECRET')) {
             $this->markTestSkipped('APP_KEY or JWT_SECRET not configured');
         }
-        
+
         $this->assertNull(URL::validate('/api/x', 'badsig'));
     }
 }

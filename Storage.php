@@ -55,7 +55,11 @@ final class Storage
 
     public static function assertMissing(string $path): void
     {
-        \PHPUnit\Framework\Assert::assertArrayNotHasKey($path, self::$fakeFiles, "File '{$path}' was stored unexpectedly.");
+        \PHPUnit\Framework\Assert::assertArrayNotHasKey(
+            $path,
+            self::$fakeFiles,
+            "File '{$path}' was stored unexpectedly."
+        );
     }
 
     /** @var array<string, mixed> */
@@ -212,7 +216,11 @@ final class Storage
 
         $base = defined('SIRO_BASE_PATH') && is_string(SIRO_BASE_PATH) ? SIRO_BASE_PATH : (string) getcwd();
         $base = rtrim($base, DIRECTORY_SEPARATOR);
-        $storagePath = str_replace('/', DIRECTORY_SEPARATOR, is_string(self::$config['path'] ?? null) ? self::$config['path'] : '');
+        $storagePath = str_replace(
+            '/',
+            DIRECTORY_SEPARATOR,
+            is_string(self::$config['path'] ?? null) ? self::$config['path'] : ''
+        );
         $allowedDir = $base . DIRECTORY_SEPARATOR . $storagePath;
 
         // Clean path and prevent traversal - proper canonicalization
@@ -544,14 +552,16 @@ final class Storage
             $canonicalHeaders .= $name . ':' . ($headerLines[$name] ?? '') . "\n";
         }
 
-        $canonicalRequest = "{$method}\n{$canonicalUri}\n{$canonicalQueryString}\n{$canonicalHeaders}\n" . implode(';', $signedHeaders) . "\n{$payload}";
+        $canonicalRequest = "{$method}\n{$canonicalUri}\n{$canonicalQueryString}\n{$canonicalHeaders}\n" .
+            implode(';', $signedHeaders) . "\n{$payload}";
         $hash = hash('sha256', $canonicalRequest);
 
         $stringToSign = "{$algorithm}\n{$now}\n{$credentialScope}\n{$hash}";
         $signingKey = self::s3SigningKey($secret, $date, $region, $service);
         $signature = hash_hmac('sha256', $stringToSign, $signingKey);
 
-        return "{$algorithm} Credential={$key}/{$credentialScope}, SignedHeaders=" . implode(';', $signedHeaders) . ", Signature={$signature}";
+        return "{$algorithm} Credential={$key}/{$credentialScope}, SignedHeaders=" . implode(';', $signedHeaders) .
+            ", Signature={$signature}";
     }
 
     private static function s3SigningKey(string $secret, string $date, string $region, string $service): string

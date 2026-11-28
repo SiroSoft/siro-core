@@ -41,16 +41,22 @@ final class DBCliCommandsTest extends TestCase
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'config', 0777, true);
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=testing\nDB_CONNECTION=sqlite\nDB_DATABASE={$this->dbPath}\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
+            "APP_ENV=testing\nDB_CONNECTION=sqlite\nDB_DATABASE={$this
+                ->dbPath}\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
-            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($this->dbPath) . "', 'slow_query_threshold' => 500];\n"
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($this
+                ->dbPath) . "', 'slow_query_threshold' => 500];\n"
         );
         // A migration file (with down() so rollback works)
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . '001_create_users_table.php',
-            "<?php\nreturn new class {\n    public function up(\PDO \$pdo): void { \$pdo->exec('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT)'); }\n    public function down(\PDO \$pdo): void { \$pdo->exec('DROP TABLE IF EXISTS users'); }\n};\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' .
+                DIRECTORY_SEPARATOR . '001_create_users_table.php',
+            "<?php\nreturn new class {\n    public function up(\PDO \$pdo): void { \$" .
+                "pdo->exec('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY " .
+                "AUTOINCREMENT, name TEXT, email TEXT)'); }\n    public function down(\PDO \$" .
+                "pdo): void { \$pdo->exec('DROP TABLE IF EXISTS users'); }\n" . "};\n"
         );
     }
 
@@ -131,10 +137,17 @@ final class DBCliCommandsTest extends TestCase
     {
         Env::reset();
         \Siro\Core\Database::purgeAll();
-        $file = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . '002_resume.php';
+        $file = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' .
+            DIRECTORY_SEPARATOR . '002_resume.php';
         file_put_contents($file, <<<'PHP'
 <?php
-return new class { public function up(\PDO $pdo): void { $pdo->exec('CREATE TABLE resume_probe (id INTEGER)'); throw new \RuntimeException('half way'); } };
+return new class {
+    public function up(\PDO $pdo): void
+    {
+        $pdo->exec('CREATE TABLE resume_probe (id INTEGER)');
+        throw new \RuntimeException('half way');
+    }
+};
 PHP
         );
 
@@ -146,7 +159,12 @@ PHP
 
         file_put_contents($file, <<<'PHP'
 <?php
-return new class { public function up(\PDO $pdo): void { $pdo->exec('CREATE TABLE IF NOT EXISTS resume_probe (id INTEGER)'); } };
+return new class {
+    public function up(\PDO $pdo): void
+    {
+        $pdo->exec('CREATE TABLE IF NOT EXISTS resume_probe (id INTEGER)');
+    }
+};
 PHP
         );
         [$retryExit] = $this->runCmd(MigrateCommand::class, []);
@@ -160,7 +178,8 @@ PHP
         Env::reset();
         \Siro\Core\Database::purgeAll();
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . '002_bad.php',
+            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' .
+                DIRECTORY_SEPARATOR . '002_bad.php',
             "<?php\nreturn 'not-an-object';\n"
         );
         [$exit, $output] = $this->runCmd(MigrateCommand::class, []);
@@ -302,7 +321,8 @@ PHP
         // driver=mysql â†’ runMysql() executes; PDO queries fail but the code path runs
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
-            "<?php\nreturn ['driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3306, 'username' => 'root', 'password' => '', 'database' => 'test'];\n"
+            "<?php\nreturn ['driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3306, " .
+                "'username' => 'root', 'password' => '', 'database' => " . "'test'];\n"
         );
         [$exit, $output] = $this->runCmd(DbStatsCommand::class, []);
         $this->assertContains($exit, [0, 1]);
@@ -345,7 +365,8 @@ PHP
     public function testSeedSingleSuccess(): void
     {
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds' . DIRECTORY_SEPARATOR . 'UsersSeeder.php',
+            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds' . DIRECTORY_SEPARATOR .
+                'UsersSeeder.php',
             "<?php\nclass UsersSeeder { public function run(): void {} }\n"
         );
         [$exit, $output] = $this->runCmd(SeedCommand::class, ['UsersSeeder']);
@@ -355,7 +376,8 @@ PHP
     public function testSeedSingleNoRunMethod(): void
     {
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds' . DIRECTORY_SEPARATOR . 'BadSeeder.php',
+            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds' . DIRECTORY_SEPARATOR .
+                'BadSeeder.php',
             "<?php\nclass BadSeeder {}\n"
         );
         [$exit, $output] = $this->runCmd(SeedCommand::class, ['BadSeeder']);
@@ -366,7 +388,8 @@ PHP
     public function testSeedAllWithSeeders(): void
     {
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds' . DIRECTORY_SEPARATOR . 'A.php',
+            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds' . DIRECTORY_SEPARATOR .
+                'A.php',
             "<?php\nclass A { public function run(): void {} }\n"
         );
         [$exit, $output] = $this->runCmd(SeedCommand::class, []);
@@ -579,7 +602,8 @@ PHP
         // sqlite driver but a bad DB path â†’ connection fails â†’ return 1
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
-            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($this->basePath . '/storage/missing_dir/bad.db') . "'];\n"
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($this
+                ->basePath . '/storage/missing_dir/bad.db') . "'];\n"
         );
         [$exit, $output] = $this->runCmd(DbOptimizeCommand::class, []);
         $this->assertSame(1, $exit);
@@ -633,8 +657,12 @@ PHP
         \Siro\Core\Database::purgeAll();
         // Write migration with down() BEFORE migrating
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . '001_create_users_table.php',
-            "<?php\nreturn new class {\n    public function up(\PDO \$pdo): void { \$pdo->exec('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT)'); }\n    public function down(\PDO \$pdo): void { \$pdo->exec('DROP TABLE IF EXISTS users'); }\n};\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' .
+                DIRECTORY_SEPARATOR . '001_create_users_table.php',
+            "<?php\nreturn new class {\n    public function up(\PDO \$pdo): void { \$" .
+                "pdo->exec('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY " .
+                "AUTOINCREMENT, name TEXT, email TEXT)'); }\n    public function down(\PDO \$" .
+                "pdo): void { \$pdo->exec('DROP TABLE IF EXISTS users'); }\n" . "};\n"
         );
         $this->runCmd(MigrateCommand::class, []);
         $cmd = new \Siro\Core\Commands\MigrateRollbackCommand($this->basePath);
@@ -700,7 +728,8 @@ PHP
         // which propagates out of the command. Accept that as an exercise of the path.
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
-            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($this->basePath . '/storage/missing/bad.db') . "'];\n"
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($this
+                ->basePath . '/storage/missing/bad.db') . "'];\n"
         );
         $cmd = new \Siro\Core\Commands\MigrateFreshCommand($this->basePath);
         ob_start();

@@ -26,10 +26,12 @@ final class EagerLoaderMutationTest extends TestCase
             'charset' => 'utf8mb4',
             'slow_query_threshold' => 500,
         ]);
-        Database::execute('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, created_at TEXT, updated_at TEXT)');
+        Database::execute('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ' .
+            'created_at TEXT, updated_at ' . 'TEXT)');
         Database::execute('CREATE TABLE profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, bio TEXT)');
         Database::execute('CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, title TEXT)');
-        Database::execute('CREATE TABLE comments (id INTEGER PRIMARY KEY AUTOINCREMENT, commentable_type TEXT, commentable_id INTEGER, body TEXT)');
+        Database::execute('CREATE TABLE comments (id INTEGER PRIMARY KEY AUTOINCREMENT, commentable_type ' .
+            'TEXT, commentable_id INTEGER, body ' . 'TEXT)');
         Database::execute('CREATE TABLE roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)');
         Database::execute('CREATE TABLE roles_users (user_id INTEGER, role_id INTEGER)');
 
@@ -38,7 +40,8 @@ final class EagerLoaderMutationTest extends TestCase
         Database::table('profiles')->insert(['user_id' => 1, 'bio' => 'Hello']);
         Database::table('posts')->insert(['user_id' => 1, 'title' => 'P1']);
         Database::table('posts')->insert(['user_id' => 1, 'title' => 'P2']);
-        Database::table('comments')->insert(['commentable_type' => ElUser::class, 'commentable_id' => 1, 'body' => 'C1']);
+        Database::table('comments')->insert(['commentable_type' => ElUser::class, 'commentable_id' => 1,
+            'body' => 'C1']);
         Database::table('roles')->insert(['name' => 'admin']);
         Database::table('roles_users')->insert(['user_id' => 1, 'role_id' => 1]);
     }
@@ -143,80 +146,4 @@ final class EagerLoaderMutationTest extends TestCase
         $this->assertLessThanOrEqual(9, count(Database::getCapturedQueries()));
         Database::enableQueryCapture(false);
     }
-}
-
-class ElUser extends Model
-{
-    protected string $table = 'users';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
-
-    public function profile(): \Siro\Core\DB\Relations\HasOne
-    {
-        return $this->hasOne(ElProfile::class, 'user_id');
-    }
-
-    public function posts(): \Siro\Core\DB\Relations\HasMany
-    {
-        return $this->hasMany(ElPost::class, 'user_id');
-    }
-
-    public function comments(): \Siro\Core\DB\Relations\MorphMany
-    {
-        return $this->morphMany(ElComment::class, 'commentable');
-    }
-
-    public function roles(): \Siro\Core\DB\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(ElRole::class, 'roles_users', 'user_id', 'role_id');
-    }
-}
-
-final class ElWithUser extends ElUser
-{
-    /** @var array<int, string> */
-    protected array $with = ['posts'];
-}
-
-final class ElProfile extends Model
-{
-    protected string $table = 'profiles';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['user_id', 'bio'];
-}
-
-final class ElPost extends Model
-{
-    protected string $table = 'posts';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['user_id', 'title'];
-
-    public function owner(): \Siro\Core\DB\Relations\BelongsTo
-    {
-        return $this->belongsTo(ElUser::class, 'user_id');
-    }
-}
-
-final class ElComment extends Model
-{
-    protected string $table = 'comments';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['commentable_type', 'commentable_id', 'body'];
-
-    public function commentable(): \Siro\Core\DB\Relations\MorphTo
-    {
-        return $this->morphTo('commentable');
-    }
-}
-
-final class ElRole extends Model
-{
-    protected string $table = 'roles';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
 }

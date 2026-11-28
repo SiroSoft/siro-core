@@ -64,17 +64,21 @@ final class DatabaseInstance implements DatabaseInterface
             return $this->pdoInstances[$cacheKey];
         }
 
-        $config = $this->configs[$name] ?? throw new RuntimeException("Database connection '{$name}' is not configured.");
+        $config = $this
+            ->configs[$name] ?? throw new RuntimeException("Database connection '{$name}' is not configured.");
 
         $driver = is_string($config['driver'] ?? null) ? $config['driver'] : 'mysql';
         // Use read_host for read queries when configured (write=false means read)
-        $useReadHost = !$write && isset($config['read_host']) && is_string($config['read_host']) && $config['read_host'] !== '';
-        $host = $useReadHost ? $config['read_host'] : (is_string($config['host'] ?? null) ? $config['host'] : '127.0.0.1');
-        $portVal = $useReadHost && isset($config['read_port']) ? $config['read_port'] : ($config['port'] ?? match ($driver) {
+        $useReadHost = !$write && isset($config['read_host']) && is_string($config['read_host']) &&
+            $config['read_host'] !== '';
+        $host = $useReadHost ? $config['read_host'] : (is_string($config['host'] ?? null) ? $config['host'] :
+            '127.0.0.1');
+        $portVal = $useReadHost && isset($config['read_port']) ? $config['read_port'] : ($config['port'] ??
+            match ($driver) {
             'pgsql', 'postgres', 'postgresql' => 5432,
             'sqlite' => 0,
             default => 3306,
-        });
+            });
         $port = is_numeric($portVal) ? (int) $portVal : 3306;
         $database = is_string($config['database'] ?? null) ? $config['database'] : '';
         $username = is_string($config['username'] ?? null) ? $config['username'] : '';
@@ -83,8 +87,15 @@ final class DatabaseInstance implements DatabaseInterface
 
         $dsn = match ($driver) {
             'mysql' => sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $database, $charset),
-            'pgsql', 'postgres', 'postgresql' => sprintf('pgsql:host=%s;port=%d;dbname=%s;options=\'--client_encoding=%s\'', $host, $port, $database, $charset),
-            'sqlite' => sprintf('sqlite:%s', $database === ':memory:' ? ':memory:' : $this->resolveSqlitePath($database)),
+            'pgsql', 'postgres', 'postgresql' => sprintf(
+                'pgsql:host=%s;port=%d;dbname=%s;options=\'--client_encoding=%s\'',
+                $host,
+                $port,
+                $database,
+                $charset
+            ),
+            'sqlite' => sprintf('sqlite:%s', $database === ':memory:' ? ':memory:' : $this
+                ->resolveSqlitePath($database)),
             default => throw new RuntimeException(sprintf('Unsupported DB driver: %s', $driver)),
         };
 
@@ -103,7 +114,8 @@ final class DatabaseInstance implements DatabaseInterface
                 ? new PDO($dsn, null, null, $pdoOptions)
                 : new PDO($dsn, $username, $password, $pdoOptions);
         } catch (PDOException $e) {
-            Logger::error('Database connection failed: ' . $e->getMessage() . " ({$driver}:{$host}:{$port}/{$database})");
+            Logger::error('Database connection failed: ' . $e
+                ->getMessage() . " ({$driver}:{$host}:{$port}/{$database})");
             throw new DatabaseConnectionException($driver, $host, $port, $e->getMessage());
         }
 
@@ -190,7 +202,10 @@ final class DatabaseInstance implements DatabaseInterface
             $groups[$shape]['count']++;
             $groups[$shape]['total_ms'] += $query['time_ms'];
         }
-        return array_values(array_filter($groups, static fn(array $group): bool => $group['count'] >= max(2, $threshold)));
+        return array_values(array_filter(
+            $groups,
+            static fn(array $group): bool => $group['count'] >= max(2, $threshold)
+        ));
     }
 
     public function resetCapturedQueries(): void
@@ -337,14 +352,22 @@ final class DatabaseInstance implements DatabaseInterface
      * @param array<int|string, mixed> $params
      * @return array<int, array<string, mixed>>
      */
-    public function selectCached(string $sql, array $params, int $ttl, string $cachePrefix = 'qb:default:', ?string $connection = null): array
-    {
+    public function selectCached(
+        string $sql,
+        array $params,
+        int $ttl,
+        string $cachePrefix = 'qb:default:',
+        ?string $connection = null
+    ): array {
         $ttl = max(0, $ttl);
         if ($ttl === 0) {
             return $this->select($sql, $params, $connection);
         }
         $normalizedPrefix = rtrim(trim($cachePrefix), ':') . ':';
-        $cacheKey = $normalizedPrefix . sha1('qb_select|' . $sql . '|' . json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $cacheKey = $normalizedPrefix . sha1('qb_select|' . $sql . '|' . json_encode(
+            $params,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        ));
         /** @var array<int, array<string, mixed>> $cached */
         $cached = Cache::remember($cacheKey, $ttl, function () use ($sql, $params, $connection): array {
             $stmt = $this->prepareAndExecute($sql, $params, $connection);
@@ -434,7 +457,10 @@ final class DatabaseInstance implements DatabaseInterface
     /** @param array<int|string, mixed> $params */
     private function queryCacheKey(string $type, string $sql, array $params): string
     {
-        return 'db:' . sha1($type . '|' . $sql . '|' . json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        return 'db:' . sha1($type . '|' . $sql . '|' . json_encode(
+            $params,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        ));
     }
 
     /** @var array<string, int> */

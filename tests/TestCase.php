@@ -69,7 +69,9 @@ abstract class TestCase extends BaseTestCase
         }
 
         $files = glob(rtrim($migrationsDir, '/') . '/*.php');
-        if (!$files) return;
+        if (!$files) {
+            return;
+        }
 
         sort($files);
 
@@ -79,7 +81,8 @@ abstract class TestCase extends BaseTestCase
             $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
             if ($driver === 'sqlite') {
                 $pdo->exec('PRAGMA foreign_keys = OFF');
-                $tables = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")->fetchAll(\PDO::FETCH_COLUMN);
+                $tables = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+                    ->fetchAll(\PDO::FETCH_COLUMN);
                 foreach ($tables as $table) {
                     $pdo->exec("DROP TABLE IF EXISTS \"{$table}\"");
                 }

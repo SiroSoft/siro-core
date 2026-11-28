@@ -51,7 +51,8 @@ final class CodeQualityFixesTest extends TestCase
     public function testBaseServiceIsInterfaceNotAbstractClass(): void
     {
         $this->requireSkeleton();
-        $file = $this->siroPhpDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'BaseService.php';
+        $file = $this->siroPhpDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' .
+            DIRECTORY_SEPARATOR . 'BaseService.php';
         $this->assertFileExists($file);
         require_once $file;
 
@@ -63,7 +64,8 @@ final class CodeQualityFixesTest extends TestCase
     public function testBaseServiceInterfaceHasRequiredMethods(): void
     {
         $this->requireSkeleton();
-        $file = $this->siroPhpDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'BaseService.php';
+        $file = $this->siroPhpDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' .
+            DIRECTORY_SEPARATOR . 'BaseService.php';
         require_once $file;
 
         $this->assertTrue(method_exists(\App\Services\BaseService::class, 'getAll'));

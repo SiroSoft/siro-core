@@ -36,10 +36,12 @@ final class ZeroCoverageCommandsTest extends TestCase
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage', 0777, true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'config', 0777, true);
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework', 0777, true);
-        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces', 0777, true);
+        mkdir($this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'traces', 0777, true);
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
+            "APP_ENV=testing\nAPP_DEBUG=true\n" . "APP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
         );
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
@@ -179,7 +181,8 @@ final class ZeroCoverageCommandsTest extends TestCase
         $dbPath = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'queue.sqlite';
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
-            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($dbPath) . "', 'slow_query_threshold' => 500];\n"
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($dbPath) .
+                "', 'slow_query_threshold' => 500];\n"
         );
         $pdo = new \PDO('sqlite:' . $dbPath);
         $pdo->exec('CREATE TABLE jobs (
@@ -219,7 +222,8 @@ final class ZeroCoverageCommandsTest extends TestCase
     public function testQueueRetryAll(): void
     {
         $this->setupJobsTable();
-        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e', 'failed_at' => date('Y-m-d H:i:s')]);
+        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e',
+            'failed_at' => date('Y-m-d H:i:s')]);
         [$exit, $output] = $this->runCmd(QueueRetryCommand::class, ['all']);
         $this->assertContains($exit, [0, 1]);
     }
@@ -227,7 +231,8 @@ final class ZeroCoverageCommandsTest extends TestCase
     public function testQueueFlushNoForce(): void
     {
         $this->setupJobsTable();
-        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e', 'failed_at' => date('Y-m-d H:i:s')]);
+        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e',
+            'failed_at' => date('Y-m-d H:i:s')]);
         [$exit, $output] = $this->runCmd(QueueFlushCommand::class, []);
         $this->assertContains($exit, [0, 1]);
     }
@@ -235,7 +240,8 @@ final class ZeroCoverageCommandsTest extends TestCase
     public function testQueueFlushForce(): void
     {
         $this->setupJobsTable();
-        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e', 'failed_at' => date('Y-m-d H:i:s')]);
+        Database::table('failed_jobs')->insert(['job' => 'J', 'data' => '{}', 'error' => 'e',
+            'failed_at' => date('Y-m-d H:i:s')]);
         [$exit, $output] = $this->runCmd(QueueFlushCommand::class, ['--yes']);
         $this->assertContains($exit, [0, 1]);
     }
@@ -253,7 +259,8 @@ final class ZeroCoverageCommandsTest extends TestCase
         $dbPath = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'qw.sqlite';
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php',
-            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($dbPath) . "', 'slow_query_threshold' => 500];\n"
+            "<?php\nreturn ['driver' => 'sqlite', 'database' => '" . addslashes($dbPath) .
+                "', 'slow_query_threshold' => 500];\n"
         );
         $pdo = new \PDO('sqlite:' . $dbPath);
         $pdo->exec('CREATE TABLE jobs (
@@ -280,8 +287,10 @@ final class ZeroCoverageCommandsTest extends TestCase
     public function testQueueRetryMultipleIds(): void
     {
         $this->setupJobsTable();
-        Database::table('failed_jobs')->insert(['job' => 'J1', 'data' => '{}', 'error' => 'e', 'failed_at' => date('Y-m-d H:i:s')]);
-        Database::table('failed_jobs')->insert(['job' => 'J2', 'data' => '{}', 'error' => 'e', 'failed_at' => date('Y-m-d H:i:s')]);
+        Database::table('failed_jobs')->insert(['job' => 'J1', 'data' => '{}', 'error' => 'e',
+            'failed_at' => date('Y-m-d H:i:s')]);
+        Database::table('failed_jobs')->insert(['job' => 'J2', 'data' => '{}', 'error' => 'e',
+            'failed_at' => date('Y-m-d H:i:s')]);
         $ids = Database::table('failed_jobs')->pluck('id');
         [$exit, $output] = $this->runCmd(QueueRetryCommand::class, [(string) $ids[0], (string) $ids[1]]);
         $this->assertContains($exit, [0, 1]);
@@ -712,12 +721,4 @@ final class ZeroCoverageCommandsTest extends TestCase
         $result = $m->invoke($cmd, $coll);
         $this->assertStringContainsString('Collection', $result);
     }
-}
-
-final class TinkerTestModel extends \Siro\Core\Model
-{
-    protected string $table = 'tinker_test';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['id', 'name'];
 }

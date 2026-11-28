@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 /**
  * SiroPHP 48h Soak — Redis Queue Worker v3
@@ -7,6 +6,8 @@ declare(strict_types=1);
  * Uses brPop (same as framework) + proper error logging
  * Lightweight — no framework DB dependency for normal operation
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__, 2);
 
@@ -21,7 +22,8 @@ $processed = 0;
 $failed = 0;
 $lastLogTime = $startTime;
 
-error_log("[worker] Started at " . date('Y-m-d H:i:s') . " | start_depth=$startDepth | deadline=" . date('Y-m-d H:i:s', (int)$deadline));
+error_log("[worker] Started at " . date('Y-m-d H:i:s') . " | start_depth=$startDepth | deadline="
+        . date('Y-m-d H:i:s', (int)$deadline));
 
 // Quick test: pop one job and inspect it
 $testRaw = $redis->brPop(['siro:queue:default'], 1);
@@ -101,7 +103,13 @@ while (microtime(true) < $deadline) {
 
         error_log(sprintf(
             "[worker] %s | elapsed=%ds | processed=%d | failed=%d | depth=%d | rate=%.1f/s | mem=%dKB",
-            date('H:i:s'), $elapsed, $processed, $failed, $currentDepth, $rate, $mem
+            date('H:i:s'),
+            $elapsed,
+            $processed,
+            $failed,
+            $currentDepth,
+            $rate,
+            $mem
         ));
 
         $lastLogTime = $now;
@@ -112,7 +120,11 @@ $endDepth = (int) $redis->lLen('siro:queue:default');
 $duration = round(microtime(true) - $startTime);
 error_log(sprintf(
     "[worker] COMPLETED | duration=%ds | processed=%d | failed=%d | start_depth=%d end_depth=%d",
-    $duration, $processed, $failed, $startDepth, $endDepth
+    $duration,
+    $processed,
+    $failed,
+    $startDepth,
+    $endDepth
 ));
 
 $redis->close();

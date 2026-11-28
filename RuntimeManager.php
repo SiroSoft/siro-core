@@ -32,12 +32,19 @@ final class RuntimeManager
         $targetDir = $this->runtimeDir . DIRECTORY_SEPARATOR . $phpVersion;
 
         if (is_dir($targetDir)) {
-            return ['success' => true, 'message' => "Siro Runtime {$phpVersion} already installed", 'dir' => $targetDir];
+            return [
+                'success' => true,
+                'message' => "Siro Runtime {$phpVersion} already installed",
+                'dir' => $targetDir
+            ];
         }
 
         $url = self::getDownloadUrl(PHP_OS_FAMILY, $phpVersion);
         if ($url === null) {
-            return ['success' => false, 'message' => "Auto-install not yet supported on " . PHP_OS_FAMILY . ". Install PHP {$version} manually."];
+            return [
+                'success' => false,
+                'message' => "Auto-install not yet supported on " . PHP_OS_FAMILY . ". Install PHP {$version} manually."
+            ];
         }
 
         $zipFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "siro-php-{$phpVersion}.zip";
@@ -69,7 +76,10 @@ final class RuntimeManager
         $targetDir = $this->runtimeDir . DIRECTORY_SEPARATOR . $phpVersion;
 
         if (!is_dir($targetDir)) {
-            return ['success' => false, 'message' => "Siro Runtime {$phpVersion} not installed. Run: siro runtime:install {$version}"];
+            return [
+                'success' => false,
+                'message' => "Siro Runtime {$phpVersion} not installed. Run: siro runtime:install {$version}"
+            ];
         }
 
         $this->setActive($phpVersion);
@@ -153,7 +163,9 @@ final class RuntimeManager
 
         $candidates = [
             $this->runtimeDir . DIRECTORY_SEPARATOR . $active . DIRECTORY_SEPARATOR . 'php.exe',
-            $this->runtimeDir . DIRECTORY_SEPARATOR . $active . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'php',
+            $this
+                ->runtimeDir . DIRECTORY_SEPARATOR . $active . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR .
+                'php',
         ];
 
         foreach ($candidates as $path) {
@@ -203,7 +215,9 @@ final class RuntimeManager
         $batContent = "@echo off\r\nphp \"%~dp0..\\runtime\\current.bat\" \"%~dp0..\\siro.phar\" %*\r\n";
         file_put_contents($this->binDir . DIRECTORY_SEPARATOR . 'siro.bat', $batContent);
 
-        $shContent = "#!/bin/sh\nexec php \"$(dirname \"$0\")/../runtime/current.sh\" \"$(dirname \"$0\")/../siro.phar\" \"$@\"\n";
+        $shContent =
+            "#!/bin/sh\nexec php \"$(dirname \"$0\")/../runtime/current.sh\" \"$(dirname \"$0\")/../siro.phar\" " .
+            "\"$@\"\n";
         file_put_contents($this->binDir . DIRECTORY_SEPARATOR . 'siro', $shContent);
         @chmod($this->binDir . DIRECTORY_SEPARATOR . 'siro', 0755);
     }
@@ -662,7 +676,10 @@ final class RuntimeManager
                 mkdir($dataDir, 0755, true);
             }
 
-            $installCmd = escapeshellarg((string) self::findMariaBin($targetDir, 'mysql_install_db')) . ' --datadir=' . escapeshellarg($dataDir) . ' 2>&1';
+            $installCmd = escapeshellarg((string) self::findMariaBin(
+                $targetDir,
+                'mysql_install_db'
+            )) . ' --datadir=' . escapeshellarg($dataDir) . ' 2>&1';
             shell_exec($installCmd);
 
             echo " Starting...";
@@ -825,7 +842,8 @@ final class RuntimeManager
             return;
         }
 
-        $cmd = escapeshellarg($bin) . ' -h 127.0.0.1 -P ' . escapeshellarg((string) $port) . ' -u root -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1';
+        $cmd = escapeshellarg($bin) . ' -h 127.0.0.1 -P ' . escapeshellarg((string) $port) .
+            ' -u root -e "CREATE DATABASE IF NOT EXISTS siro_dev" 2>&1';
         shell_exec($cmd);
     }
 

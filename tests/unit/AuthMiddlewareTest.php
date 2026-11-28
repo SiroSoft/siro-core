@@ -118,11 +118,3 @@ final class AuthMiddlewareTest extends TestCase
         $this->assertSame(403, $resp->statusCode());
     }
 }
-
-final class AuthUser extends Model
-{
-    protected string $table = 'users';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name', 'email', 'role', 'status', 'token_version'];
-}

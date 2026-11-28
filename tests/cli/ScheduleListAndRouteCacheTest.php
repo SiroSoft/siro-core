@@ -39,8 +39,14 @@ final class ScheduleListAndRouteCacheTest extends TestCase
             . 'DB_CONNECTION=sqlite' . "\n"
             . 'DB_DATABASE=:memory:' . "\n"
         );
-        file_put_contents($this->tempDir . '/config/database.php', '<?php return ["driver" => "sqlite", "database" => ":memory:"];');
-        file_put_contents($this->tempDir . '/config/app.php', '<?php return ["name" => "SiroSchedTest", "env" => "testing"];');
+        file_put_contents(
+            $this->tempDir . '/config/database.php',
+            '<?php return ["driver" => "sqlite", "database" => ":memory:"];'
+        );
+        file_put_contents(
+            $this->tempDir . '/config/app.php',
+            '<?php return ["name" => "SiroSchedTest", "env" => "testing"];'
+        );
         // String handler (not a Closure) so the route survives the cache exporter.
         file_put_contents(
             $this->tempDir . '/routes/api.php',
@@ -164,7 +170,8 @@ final class ScheduleListAndRouteCacheTest extends TestCase
         // instead of re-caching the stale file.
         file_put_contents(
             $this->tempDir . '/routes/api.php',
-            "<?php\n\$router->get('/api/health', 'HealthController@index');\n\$router->get('/api/users', 'UserController@index');\n"
+            "<?php\n\$router->get('/api/health', 'HealthController@index');\n\$" . "router->get('/api/users', " .
+                "'UserController@index');\n"
         );
         [$exit] = $this->runCmd(['siro', 'route:cache']);
         $this->assertSame(0, $exit);
@@ -195,13 +202,28 @@ final class ScheduleListAndRouteCacheTest extends TestCase
         $registry = $m->invoke(new Console($this->tempDir));
 
         foreach (['--version=', '--host=', '--method=', '--path='] as $flag) {
-            $this->assertStringContainsString($flag, $registry['make:openapi']['usage'], "make:openapi usage must list {$flag}");
+            $this->assertStringContainsString(
+                $flag,
+                $registry['make:openapi']['usage'],
+                "make:openapi usage must list {$flag}"
+            );
         }
         foreach (['--public', '--redirect-uri=', '--grants=', '--scopes='] as $flag) {
-            $this->assertStringContainsString($flag, $registry['make:oauth-client']['usage'], "make:oauth-client usage must list {$flag}");
+            $this->assertStringContainsString(
+                $flag,
+                $registry['make:oauth-client']['usage'],
+                "make:oauth-client usage must list {$flag}"
+            );
         }
-        foreach (['--test', '--auth', '--as=', '--https', '--http', '--insecure', '--seed', '--edit', '--diff'] as $flag) {
-            $this->assertStringContainsString($flag, $registry['log:replay']['usage'], "log:replay usage must list {$flag}");
+        foreach (
+            ['--test', '--auth', '--as=', '--https', '--http', '--insecure', '--seed', '--edit',
+            '--diff'] as $flag
+        ) {
+            $this->assertStringContainsString(
+                $flag,
+                $registry['log:replay']['usage'],
+                "log:replay usage must list {$flag}"
+            );
         }
     }
 

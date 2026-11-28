@@ -280,7 +280,10 @@ $router->get('/auth/login', function () { return ['ok' => true]; });
 $router->get('/users', function () { return ['ok' => true]; });
 PHP
         );
-        [$exit, $output] = $this->runCmd(\Siro\Core\Commands\MakePostmanCommand::class, ['--tag=products', '--method=GET', '--path=/products']);
+        [$exit, $output] = $this->runCmd(
+            \Siro\Core\Commands\MakePostmanCommand::class,
+            ['--tag=products', '--method=GET', '--path=/products']
+        );
         $this->assertContains($exit, [0, 1]);
         $file = $this->basePath . '/docs/postman/collection.json';
         if (is_file($file)) {
@@ -308,7 +311,8 @@ PHP
     {
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . '.env',
-            "APP_ENV=production\nSIRO_OPENAPI_ENABLED=false\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
+            "APP_ENV=production\nSIRO_OPENAPI_ENABLED=false\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
         );
         putenv('APP_ENV=production');
         [$exit, $output] = $this->runCmd(\Siro\Core\Commands\MakeOpenApiCommand::class, []);

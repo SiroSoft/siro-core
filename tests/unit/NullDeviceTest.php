@@ -63,11 +63,15 @@ final class NullDeviceTest extends TestCase
 
     public function testAuditSupplyChainScriptDoesNotCreateNulFile(): void
     {
-        $script = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'audit-supply-chain.php';
+        $script = dirname(
+            __DIR__,
+            2
+        ) . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'audit-supply-chain.php';
         $this->assertFileExists($script);
         // Exit code is deliberately ignored: the point is the redirect, not
         // the audit result (composer may be unavailable in some environments).
-        exec('cd ' . escapeshellarg($this->tmpDir) . ' && ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($script) . ' 2>&1', $out, $code);
+        exec('cd ' . escapeshellarg($this
+            ->tmpDir) . ' && ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($script) . ' 2>&1', $out, $code);
         $this->assertFileDoesNotExist($this->tmpDir . DIRECTORY_SEPARATOR . 'NUL');
     }
 

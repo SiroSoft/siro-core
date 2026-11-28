@@ -99,25 +99,3 @@ final class ModelQueryBuilderMutationTest extends TestCase
         $this->assertArrayHasKey('name', $rows[0]->toArray());
     }
 }
-
-final class MQBItem extends Model
-{
-    use SoftDeletes;
-
-    protected string $table = 'mqb_items';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name', 'qty', 'price'];
-
-    public static function resetStatic(): void
-    {
-        $ref = new \ReflectionClass(self::class);
-        foreach (['identityMap', 'lastInsertId', 'queryLog'] as $prop) {
-            if ($ref->hasProperty($prop)) {
-                $p = $ref->getProperty($prop);
-                $p->setAccessible(true);
-                $p->setValue(null, []);
-            }
-        }
-    }
-}

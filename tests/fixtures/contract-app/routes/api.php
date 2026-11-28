@@ -1,4 +1,5 @@
 <?php
+
 $router->get('/api/widgets', 'WidgetController@index');
 
 // G7 fixture: one auto-generated resource so api:contract + make:openapi

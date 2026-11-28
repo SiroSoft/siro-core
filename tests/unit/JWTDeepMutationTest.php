@@ -40,8 +40,13 @@ final class JWTDeepMutationTest extends TestCase
         putenv('JWT_PRIVATE_KEY_PATH=');
         putenv('JWT_PUBLIC_KEY_PATH=');
         putenv('APP_URL=');
-        unset($_ENV['JWT_SECRET'], $_ENV['JWT_KEY_VERSION'], $_ENV['JWT_ALGORITHM'],
-              $_ENV['JWT_PREVIOUS_SECRET'], $_ENV['APP_URL']);
+        unset(
+            $_ENV['JWT_SECRET'],
+            $_ENV['JWT_KEY_VERSION'],
+            $_ENV['JWT_ALGORITHM'],
+            $_ENV['JWT_PREVIOUS_SECRET'],
+            $_ENV['APP_URL']
+        );
         JWT::reset();
         Cache::reset();
     }
@@ -275,28 +280,32 @@ final class JWTDeepMutationTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('expired');
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => 0, 'type' => 'access', 'jti' => 'exp0']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => 0, 'type' => 'access',
+            'jti' => 'exp0']);
         JWT::decode($token);
     }
 
     public function testDecodeExpExactlyOneSecondAgoIsExpired(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() - 100, 'exp' => time() - 1, 'type' => 'access', 'jti' => 'exp-1s']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() - 100, 'exp' => time() - 1, 'type' => 'access',
+            'jti' => 'exp-1s']);
         JWT::decode($token);
     }
 
     public function testDecodeExpExactlyNowIsValid(): void
     {
         // exp == now is NOT expired (check is $exp < $now, not <=)
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() - 100, 'exp' => time(), 'type' => 'access', 'jti' => 'exp-now']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() - 100, 'exp' => time(), 'type' => 'access',
+            'jti' => 'exp-now']);
         $claims = JWT::decode($token);
         $this->assertSame(1, $claims['sub']);
     }
 
     public function testDecodeIatExactly60SecondsInFutureAccepted(): void
     {
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() + 60, 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'iat60']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() + 60, 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'iat60']);
         $claims = JWT::decode($token);
         $this->assertSame(1, $claims['sub']);
     }
@@ -305,20 +314,23 @@ final class JWTDeepMutationTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('future');
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() + 61, 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'iat61']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time() + 61, 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'iat61']);
         JWT::decode($token);
     }
 
     public function testDecodeNbfExactlyZeroAccepted(): void
     {
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'nbf' => 0, 'jti' => 'nbf0']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'nbf' => 0, 'jti' => 'nbf0']);
         $claims = JWT::decode($token);
         $this->assertSame(1, $claims['sub']);
     }
 
     public function testDecodeNbfExactlyNowAccepted(): void
     {
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'nbf' => time(), 'jti' => 'nbf-now']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'nbf' => time(), 'jti' => 'nbf-now']);
         $claims = JWT::decode($token);
         $this->assertSame(1, $claims['sub']);
     }
@@ -326,7 +338,8 @@ final class JWTDeepMutationTest extends TestCase
     public function testDecodeNbfOneSecondFutureRejected(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'nbf' => time() + 1, 'jti' => 'nbf1']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'nbf' => time() + 1, 'jti' => 'nbf1']);
         JWT::decode($token);
     }
 
@@ -334,14 +347,16 @@ final class JWTDeepMutationTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('sub');
-        $token = JWT::encode(['sub' => 0, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'sub0']);
+        $token = JWT::encode(['sub' => 0, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'sub0']);
         JWT::decode($token);
     }
 
     public function testDecodeSubNegativeRejected(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => -1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'subneg']);
+        $token = JWT::encode(['sub' => -1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'subneg']);
         JWT::decode($token);
     }
 
@@ -349,27 +364,31 @@ final class JWTDeepMutationTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('ver');
-        $token = JWT::encode(['sub' => 1, 'ver' => 0, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'ver0']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 0, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'ver0']);
         JWT::decode($token);
     }
 
     public function testDecodeVerNegativeRejected(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => 1, 'ver' => -1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'verneg']);
+        $token = JWT::encode(['sub' => 1, 'ver' => -1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'verneg']);
         JWT::decode($token);
     }
 
     public function testDecodeTypeAccessAccepted(): void
     {
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'type-acc']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'type-acc']);
         $claims = JWT::decode($token);
         $this->assertSame('access', $claims['type']);
     }
 
     public function testDecodeTypeRefreshAccepted(): void
     {
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'refresh', 'jti' => 'type-ref']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'refresh',
+            'jti' => 'type-ref']);
         $claims = JWT::decode($token);
         $this->assertSame('refresh', $claims['type']);
     }
@@ -378,20 +397,23 @@ final class JWTDeepMutationTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Invalid token type');
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'reset', 'jti' => 'type-bad']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'reset',
+            'jti' => 'type-bad']);
         JWT::decode($token);
     }
 
     public function testDecodeTypeEmptyStringRejected(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => '', 'jti' => 'type-empty']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => '',
+            'jti' => 'type-empty']);
         JWT::decode($token);
     }
 
     public function testDecodeStringSubConvertedToInt(): void
     {
-        $token = JWT::encode(['sub' => '42', 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'strsub']);
+        $token = JWT::encode(['sub' => '42', 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'strsub']);
         $claims = JWT::decode($token);
         // sub is returned as-is from payload (string)
         $this->assertSame('42', $claims['sub']);
@@ -400,21 +422,24 @@ final class JWTDeepMutationTest extends TestCase
     public function testDecodeNonNumericSubRejected(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => 'abc', 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'abcsub']);
+        $token = JWT::encode(['sub' => 'abc', 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'abcsub']);
         JWT::decode($token);
     }
 
     public function testDecodeMissingSubRejected(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'nosub']);
+        $token = JWT::encode(['ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'nosub']);
         JWT::decode($token);
     }
 
     public function testDecodeMissingVerRejected(): void
     {
         $this->expectException(\RuntimeException::class);
-        $token = JWT::encode(['sub' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => 'nover']);
+        $token = JWT::encode(['sub' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => 'nover']);
         JWT::decode($token);
     }
 
@@ -670,7 +695,8 @@ final class JWTDeepMutationTest extends TestCase
     {
         $jti = 'revoke-future-' . uniqid();
         JWT::blacklistJti($jti, time() + 3600);
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'jti' => $jti, 'iat' => time(), 'exp' => time() + 3600]);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'jti' => $jti, 'iat' => time(),
+            'exp' => time() + 3600]);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('revoked');
         JWT::decode($token);
@@ -680,7 +706,8 @@ final class JWTDeepMutationTest extends TestCase
     {
         $jti = 'revoke-past-' . uniqid();
         JWT::blacklistJti($jti, time() - 10);
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'jti' => $jti, 'iat' => time(), 'exp' => time() + 3600]);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'jti' => $jti, 'iat' => time(),
+            'exp' => time() + 3600]);
         $claims = JWT::decode($token);
         $this->assertSame(1, $claims['sub']);
     }
@@ -689,7 +716,8 @@ final class JWTDeepMutationTest extends TestCase
     {
         $jti = 'revoke-zero-' . uniqid();
         JWT::blacklistJti($jti, 0);
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'jti' => $jti, 'iat' => time(), 'exp' => time() + 3600]);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'jti' => $jti, 'iat' => time(),
+            'exp' => time() + 3600]);
         $claims = JWT::decode($token);
         $this->assertSame(1, $claims['sub']);
     }

@@ -77,14 +77,18 @@ final class WebhookTestCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         if ($queued === 0) {
-            $this->error("No endpoint is subscribed to event '{$event}'. Add one in config/webhooks.php or pass --url=.");
+            $this
+                ->error("No endpoint is subscribed to event '{$event}'. Add one in config/webhooks.php or pass " .
+                "--url=.");
             return 1;
         }
 
         $target = $url !== null && $url !== ''
             ? $url
             : $queued . ' configured endpoint(s)';
-        $this->write("Queued {$queued} webhook deliver" . ($queued === 1 ? 'y' : 'ies') . " for event '{$event}' → {$target}");
+        $this
+            ->write("Queued {$queued} webhook deliver" . ($queued === 1 ? 'y' : 'ies') .
+            " for event '{$event}' → {$target}");
         $this->write('Run `php siro queue:work` to deliver.');
         if ($allowPrivateIp) {
             $this->persistPrivateIpOptIn();

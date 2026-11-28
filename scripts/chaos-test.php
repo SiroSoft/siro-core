@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -8,15 +9,27 @@ $basePath = dirname(__DIR__);
 
 // Backup and restore helper
 $backups = [];
-function backupConfig(string $key): void { global $backups; $backups[$key] = $_ENV[$key] ?? null; }
-function restoreConfig(string $key): void { global $backups; if (array_key_exists($key, $backups)) { $_ENV[$key] = $backups[$key]; unset($backups[$key]); } }
+function backupConfig(string $key): void
+{
+    global $backups;
+    $backups[$key] = $_ENV[$key] ?? null;
+}
+function restoreConfig(string $key): void
+{
+    global $backups;
+    if (array_key_exists($key, $backups)) {
+        $_ENV[$key] = $backups[$key];
+        unset($backups[$key]);
+    }
+}
 
 echo "=== Siro Chaos Engineering Tests ===\n\n";
 
 $results = ['passed' => 0, 'failed' => 0, 'skipped' => 0];
 $exitCode = 0;
 
-function assertChaos(string $name, callable $fn): void {
+function assertChaos(string $name, callable $fn): void
+{
     global $results, $exitCode;
     try {
         $result = $fn();

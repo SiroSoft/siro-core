@@ -9,7 +9,9 @@ use Siro\Core\Env;
 use Siro\Core\Storage;
 
 /**
- * Storage S3 driver + signing internals. S3 ops hit a fake bucket ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ return
+ * Storage S3 driver + signing internals. S3 ops hit a fake bucket ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã
+ * ‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢
+ * Ã¢â‚¬Å¾Ã‚Â¢ return
  * false/null, covering the code paths without a real S3.
  */
 final class StorageS3Test extends TestCase
@@ -46,7 +48,9 @@ final class StorageS3Test extends TestCase
 
     public function testS3PutFails(): void
     {
-        set_error_handler(static function (): bool { return true; });
+        set_error_handler(static function (): bool {
+            return true;
+        });
         ob_start();
         $result = Storage::put('test.txt', 'content');
         ob_end_clean();
@@ -56,7 +60,9 @@ final class StorageS3Test extends TestCase
 
     public function testS3GetFails(): void
     {
-        set_error_handler(static function (): bool { return true; });
+        set_error_handler(static function (): bool {
+            return true;
+        });
         ob_start();
         $result = Storage::get('test.txt');
         ob_end_clean();
@@ -66,7 +72,9 @@ final class StorageS3Test extends TestCase
 
     public function testS3ExistsFails(): void
     {
-        set_error_handler(static function (): bool { return true; });
+        set_error_handler(static function (): bool {
+            return true;
+        });
         ob_start();
         $result = Storage::exists('test.txt');
         ob_end_clean();
@@ -76,7 +84,9 @@ final class StorageS3Test extends TestCase
 
     public function testS3Delete(): void
     {
-        set_error_handler(static function (): bool { return true; });
+        set_error_handler(static function (): bool {
+            return true;
+        });
         ob_start();
         $result = Storage::delete('test.txt');
         ob_end_clean();

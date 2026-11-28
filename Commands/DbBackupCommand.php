@@ -106,7 +106,13 @@ final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface
         $database = is_string($config['database'] ?? null) ? $config['database'] : '';
 
         if ($database === '') {
-            return ['success' => false, 'message' => 'MySQL database name not configured', 'path' => '', 'size' => 0, 'compressed' => false];
+            return [
+                'success' => false,
+                'message' => 'MySQL database name not configured',
+                'path' => '',
+                'size' => 0,
+                'compressed' => false
+            ];
         }
 
         $stamp = date('Y-m-d-His');
@@ -140,7 +146,8 @@ final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
         ]);
 
-        $sql = "-- SiroPHP MySQL backup\n-- Database: {$database}\n-- Date: " . date('c') . "\n\nSET FOREIGN_KEY_CHECKS=0;\n\n";
+        $sql = "-- SiroPHP MySQL backup\n-- Database: {$database}\n-- Date: " . date('c') .
+            "\n\nSET FOREIGN_KEY_CHECKS=0;\n\n";
         $tablesStmt = $pdo->query('SHOW TABLES');
         $tables = $tablesStmt !== false ? $tablesStmt->fetchAll(\PDO::FETCH_COLUMN) : [];
         foreach ($tables as $table) {
@@ -185,7 +192,13 @@ final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface
 
         $written = @file_put_contents($path, $sql);
         if ($written === false) {
-            return ['success' => false, 'message' => 'Could not write backup file', 'path' => $path, 'size' => 0, 'compressed' => false];
+            return [
+                'success' => false,
+                'message' => 'Could not write backup file',
+                'path' => $path,
+                'size' => 0,
+                'compressed' => false
+            ];
         }
         return $this->maybeCompress($path, $compress);
     }
@@ -194,7 +207,13 @@ final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface
     private function maybeCompress(string $path, bool $compress): array
     {
         if (!$compress) {
-            return ['success' => true, 'message' => 'Backup completed', 'path' => $path, 'size' => (int) filesize($path), 'compressed' => false];
+            return [
+                'success' => true,
+                'message' => 'Backup completed',
+                'path' => $path,
+                'size' => (int) filesize($path),
+                'compressed' => false
+            ];
         }
         $gzPath = $path . '.gz';
         $gz = gzopen($gzPath, 'wb');
@@ -215,7 +234,13 @@ final class DbBackupCommand implements \Siro\Core\Commands\CommandInterface
         }
         gzclose($gz);
         @unlink($path);
-        return ['success' => true, 'message' => 'Backup completed', 'path' => $gzPath, 'size' => (int) filesize($gzPath), 'compressed' => true];
+        return [
+            'success' => true,
+            'message' => 'Backup completed',
+            'path' => $gzPath,
+            'size' => (int) filesize($gzPath),
+            'compressed' => true
+        ];
     }
 
     private function findMysqldump(): ?string

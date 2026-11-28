@@ -34,7 +34,8 @@ final class AppBranchMutationTest extends TestCase
         mkdir($this->basePath . '/lang', 0777, true);
         file_put_contents(
             $this->basePath . '/.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
+            "APP_ENV=testing\nAPP_DEBUG=true\n" . "APP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n"
         );
         file_put_contents(
             $this->basePath . '/config/database.php',
@@ -55,7 +56,10 @@ final class AppBranchMutationTest extends TestCase
 
     private function runWithServer(array $server): string
     {
-        file_put_contents($this->basePath . '/routes/api.php', "<?php\n\$router->get('/', function () { return ['ok' => true]; });\n");
+        file_put_contents(
+            $this->basePath . '/routes/api.php',
+            "<?php\n\$router->get('/', function () { return ['ok' => true]; });\n"
+        );
         $app = new App($this->basePath);
         $app->boot();
         $app->loadRoutes($this->basePath . '/routes/api.php');
@@ -76,7 +80,8 @@ final class AppBranchMutationTest extends TestCase
 
     public function testRunWithAcceptLanguage(): void
     {
-        $out = $this->runWithServer(['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/', 'HTTP_ACCEPT_LANGUAGE' => 'en-US']);
+        $out = $this->runWithServer(['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/',
+            'HTTP_ACCEPT_LANGUAGE' => 'en-US']);
         $this->assertNotEmpty($out);
     }
 
@@ -169,20 +174,5 @@ final class AppBranchMutationTest extends TestCase
         $app->boot();
         $this->assertInstanceOf(\Siro\Core\Router::class, $app->router());
         $this->assertTrue(BootProviderStub::$registered);
-    }
-}
-
-/**
- * Minimal package provider stub for provider-discovery tests. Only the
- * static flag is asserted on; register() must be called by App::boot()
- * when the stub is declared in installed.json.
- */
-final class BootProviderStub
-{
-    public static bool $registered = false;
-
-    public function register(App $app): void
-    {
-        self::$registered = true;
     }
 }

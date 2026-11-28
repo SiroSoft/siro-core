@@ -48,7 +48,13 @@ final class WebhookSignerTest extends TestCase
     public function testVerifyRejectsTamperedPayload(): void
     {
         $header = WebhookSigner::sign(self::PAYLOAD, self::SECRET, 1700000000);
-        $this->assertFalse(WebhookSigner::verify('{"order_id": 8, "total": 99.5}', $header, self::SECRET, 300, 1700000000));
+        $this->assertFalse(WebhookSigner::verify(
+            '{"order_id": 8, "total": 99.5}',
+            $header,
+            self::SECRET,
+            300,
+            1700000000
+        ));
     }
 
     public function testVerifyRejectsTamperedSignature(): void
@@ -89,7 +95,13 @@ final class WebhookSignerTest extends TestCase
         $this->assertFalse(WebhookSigner::verify($payload, '', $secret, 300, $now));
         $this->assertFalse(WebhookSigner::verify($payload, 'garbage', $secret, 300, $now));
         $this->assertFalse(WebhookSigner::verify($payload, 't=1700000000', $secret, 300, $now));
-        $this->assertFalse(WebhookSigner::verify($payload, 'v1=' . hash_hmac('sha256', 'x', $secret), $secret, 300, $now));
+        $this->assertFalse(WebhookSigner::verify(
+            $payload,
+            'v1=' . hash_hmac('sha256', 'x', $secret),
+            $secret,
+            300,
+            $now
+        ));
         $this->assertFalse(WebhookSigner::verify($payload, 't=not-a-number,v1=abc', $secret, 300, $now));
         $this->assertFalse(WebhookSigner::verify($payload, 't=1700000000,v1=', $secret, 300, $now));
         $this->assertFalse(WebhookSigner::verify($payload, 't=1700000000,v1=ZZZ', $secret, 300, $now));
@@ -131,7 +143,10 @@ final class WebhookSignerTest extends TestCase
     public function testSignatureHeadersReturnsCanonicalHeader(): void
     {
         $headers = WebhookSigner::signatureHeaders(self::PAYLOAD, self::SECRET, 1700000000);
-        $this->assertSame(['X-Siro-Signature' => WebhookSigner::sign(self::PAYLOAD, self::SECRET, 1700000000)], $headers);
+        $this->assertSame(
+            ['X-Siro-Signature' => WebhookSigner::sign(self::PAYLOAD, self::SECRET, 1700000000)],
+            $headers
+        );
         $this->assertSame(WebhookSigner::HEADER, 'X-Siro-Signature');
     }
 }

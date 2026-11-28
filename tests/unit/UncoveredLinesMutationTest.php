@@ -45,6 +45,7 @@ final class UncoveredLinesMutationTest extends TestCase
         putenv('JWT_PUBLIC_KEY');
         putenv('JWT_PUBLIC_KEY_PATH');
         putenv('THROTTLE_FALLBACK');
+        putenv('REDIS_PORT');
         Env::reset();
         JWT::reset();
         Container::setInstance(null);
@@ -141,7 +142,9 @@ final class UncoveredLinesMutationTest extends TestCase
         $token = bin2hex(random_bytes(16));
         $hash = password_hash($token, PASSWORD_BCRYPT);
         Database::execute(
-            "INSERT INTO " . ApiKey::$table . " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO " . ApiKey::$table .
+                " (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at) " .
+                "VALUES (?, ?, ?, ?, ?, ?, " . "?)",
             ['test-bcrypt', hash('sha256', $token), $hash, 'read', 1, time(), 0]
         );
         $found = ApiKey::findByToken('wrong-token-' . bin2hex(random_bytes(8)));
@@ -326,6 +329,17 @@ final class UncoveredLinesMutationTest extends TestCase
     public function testThrottleFailClosedAlwaysReturns503(): void
     {
         putenv('THROTTLE_FALLBACK=fail_closed');
+        // Fail-closed only triggers when the Redis backend is down: force
+        // a dead port (both putenv and $_ENV — Env::get() reads $_ENV
+        // first) and drop any cached shared connection so the connect is
+        // re-attempted. This test used to pass only by accident, via the
+        // REDIS_PORT=1 leaked by other throttle tests.
+        putenv('REDIS_PORT=1');
+        $_ENV['REDIS_PORT'] = '1';
+        $ref = new \ReflectionClass(\Siro\Core\Cache\CacheInstance::class);
+        $prop = $ref->getProperty('sharedRedis');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
         $mw = new ThrottleMiddleware();
         $request = new Request('GET', '/fc-test', [], ['X-Forwarded-For' => '11.11.11.11']);
         $response = $mw->handle($request, fn () => Response::success('ok'), 100, 1);

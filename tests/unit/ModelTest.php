@@ -9,7 +9,7 @@ use Siro\Core\Model;
 
 /**
  * Model Unit Tests
- * 
+ *
  * Tests Model layer functionality
  */
 final class ModelTest extends TestCase

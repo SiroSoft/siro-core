@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 /**
  * SiroPHP 48h Production Soak — Entry Point v3
@@ -7,6 +6,8 @@ declare(strict_types=1);
  * 14 routes matching harness.php + /metrics for periodic sampling
  * Accessed via: Nginx → PHP-FPM (port 8088)
  */
+
+declare(strict_types=1);
 
 $basePath = dirname(__DIR__);
 
@@ -95,7 +96,9 @@ $app->router->get('/api/db/select', function () {
         $dbPath = dirname(__DIR__) . '/storage/soak.sqlite';
         $pdo = new \PDO('sqlite:' . $dbPath);
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE IF NOT EXISTS soak_test (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, value INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT (datetime(\'now\')))');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS soak_test (id INTEGER PRIMARY KEY AUTOINCREMENT, '
+                . 'name TEXT NOT NULL, value INTEGER NOT NULL DEFAULT 0, '
+                . 'created_at TEXT DEFAULT (datetime(\'now\')))');
         $count = $pdo->query('SELECT COUNT(*) as cnt FROM soak_test')->fetch()['cnt'] ?? 0;
         return \Siro\Core\Response::json([
             'rows' => (int)$count,

@@ -55,7 +55,9 @@ final class AuditVerifyCommand implements \Siro\Core\Commands\CommandInterface
                 $this->write('  ✅ ' . str_pad($name, 32, ' ') . $result['entries'] . ' entries — chain valid');
                 $verified += $result['entries'];
             } else {
-                $this->write('  ❌ ' . str_pad($name, 32, ' ') . 'BROKEN at entry ' . ($result['broken'] ?? '?') . ': ' . ($result['reason'] ?? 'unknown'));
+                $this
+                    ->write('  ❌ ' . str_pad($name, 32, ' ') . 'BROKEN at entry ' . ($result['broken'] ?? '?') .
+                    ': ' . ($result['reason'] ?? 'unknown'));
                 $ok = false;
             }
         }

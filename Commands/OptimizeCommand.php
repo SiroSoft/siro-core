@@ -60,7 +60,8 @@ final class OptimizeCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('  Optimizing autoloader...');
         $autoloadPath = $this->basePath . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
         if (is_file($autoloadPath)) {
-            exec('composer dump-autoload --no-dev --quiet -d ' . escapeshellarg($this->basePath) . ' 2>&1', $output, $code);
+            exec('composer dump-autoload --no-dev --quiet -d ' . escapeshellarg($this
+                ->basePath) . ' 2>&1', $output, $code);
             if ($code === 0) {
                 $this->write('  Autoloader optimized.');
             } else {

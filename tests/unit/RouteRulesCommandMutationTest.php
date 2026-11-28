@@ -68,7 +68,9 @@ final class RouteRulesCommandMutationTest extends TestCase
     {
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php',
-            "<?php\nRoute::get('/users', [UserController::class, 'index']);\nRoute::post('/users', function () {\n    \$request->validate(['name' => 'required|string', 'email' => 'required|email']);\n});\n"
+            "<?php\nRoute::get('/users', [UserController::class, 'index']);\n" .
+                "Route::post('/users', function () {\n    \$request->validate(['name' => " .
+                "'required|string', 'email' => 'required|email']);\n" . "});\n"
         );
 
         $cmd = new RouteRulesCommand($this->basePath);
@@ -87,8 +89,10 @@ final class RouteRulesCommandMutationTest extends TestCase
             "<?php\nRoute::post('/orders', [OrderController::class, 'store']);\n"
         );
         file_put_contents(
-            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'OrderController.php',
-            "<?php\nclass OrderController {\n    public function store(Request \$r) {\n        \$r->validate(['total' => 'required|numeric', 'note' => 'nullable|string']);\n    }\n}\n"
+            $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR .
+                'OrderController.php',
+            "<?php\nclass OrderController {\n    public function store(Request \$r) {\n    " .
+                "    \$r->validate(['total' => 'required|numeric', 'note' => " . "'nullable|string']);\n    }\n" . "}\n"
         );
 
         $cmd = new RouteRulesCommand($this->basePath);

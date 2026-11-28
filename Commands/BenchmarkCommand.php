@@ -251,7 +251,8 @@ final class BenchmarkCommand implements \Siro\Core\Commands\CommandInterface
         $usPerOp = $nsPerOp / 1000;
         $opsPerSec = $nsPerOp > 0 ? (1000000000 / $nsPerOp) : 0;
 
-        $rating = $usPerOp < 100 ? '🚀 Excellent' : ($usPerOp < 500 ? '✅ Good' : ($usPerOp < 1000 ? '⚠️ Fair' : '❌ Slow'));
+        $rating = $usPerOp < 100 ? '🚀 Excellent' : ($usPerOp < 500 ? '✅ Good' : ($usPerOp < 1000 ? '⚠️ Fair' :
+            '❌ Slow'));
 
         return [
             'name' => $name,

@@ -171,7 +171,8 @@ final class ApiContractStrictTest extends TestCase
         if ($port === 0) {
             $this->markTestSkipped('Could not find a free port for the docs server.');
         }
-        $descriptors = [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']];
+        $descriptors = [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'],
+            2 => ['file', '/dev/null', 'w']];
         $process = proc_open(['php8.4', '-S', '127.0.0.1:' . $port, '-t', $docroot], $descriptors, $pipes, $docroot);
         if (!is_resource($process)) {
             $this->markTestSkipped('Could not start docs server.');

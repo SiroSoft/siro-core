@@ -133,10 +133,3 @@ final class QueueMutationTest extends TestCase
         $this->assertTrue(Queue::isJobAllowed(QJob::class));
     }
 }
-
-final class QJob
-{
-    public function handle(): void
-    {
-    }
-}

@@ -104,5 +104,4 @@ final class InfrastructureFixesTest extends TestCase
 
         $this->assertSame($expected, $files);
     }
-
 }

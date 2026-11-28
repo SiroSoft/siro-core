@@ -399,7 +399,8 @@ final class AuthGuardDeepMutationTest extends TestCase
         AuthGuard::setInstance(null);
         $guard = AuthGuard::instance();
         // Expired token should trigger exception caught by resolve
-        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'iat' => time() - 7200, 'exp' => time() - 3600, 'jti' => 'expired-resolve']);
+        $token = JWT::encode(['sub' => 1, 'ver' => 1, 'type' => 'access', 'iat' => time() - 7200,
+            'exp' => time() - 3600, 'jti' => 'expired-resolve']);
         $request = new Request('GET', '/test', ['authorization' => 'Bearer ' . $token]);
         $this->assertNull($guard->resolve($request));
     }

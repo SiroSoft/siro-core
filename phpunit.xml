@@ -29,6 +29,9 @@
         <testsuite name="DAST">
             <directory suffix="Test.php">tests/dast</directory>
         </testsuite>
+        <testsuite name="Cli">
+            <directory suffix="Test.php">tests/cli</directory>
+        </testsuite>
     </testsuites>
 
     <!-- Coverage filter: only present so coverage jobs, which pass

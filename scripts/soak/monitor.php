@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 /**
  * External Process Monitor for Soak Test
@@ -13,6 +12,8 @@ declare(strict_types=1);
  * Requires Linux (/proc filesystem).
  * On Windows/macOS, outputs basic metrics only.
  */
+
+declare(strict_types=1);
 
 $interval = 30;
 $outputFile = dirname(__DIR__, 2) . '/storage/soak_process.jsonl';

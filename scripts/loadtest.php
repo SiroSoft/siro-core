@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 $url = $argv[1] ?? 'http://localhost:8080';

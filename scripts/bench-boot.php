@@ -1,8 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-declare(strict_types=1);
-
 /**
  * Boot time benchmark for Siro Framework.
  *
@@ -12,6 +10,8 @@ declare(strict_types=1);
  * Usage: php scripts/bench-boot.php
  *        php scripts/bench-boot.php --iterations=100
  */
+
+declare(strict_types=1);
 
 namespace Siro\Benchmark;
 

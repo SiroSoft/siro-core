@@ -42,7 +42,10 @@ final class WhereDateBindingTest extends TestCase
 
     public function testAllDatePartsCompileToNamedPlaceholders(): void
     {
-        foreach (['whereMonth' => 'MONTH(', 'whereDay' => 'DAY(', 'whereYear' => 'YEAR(', 'whereTime' => 'TIME('] as $method => $fn) {
+        foreach (
+            ['whereMonth' => 'MONTH(', 'whereDay' => 'DAY(', 'whereYear' => 'YEAR(',
+            'whereTime' => 'TIME('] as $method => $fn
+        ) {
             $qb = (new QueryBuilder('orders'))
                 ->where('id', 'x')
                 ->$method('created_at', '2026-09-01');

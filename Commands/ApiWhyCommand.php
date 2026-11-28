@@ -44,7 +44,9 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
         $tracesDir = $this->getTracesDir($this->basePath);
         $rawFiles = $this->findTraceFiles($tracesDir);
         if ($rawFiles === []) {
-            $this->write('  ' . self::YELLOW . 'No traces found. Enable APP_DEBUG=true to capture traces.' . self::RESET);
+            $this
+                ->write('  ' . self::YELLOW . 'No traces found. Enable APP_DEBUG=true to capture traces.' .
+                self::RESET);
             return 1;
         }
 
@@ -72,7 +74,9 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
 
         if ($matchedData === null) {
             $this->write('  ' . self::YELLOW . 'No trace found for ' . $method . ' ' . $normalizedPath . self::RESET);
-            $this->write('  ' . self::GRAY . 'Available methods: try php siro log:trace --method=' . $method . self::RESET);
+            $this
+                ->write('  ' . self::GRAY . 'Available methods: try php siro log:trace --method=' . $method .
+                self::RESET);
             return 1;
         }
 
@@ -159,7 +163,9 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
                 $slowLabel = $qTime > self::SLOW_SQL_MS ? ' ' . self::YELLOW . '⚠ slow' . self::RESET : '';
 
                 $connector = ($idx < count($queries) - 1) ? '├' : '└';
-                $this->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . self::RESET . " " . $qDisplay . " "
+                $this
+                    ->write("    " . $qColor . $connector . " " . $qIcon . " " . $qAction . self::RESET . " " .
+                    $qDisplay . " "
                     . self::GRAY . sprintf('%.0fms', $qTime) . self::RESET . $slowLabel);
             }
             $this->write('    ' . self::GRAY . '  Total SQL: ' . sprintf('%.0fms', $totalSqlTime) . self::RESET);
@@ -174,7 +180,9 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
                     if ($count >= 2) {
                         $parts = explode('::', $key);
                         $relName = $parts[1] ?? $key;
-                        $this->write('  ' . self::YELLOW . '⚠ N+1' . self::RESET . ' ' . $key . ' accessed ' . $count . 'x');
+                        $this
+                            ->write('  ' . self::YELLOW . '⚠ N+1' . self::RESET . ' ' . $key . ' accessed ' . $count .
+                            'x');
                         $this->write('    Fix: ' . self::CYAN . "with('" . $relName . "')" . self::RESET);
                     }
                 }
@@ -289,7 +297,12 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
         if (str_contains($lowerMsg, 'timeout') || str_contains($lowerMsg, 'timed out')) {
             return ['Database connection or query timeout', 'Slow query exceeding default threshold'];
         }
-        if (str_contains($lowerMsg, 'not found') || str_contains($lowerMsg, 'not exist') || str_contains($lowerMsg, 'does not exist')) {
+        if (
+            str_contains($lowerMsg, 'not found') || str_contains($lowerMsg, 'not exist') || str_contains(
+                $lowerMsg,
+                'does not exist'
+            )
+        ) {
             return ['Missing record in database', 'Invalid foreign key or ID reference'];
         }
         if (str_contains($lowerMsg, 'duplicate') || str_contains($lowerMsg, 'unique constraint')) {
@@ -308,7 +321,10 @@ final class ApiWhyCommand implements \Siro\Core\Commands\CommandInterface
             return ['Request body fails validation rules', 'Missing or malformed required fields'];
         }
         if ($status >= 500) {
-            return ['Unhandled exception in controller or service layer', 'Review exception details above for root cause'];
+            return [
+                'Unhandled exception in controller or service layer',
+                'Review exception details above for root cause'
+            ];
         }
 
         return [];

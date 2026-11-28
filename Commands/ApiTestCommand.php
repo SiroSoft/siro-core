@@ -264,14 +264,18 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
 
             if ($loop > 1) {
                 $mark = $statusCode < 400 ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m";
-                $this->write("    {$mark} Request " . ($i + 1) . "/{$loop}: {$statusCode} (" . round($elapsed, 1) . "ms)");
+                $this
+                    ->write("    {$mark} Request " . ($i + 1) . "/{$loop}: {$statusCode} (" . round($elapsed, 1) .
+                    "ms)");
             }
         }
 
         if ($loop > 1) {
             $avgMs = $totalMs / $loop;
             $this->write('');
-            $this->write("  \033[33mResults: {$loop} requests, avg " . round($avgMs, 1) . "ms, total " . round($totalMs / 1000, 2) . "s\033[0m");
+            $this
+                ->write("  \033[33mResults: {$loop} requests, avg " . round($avgMs, 1) . "ms, total " . round($totalMs /
+                1000, 2) . "s\033[0m");
         }
 
         if ($collectionSave !== null) {
@@ -501,7 +505,8 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
                     $lastReq = $requests[$count - 1];
                     $lastUpdated = '';
                     if (is_array($lastReq)) {
-                        $lastUpdated = $this->safeStr($lastReq['method'] ?? '') . ' ' . $this->safeStr($lastReq['path'] ?? '');
+                        $lastUpdated = $this->safeStr($lastReq['method'] ?? '') . ' ' . $this
+                            ->safeStr($lastReq['path'] ?? '');
                     }
                 }
                 return [$name, (string) $count, $lastUpdated];
@@ -556,7 +561,9 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
             $token = $this->getToken($as);
             if ($token === null) {
                 $this->write("Warning: No saved token for role '{$as}'.");
-                $this->write("  Login first: php siro api:test POST /auth/login email={$as}@test.com password=... --as={$as}");
+                $this
+                    ->write("  Login first: php siro api:test POST /auth/login email={$as}@test.com password=... " .
+                    "--as={$as}");
             }
         }
 
@@ -665,7 +672,8 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
                 $decoded = json_decode($body, true);
                 if (is_array($decoded)) {
                     $dataArr = isset($decoded['data']) && is_array($decoded['data']) ? $decoded['data'] : [];
-                    $t = $dataArr['token'] ?? $dataArr['access_token'] ?? $decoded['token'] ?? $decoded['access_token'] ?? null;
+                    $t = $dataArr['token'] ?? $dataArr['access_token'] ?? $decoded['token'] ??
+                        $decoded['access_token'] ?? null;
 
                     if (is_string($t) && strlen($t) >= 10) {
                         $tokens = $this->loadTokens();
@@ -867,7 +875,10 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
         $this->write("  \033[1;90m[1/3] OPTIONS preflight request...\033[0m");
         $opts = [
             'method' => 'OPTIONS', 'path' => $path,
-            'fields' => [], 'headers' => ['origin' => 'http://localhost:3000', 'access-control-request-method' => $method],
+            'fields' => [], 'headers' => [
+                'origin' => 'http://localhost:3000',
+                'access-control-request-method' => $method
+            ],
             'content_type' => 'json', 'as' => null,
         ];
         $code1 = $this->sendInternal(
@@ -981,7 +992,11 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
             }
             if (is_array($bodyDecoded)) {
                 $this->write('    Body:');
-                $this->write((string) '      ' . json_encode($bodyDecoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                $this
+                    ->write((string) '      ' . json_encode(
+                        $bodyDecoded,
+                        JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+                    ));
             } elseif ($body !== '') {
                 $this->write('    Body: ' . mb_substr($body, 0, 500));
             }
@@ -1058,7 +1073,8 @@ final class ApiTestCommand implements \Siro\Core\Commands\CommandInterface
             if (is_string($rawBody) && $rawBody !== '') {
                 $traceData['request_body'] = $rawBody;
             }
-            $traceData['response_body'] = (string) json_encode($response->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $traceData['response_body'] = (string) json_encode($response
+                ->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             \Siro\Core\Logger::trace($traceId, $traceData);
         } catch (\Throwable $e) {
             // Tracing must never break the api:test command itself.

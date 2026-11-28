@@ -38,7 +38,8 @@ final class MakeOpenApiMutationTest extends TestCase
         mkdir($this->basePath . '/storage', 0777, true);
         file_put_contents(
             $this->basePath . '/.env',
-            "APP_ENV=testing\nAPP_DEBUG=true\nAPP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\nJWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\nSIRO_OPENAPI_ENABLED=true\n"
+            "APP_ENV=testing\nAPP_DEBUG=true\n" . "APP_KEY=this_is_a_sufficiently_long_app_key_for_tests_12345678\n" .
+                "JWT_SECRET=this_is_a_sufficiently_long_jwt_secret_for_tests_1234\n" . "SIRO_OPENAPI_ENABLED=true\n"
         );
         file_put_contents(
             $this->basePath . '/config/database.php',
@@ -94,7 +95,9 @@ final class MakeOpenApiMutationTest extends TestCase
         );
         file_put_contents(
             $this->basePath . '/app/Controllers/OrderController.php',
-            "<?php\nclass OrderController {\n    public function store(Request \$r) { \$r->validate(['status' => 'required|in:pending,paid,shipped', 'email' => 'required|email', 'count' => 'integer']); }\n}\n"
+            "<?php\nclass OrderController {\n    public function store(Request \$r) { \$" .
+                "r->validate(['status' => 'required|in:pending,paid,shipped', 'email' => " .
+                "'required|email', 'count' => 'integer']); }\n" . "}\n"
         );
         file_put_contents(
             $this->basePath . '/app/Controllers/UserController.php',
@@ -166,15 +169,20 @@ final class MakeOpenApiMutationTest extends TestCase
         );
         file_put_contents(
             $this->basePath . '/app/Models/User.php',
-            "<?php\nclass User {\n    protected \$casts = ['id' => 'int', 'balance' => 'float', 'is_active' => 'bool', 'meta' => 'json'];\n    protected \$fillable = ['name', 'email'];\n}\n"
+            "<?php\nclass User {\n    protected \$casts = ['id' => 'int', 'balance' => " .
+                "'float', 'is_active' => 'bool', 'meta' => 'json'];\n    protected \$fillable " .
+                "= ['name', 'email'];\n" . "}\n"
         );
         file_put_contents(
             $this->basePath . '/app/Resources/UserResource.php',
-            "<?php\nclass UserResource {\n    public function toArray(): array {\n        return ['id' => \$this->id, 'email' => \$this->email, 'balance' => \$this->balance];\n    }\n}\n"
+            "<?php\nclass UserResource {\n    public function toArray(): array {\n        " .
+                "return ['id' => \$this->id, 'email' => \$this->email, 'balance' => \$" . "this->balance];\n    }\n" .
+                "}\n"
         );
         file_put_contents(
             $this->basePath . '/app/Http/Requests/StoreUserRequest.php',
-            "<?php\nclass StoreUserRequest {\n    public function rules(): array {\n        return ['name' => 'required|string|max:50', 'email' => 'required|email'];\n    }\n}\n"
+            "<?php\nclass StoreUserRequest {\n    public function rules(): array {\n       " .
+                " return ['name' => 'required|string|max:50', 'email' => 'required|email'];\n  " . "  }\n" . "}\n"
         );
     }
 

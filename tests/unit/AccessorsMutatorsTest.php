@@ -161,37 +161,3 @@ final class AccessorsMutatorsTest extends TestCase
         $this->assertSame(42, $model->getAttribute('quantity'));
     }
 }
-
-// Helper classes for testing
-class TestPostModel extends Model
-{
-    protected string $table = 'test_posts';
-    protected array $fillable = ['created_at'];
-    protected array $casts = [
-        'created_at' => 'datetime',
-    ];
-}
-
-class TestUserWithAppendsModel extends Model
-{
-    protected string $table = 'test_users';
-    protected array $fillable = ['name'];
-    protected array $appends = ['uppercase_name'];
-    protected array $casts = [
-        'created_at' => 'datetime',
-    ];
-
-    public function getUppercaseNameAttribute(): string
-    {
-        return strtoupper((string) ($this->name ?? ''));
-    }
-}
-
-class TestItemModel extends Model
-{
-    protected string $table = 'test_items';
-    protected array $fillable = ['quantity'];
-    protected array $casts = [
-        'quantity' => 'integer',
-    ];
-}

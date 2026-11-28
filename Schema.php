@@ -113,9 +113,13 @@ final class Schema
         // SHOW TABLES LIKE. Exact match also removes LIKE wildcard concerns
         // for names containing % or _ (e.g. temp_tbl).
         $sql = match ($driver) {
-            'pgsql' => "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = :table)",
+            'pgsql' =>
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = " .
+                ":table)",
             'sqlite' => "SELECT name FROM sqlite_master WHERE type='table' AND name=:table",
-            default => "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table",
+            default =>
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = " .
+                ":table",
         };
         $stmt = self::pdo()->prepare($sql);
         $stmt->execute([':table' => $table]);
@@ -131,9 +135,13 @@ final class Schema
         // parameters (PDO MySQL raises HY093 invalid parameter number), so
         // it reads information_schema instead.
         $sql = match ($driver) {
-            'pgsql' => "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = :table",
+            'pgsql' =>
+                "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = " .
+                ":table",
             'sqlite' => "SELECT name FROM pragma_table_info(:table)",
-            default => "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = :table ORDER BY ordinal_position",
+            default =>
+                "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = " .
+                ":table ORDER BY ordinal_position",
         };
         $stmt = self::pdo()->prepare($sql);
         $stmt->execute([':table' => $table]);

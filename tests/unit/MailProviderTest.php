@@ -36,7 +36,7 @@ final class MailProviderTest extends TestCase
     public function testSetProviderOverridesTransport(): void
     {
         $seen = [];
-        $stub = new class($seen) implements MailProvider {
+        $stub = new class ($seen) implements MailProvider {
             /** @var array<int, array<string, mixed>> */
             public array $seen = [];
 
@@ -56,7 +56,7 @@ final class MailProviderTest extends TestCase
 
     public function testTrySendReturnsFalseInsteadOfThrowing(): void
     {
-        $failing = new class() implements MailProvider {
+        $failing = new class () implements MailProvider {
             /** @param array<string, mixed> $mail */
             public function send(array $mail): bool
             {
@@ -76,7 +76,7 @@ final class MailProviderTest extends TestCase
 
     public function testSendStillThrowsWhenProviderFails(): void
     {
-        $failing = new class() implements MailProvider {
+        $failing = new class () implements MailProvider {
             /** @param array<string, mixed> $mail */
             public function send(array $mail): bool
             {

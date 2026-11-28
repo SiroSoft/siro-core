@@ -26,7 +26,8 @@ final class ScheduleTest extends TestCase
     public function testCallReturnsScheduleTask(): void
     {
         $schedule = new Schedule();
-        $task = $schedule->call(function () {});
+        $task = $schedule->call(function () {
+        });
         $this->assertInstanceOf(ScheduleTask::class, $task);
     }
 

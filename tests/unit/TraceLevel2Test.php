@@ -46,7 +46,8 @@ final class TraceLevel2Test extends TestCase
     public function testTraceDataSetOutboundHttp(): void
     {
         TraceData::setOutboundHttp([
-            ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/charges', 'status' => 200, 'duration_ms' => 234.5, 'error' => ''],
+            ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/charges', 'status' => 200, 'duration_ms' => 234.5,
+                'error' => ''],
         ]);
 
         $data = TraceData::getAll();
@@ -78,7 +79,8 @@ final class TraceLevel2Test extends TestCase
     public function testTraceDataSetQueueJobs(): void
     {
         TraceData::setQueueJobs([
-            ['job' => 'SendEmailJob', 'source_trace_id' => 'siro_abc123', 'dispatched_at' => '2026-05-08T14:30:00+00:00'],
+            ['job' => 'SendEmailJob', 'source_trace_id' => 'siro_abc123',
+                'dispatched_at' => '2026-05-08T14:30:00+00:00'],
         ]);
 
         $data = TraceData::getAll();
@@ -231,7 +233,8 @@ final class TraceLevel2Test extends TestCase
     public function testDetectOutboundHttpCalls(): void
     {
         $outboundHttp = [
-            ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/charges', 'status' => 200, 'duration_ms' => 234.5, 'error' => ''],
+            ['method' => 'POST', 'url' => 'https://api.stripe.com/v1/charges', 'status' => 200, 'duration_ms' => 234.5,
+                'error' => ''],
         ];
 
         $httpCalls = count($outboundHttp);
@@ -242,7 +245,8 @@ final class TraceLevel2Test extends TestCase
     {
         $queueJobs = [
             ['job' => 'SendEmailJob', 'source_trace_id' => 'siro_123', 'dispatched_at' => '2026-05-08T14:30:00+00:00'],
-            ['job' => 'ProcessWebhookJob', 'source_trace_id' => 'siro_123', 'dispatched_at' => '2026-05-08T14:30:01+00:00'],
+            ['job' => 'ProcessWebhookJob', 'source_trace_id' => 'siro_123',
+                'dispatched_at' => '2026-05-08T14:30:01+00:00'],
         ];
 
         $queueJobsCount = count($queueJobs);

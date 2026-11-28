@@ -116,7 +116,8 @@ final class Env
                         $cached = null;
                     }
                 } elseif ($appKey === '' || strlen($appKey) < 16) {
-                    throw new \RuntimeException('APP_KEY is required (min 16 chars) for env cache integrity. Set a strong APP_KEY in .env.');
+                    throw new \RuntimeException('APP_KEY is required (min 16 chars) for env cache integrity. Set a ' .
+                        'strong APP_KEY in .env.');
                 } else {
                     $cached = null;
                 }
@@ -271,7 +272,8 @@ final class Env
 
     public static function clearCache(string $basePath): void
     {
-        $cacheFile = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'env.php';
+        $cacheFile = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' .
+            DIRECTORY_SEPARATOR . 'env.php';
         if (is_file($cacheFile)) {
             unlink($cacheFile);
         }

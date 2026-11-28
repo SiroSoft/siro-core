@@ -12,16 +12,19 @@ $php = escapeshellarg(PHP_BINARY);
 
 $steps = [
     ['name' => 'Composer audit', 'cmd' => 'composer audit --no-interaction'],
-    ['name' => 'PHPStan (Level Max)', 'cmd' => $php . ' vendor/bin/phpstan analyse --level=max --no-progress --memory-limit=1G'],
+    ['name' => 'PHPStan (Level Max)', 'cmd' => $php . ' vendor/bin/phpstan analyse --level=max --no-progress'
+        . ' --memory-limit=1G'],
     ['name' => 'PHPUnit', 'cmd' => $php . ' vendor/bin/phpunit --no-progress'],
 ];
 
 if ($strict) {
     $steps = array_merge($steps, [
-        ['name' => 'Psalm Taint Analysis', 'cmd' => $php . ' vendor/bin/psalm --taint-analysis --no-progress --show-info=false --php-version=8.4'],
+        ['name' => 'Psalm Taint Analysis', 'cmd' => $php . ' vendor/bin/psalm --taint-analysis --no-progress'
+            . ' --show-info=false --php-version=8.4'],
         ['name' => 'Fuzz Tests', 'cmd' => $php . ' scripts/fuzz.php'],
         ['name' => 'Chaos Tests', 'cmd' => $php . ' scripts/chaos-test.php'],
-        ['name' => 'Mutation Tests (≥80% MSI)', 'cmd' => $php . ' vendor/bin/infection --min-msi=80 --threads=4 --no-progress'],
+        ['name' => 'Mutation Tests (≥80% MSI)', 'cmd' => $php . ' vendor/bin/infection --min-msi=80'
+            . ' --threads=4 --no-progress'],
         ['name' => 'Benchmark Regression', 'cmd' => $php . ' scripts/benchmark-ci.php'],
         ['name' => 'SBOM Generation', 'cmd' => $php . ' scripts/generate-sbom.php'],
         ['name' => 'Load Test', 'cmd' => $php . ' scripts/loadtest.php'],
@@ -51,7 +54,10 @@ $versionGate = function (): bool {
     }
     $changelog = is_file($root . '/CHANGELOG.md') ? (string) file_get_contents($root . '/CHANGELOG.md') : '';
     if (!preg_match('/^## v(\d+\.\d+\.\d+)/m', $changelog, $cm) || $cm[1] !== $version) {
-        fwrite(STDERR, "[FAIL] Version gate: CHANGELOG head '" . ($cm[1] ?? '?') . "' != Console::VERSION '{$version}'\n");
+        fwrite(
+            STDERR,
+            "[FAIL] Version gate: CHANGELOG head '" . ($cm[1] ?? '?') . "' != Console::VERSION '{$version}'\n"
+        );
         return false;
     }
     foreach (['.env.siro', '.env.bench'] as $envFile) {

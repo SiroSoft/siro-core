@@ -234,28 +234,3 @@ final class ModelQueryBuilderAdvancedTest extends TestCase
         $this->assertNotEmpty($rows);
     }
 }
-
-final class MQOwner extends Model
-{
-    use SoftDeletes;
-
-    protected string $table = 'mq_owners';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
-
-    public function pets(): \Siro\Core\DB\Relations\HasMany
-    {
-        return $this->hasMany(MQPet::class, 'owner_id');
-    }
-}
-
-final class MQPet extends Model
-{
-    use SoftDeletes;
-
-    protected string $table = 'mq_pets';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['owner_id', 'name'];
-}

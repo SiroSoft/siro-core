@@ -55,7 +55,8 @@ final class OAuthScopeMiddleware implements MiddlewareInterface
                     'scope' => ['Required scope: ' . $scope . ', token scopes: ' . implode(',', $granted)],
                 ], 'insufficient_scope');
                 $response->withHeaders([
-                    'WWW-Authenticate' => 'Bearer realm="api", error="insufficient_scope", scope="' . implode(' ', $required) . '"',
+                    'WWW-Authenticate' => 'Bearer realm="api", error="insufficient_scope", scope="' .
+                        implode(' ', $required) . '"',
                 ]);
                 return $response;
             }

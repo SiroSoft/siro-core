@@ -166,10 +166,16 @@ final class PenetrationTest extends TestCase
         $request = new Request('GET', '/test', ['q' => $payloads[0]]);
         $request2 = new Request('POST', '/test', [], [], ['comment' => $payloads[1]]);
 
-        $this->assertSame($payloads[0], $request->input('q'),
-            'Request should NOT auto-escape input values (XSS is output-side concern)');
-        $this->assertSame($payloads[1], $request2->input('comment'),
-            'Request should NOT modify input data');
+        $this->assertSame(
+            $payloads[0],
+            $request->input('q'),
+            'Request should NOT auto-escape input values (XSS is output-side concern)'
+        );
+        $this->assertSame(
+            $payloads[1],
+            $request2->input('comment'),
+            'Request should NOT modify input data'
+        );
     }
 
     // ========================================================================
@@ -193,8 +199,11 @@ final class PenetrationTest extends TestCase
         $file = (new \ReflectionClass(CsrfMiddleware::class))->getFileName();
         $code = file_get_contents($file);
 
-        $this->assertStringContainsString('hash_equals', $code,
-            'CSRF token comparison must use hash_equals for timing safety');
+        $this->assertStringContainsString(
+            'hash_equals',
+            $code,
+            'CSRF token comparison must use hash_equals for timing safety'
+        );
     }
 
     public function testCsrfTokenGenerationUsesRandomBytes(): void
@@ -356,10 +365,16 @@ final class PenetrationTest extends TestCase
             }
             $cleanPath = implode($dirSep, $filtered);
 
-            $this->assertStringNotContainsString('..', $cleanPath,
-                "Path traversal sequences should be removed from: {$path}");
-            $this->assertStringNotContainsString('//', $cleanPath,
-                "Double slashes should be normalized for: {$path}");
+            $this->assertStringNotContainsString(
+                '..',
+                $cleanPath,
+                "Path traversal sequences should be removed from: {$path}"
+            );
+            $this->assertStringNotContainsString(
+                '//',
+                $cleanPath,
+                "Double slashes should be normalized for: {$path}"
+            );
         }
     }
 
@@ -367,8 +382,11 @@ final class PenetrationTest extends TestCase
     {
         $path = '%2e%2e%2f%2e%2e%2fetc%2fpasswd';
         $decoded = urldecode($path);
-        $this->assertSame('../../etc/passwd', $decoded,
-            'URL-decoded traversal path should match');
+        $this->assertSame(
+            '../../etc/passwd',
+            $decoded,
+            'URL-decoded traversal path should match'
+        );
 
         $dirSep = DIRECTORY_SEPARATOR;
         $cleanPath = ltrim($decoded, $dirSep);
@@ -387,8 +405,11 @@ final class PenetrationTest extends TestCase
         }
         $cleanPath = implode($dirSep, $filtered);
 
-        $this->assertStringNotContainsString('..', $cleanPath,
-            'URL-encoded traversal should be neutralized after decoding + cleaning');
+        $this->assertStringNotContainsString(
+            '..',
+            $cleanPath,
+            'URL-encoded traversal should be neutralized after decoding + cleaning'
+        );
     }
 
     // ========================================================================
@@ -447,8 +468,11 @@ final class PenetrationTest extends TestCase
         }
 
         for ($i = 1; $i < count($results); $i++) {
-            $this->assertNotEquals($results[0], $results[$i],
-                'IV must be unique across encryptions');
+            $this->assertNotEquals(
+                $results[0],
+                $results[$i],
+                'IV must be unique across encryptions'
+            );
         }
     }
 
@@ -486,8 +510,11 @@ final class PenetrationTest extends TestCase
         $file = (new \ReflectionClass(CsrfMiddleware::class))->getFileName();
         $code = file_get_contents($file);
 
-        $this->assertStringContainsString('hash_equals', $code,
-            'CSRF middleware must use hash_equals for token comparison');
+        $this->assertStringContainsString(
+            'hash_equals',
+            $code,
+            'CSRF middleware must use hash_equals for token comparison'
+        );
     }
 
     public function testHashEqualsUsedInJwt(): void
@@ -495,8 +522,11 @@ final class PenetrationTest extends TestCase
         $file = (new \ReflectionClass(JWT::class))->getFileName();
         $code = file_get_contents($file);
 
-        $this->assertStringContainsString('hash_equals', $code,
-            'JWT must use hash_equals for signature verification');
+        $this->assertStringContainsString(
+            'hash_equals',
+            $code,
+            'JWT must use hash_equals for signature verification'
+        );
     }
 
     public function testHashEqualsUsedInEncrypter(): void
@@ -504,8 +534,11 @@ final class PenetrationTest extends TestCase
         $file = (new \ReflectionClass(Encrypter::class))->getFileName();
         $code = file_get_contents($file);
 
-        $this->assertStringContainsString('hash_equals', $code,
-            'Encrypter must use hash_equals for HMAC comparison');
+        $this->assertStringContainsString(
+            'hash_equals',
+            $code,
+            'Encrypter must use hash_equals for HMAC comparison'
+        );
     }
 
     // ========================================================================
@@ -520,8 +553,11 @@ final class PenetrationTest extends TestCase
         $this->assertStringNotContainsString("\0", $sanitized);
         $this->assertStringNotContainsString("\x00", $sanitized);
         $this->assertStringNotContainsString('%00', $sanitized);
-        $this->assertStringContainsString('../../etc/passwd', $sanitized,
-            'Null byte removal should preserve rest of path');
+        $this->assertStringContainsString(
+            '../../etc/passwd',
+            $sanitized,
+            'Null byte removal should preserve rest of path'
+        );
     }
 
     public function testNullByteInjectionInRouteParams(): void
@@ -546,12 +582,21 @@ final class PenetrationTest extends TestCase
         $escaped = escapeshellarg($malicious);
 
         $wrapped = (PHP_OS_FAMILY === 'Windows') ? '"' : "'";
-        $this->assertStringStartsWith($wrapped, $escaped,
-            'escapeshellarg must wrap in quotes');
-        $this->assertStringEndsWith($wrapped, $escaped,
-            'escapeshellarg must wrap in quotes');
-        $this->assertNotEquals($malicious, $escaped,
-            'escapeshellarg must transform the input');
+        $this->assertStringStartsWith(
+            $wrapped,
+            $escaped,
+            'escapeshellarg must wrap in quotes'
+        );
+        $this->assertStringEndsWith(
+            $wrapped,
+            $escaped,
+            'escapeshellarg must wrap in quotes'
+        );
+        $this->assertNotEquals(
+            $malicious,
+            $escaped,
+            'escapeshellarg must transform the input'
+        );
     }
 
     public function testCommandInjectionWithBackticks(): void
@@ -560,10 +605,16 @@ final class PenetrationTest extends TestCase
         $escaped = escapeshellarg($malicious);
 
         $wrapped = (PHP_OS_FAMILY === 'Windows') ? '"' : "'";
-        $this->assertStringStartsWith($wrapped, $escaped,
-            'escapeshellarg must wrap in quotes');
-        $this->assertNotEquals($malicious, $escaped,
-            'escapeshellarg must transform backtick input');
+        $this->assertStringStartsWith(
+            $wrapped,
+            $escaped,
+            'escapeshellarg must wrap in quotes'
+        );
+        $this->assertNotEquals(
+            $malicious,
+            $escaped,
+            'escapeshellarg must transform backtick input'
+        );
     }
 
     // ========================================================================
@@ -592,8 +643,10 @@ final class PenetrationTest extends TestCase
         }
 
         $xxePrevented = $parsingFailed || !$entitySubstituted;
-        $this->assertTrue($xxePrevented,
-            'XXE must be prevented - external entities must not be substituted');
+        $this->assertTrue(
+            $xxePrevented,
+            'XXE must be prevented - external entities must not be substituted'
+        );
     }
 
     // ========================================================================
@@ -682,20 +735,30 @@ final class PenetrationTest extends TestCase
 
         $unserializeCalls = [];
         foreach ($coreFiles as $file) {
-            if ($file->getExtension() !== 'php') continue;
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
             $path = $file->getRealPath();
-            if (str_contains($path, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR)) continue;
-            if (str_contains($path, DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR)) continue;
-            if (str_contains($path, DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR)) continue;
+            if (str_contains($path, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR)) {
+                continue;
+            }
+            if (str_contains($path, DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR)) {
+                continue;
+            }
+            if (str_contains($path, DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR)) {
+                continue;
+            }
             $content = file_get_contents($path);
             if (preg_match('/\bunserialize\s*\(/', $content)) {
                 $unserializeCalls[] = $path;
             }
         }
 
-        $this->assertEmpty($unserializeCalls,
+        $this->assertEmpty(
+            $unserializeCalls,
             'No unserialize() calls should exist in production code. Found: ' .
-            ($unserializeCalls !== [] ? implode(', ', $unserializeCalls) : 'none'));
+            ($unserializeCalls !== [] ? implode(', ', $unserializeCalls) : 'none')
+        );
     }
 
     public function testNoEvalInProductionCode(): void
@@ -709,12 +772,22 @@ final class PenetrationTest extends TestCase
 
         $evalCalls = [];
         foreach ($coreFiles as $file) {
-            if ($file->getExtension() !== 'php') continue;
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
             $path = $file->getRealPath();
-            if (str_contains($path, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR)) continue;
-            if (str_contains($path, DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR)) continue;
-            if (str_contains($path, DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR)) continue;
-            if (str_contains($path, 'TinkerCommand.php')) continue;
+            if (str_contains($path, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR)) {
+                continue;
+            }
+            if (str_contains($path, DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR)) {
+                continue;
+            }
+            if (str_contains($path, DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR)) {
+                continue;
+            }
+            if (str_contains($path, 'TinkerCommand.php')) {
+                continue;
+            }
             $content = file_get_contents($path);
             $lines = explode("\n", $content);
             foreach ($lines as $lineNo => $line) {
@@ -729,9 +802,11 @@ final class PenetrationTest extends TestCase
             }
         }
 
-        $this->assertEmpty($evalCalls,
+        $this->assertEmpty(
+            $evalCalls,
             'No eval() calls should exist in production code. Found: ' .
-            ($evalCalls !== [] ? implode('; ', $evalCalls) : 'none'));
+            ($evalCalls !== [] ? implode('; ', $evalCalls) : 'none')
+        );
     }
 
     // ========================================================================
@@ -744,11 +819,17 @@ final class PenetrationTest extends TestCase
         $file = (new \ReflectionClass(Request::class))->getFileName();
         $code = file_get_contents($file);
 
-        $this->assertStringContainsString('$maxBodySize', $code,
-            'Request must enforce body size limits');
+        $this->assertStringContainsString(
+            '$maxBodySize',
+            $code,
+            'Request must enforce body size limits'
+        );
 
-        $this->assertStringContainsString('$actualSize > $maxBodySize', $code,
-            'Request must validate actual body size, not just Content-Length header');
+        $this->assertStringContainsString(
+            '$actualSize > $maxBodySize',
+            $code,
+            'Request must validate actual body size, not just Content-Length header'
+        );
     }
 
     // ========================================================================
@@ -790,8 +871,10 @@ final class PenetrationTest extends TestCase
 
         foreach ($maliciousPaths as $path) {
             $hasWrapper = str_contains($path, '://');
-            $this->assertTrue($hasWrapper,
-                "Test path must contain PHP wrapper scheme: {$path}");
+            $this->assertTrue(
+                $hasWrapper,
+                "Test path must contain PHP wrapper scheme: {$path}"
+            );
 
             $dirSep = DIRECTORY_SEPARATOR;
             $cleanPath = ltrim($path, $dirSep);
@@ -810,8 +893,11 @@ final class PenetrationTest extends TestCase
             }
             $cleanPath = implode($dirSep, $filtered);
 
-            $this->assertStringNotContainsString('://', $cleanPath,
-                "PHP wrapper scheme (://) must not survive sanitization: {$path}");
+            $this->assertStringNotContainsString(
+                '://',
+                $cleanPath,
+                "PHP wrapper scheme (://) must not survive sanitization: {$path}"
+            );
         }
     }
 
@@ -828,8 +914,11 @@ final class PenetrationTest extends TestCase
         $this->assertStringNotContainsString("\n", $sanitized, 'CRLF must be stripped from headers');
         $this->assertStringNotContainsString("\r\n", $sanitized, 'CRLF pair must be stripped from headers');
 
-        $this->assertStringContainsString('Set-Cookie', $sanitized,
-            'Injected content remains after CRLF stripping but cannot create new header line');
+        $this->assertStringContainsString(
+            'Set-Cookie',
+            $sanitized,
+            'Injected content remains after CRLF stripping but cannot create new header line'
+        );
     }
 
     // ========================================================================
@@ -851,9 +940,13 @@ final class PenetrationTest extends TestCase
 
     private function removeDir(string $dir): void
     {
-        if (!is_dir($dir)) return;
+        if (!is_dir($dir)) {
+            return;
+        }
         foreach (scandir($dir) as $item) {
-            if ($item === '.' || $item === '..') continue;
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
             $path = $dir . DIRECTORY_SEPARATOR . $item;
             is_dir($path) ? $this->removeDir($path) : unlink($path);
         }

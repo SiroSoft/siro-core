@@ -13,6 +13,13 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
 {
     use CommandSupport;
 
+    /**
+     * @var list<string> Route files that failed to load (with the
+     * underlying error). A contract check against routes that could not
+     * be loaded must FAIL, never silently skip the file.
+     */
+    private array $skippedRouteFiles = [];
+
     public function __construct(private readonly string $basePath)
     {
     }
@@ -46,8 +53,7 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
         $passed = 0;
         $warnings = 0;
         $failed = 0;
-        $checked = 0;
-        foreach ($spec['paths'] as $path => $operations) {
+        $checked = 0;        foreach ($spec['paths'] as $path => $operations) {
             if ($pathFilter !== null && !str_contains((string) $path, $pathFilter)) {
                 continue;
             }
@@ -55,7 +61,13 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
                 continue;
             }
             foreach ($operations as $method => $operation) {
-                if (!is_string($method) || !in_array(strtoupper($method), ['GET','POST','PUT','PATCH','DELETE','OPTIONS'], true)) {
+                if (
+                    !is_string($method) || !in_array(
+                        strtoupper($method),
+                        ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+                        true
+                    )
+                ) {
                     continue;
                 }
                 $checked++;
@@ -114,8 +126,11 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
                 $this->warn('No operations to check in spec. Nothing was checked.');
             }
         }
+        if ($this->skippedRouteFiles !== []) {
+            $this->error('Could not load route file(s): ' . implode('; ', $this->skippedRouteFiles));
+        }
         $this->write("Contract: {$passed} passed, {$warnings} warnings, {$failed} failed");
-        return $failed > 0 || ($strict && $warnings > 0) || $checked === 0 ? 1 : 0;
+        return $failed > 0 || ($strict && $warnings > 0) || $checked === 0 || $this->skippedRouteFiles !== [] ? 1 : 0;
     }
 
     /**
@@ -215,10 +230,16 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
             try {
                 $app->loadRoutes($file);
             } catch (\Throwable $e) {
-                // Schedule/console route files can require a scheduler object
-                // that is not part of HTTP bootstrap. Keep contract checks
-                // useful for API routes and report the skipped file.
-                $this->warn('Skipped non-HTTP route file: ' . basename($file));
+                // The original S-07 trigger (routes/schedule.php needing
+                // $schedule) is fixed in App::loadRoutes(), so any file
+                // that still throws here is genuinely broken. Record it
+                // and FAIL the check below — silently skipping it could
+                // false-pass a contract against routes never loaded.
+                // (Kept as catch + explicit failure, not a rethrow:
+                // Console has no exception handler, so a raw throw
+                // would surface as an uncaught fatal with a stack
+                // trace instead of a clean error naming the file.)
+                $this->skippedRouteFiles[] = basename($file) . ': ' . $e->getMessage();
             }
         }
         $router = $app->router();

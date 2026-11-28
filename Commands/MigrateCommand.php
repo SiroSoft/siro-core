@@ -29,7 +29,9 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
     public function run(array $args): int
     {
         if (in_array('--force-record', $args, true)) {
-            $this->warn('The --force-record flag was removed in v1.4.0: failed migrations are never recorded as applied. Fix the migration and re-run.');
+            $this
+                ->warn('The --force-record flag was removed in v1.4.0: failed migrations are never recorded as ' .
+                'applied. Fix the migration and re-run.');
         }
 
         $pdo = $this->setupDatabaseConnection($this->basePath);
@@ -85,7 +87,10 @@ final class MigrateCommand implements \Siro\Core\Commands\CommandInterface
                 } catch (Throwable $te) {
                     // Transaction not supported, continue without it
                     $canTransaction = false;
-                    $this->warn('Transactions are not supported by this driver; running migration without a transaction: ' . $migrationName);
+                    $this
+                        ->warn('Transactions are not supported by this driver; running migration without a ' .
+                        'transaction: ' .
+                        $migrationName);
                 }
 
                 $instance->up($pdo);

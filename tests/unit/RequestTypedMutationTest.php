@@ -19,7 +19,11 @@ final class RequestTypedMutationTest extends TestCase
 
     public function testTypedAccessors(): void
     {
-        $r = $this->makeRequest([], [], ['age' => '30', 'name' => 'abc', 'on' => '1', 'tags' => ['a', 'b'], 'pi' => '3.14']);
+        $r = $this->makeRequest(
+            [],
+            [],
+            ['age' => '30', 'name' => 'abc', 'on' => '1', 'tags' => ['a', 'b'], 'pi' => '3.14']
+        );
         $this->assertSame(30, $r->int('age'));
         $this->assertSame(0, $r->int('missing'));
         $this->assertSame('abc', $r->string('name'));

@@ -48,12 +48,14 @@ final class MakeAuthCommand implements \Siro\Core\Commands\CommandInterface
             mkdir($migrationDir, 0775, true);
         }
 
-        $refreshTokenMigration = $migrationDir . DIRECTORY_SEPARATOR . date('YmdHis', time()) . '_create_refresh_tokens_table.php';
+        $refreshTokenMigration = $migrationDir . DIRECTORY_SEPARATOR . date('YmdHis', time()) .
+            '_create_refresh_tokens_table.php';
         $this->write('Generated: database/migrations/..._create_refresh_tokens_table.php');
         file_put_contents($refreshTokenMigration, $this->refreshTokenMigrationTemplate());
         sleep(1);
 
-        $verifyMigration = $migrationDir . DIRECTORY_SEPARATOR . date('YmdHis', time()) . '_add_auth_fields_to_users_table.php';
+        $verifyMigration = $migrationDir . DIRECTORY_SEPARATOR . date('YmdHis', time()) .
+            '_add_auth_fields_to_users_table.php';
         $this->write('Generated: database/migrations/..._add_auth_fields_to_users_table.php');
         file_put_contents($verifyMigration, $this->authFieldsMigrationTemplate());
     }
@@ -79,7 +81,9 @@ final class MakeAuthCommand implements \Siro\Core\Commands\CommandInterface
 
     private function updateUserModel(): void
     {
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR . 'User.php';
+        $path = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR .
+            'User.php';
         if (is_file($path)) {
             $this->write('Exists: app/Models/User.php (skipped)');
             return;

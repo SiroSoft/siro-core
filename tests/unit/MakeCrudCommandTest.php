@@ -25,7 +25,8 @@ final class MakeCrudCommandTest extends TestCase
         mkdir($this->basePath . DIRECTORY_SEPARATOR . 'routes', 0777, true);
         file_put_contents(
             $this->basePath . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'api.php',
-            "<?php\n\n\$router->group(['prefix' => 'api'], function (\$router) {\n    \$router->get('/health', fn () => 'ok');\n});\n"
+            "<?php\n\n\$router->group(['prefix' => 'api'], function (\$router) {\n    \$" .
+                "router->get('/health', fn () => 'ok');\n" . "});\n"
         );
     }
 

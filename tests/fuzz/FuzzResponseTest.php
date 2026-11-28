@@ -6,7 +6,6 @@ namespace Siro\Core\Tests\Fuzz;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
-
 use Siro\Core\Response;
 
 final class FuzzResponseTest extends TestCase

@@ -45,7 +45,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsExpiredToken(): void
     {
-        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time() - 7200, 'exp' => time() - 3600, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time() - 7200, 'exp' => time() - 3600, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('expired');
@@ -54,7 +55,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsFutureIat(): void
     {
-        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time() + 120, 'exp' => time() + 7200, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time() + 120, 'exp' => time() + 7200, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('future');
@@ -63,7 +65,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsNotYetValidNbf(): void
     {
-        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 7200, 'nbf' => time() + 600, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 7200, 'nbf' => time() + 600,
+            'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('not yet valid');
@@ -72,7 +75,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeAcceptsNbfInPast(): void
     {
-        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time() - 100, 'exp' => time() + 3600, 'nbf' => time() - 50, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time() - 100, 'exp' => time() + 3600, 'nbf' => time() - 50,
+            'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $decoded = JWT::decode($token);
         $this->assertEquals(1, $decoded['sub']);
@@ -80,7 +84,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsZeroSub(): void
     {
-        $payload = ['sub' => 0, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 0, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('sub');
@@ -89,7 +94,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsNegativeSub(): void
     {
-        $payload = ['sub' => -1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => -1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('sub');
@@ -98,7 +104,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsZeroVer(): void
     {
-        $payload = ['sub' => 1, 'ver' => 0, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 1, 'ver' => 0, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('ver');
@@ -107,7 +114,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsInvalidType(): void
     {
-        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'admin', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'admin',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('type');
@@ -122,10 +130,12 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsTamperedPayload(): void
     {
-        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $parts = explode('.', $token);
-        $parts[1] = rtrim(strtr(base64_encode(json_encode(['sub' => 999, 'ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access'])), '+/', '-_'), '=');
+        $parts[1] = rtrim(strtr(base64_encode(json_encode(['sub' => 999, 'ver' => 1, 'iat' => time(),
+            'exp' => time() + 3600, 'type' => 'access'])), '+/', '-_'), '=');
         $tampered = implode('.', $parts);
         $this->expectException(\RuntimeException::class);
         JWT::decode($tampered);
@@ -197,7 +207,10 @@ final class MutationGapTest extends TestCase
 
     public function testValidateAudienceArrayContainsReturnsTrue(): void
     {
-        $this->assertTrue(JWT::validateAudience(['aud' => ['api.example.com', 'other.example.com']], 'api.example.com'));
+        $this->assertTrue(JWT::validateAudience(
+            ['aud' => ['api.example.com', 'other.example.com']],
+            'api.example.com'
+        ));
     }
 
     public function testValidateAudienceArrayMissingReturnsFalse(): void
@@ -475,7 +488,8 @@ final class MutationGapTest extends TestCase
     {
         // iat exactly at the +60s skew limit must still validate (strict > comparison)
         $now = time();
-        $payload = ['sub' => 1, 'ver' => 1, 'iat' => $now + 60, 'exp' => $now + 7200, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => $now + 60, 'exp' => $now + 7200, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $decoded = JWT::decode($token);
         $this->assertSame(1, $decoded['sub']);
@@ -484,7 +498,8 @@ final class MutationGapTest extends TestCase
     public function testDecodeAcceptsIatJustInsideClockSkewLimit(): void
     {
         $now = time();
-        $payload = ['sub' => 1, 'ver' => 1, 'iat' => $now + 59, 'exp' => $now + 7200, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => $now + 59, 'exp' => $now + 7200, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $decoded = JWT::decode($token);
         $this->assertSame(1, $decoded['sub']);
@@ -505,7 +520,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsTokenMissingSubClaim(): void
     {
-        $payload = ['ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['ver' => 1, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('sub');
@@ -514,7 +530,8 @@ final class MutationGapTest extends TestCase
 
     public function testDecodeRejectsTokenMissingVerClaim(): void
     {
-        $payload = ['sub' => 5, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access', 'jti' => bin2hex(random_bytes(16))];
+        $payload = ['sub' => 5, 'iat' => time(), 'exp' => time() + 3600, 'type' => 'access',
+            'jti' => bin2hex(random_bytes(16))];
         $token = JWT::encode($payload);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('ver');
@@ -794,7 +811,8 @@ final class MutationGapTest extends TestCase
     {
         // Craft a token whose header declares RS256 while the server is configured HS256
         $header = self::b64url(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
-        $payload = self::b64url(json_encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 60, 'type' => 'access']));
+        $payload = self::b64url(json_encode(['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 60,
+            'type' => 'access']));
         $token = $header . '.' . $payload . '.AAAA';
         try {
             JWT::decode($token);
@@ -837,7 +855,8 @@ final class MutationGapTest extends TestCase
 
     public function testFutureNbfMessageIsExact(): void
     {
-        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 60, 'nbf' => time() + 999, 'type' => 'access'];
+        $payload = ['sub' => 1, 'ver' => 1, 'iat' => time(), 'exp' => time() + 60, 'nbf' => time() + 999,
+            'type' => 'access'];
         try {
             JWT::decode(self::encodeRaw($payload));
             $this->fail('Expected RuntimeException was not thrown');
@@ -918,7 +937,8 @@ final class MutationGapTest extends TestCase
     {
         // Insert a row where id/user_id are TEXT-typed strings — sqlite is dynamically typed
         Database::execute(
-            "INSERT INTO api_keys (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+            "INSERT INTO api_keys (name, token_hash, " .
+                "token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
              VALUES ('Stringy', ?, ?, 'read', '77', '1700000000', '0', NULL)",
             [hash('sha256', 'stringy-token-abc'), password_hash('stringy-token-abc', PASSWORD_DEFAULT)]
         );
@@ -936,7 +956,8 @@ final class MutationGapTest extends TestCase
     {
         // name/scopes have NOT NULL defaults in schema — set empty strings, NULL user_id
         Database::execute(
-            "INSERT INTO api_keys (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+            "INSERT INTO api_keys (name, token_hash, " .
+                "token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
              VALUES ('', ?, ?, '', NULL, '1700000000', 0, NULL)",
             [hash('sha256', 'null-cols-token'), password_hash('null-cols-token', PASSWORD_DEFAULT)]
         );
@@ -952,7 +973,8 @@ final class MutationGapTest extends TestCase
     public function testHasScopeWithEmptyScopesReturnsFalse(): void
     {
         Database::execute(
-            "INSERT INTO api_keys (name, token_hash, token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
+            "INSERT INTO api_keys (name, token_hash, " .
+                "token_bcrypt, scopes, user_id, created_at, expires_at, last_used_at)
              VALUES ('Empty', ?, ?, '', 0, '1700000000', 0, NULL)",
             [hash('sha256', 'empty-scope-token'), password_hash('empty-scope-token', PASSWORD_DEFAULT)]
         );
@@ -970,7 +992,10 @@ final class MutationGapTest extends TestCase
         $created = ApiKey::create('Trim', "  READ , wrItE  ", null, 0);
         $this->assertSame('read , write', $created['scopes']);
         // Stored in DB identically
-        $row = Database::select('SELECT scopes FROM api_keys WHERE token_hash = ?', [hash('sha256', $created['token'])]);
+        $row = Database::select(
+            'SELECT scopes FROM api_keys WHERE token_hash = ?',
+            [hash('sha256', $created['token'])]
+        );
         $this->assertSame('read , write', (string) $row[0]['scopes']);
     }
 
@@ -992,7 +1017,10 @@ final class MutationGapTest extends TestCase
         $before = time();
         $created = ApiKey::create('Exp', 'read', null, 3);
         $after = time();
-        $row = Database::select('SELECT expires_at FROM api_keys WHERE token_hash = ?', [hash('sha256', $created['token'])]);
+        $row = Database::select(
+            'SELECT expires_at FROM api_keys WHERE token_hash = ?',
+            [hash('sha256', $created['token'])]
+        );
         $exp = (int) $row[0]['expires_at'];
         // 3 days = 259200 seconds, must be anchored between before and after
         $this->assertGreaterThanOrEqual($before + 259200, $exp);

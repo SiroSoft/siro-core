@@ -33,7 +33,8 @@ final class BelongsToManyMutationTest extends TestCase
             $pdo = $this->pdo();
             $pdo->exec('CREATE TABLE IF NOT EXISTS bmu_users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))');
             $pdo->exec('CREATE TABLE IF NOT EXISTS bmu_roles (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))');
-            $pdo->exec('CREATE TABLE IF NOT EXISTS bmu_role_user (user_id INT, role_id INT, created_at TEXT, extra TEXT, PRIMARY KEY(user_id, role_id))');
+            $pdo->exec('CREATE TABLE IF NOT EXISTS bmu_role_user (user_id INT, role_id INT, ' .
+                'created_at TEXT, extra TEXT, PRIMARY KEY(user_id, ' . 'role_id))');
             $pdo->exec("INSERT IGNORE INTO bmu_users (id, name) VALUES (1, 'U1'), (2, 'U2')");
             $pdo->exec("INSERT IGNORE INTO bmu_roles (id, name) VALUES (1, 'admin'), (2, 'editor')");
         } catch (\Throwable $e) {
@@ -56,7 +57,12 @@ final class BelongsToManyMutationTest extends TestCase
 
     private function pdo(): PDO
     {
-        return new PDO('mysql:host=127.0.0.1;port=3307;dbname=siro_test', 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        return new PDO(
+            'mysql:host=127.0.0.1;port=3307;dbname=siro_test',
+            'root',
+            '',
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
     }
 
     public function testWithPivotGetColumns(): void
@@ -130,25 +136,4 @@ final class BelongsToManyMutationTest extends TestCase
         $user->roles()->detachAll();
         $this->assertCount(0, $user->roles()->get());
     }
-}
-
-final class BMUUser extends Model
-{
-    protected string $table = 'bmu_users';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
-
-    public function roles(): \Siro\Core\DB\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(BMURole::class, 'bmu_role_user', 'user_id', 'role_id')->withPivot(['created_at', 'extra']);
-    }
-}
-
-final class BMURole extends Model
-{
-    protected string $table = 'bmu_roles';
-
-    /** @var array<int, string> */
-    protected array $fillable = ['name'];
 }
