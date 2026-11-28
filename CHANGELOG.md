@@ -21,6 +21,11 @@
   `Unit` testsuite was already declared and counted. Fixed the one
   environment-dependent CLI test (`env:check` warning count) to assert
   against the real environment instead of assuming redis is missing.
+- phpcs (F-G): wrapped the long `usage` strings in `Console.php` (and
+  one long path expression) so the file is clean under `phpcs.xml` —
+  0 errors, 0 warnings (was 8 errors + 61 warnings, all lines over
+  the 120/160-char limits). Usage text is unchanged; only line breaks
+  moved. Whole-repo style debt outside this file is untouched.
 
 ## v1.5.2 (2026-11-28)
 
