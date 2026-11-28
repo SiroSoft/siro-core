@@ -58,11 +58,16 @@ final class DatabaseCommand implements CommandInterface
         if (str_contains($env, 'DB_CONNECTION=')) {
             file_put_contents($envPath, $env);
         } else {
-            file_put_contents($envPath, $env . "\nDB_CONNECTION=sqlite\nDB_DATABASE=storage/app/database.sqlite\n", FILE_APPEND);
+            file_put_contents(
+                $envPath,
+                $env . "\nDB_CONNECTION=sqlite\nDB_DATABASE=storage/app/database.sqlite\n",
+                FILE_APPEND
+            );
         }
 
         // Ensure SQLite file exists
-        $dbFile = getcwd() . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'database.sqlite';
+        $dbFile = getcwd() . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR .
+            'database.sqlite';
         $dbDir = dirname($dbFile);
         if (!is_dir($dbDir)) {
             mkdir($dbDir, 0755, true);

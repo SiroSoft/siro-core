@@ -31,13 +31,25 @@ final class BackupManager
     public function backup(string $backupDir, bool $compress): array
     {
         if ($this->dbPath === null || $this->dbPath === '') {
-            return ['success' => false, 'message' => 'Cannot resolve SQLite database path', 'path' => '', 'size' => 0, 'compressed' => false];
+            return [
+                'success' => false,
+                'message' => 'Cannot resolve SQLite database path',
+                'path' => '',
+                'size' => 0,
+                'compressed' => false
+            ];
         }
         if (!is_dir($backupDir)) {
             @mkdir($backupDir, 0775, true);
         }
         if (!is_dir($backupDir)) {
-            return ['success' => false, 'message' => 'Cannot create backup directory: ' . $backupDir, 'path' => '', 'size' => 0, 'compressed' => false];
+            return [
+                'success' => false,
+                'message' => 'Cannot create backup directory: ' . $backupDir,
+                'path' => '',
+                'size' => 0,
+                'compressed' => false
+            ];
         }
 
         $stamp = date('Y-m-d-His');
@@ -51,12 +63,24 @@ final class BackupManager
                 $gz = gzopen($path, 'wb');
                 if ($gz === false) {
                     @unlink($rawPath);
-                    return ['success' => false, 'message' => 'Cannot open gzip stream', 'path' => $path, 'size' => 0, 'compressed' => true];
+                    return [
+                        'success' => false,
+                        'message' => 'Cannot open gzip stream',
+                        'path' => $path,
+                        'size' => 0,
+                        'compressed' => true
+                    ];
                 }
                 $fp = fopen($rawPath, 'rb');
                 if ($fp === false) {
                     @unlink($rawPath);
-                    return ['success' => false, 'message' => 'Cannot open raw backup for compression', 'path' => $path, 'size' => 0, 'compressed' => true];
+                    return [
+                        'success' => false,
+                        'message' => 'Cannot open raw backup for compression',
+                        'path' => $path,
+                        'size' => 0,
+                        'compressed' => true
+                    ];
                 }
                 while (!feof($fp)) {
                     $chunk = fread($fp, 8192);
@@ -73,9 +97,16 @@ final class BackupManager
             }
 
             $size = file_exists($path) ? (int) filesize($path) : 0;
-            return ['success' => true, 'message' => 'Backup completed', 'path' => $path, 'size' => $size, 'compressed' => $compress];
+            return [
+                'success' => true,
+                'message' => 'Backup completed',
+                'path' => $path,
+                'size' => $size,
+                'compressed' => $compress
+            ];
         } catch (Throwable $e) {
-            return ['success' => false, 'message' => 'Backup failed: ' . $e->getMessage(), 'path' => $path, 'size' => 0, 'compressed' => $compress];
+            return ['success' => false, 'message' => 'Backup failed: ' . $e
+                ->getMessage(), 'path' => $path, 'size' => 0, 'compressed' => $compress];
         }
     }
 

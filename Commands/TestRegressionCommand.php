@@ -129,7 +129,8 @@ final class TestRegressionCommand implements \Siro\Core\Commands\CommandInterfac
                         $origSuccess = $origBody['success'] ?? null;
                         $newSuccess = $newBody['success'] ?? null;
                         if ($origSuccess !== null && $newSuccess !== null && $origSuccess !== $newSuccess) {
-                            $issues[] = 'success_changed: ' . ($origSuccess ? 'true' : 'false') . ' -> ' . ($newSuccess ? 'true' : 'false');
+                            $issues[] = 'success_changed: ' . ($origSuccess ? 'true' : 'false') . ' -> ' .
+                                ($newSuccess ? 'true' : 'false');
                         }
                         foreach ($origBody as $key => $val) {
                             if (!array_key_exists($key, $newBody)) {
@@ -178,7 +179,9 @@ final class TestRegressionCommand implements \Siro\Core\Commands\CommandInterfac
                     $color = str_contains($issue, 'connection_error') ? self::YELLOW : self::RED;
                     $this->write('    ' . $color . chr(10007) . ' ' . $issue . self::RESET);
                 }
-                $this->write('    ' . self::CYAN . 'Replay: php siro replay ' . $c['trace_id'] . ' --force' . self::RESET);
+                $this
+                    ->write('    ' . self::CYAN . 'Replay: php siro replay ' . $c['trace_id'] . ' --force' .
+                    self::RESET);
             }
         }
 

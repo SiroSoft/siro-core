@@ -92,7 +92,8 @@ final class LiveCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('');
 
         $lastRestart = 0;
-        $serverCmd = 'php -S ' . escapeshellarg($this->host) . ':' . escapeshellarg((string) $this->port) . ' -t ' . escapeshellarg($publicDir);
+        $serverCmd = 'php -S ' . escapeshellarg($this->host) . ':' . escapeshellarg((string) $this
+            ->port) . ' -t ' . escapeshellarg($publicDir);
 
         if (is_file($routerFile)) {
             $serverCmd .= " \"{$routerFile}\"";

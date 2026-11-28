@@ -132,7 +132,13 @@ $results[] = bench('Middleware 5-layer pipeline', 5000, function () {
 });
 
 $results[] = bench('Request::validate 5 rules', 5000, function () {
-    $req = new Request('POST', '/t', [], [], ['email' => 'a@b.com', 'name' => 'John', 'age' => '25', 'score' => '100.5', 'active' => '1']);
+    $req = new Request(
+        'POST',
+        '/t',
+        [],
+        [],
+        ['email' => 'a@b.com', 'name' => 'John', 'age' => '25', 'score' => '100.5', 'active' => '1']
+    );
     $req->validate(['email' => 'required|email', 'name' => 'required|min:2', 'age' => 'required|integer',
         'score' => 'required|numeric', 'active' => 'required']);
 });
@@ -179,7 +185,12 @@ $totalOps = 0;
 $n = 0;
 
 if ($isJson) {
-    $out = ['benchmark' => 'SiroPHP', 'php' => PHP_VERSION, 'memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2), 'results' => []];
+    $out = [
+        'benchmark' => 'SiroPHP',
+        'php' => PHP_VERSION,
+        'memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+        'results' => []
+    ];
     /** @var Result $r */
     foreach ($results as $r) {
         $s = $r->stats();
@@ -198,11 +209,20 @@ printf("  %-42s %8s  %10s  %10s  %10s  %10s\n", "Benchmark", "Iters", "Avg (ms)"
 echo str_repeat('-', 100) . "\n";
 foreach ($results as $r) {
     $s = $r->stats();
-    printf("  %-42s %8d  %10.4f  %10.4f  %10.4f  %10.1f\n", $r->name, $r->iters, $s['avg'], $s['min'], $s['max'], $s['ops']);
+    printf("  %-42s %8d  %10.4f  %10.4f  %10.4f  %10.1f\n", $r->name, $r
+        ->iters, $s['avg'], $s['min'], $s['max'], $s['ops']);
     $totalAvg += $s['avg'];
     $totalOps += $s['ops'];
     $n++;
 }
 echo str_repeat('-', 100) . "\n";
-printf("  %-42s %8s  %10.4f  %10s  %10s  %10.1f\n", "AVERAGE", "", $totalAvg / max(1, $n), "", "", $totalOps / max(1, $n));
+printf(
+    "  %-42s %8s  %10.4f  %10s  %10s  %10.1f\n",
+    "AVERAGE",
+    "",
+    $totalAvg / max(1, $n),
+    "",
+    "",
+    $totalOps / max(1, $n)
+);
 echo str_repeat('=', 100) . "\n\n";

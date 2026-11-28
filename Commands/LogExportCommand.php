@@ -48,7 +48,9 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
             return $this->exportPostman($traceId);
         }
 
-        $traceDir = $this->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'traces';
+        $traceDir = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR .
+            'traces';
 
         if (!is_dir($traceDir)) {
             $this->write('No traces directory found.');
@@ -107,7 +109,8 @@ final class LogExportCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         if ($format === 'json') {
-            $content = $this->safeStr(json_encode($traces, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+            $content = $this
+                ->safeStr(json_encode($traces, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
         } elseif ($format === 'csv') {
             /** @var list<array<string, mixed>> $traces */
             $content = $this->toCsv($traces);

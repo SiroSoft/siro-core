@@ -104,7 +104,9 @@ final class NewCommand implements \Siro\Core\Commands\CommandInterface
             copy($envExample, $envPath);
         }
         if (!is_file($envPath)) {
-            $envContent = "APP_NAME=\"{$name}\"\nAPP_ENV=local\nAPP_DEBUG=true\nDB_CONNECTION=sqlite\nDB_DATABASE=storage/app/database.sqlite\nJWT_SECRET=\n";
+            $envContent =
+                "APP_NAME=\"{$name}\"\nAPP_ENV=local\nAPP_DEBUG=true\nDB_CONNECTION=sqlite\nDB_DATABASE=storage/app/" .
+                "database.sqlite\nJWT_SECRET=\n";
             file_put_contents($envPath, $envContent);
         }
 

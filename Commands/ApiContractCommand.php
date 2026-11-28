@@ -61,7 +61,13 @@ final class ApiContractCommand implements \Siro\Core\Commands\CommandInterface
                 continue;
             }
             foreach ($operations as $method => $operation) {
-                if (!is_string($method) || !in_array(strtoupper($method), ['GET','POST','PUT','PATCH','DELETE','OPTIONS'], true)) {
+                if (
+                    !is_string($method) || !in_array(
+                        strtoupper($method),
+                        ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+                        true
+                    )
+                ) {
                     continue;
                 }
                 $checked++;

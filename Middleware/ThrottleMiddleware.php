@@ -141,7 +141,11 @@ final class ThrottleMiddleware implements MiddlewareInterface
 
             if ($count > $limit) {
                 $response = Response::error('Too Many Requests', 429, [
-                    'throttle' => [sprintf('Rate limit exceeded. Max %d requests per %d minute(s).', $limit, $windowMinutes)],
+                    'throttle' => [sprintf(
+                        'Rate limit exceeded. Max %d requests per %d minute(s).',
+                        $limit,
+                        $windowMinutes
+                    )],
                 ]);
                 return $this->withRateHeaders($response, $limit, $remaining, time() + $retryAfter, $retryAfter);
             }
@@ -372,7 +376,11 @@ final class ThrottleMiddleware implements MiddlewareInterface
 
             if ($count > $limit) {
                 $response = Response::error('Too Many Requests', 429, [
-                    'throttle' => [sprintf('Rate limit exceeded. Max %d requests per %d minute(s).', $limit, $windowMinutes)],
+                    'throttle' => [sprintf(
+                        'Rate limit exceeded. Max %d requests per %d minute(s).',
+                        $limit,
+                        $windowMinutes
+                    )],
                 ]);
                 return $this->withRateHeaders($response, $limit, $remaining, $now + $remainingTtl, $remainingTtl);
             }

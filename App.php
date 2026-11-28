@@ -81,12 +81,14 @@ final class App
         // Register core services as singletons for DI
         $container->singleton(\Siro\Core\DB\DatabaseInterface::class, fn () => new \Siro\Core\DB\DatabaseInstance());
         $container->singleton(\Siro\Core\Cache\CacheInterface::class, fn () => new \Siro\Core\Cache\CacheInstance());
-        $container->singleton(\Siro\Core\Logger\LoggerInterface::class, fn () => new \Siro\Core\Logger\LoggerInstance());
+        $container
+            ->singleton(\Siro\Core\Logger\LoggerInterface::class, fn () => new \Siro\Core\Logger\LoggerInstance());
 
         // Database config loaded but NO connection opened yet
         $dbConfig = Config::get('database', []);
         if (!is_array($dbConfig) || $dbConfig === []) {
-            $databaseConfigPath = $this->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+            $databaseConfigPath = $this
+                ->basePath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
             $dbConfig = is_file($databaseConfigPath) ? (array) require $databaseConfigPath : [];
         }
         /** @var array<string, mixed> $dbConfig */
@@ -164,7 +166,9 @@ final class App
 
     private function discoverPackageProviders(): void
     {
-        $installedFile = $this->basePath . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'installed.json';
+        $installedFile = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR .
+            'installed.json';
 
         if (!file_exists($installedFile)) {
             return;
@@ -260,7 +264,8 @@ final class App
         } else {
             $basePath = (string) dirname(__DIR__);
         }
-        $file = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'down';
+        $file = $basePath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR .
+            'down';
         if (!file_exists($file)) {
             return null;
         }
@@ -287,7 +292,8 @@ final class App
         $status = 500;
         $request = null;
         // W3C Trace Context: accept incoming, propagate outgoing
-        $incomingTraceparent = isset($_SERVER['HTTP_TRACEPARENT']) && is_string($_SERVER['HTTP_TRACEPARENT']) ? $_SERVER['HTTP_TRACEPARENT'] : '';
+        $incomingTraceparent = isset($_SERVER['HTTP_TRACEPARENT']) && is_string($_SERVER['HTTP_TRACEPARENT']) ?
+            $_SERVER['HTTP_TRACEPARENT'] : '';
         $traceIdRaw = bin2hex(random_bytes(16));
         $traceId = 'siro_' . $traceIdRaw;
         $spanId = bin2hex(random_bytes(8));
@@ -348,7 +354,8 @@ final class App
             $status = $response->statusCode();
             $this->attachDebugMeta();
             if ($this->traceEnabled) {
-                TraceData::setResponseBody((string) json_encode($response->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setResponseBody((string) json_encode($response
+                    ->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
             }
 
             // Always add security and trace headers
@@ -363,7 +370,8 @@ final class App
                 : $e->toResponse();
             $status = $errorResponse->statusCode();
             if ($this->traceEnabled) {
-                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setResponseBody((string) json_encode($errorResponse
+                    ->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 TraceData::setException($e::class, $e->getMessage());
             }
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
@@ -374,7 +382,8 @@ final class App
                 : $e->toResponse();
             $status = $errorResponse->statusCode();
             if ($this->traceEnabled) {
-                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setResponseBody((string) json_encode($errorResponse
+                    ->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 TraceData::setException($e::class, $e->getMessage());
             }
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
@@ -385,7 +394,8 @@ final class App
                 : $e->toResponse();
             $status = $errorResponse->statusCode();
             if ($this->traceEnabled) {
-                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setResponseBody((string) json_encode($errorResponse
+                    ->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 TraceData::setException($e::class, $e->getMessage());
             }
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
@@ -396,7 +406,8 @@ final class App
                 ? Response::fromException($e, $request)
                 : Response::error($e->getMessage(), 404);
             if ($this->traceEnabled) {
-                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setResponseBody((string) json_encode($errorResponse
+                    ->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 TraceData::setException($e::class, $e->getMessage());
             }
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
@@ -422,14 +433,17 @@ final class App
             }
             $status = $errorResponse->statusCode();
             if ($this->traceEnabled) {
-                TraceData::setResponseBody((string) json_encode($errorResponse->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                TraceData::setResponseBody((string) json_encode($errorResponse
+                    ->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                 TraceData::setException($e::class, $e->getMessage());
             }
             $errorResponse->header('X-Siro-Trace-Id', $traceId)->send();
         } finally {
             $timeMs = (microtime(true) - $requestStartedAt) * 1000;
-            $remoteAddr = isset($_SERVER['REMOTE_ADDR']) && is_string($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
-            $userAgent = isset($_SERVER['HTTP_USER_AGENT']) && is_string($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+            $remoteAddr = isset($_SERVER['REMOTE_ADDR']) && is_string($_SERVER['REMOTE_ADDR']) ?
+                $_SERVER['REMOTE_ADDR'] : '';
+            $userAgent = isset($_SERVER['HTTP_USER_AGENT']) && is_string($_SERVER['HTTP_USER_AGENT']) ?
+                $_SERVER['HTTP_USER_AGENT'] : '';
             Logger::request($method, $path, $status, $timeMs, $remoteAddr, $traceId, $userAgent);
             if ($timeMs > 100) {
                 Logger::slowRequest($method, $path, $status, $timeMs);
@@ -437,7 +451,8 @@ final class App
 
             // Write trace file for why/replay commands
             if ($this->traceEnabled) {
-                $host = isset($_SERVER['HTTP_HOST']) && is_string($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost:8080';
+                $host = isset($_SERVER['HTTP_HOST']) && is_string($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] :
+                    'localhost:8080';
                 $traceData = [
                     'method' => $method,
                     'path' => $path,
@@ -456,7 +471,10 @@ final class App
                 }
 
                 // Redact PII from trace data
-                if (isset($traceData['request_headers']) && is_array($traceData['request_headers']) && isset($traceData['request_headers']['authorization'])) {
+                if (
+                    isset($traceData['request_headers']) && is_array($traceData['request_headers']) &&
+                    isset($traceData['request_headers']['authorization'])
+                ) {
                     $traceData['request_headers']['authorization'] = '***REDACTED***';
                 }
                 if (isset($traceData['auth_header'])) {
@@ -474,7 +492,8 @@ final class App
                         $traceData['request_body'] = (string) json_encode($body, JSON_UNESCAPED_UNICODE);
                     } else {
                         $redacted = preg_replace(
-                            '/(password|token|secret|key|otp|code|access_token|refresh_token|api_key|session_id)=([^&\s]+)/i',
+                            '/(password|token|secret|key|otp|code|access_token|refresh_token|api_key|session_id)=([^&' .
+                                '\s]+)/i',
                             '$1=***REDACTED***',
                             $traceData['request_body']
                         );

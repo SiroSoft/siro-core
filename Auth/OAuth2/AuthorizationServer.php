@@ -173,9 +173,18 @@ final class AuthorizationServer
             'public_key' => $publicKey,
             'encryption_key' => self::toString($overrides['encryption_key'] ?? Env::get('OAUTH_ENCRYPTION_KEY', '')),
             'scopes' => $scopes,
-            'default_scope' => self::toString($overrides['default_scope'] ?? $fileConfig['default_scope'] ?? $scopes[0], $scopes[0]),
-            'access_token_ttl' => self::toInt($overrides['access_token_ttl'] ?? $fileConfig['access_token_ttl'] ?? 3600, 3600),
-            'refresh_token_ttl' => self::toInt($overrides['refresh_token_ttl'] ?? $fileConfig['refresh_token_ttl'] ?? 2592000, 2592000),
+            'default_scope' => self::toString(
+                $overrides['default_scope'] ?? $fileConfig['default_scope'] ?? $scopes[0],
+                $scopes[0]
+            ),
+            'access_token_ttl' => self::toInt(
+                $overrides['access_token_ttl'] ?? $fileConfig['access_token_ttl'] ?? 3600,
+                3600
+            ),
+            'refresh_token_ttl' => self::toInt(
+                $overrides['refresh_token_ttl'] ?? $fileConfig['refresh_token_ttl'] ?? 2592000,
+                2592000
+            ),
             'auth_code_ttl' => self::toInt($overrides['auth_code_ttl'] ?? $fileConfig['auth_code_ttl'] ?? 600, 600),
         ];
         self::$configCache[$cacheKey] = $resolved;
@@ -289,7 +298,8 @@ final class AuthorizationServer
      * core JWT (HS256/RS256 tokens issued by the login flow) when the token
      * is not a league token. Used by `OAuthScopeMiddleware` and `AuthGuard`.
      *
-     * @return array{token_id: string, client_id: string, user_id: int|null, scopes: array<int, string>, source: string}|null
+     * @return array{token_id: string, client_id: string, user_id: int|null, scopes: array<int, string>, source:
+     * string}|null
      */
     public static function validateRequest(Request $request): ?array
     {
@@ -313,7 +323,10 @@ final class AuthorizationServer
                     'token_id' => self::toString($psr->getAttribute('oauth_access_token_id')),
                     'client_id' => self::toString($psr->getAttribute('oauth_client_id')),
                     'user_id' => is_numeric($userId) && (int) $userId > 0 ? (int) $userId : null,
-                    'scopes' => is_array($scopes) ? array_values(array_map(static fn (mixed $v): string => is_scalar($v) ? (string) $v : '', $scopes)) : [],
+                    'scopes' => is_array($scopes) ? array_values(array_map(
+                        static fn (mixed $v): string => is_scalar($v) ? (string) $v : '',
+                        $scopes
+                    )) : [],
                     'source' => 'oauth2',
                 ];
             } catch (\Throwable) {

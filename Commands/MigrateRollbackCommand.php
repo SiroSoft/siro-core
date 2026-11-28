@@ -50,7 +50,9 @@ final class MigrateRollbackCommand implements \Siro\Core\Commands\CommandInterfa
                 continue;
             }
 
-            $path = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . $migration;
+            $path = $this
+                ->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' .
+                DIRECTORY_SEPARATOR . $migration;
             if (!is_file($path)) {
                 $this->write('Rollback failed: missing migration file: ' . $migration);
                 return 1;

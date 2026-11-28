@@ -58,7 +58,8 @@ final class Faker
 
     public static function vnFullName(): string
     {
-        return self::text(self::pick(self::LAST_NAMES)) . ' ' . self::text(self::pick(self::MIDDLE_NAMES)) . ' ' . self::text(self::pick(self::FIRST_NAMES));
+        return self::text(self::pick(self::LAST_NAMES)) . ' ' . self::text(self::pick(self::MIDDLE_NAMES)) . ' ' .
+            self::text(self::pick(self::FIRST_NAMES));
     }
 
     public static function vnPhone(): string
@@ -74,7 +75,8 @@ final class Faker
     {
         $local = $name !== ''
             ? self::slug($name)
-            : self::slug(self::text(self::pick(self::FIRST_NAMES))) . '.' . self::slug(self::text(self::pick(self::LAST_NAMES)));
+            : self::slug(self::text(self::pick(self::FIRST_NAMES))) . '.' .
+                self::slug(self::text(self::pick(self::LAST_NAMES)));
         return strtolower($local) . mt_rand(1, 999) . '@example.com';
     }
 

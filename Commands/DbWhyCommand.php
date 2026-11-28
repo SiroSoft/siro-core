@@ -58,7 +58,9 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
             $this->write('  Usage: php siro db:why <query_hash>');
             $this->write('  ' . self::GRAY . '  php siro db:why a1b2c3d4' . self::RESET);
             $this->write('  ' . self::GRAY . '  php siro db:why --slow        (list slow queries)' . self::RESET);
-            $this->write('  ' . self::GRAY . '  php siro db:why --query="SELECT * FROM users"   (analyze a query directly)' . self::RESET);
+            $this
+                ->write('  ' . self::GRAY .
+                '  php siro db:why --query="SELECT * FROM users"   (analyze a query directly)' . self::RESET);
             return 1;
         }
 
@@ -79,7 +81,9 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         $traceFiles = $this->findTraceFiles($tracesDir);
 
         if ($traceFiles === []) {
-            $this->write('  ' . self::YELLOW . 'No traces found. Enable APP_DEBUG=true to capture traces.' . self::RESET);
+            $this
+                ->write('  ' . self::YELLOW . 'No traces found. Enable APP_DEBUG=true to capture traces.' .
+                self::RESET);
             return 1;
         }
 
@@ -166,7 +170,9 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         if ($slowQueries === []) {
-            $this->write('  ' . self::GREEN . '✓ No slow queries found (threshold: ' . self::SLOW_THRESHOLD_MS . 'ms)' . self::RESET);
+            $this
+                ->write('  ' . self::GREEN . '✓ No slow queries found (threshold: ' . self::SLOW_THRESHOLD_MS .
+                'ms)' . self::RESET);
             return 0;
         }
 
@@ -184,7 +190,9 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
                 '  ' . self::CYAN . $q['hash'] . self::RESET . ' ' . $timeColor
                 . sprintf('%5.0fms', $q['time_ms']) . self::RESET . ' ' . self::GRAY . $sqlShort . self::RESET,
             );
-            $this->write('  ' . self::GRAY . '    Trace: ' . $q['method'] . ' ' . $q['path'] . ' (' . $q['trace_id'] . ')' . self::RESET);
+            $this
+                ->write('  ' . self::GRAY . '    Trace: ' . $q['method'] . ' ' . $q['path'] . ' (' . $q['trace_id'] .
+                ')' . self::RESET);
             $this->write('    ' . self::CYAN . 'php siro db:why ' . $q['hash'] . self::RESET);
         }
         $this->write('');
@@ -242,9 +250,17 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
                     // MySQL/PostgreSQL EXPLAIN format
                     foreach ($row as $key => $val) {
                         $valStr = is_scalar($val) ? (string) $val : '';
-                        if (in_array(strtolower((string) $key), ['type', 'key', 'rows', 'extra', 'possible_keys', 'ref'], true)) {
+                        if (
+                            in_array(
+                                strtolower((string) $key),
+                                ['type', 'key', 'rows', 'extra', 'possible_keys', 'ref'],
+                                true
+                            )
+                        ) {
                             $color = $this->getExplainColor((string) $key, $valStr);
-                            $this->write('    ' . self::GRAY . $key . ': ' . self::RESET . $color . $valStr . self::RESET);
+                            $this
+                                ->write('    ' . self::GRAY . $key . ': ' . self::RESET . $color . $valStr .
+                                self::RESET);
                         }
                     }
                 }
@@ -310,7 +326,8 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
 
         try {
             $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
-            $explainSql = (is_string($driver) && $driver === 'sqlite') ? 'EXPLAIN QUERY PLAN ' . $normalized : 'EXPLAIN ' . $normalized;
+            $explainSql = (is_string($driver) && $driver === 'sqlite') ? 'EXPLAIN QUERY PLAN ' . $normalized :
+                'EXPLAIN ' . $normalized;
             $stmt = $pdo->query($explainSql);
             if ($stmt === false) {
                 // PDO in silent mode: surface the driver error instead of
@@ -343,8 +360,10 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
 
         foreach ($explain as $row) {
             $type = is_string($row['type'] ?? null) ? strtolower($row['type']) : '';
-            $extra = is_string($row['Extra'] ?? null) ? strtolower($row['Extra']) : (is_string($row['extra'] ?? null) ? strtolower($row['extra']) : '');
-            $rowsVal = is_numeric($row['rows'] ?? null) ? (int) $row['rows'] : (is_numeric($row['ROWS'] ?? null) ? (int) $row['ROWS'] : 0);
+            $extra = is_string($row['Extra'] ?? null) ? strtolower($row['Extra']) : (is_string($row['extra'] ?? null) ?
+                strtolower($row['extra']) : '');
+            $rowsVal = is_numeric($row['rows'] ?? null) ? (int) $row['rows'] : (is_numeric($row['ROWS'] ?? null) ?
+                (int) $row['ROWS'] : 0);
             // SQLite EXPLAIN QUERY PLAN uses a 'detail' column (e.g. "SCAN orders",
             // "USE TEMP B-TREE FOR ORDER BY"). Detect scans from it as well.
             $detail = is_string($row['detail'] ?? null) ? strtolower($row['detail']) : '';
@@ -353,7 +372,8 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
                 || (str_contains($detail, 'using') && !str_contains($detail, 'index'));
 
             if ($isScan) {
-                $suggestions[] = 'Full table scan detected' . ($rowsVal > 0 ? ' (' . number_format($rowsVal) . ' rows scanned)' : '');
+                $suggestions[] = 'Full table scan detected' . ($rowsVal > 0 ? ' (' . number_format($rowsVal) .
+                    ' rows scanned)' : '');
                 $suggestions[] = 'Add index on columns used in WHERE and JOIN clauses';
                 // Extract table name and WHERE columns from SQL
                 $tableName = $this->extractTableName($sql);
@@ -361,7 +381,8 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
                     $whereCols = $this->extractWhereColumns($sql);
                     if ($whereCols !== []) {
                         $indexName = 'idx_' . $tableName . '_' . implode('_', $whereCols);
-                        $suggestions[] = '  Suggested: CREATE INDEX ' . $indexName . ' ON ' . $tableName . ' (' . implode(', ', $whereCols) . ')';
+                        $suggestions[] = '  Suggested: CREATE INDEX ' . $indexName . ' ON ' . $tableName . ' (' .
+                            implode(', ', $whereCols) . ')';
                     }
                 }
             }
@@ -455,12 +476,17 @@ final class DbWhyCommand implements \Siro\Core\Commands\CommandInterface
             'type' => match (true) {
                 str_contains($lower, 'all') || str_contains($lower, 'full') => self::RED,
                 str_contains($lower, 'index') && !str_contains($lower, 'eq_ref') => self::YELLOW,
-                str_contains($lower, 'eq_ref') || str_contains($lower, 'ref') || str_contains($lower, 'const') => self::GREEN,
+                str_contains($lower, 'eq_ref') || str_contains($lower, 'ref') || str_contains($lower, 'const') =>
+                    self::GREEN,
                 default => self::GRAY,
             },
             'key' => $lower === '' || $lower === 'null' ? self::RED : self::GREEN,
-            'rows' => (is_numeric($value) && (int) $value > 10000) ? self::RED : ((is_numeric($value) && (int) $value > 1000) ? self::YELLOW : self::GREEN),
-            'extra' => (str_contains($lower, 'using temporary') || str_contains($lower, 'using filesort')) ? self::RED : self::GRAY,
+            'rows' => (is_numeric($value) && (int) $value > 10000) ? self::RED : ((is_numeric($value) &&
+                (int) $value > 1000) ? self::YELLOW : self::GREEN),
+            'extra' => (str_contains($lower, 'using temporary') || str_contains(
+                $lower,
+                'using filesort'
+            )) ? self::RED : self::GRAY,
             default => self::GRAY,
         };
     }

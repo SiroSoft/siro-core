@@ -16,16 +16,24 @@ abstract class Controller
     /**
      * @param array<string, mixed> $meta
      */
-    protected function success(mixed $data = null, string $message = 'OK', int $statusCode = 200, array $meta = []): Response
-    {
+    protected function success(
+        mixed $data = null,
+        string $message = 'OK',
+        int $statusCode = 200,
+        array $meta = []
+    ): Response {
         return Response::success($data, $message, $statusCode, $meta);
     }
 
     /**
      * @param array<string, mixed> $errors
      */
-    protected function error(string $message, int $statusCode = 400, array $errors = [], string $errorCode = ''): Response
-    {
+    protected function error(
+        string $message,
+        int $statusCode = 400,
+        array $errors = [],
+        string $errorCode = ''
+    ): Response {
         return Response::error($message, $statusCode, $errors, $errorCode);
     }
 

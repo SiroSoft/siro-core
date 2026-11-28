@@ -119,7 +119,8 @@ final class FrankenphpServeCommand implements \Siro\Core\Commands\CommandInterfa
         $this->write('');
 
         $command = sprintf(
-            'docker build -f Dockerfile.frankenphp -t siro-app:latest "%s" && docker run -p %s:80 -p 443:443 -v "%s/.env:/app/.env" siro-app:latest 2>&1',
+            'docker build -f Dockerfile.frankenphp -t siro-app:latest "%s" && docker run -p %s:80 -p 443:443 -v ' .
+                '"%s/.env:/app/.env" siro-app:latest 2>&1',
             $this->basePath,
             $port,
             $this->basePath

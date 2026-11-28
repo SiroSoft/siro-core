@@ -35,7 +35,8 @@ final class CsrfMiddleware implements MiddlewareInterface
 
         if (!$hasSession) {
             // Double-submit cookie pattern for stateless API
-            $cookieToken = isset($_COOKIE['csrf_token']) && is_string($_COOKIE['csrf_token']) ? $_COOKIE['csrf_token'] : '';
+            $cookieToken = isset($_COOKIE['csrf_token']) && is_string($_COOKIE['csrf_token']) ? $_COOKIE['csrf_token'] :
+                '';
             $headerToken = (string) ($request->header('X-CSRF-TOKEN', '') ?: $request->header('X-XSRF-TOKEN', ''));
             if ($cookieToken === '' || $headerToken === '') {
                 return Response::json([

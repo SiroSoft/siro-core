@@ -74,7 +74,8 @@ final class Validator
      * Register a built-in rule strategy.
      *
      * @param string $name Rule name (e.g., 'email', 'min')
-     * @param callable $strategy Callback: function(mixed $value, ?string $param, array $input = [], string $field = ''): string|array|null
+     * @param callable $strategy Callback: function(mixed $value, ?string $param, array $input = [], string $field =
+     * ''): string|array|null
      *   Returns null if valid, error message string or [key, replacements] array if invalid
      */
     private static function registerStrategy(string $name, callable $strategy): void
@@ -105,7 +106,10 @@ final class Validator
 
         // Integer validation
         self::registerStrategy('integer', function ($value) {
-            return filter_var($value, FILTER_VALIDATE_INT) === false ? self::message('integer', 'validation.integer') : null;
+            return filter_var($value, FILTER_VALIDATE_INT) === false ? self::message(
+                'integer',
+                'validation.integer'
+            ) : null;
         });
 
         // Date validation
@@ -121,11 +125,17 @@ final class Validator
 
         // File validation
         self::registerStrategy('file', function ($value): ?string {
-            return (!($value instanceof UploadedFile) || !$value->isValid()) ? self::message('file', 'validation.file') : null;
+            return (!($value instanceof UploadedFile) || !$value
+                ->isValid()) ? self::message('file', 'validation.file') : null;
         });
 
         // Min validation (handles strings, numbers, files)
-        self::registerStrategy('min', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
+        self::registerStrategy('min', function (
+            $value,
+            ?string $param,
+            array $input = [],
+            string $field = ''
+        ): array|null {
             if ($param === null) {
                 return null;
             }
@@ -142,9 +152,15 @@ final class Validator
 
             if (is_string($value)) {
                 if (is_numeric($value)) {
-                    return (float) $value < $min ? [self::message('min', 'validation.min'), ['min' => (string) $min]] : null;
+                    return (float) $value < $min ? [
+                        self::message('min', 'validation.min'),
+                        ['min' => (string) $min]
+                    ] : null;
                 }
-                return strlen(trim($value)) < $min ? [self::message('min', 'validation.min'), ['min' => (string) $min]] : null;
+                return strlen(trim($value)) < $min ? [
+                    self::message('min', 'validation.min'),
+                    ['min' => (string) $min]
+                ] : null;
             }
 
             if (is_float($value)) {
@@ -154,7 +170,12 @@ final class Validator
         });
 
         // Max validation (handles strings, numbers, files)
-        self::registerStrategy('max', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
+        self::registerStrategy('max', function (
+            $value,
+            ?string $param,
+            array $input = [],
+            string $field = ''
+        ): array|null {
             if ($param === null) {
                 return null;
             }
@@ -172,12 +193,21 @@ final class Validator
             if (is_string($value)) {
                 // Phone numbers look numeric but must be validated by length, not numeric value
                 if ($field === 'phone') {
-                    return strlen(trim($value)) > $max ? [self::message('max', 'validation.max'), ['max' => (string) $max]] : null;
+                    return strlen(trim($value)) > $max ? [
+                        self::message('max', 'validation.max'),
+                        ['max' => (string) $max]
+                    ] : null;
                 }
                 if (is_numeric($value)) {
-                    return (float) $value > $max ? [self::message('max', 'validation.max'), ['max' => (string) $max]] : null;
+                    return (float) $value > $max ? [
+                        self::message('max', 'validation.max'),
+                        ['max' => (string) $max]
+                    ] : null;
                 }
-                return strlen(trim($value)) > $max ? [self::message('max', 'validation.max'), ['max' => (string) $max]] : null;
+                return strlen(trim($value)) > $max ? [
+                    self::message('max', 'validation.max'),
+                    ['max' => (string) $max]
+                ] : null;
             }
 
             if (is_float($value)) {
@@ -194,7 +224,12 @@ final class Validator
         });
 
         // In validation
-        self::registerStrategy('in', function ($value, ?string $param, array $input = [], string $field = ''): array|null {
+        self::registerStrategy('in', function (
+            $value,
+            ?string $param,
+            array $input = [],
+            string $field = ''
+        ): array|null {
             if ($param === null) {
                 return null;
             }
@@ -217,7 +252,10 @@ final class Validator
                 \Siro\Core\Logger::error('Regex validation failed: ' . $e->getMessage());
                 return null;
             }
-            return !preg_match($param, is_scalar($value) ? (string) $value : '') ? self::message('regex', 'validation.regex') : null;
+            return !preg_match($param, is_scalar($value) ? (string) $value : '') ? self::message(
+                'regex',
+                'validation.regex'
+            ) : null;
         });
     }
 
@@ -248,7 +286,10 @@ final class Validator
                 $allowsArray = in_array('array', $fieldRules, true)
                     || in_array('file', $fieldRules, true);
                 if (!$allowsArray && !isset($input[$field . '.*'])) {
-                    $errors[$field][] = self::msg(self::message('array', 'validation.array'), ['field' => self::label($field)]);
+                    $errors[$field][] = self::msg(
+                        self::message('array', 'validation.array'),
+                        ['field' => self::label($field)]
+                    );
                     continue;
                 }
             }
@@ -349,7 +390,10 @@ final class Validator
         // Check required
         $checkValue = is_string($value) ? trim($value) : $value;
         if ($isRequired && ($checkValue === null || $checkValue === '')) {
-            $errors[$field][] = self::msg(self::message('required', 'validation.required'), ['field' => self::label($field)]);
+            $errors[$field][] = self::msg(
+                self::message('required', 'validation.required'),
+                ['field' => self::label($field)]
+            );
             return $errors;
         }
 
@@ -407,7 +451,10 @@ final class Validator
                         $replacements['field'] = self::label($field);
                         $errors[$field][] = self::msg($key, $replacements);
                     } else {
-                        $errors[$field][] = self::msg(is_scalar($result) ? (string) $result : '', ['field' => self::label($field)]);
+                        $errors[$field][] = self::msg(
+                            is_scalar($result) ? (string) $result : '',
+                            ['field' => self::label($field)]
+                        );
                     }
                     continue;
                 }
@@ -426,7 +473,10 @@ final class Validator
                             ->count();
 
                         if ($exists > 0) {
-                            $errors[$field][] = self::msg(self::message('unique', 'validation.unique'), ['field' => self::label($field)]);
+                            $errors[$field][] = self::msg(
+                                self::message('unique', 'validation.unique'),
+                                ['field' => self::label($field)]
+                            );
                             continue;
                         }
                     }
@@ -445,7 +495,10 @@ final class Validator
                             ->count();
 
                         if ($exists === 0) {
-                            $errors[$field][] = self::msg(self::message('exists', 'validation.exists'), ['field' => self::label($field)]);
+                            $errors[$field][] = self::msg(
+                                self::message('exists', 'validation.exists'),
+                                ['field' => self::label($field)]
+                            );
                             continue;
                         }
                     }

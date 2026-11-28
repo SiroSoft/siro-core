@@ -166,7 +166,9 @@ final class CacheInstance implements CacheInterface
             return $this->driver;
         }
 
-        $this->driver = new FileDriver(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache');
+        $this
+            ->driver = new FileDriver(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR .
+            'cache');
         return $this->driver;
     }
 

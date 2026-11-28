@@ -45,7 +45,8 @@ final class JWT
         }
         $alg = strtoupper((string) Env::get('JWT_ALGORITHM', self::ALG_HS256));
         if (!in_array($alg, self::ALLOWED_ALGORITHMS, true)) {
-            throw new RuntimeException('Unsupported JWT algorithm: ' . $alg . '. Supported: ' . implode(', ', self::ALLOWED_ALGORITHMS) . '.');
+            throw new RuntimeException('Unsupported JWT algorithm: ' . $alg . '. Supported: ' .
+                implode(', ', self::ALLOWED_ALGORITHMS) . '.');
         }
         self::$algorithm = $alg;
         return $alg;
@@ -71,8 +72,13 @@ final class JWT
         return implode('.', $segments);
     }
 
-    public static function encodeAccess(int $userId, int $tokenVersion, int $ttl = 3600, ?string $audience = null, ?string $scope = null): string
-    {
+    public static function encodeAccess(
+        int $userId,
+        int $tokenVersion,
+        int $ttl = 3600,
+        ?string $audience = null,
+        ?string $scope = null
+    ): string {
         $now = time();
         $payload = [
             'sub' => $userId,
@@ -191,7 +197,8 @@ final class JWT
         $headerAlg = is_string($header['alg'] ?? null) ? $header['alg'] : '';
         $configuredAlg = self::algorithm();
         if ($headerAlg !== $configuredAlg) {
-            throw new RuntimeException('Algorithm mismatch: header declares ' . $headerAlg . ' but server expects ' . $configuredAlg);
+            throw new RuntimeException('Algorithm mismatch: header declares ' . $headerAlg . ' but server expects ' .
+                $configuredAlg);
         }
         if (!in_array($configuredAlg, [self::ALG_HS256, self::ALG_RS256], true)) {
             throw new RuntimeException('Unsupported token algorithm: ' . $configuredAlg);
@@ -231,12 +238,14 @@ final class JWT
 
         $sub = is_numeric($payload['sub'] ?? null) ? (int) $payload['sub'] : 0;
         if ($sub <= 0) {
-            throw new RuntimeException('JWT token missing required "sub" claim (user ID). Token may be malformed or tampered.');
+            throw new RuntimeException('JWT token missing required "sub" claim (user ID). Token may be malformed or ' .
+                'tampered.');
         }
 
         $ver = is_numeric($payload['ver'] ?? null) ? (int) $payload['ver'] : 0;
         if ($ver <= 0) {
-            throw new RuntimeException('JWT token missing required "ver" claim (token version). Token may be from an incompatible system.');
+            throw new RuntimeException('JWT token missing required "ver" claim (token version). Token may be from an ' .
+                'incompatible system.');
         }
 
         self::cleanupBlacklist();

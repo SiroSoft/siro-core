@@ -64,7 +64,9 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface
 
             // Specific checks
             if ($key === 'JWT_SECRET' && strlen((string) $value) < 32) {
-                $this->write('  [FAIL] ' . $key . ' is too weak (min 32 chars, currently ' . strlen((string) $value) . ')');
+                $this
+                    ->write('  [FAIL] ' . $key . ' is too weak (min 32 chars, currently ' . strlen((string) $value) .
+                    ')');
                 $failed++;
                 continue;
             }
@@ -72,7 +74,9 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface
             if ($key === 'JWT_SECRET') {
                 $lower = strtolower((string) $value);
                 if (str_contains($lower, 'change_this') || str_contains($lower, 'your_secret')) {
-                    $this->write('  [FAIL] ' . $key . ' looks like a placeholder. Generate a real secret with: php siro key:generate');
+                    $this
+                        ->write('  [FAIL] ' . $key .
+                        ' looks like a placeholder. Generate a real secret with: php siro key:generate');
                     $failed++;
                     continue;
                 }
@@ -132,7 +136,9 @@ final class EnvCheckCommand implements \Siro\Core\Commands\CommandInterface
                     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
                     $version = is_array($row) && isset($row['v']) && is_scalar($row['v']) ? (string) $row['v'] : '';
                     if (version_compare($version, '8.0', '<')) {
-                        $this->write('  [FAIL] MySQL ' . $version . ' — 5.x does not support JSON columns. Upgrade to MySQL 8.0+');
+                        $this
+                            ->write('  [FAIL] MySQL ' . $version .
+                            ' — 5.x does not support JSON columns. Upgrade to MySQL 8.0+');
                         $failed++;
                     } else {
                         $this->write('  [OK]   MySQL ' . $version . ' (JSON column supported)');

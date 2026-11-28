@@ -118,7 +118,11 @@ final class Mail
     public static function assertSent(string $subject): void
     {
         $matched = array_filter(self::$fakeMails, fn($m) => $m['subject'] === $subject);
-        \PHPUnit\Framework\Assert::assertGreaterThan(0, count($matched), "Mail with subject '{$subject}' was not sent.");
+        \PHPUnit\Framework\Assert::assertGreaterThan(
+            0,
+            count($matched),
+            "Mail with subject '{$subject}' was not sent."
+        );
     }
 
     public static function assertSentTo(string $address): void

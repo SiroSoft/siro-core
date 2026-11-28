@@ -27,7 +27,9 @@ final class MakeRequestCommand implements \Siro\Core\Commands\CommandInterface
             $class .= $suffix;
         }
 
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Requests' . DIRECTORY_SEPARATOR . $class . '.php';
+        $path = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Requests' . DIRECTORY_SEPARATOR . $class .
+            '.php';
 
         if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
             $this->write('Skipped: app/Requests/' . $class . '.php');

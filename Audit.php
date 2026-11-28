@@ -157,13 +157,25 @@ final class Audit
         foreach ($lines as $line) {
             $entry = json_decode((string) $line, true);
             if (!is_array($entry)) {
-                return ['ok' => false, 'file' => $file, 'entries' => $count, 'broken' => $count + 1, 'reason' => 'invalid json'];
+                return [
+                    'ok' => false,
+                    'file' => $file,
+                    'entries' => $count,
+                    'broken' => $count + 1,
+                    'reason' => 'invalid json'
+                ];
             }
             $storedHash = is_string($entry['hash'] ?? null) ? $entry['hash'] : '';
             $storedPrev = is_string($entry['prev_hash'] ?? null) ? $entry['prev_hash'] : '';
 
             if (!hash_equals($storedPrev, $prevHash)) {
-                return ['ok' => false, 'file' => $file, 'entries' => $count, 'broken' => $count + 1, 'reason' => 'chain broken (prev_hash mismatch)'];
+                return [
+                    'ok' => false,
+                    'file' => $file,
+                    'entries' => $count,
+                    'broken' => $count + 1,
+                    'reason' => 'chain broken (prev_hash mismatch)'
+                ];
             }
 
             $hashFields = ['index', 'time', 'action', 'actor', 'context'];
@@ -175,7 +187,13 @@ final class Audit
             $expected = hash_hmac('sha256', $prevHash . $canonical, $secret);
 
             if (!hash_equals($expected, $storedHash)) {
-                return ['ok' => false, 'file' => $file, 'entries' => $count, 'broken' => $count + 1, 'reason' => 'tampered (hash mismatch)'];
+                return [
+                    'ok' => false,
+                    'file' => $file,
+                    'entries' => $count,
+                    'broken' => $count + 1,
+                    'reason' => 'tampered (hash mismatch)'
+                ];
             }
 
             $prevHash = $storedHash;

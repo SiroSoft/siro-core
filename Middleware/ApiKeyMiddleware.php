@@ -49,7 +49,8 @@ final class ApiKeyMiddleware implements MiddlewareInterface
 
             if (!$hasScope) {
                 return Response::error('Insufficient scope', 403, [
-                    'scope' => ['Required scope: ' . $requiredScope . ', key scopes: ' . (string) ($keyData['scopes'] ?? '')]
+                    'scope' => ['Required scope: ' . $requiredScope . ', key scopes: ' . (string) ($keyData['scopes'] ??
+                        '')]
                 ]);
             }
         }

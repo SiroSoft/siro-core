@@ -194,7 +194,8 @@ final class Route
      */
     public function throttle(int $maxAttempts = 60, int $decayMinutes = 1): self
     {
-        $this->router->setRouteMiddleware($this->method, $this->path, ['throttle:' . $maxAttempts . ',' . $decayMinutes]);
+        $this->router->setRouteMiddleware($this->method, $this
+            ->path, ['throttle:' . $maxAttempts . ',' . $decayMinutes]);
         return $this;
     }
 
@@ -229,8 +230,14 @@ final class Route
      * @param array<int, string> $except Skip these actions.
      * @return array<string, self> Registered routes keyed by action name.
      */
-    public static function resource(string $name, string $controller, array $middleware = [], int $cacheTtl = 0, array $only = [], array $except = []): array
-    {
+    public static function resource(
+        string $name,
+        string $controller,
+        array $middleware = [],
+        int $cacheTtl = 0,
+        array $only = [],
+        array $except = []
+    ): array {
         $router = self::$routerInstance;
         if ($router === null) {
             $router = new Router();
@@ -250,8 +257,11 @@ final class Route
      * @param array<int, string> $globalMiddleware Middleware applied to all attribute routes
      * @param string $prefix URL prefix for all routes
      */
-    public static function registerAttributes(string $controllerDir, array $globalMiddleware = [], string $prefix = ''): void
-    {
+    public static function registerAttributes(
+        string $controllerDir,
+        array $globalMiddleware = [],
+        string $prefix = ''
+    ): void {
         $router = self::$routerInstance;
         if ($router === null) {
             return;
@@ -319,7 +329,8 @@ final class Route
      * Collect Siro controller attributes from a class or method reflection.
      *
      * @param \ReflectionClass<object>|\ReflectionMethod $ref
-     * @return array{middleware: array<int, callable|string>, authorize: array<int, string>, throttle: string|null, cache: int|null}
+     * @return array{middleware: array<int, callable|string>, authorize: array<int, string>, throttle: string|null,
+     * cache: int|null}
      */
     private static function controllerAttributes(\ReflectionClass|\ReflectionMethod $ref): array
     {
@@ -343,7 +354,8 @@ final class Route
         if ($throttles !== []) {
             /** @var Attributes\Throttle $instance */
             $instance = $throttles[0]->newInstance();
-            $collected['throttle'] = Middleware\ThrottleMiddleware::class . ':' . $instance->max . ',' . $instance->minutes;
+            $collected['throttle'] = Middleware\ThrottleMiddleware::class . ':' . $instance->max . ',' . $instance
+                ->minutes;
         }
 
         $caches = $ref->getAttributes(Attributes\CacheResponse::class);

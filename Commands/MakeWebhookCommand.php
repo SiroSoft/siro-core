@@ -37,7 +37,9 @@ final class MakeWebhookCommand implements \Siro\Core\Commands\CommandInterface
             $class .= $suffix;
         }
 
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Webhooks' . DIRECTORY_SEPARATOR . $class . '.php';
+        $path = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Webhooks' . DIRECTORY_SEPARATOR . $class .
+            '.php';
 
         if (!is_dir(dirname($path))) {
             mkdir(dirname($path), 0775, true);
@@ -53,7 +55,9 @@ final class MakeWebhookCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('');
         $this->write('  Register an endpoint in config/webhooks.php:');
         $this->write('    [\'url\' => \'https://example.com/webhooks/orders\', \'events\' => [\'order.created\']],');
-        $this->write('  Then dispatch: (new \Siro\Core\Webhook\WebhookDispatcher())->dispatch(\'order.created\', $payload);');
+        $this
+            ->write('  Then dispatch: (new \Siro\Core\Webhook\WebhookDispatcher())->dispatch(\'order.created\', ' .
+            '$payload);');
 
         return 0;
     }

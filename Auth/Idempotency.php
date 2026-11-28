@@ -64,7 +64,8 @@ final class Idempotency
 
         if (!empty($existing)) {
             $this->isDuplicate = true;
-            $storedRaw = isset($existing[0]['response_data']) && is_string($existing[0]['response_data']) ? $existing[0]['response_data'] : '';
+            $storedRaw = isset($existing[0]['response_data']) && is_string($existing[0]['response_data']) ?
+                $existing[0]['response_data'] : '';
             if ($storedRaw !== '') {
                 $decoded = json_decode($storedRaw, true);
                 if (is_array($decoded)) {
@@ -114,15 +115,24 @@ final class Idempotency
 
         $driver = Database::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
         $sql = match ($driver) {
-            'mysql', 'mariadb' => "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
-                 VALUES (?, ?, ?, ?, ?, ?)
-                 ON DUPLICATE KEY UPDATE response_data = VALUES(response_data), created_at = VALUES(created_at), expires_at = VALUES(expires_at)",
-            'pgsql', 'postgres', 'postgresql' => "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
-                 VALUES (?, ?, ?, ?, ?, ?)
-                 ON CONFLICT (hash) DO UPDATE SET response_data = EXCLUDED.response_data, created_at = EXCLUDED.created_at, expires_at = EXCLUDED.expires_at",
-            default => "INSERT INTO " . self::$table . " (hash, idempotency_key, user_id, response_data, created_at, expires_at)
-                 VALUES (?, ?, ?, ?, ?, ?)
-                 ON CONFLICT(hash) DO UPDATE SET response_data = excluded.response_data, created_at = excluded.created_at, expires_at = excluded.expires_at",
+            'mysql',
+            'mariadb' => "INSERT INTO " . self::$table .
+                " (hash, idempotency_key, user_id, response_data, created_at, expires_at)" .
+                "\n                 VALUES (?, ?, ?, ?, ?, ?)" .
+                "\n                 ON DUPLICATE KEY UPDATE response_data = VALUES(response_data), created_at = " .
+                "VALUES(created_at), expires_at = VALUES(expires_at)",
+            'pgsql',
+            'postgres',
+            'postgresql' => "INSERT INTO " . self::$table .
+                " (hash, idempotency_key, user_id, response_data, created_at, expires_at)" .
+                "\n                 VALUES (?, ?, ?, ?, ?, ?)" .
+                "\n                 ON CONFLICT (hash) DO UPDATE SET response_data = EXCLUDED.response_data, " .
+                "created_at = EXCLUDED.created_at, expires_at = EXCLUDED.expires_at",
+            default => "INSERT INTO " . self::$table .
+                " (hash, idempotency_key, user_id, response_data, created_at, expires_at)" .
+                "\n                 VALUES (?, ?, ?, ?, ?, ?)" .
+                "\n                 ON CONFLICT(hash) DO UPDATE SET response_data = excluded.response_data, " .
+                "created_at = excluded.created_at, expires_at = excluded.expires_at",
         };
 
         Database::execute($sql, [$this->hash, $this->currentKey, $this->userId, $responseJson, time(), $expiresAt]);
@@ -158,7 +168,8 @@ final class Idempotency
                     expires_at INTEGER NOT NULL
                 )
             ");
-            Database::execute("CREATE INDEX IF NOT EXISTS idx_idempotency_hash_expires ON " . self::$table . " (hash, expires_at)");
+            Database::execute("CREATE INDEX IF NOT EXISTS idx_idempotency_hash_expires ON " . self::$table .
+                " (hash, expires_at)");
         } elseif ($driver === 'mysql') {
             Database::execute("
                 CREATE TABLE IF NOT EXISTS " . self::$table . " (
@@ -184,7 +195,8 @@ final class Idempotency
                     expires_at INTEGER NOT NULL
                 )
             ");
-            Database::execute("CREATE INDEX IF NOT EXISTS idx_idempotency_hash_expires ON " . self::$table . " (hash, expires_at)");
+            Database::execute("CREATE INDEX IF NOT EXISTS idx_idempotency_hash_expires ON " . self::$table .
+                " (hash, expires_at)");
         }
     }
 

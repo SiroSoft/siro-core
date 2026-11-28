@@ -66,7 +66,11 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('');
 
         // Tables
-        $tables = $this->fetchAll($pdo, "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
+        $tables = $this
+            ->fetchAll(
+                $pdo,
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            );
         $tableCount = count($tables);
 
         $this->write('  Tables (' . $tableCount . ')');
@@ -112,7 +116,8 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface
             if (isset($rowEstimates[$name])) {
                 $count = $rowEstimates[$name];
             } else {
-                $countVal = $this->safeQuery($pdo, "SELECT COUNT(*) FROM \"" . str_replace('"', '""', $name) . '"') ?? 0;
+                $countVal = $this
+                    ->safeQuery($pdo, "SELECT COUNT(*) FROM \"" . str_replace('"', '""', $name) . '"') ?? 0;
                 $count = is_numeric($countVal) ? (int) $countVal : 0;
             }
             $indexSql = "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND tbl_name='"
@@ -130,7 +135,12 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('');
 
         // Indexes
-        $indexes = $this->fetchAll($pdo, "SELECT name, tbl_name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%' ORDER BY tbl_name, name");
+        $indexes = $this
+            ->fetchAll(
+                $pdo,
+                "SELECT name, tbl_name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%' ORDER BY " .
+                "tbl_name, name"
+            );
         if ($indexes !== []) {
             $this->write('  Indexes (' . count($indexes) . ')');
             $this->write('');
@@ -179,10 +189,14 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface
         $sizeStmt = $pdo->query($sizeSql);
         $sizeRow = $sizeStmt !== false ? $sizeStmt->fetch(PDO::FETCH_ASSOC) : false;
         $totalMb = is_array($sizeRow) && is_scalar($sizeRow['mb'] ?? null) ? (float) $sizeRow['mb'] : 0;
-        $dataStmt = $pdo->query("SELECT ROUND(SUM(data_length) / 1048576, 1) AS mb FROM information_schema.TABLES WHERE table_schema = DATABASE()");
+        $dataStmt = $pdo
+            ->query("SELECT ROUND(SUM(data_length) / 1048576, 1) AS mb FROM information_schema.TABLES WHERE " .
+            "table_schema = DATABASE()");
         $dataRow = $dataStmt !== false ? $dataStmt->fetch(PDO::FETCH_ASSOC) : false;
         $dataMb = is_array($dataRow) && is_scalar($dataRow['mb'] ?? null) ? (float) $dataRow['mb'] : 0;
-        $idxStmt = $pdo->query("SELECT ROUND(SUM(index_length) / 1048576, 1) AS mb FROM information_schema.TABLES WHERE table_schema = DATABASE()");
+        $idxStmt = $pdo
+            ->query("SELECT ROUND(SUM(index_length) / 1048576, 1) AS mb FROM information_schema.TABLES WHERE " .
+            "table_schema = DATABASE()");
         $idxRow = $idxStmt !== false ? $idxStmt->fetch(PDO::FETCH_ASSOC) : false;
         $idxMb = is_array($idxRow) && is_scalar($idxRow['mb'] ?? null) ? (float) $idxRow['mb'] : 0;
 
@@ -194,7 +208,8 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface
 
         // Tables with row counts
         $tblSql = 'SELECT table_name AS t, table_rows AS r, ROUND((data_length + index_length) / 1048576, 2) AS mb '
-            . 'FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_type = \'BASE TABLE\' ORDER BY table_name';
+            . 'FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_type = \'BASE TABLE\' ' .
+                'ORDER BY table_name';
         $tblStmt = $pdo->query($tblSql);
         $rows = [];
         if ($tblStmt !== false) {
@@ -217,7 +232,8 @@ final class DbStatsCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         // Indexes
-        $idxCountStmt = $pdo->query("SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE table_schema = DATABASE()");
+        $idxCountStmt = $pdo
+            ->query("SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE table_schema = DATABASE()");
         $idxCountRow = $idxCountStmt !== false ? $idxCountStmt->fetch(PDO::FETCH_ASSOC) : false;
         $indexes = is_array($idxCountRow) && is_scalar($idxCountRow['c'] ?? null) ? (int) $idxCountRow['c'] : 0;
         $this->write('');

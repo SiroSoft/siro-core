@@ -65,7 +65,9 @@ final class SeedCommand implements \Siro\Core\Commands\CommandInterface
 
         if ($resolved === null) {
             // Legacy fallback: <seedDir>/<Class>.php in the default dir.
-            $legacyPath = $this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds' . DIRECTORY_SEPARATOR . $class . '.php';
+            $legacyPath = $this
+                ->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds' . DIRECTORY_SEPARATOR .
+                $class . '.php';
             if (is_file($legacyPath)) {
                 require_once $legacyPath;
                 if (!class_exists($class)) {
@@ -184,7 +186,8 @@ final class SeedCommand implements \Siro\Core\Commands\CommandInterface
             $dirs[] = $part;
         }
 
-        return $dirs !== [] ? $dirs : [$this->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds'];
+        return $dirs !== [] ? $dirs : [$this
+            ->basePath . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeds'];
     }
 
     /**

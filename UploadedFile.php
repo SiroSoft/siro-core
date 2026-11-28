@@ -23,7 +23,22 @@ final class UploadedFile
     private readonly int $error;
 
     /** Whitelist of allowed extensions for upload. */
-    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf', 'txt', 'csv', 'json', 'xml', 'doc', 'docx', 'zip'];
+    private const ALLOWED_EXTENSIONS = [
+        'jpg',
+        'jpeg',
+        'png',
+        'gif',
+        'webp',
+        'svg',
+        'pdf',
+        'txt',
+        'csv',
+        'json',
+        'xml',
+        'doc',
+        'docx',
+        'zip'
+    ];
 
     /** @param array<string, string|int> $file */
     public function __construct(array $file)
@@ -99,7 +114,8 @@ final class UploadedFile
 
         // Only allow alphanumeric, hyphens, underscores, and forward slashes
         if (!preg_match('/^[a-zA-Z0-9_\-\/]+$/', $directory)) {
-            throw new RuntimeException('Invalid directory path: only alphanumeric, hyphens, underscores, and slashes allowed');
+            throw new RuntimeException('Invalid directory path: only alphanumeric, hyphens, underscores, and slashes ' .
+                'allowed');
         }
 
         // Sanitize filename if provided
@@ -109,14 +125,16 @@ final class UploadedFile
 
             // Only allow safe characters in filename
             if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $name)) {
-                throw new RuntimeException('Invalid filename: only alphanumeric, hyphens, underscores, and dots allowed');
+                throw new RuntimeException('Invalid filename: only alphanumeric, hyphens, underscores, and dots ' .
+                    'allowed');
             }
         }
 
         $filename = $name ?? $this->generateFilename();
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         if (!in_array($ext, self::ALLOWED_EXTENSIONS, true) && $ext !== '') {
-            throw new \RuntimeException('File type not allowed: .' . $ext . ' (allowed: ' . implode(', ', self::ALLOWED_EXTENSIONS) . ')');
+            throw new \RuntimeException('File type not allowed: .' . $ext . ' (allowed: ' .
+                implode(', ', self::ALLOWED_EXTENSIONS) . ')');
         }
         $path = $directory . '/' . $filename;
 
@@ -247,7 +265,10 @@ final class UploadedFile
 
     public static function maxSize(): int
     {
-        return min(self::parseIniSize((string) ini_get('upload_max_filesize')), self::parseIniSize((string) ini_get('post_max_size')));
+        return min(
+            self::parseIniSize((string) ini_get('upload_max_filesize')),
+            self::parseIniSize((string) ini_get('post_max_size'))
+        );
     }
 
     private static function parseIniSize(string $value): int

@@ -148,7 +148,12 @@ final class Http
     {
         // Check for IPv4-mapped IPv6 (::ffff:0:0/96)
         $binary = inet_pton($ip);
-        if ($binary !== false && strlen($binary) === 16 && str_starts_with($binary, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff")) {
+        if (
+            $binary !== false && strlen($binary) === 16 && str_starts_with(
+                $binary,
+                "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff"
+            )
+        ) {
             $ipv4 = inet_ntop(substr($binary, 12));
             if ($ipv4 !== false) {
                 return self::isPrivateIp($ipv4);
@@ -204,22 +209,26 @@ final class Http
         return self::request('GET', $url, null, $headers);
     }
 
-    /** @param array<string, string> $headers */ public static function post(string $url, mixed $data = null, array $headers = []): HttpResponse
+    /** @param array<string, string> $headers */
+    public static function post(string $url, mixed $data = null, array $headers = []): HttpResponse
     {
         return self::request('POST', $url, $data, $headers);
     }
 
-    /** @param array<string, string> $headers */ public static function put(string $url, mixed $data = null, array $headers = []): HttpResponse
+    /** @param array<string, string> $headers */
+    public static function put(string $url, mixed $data = null, array $headers = []): HttpResponse
     {
         return self::request('PUT', $url, $data, $headers);
     }
 
-    /** @param array<string, string> $headers */ public static function patch(string $url, mixed $data = null, array $headers = []): HttpResponse
+    /** @param array<string, string> $headers */
+    public static function patch(string $url, mixed $data = null, array $headers = []): HttpResponse
     {
         return self::request('PATCH', $url, $data, $headers);
     }
 
-    /** @param array<string, string> $headers */ public static function delete(string $url, mixed $data = null, array $headers = []): HttpResponse
+    /** @param array<string, string> $headers */
+    public static function delete(string $url, mixed $data = null, array $headers = []): HttpResponse
     {
         return self::request('DELETE', $url, $data, $headers);
     }
@@ -294,7 +303,8 @@ final class Http
         return $scheme . '://' . $host . $port . $path;
     }
 
-    /** @param array<string, string> $headers */ private static function request(string $method, string $url, mixed $data, array $headers): HttpResponse
+    /** @param array<string, string> $headers */
+    private static function request(string $method, string $url, mixed $data, array $headers): HttpResponse
     {
         if (!function_exists('curl_init')) {
             throw new RuntimeException('curl extension is required for HTTP client.');

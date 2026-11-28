@@ -36,7 +36,8 @@ final class Middleware
             $items = is_array($entry) ? $entry : [$entry];
             foreach ($items as $item) {
                 if (!is_string($item) && !is_callable($item)) {
-                    throw new \InvalidArgumentException('Middleware entries must be class-strings, aliases, or callables.');
+                    throw new \InvalidArgumentException('Middleware entries must be class-strings, aliases, or ' .
+                        'callables.');
                 }
                 $flattened[] = $item;
             }

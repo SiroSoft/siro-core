@@ -84,7 +84,12 @@ final class Metrics
     {
         $key = self::key($name, $labels);
         if (!isset(self::$counters[$key])) {
-            self::$counters[$key] = ['type' => 'counter', 'help' => $help ?: "Counter {$name}", 'labels' => $labels, 'value' => 0];
+            self::$counters[$key] = [
+                'type' => 'counter',
+                'help' => $help ?: "Counter {$name}",
+                'labels' => $labels,
+                'value' => 0
+            ];
         }
         self::$counters[$key]['value'] += $value;
         self::maybeFlush();

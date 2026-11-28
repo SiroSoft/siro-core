@@ -24,7 +24,11 @@ final class Session
 
     public function __construct(?string $driver = null)
     {
-        $this->driver = $driver ?? (is_string($sessionDriver = Env::get('SESSION_DRIVER', self::DRIVER_FILE)) ? $sessionDriver : self::DRIVER_FILE);
+        $this
+            ->driver = $driver ?? (is_string($sessionDriver = Env::get(
+                'SESSION_DRIVER',
+                self::DRIVER_FILE
+            )) ? $sessionDriver : self::DRIVER_FILE);
         $basePath = '';
         if (defined('BASE_PATH') && is_string(BASE_PATH)) {
             $basePath = BASE_PATH;
@@ -56,7 +60,8 @@ final class Session
         }
 
         // Use explicitly set ID, then cookie, then parameter, then generate new
-        $cookieSession = isset($_COOKIE['siro_session']) && is_string($_COOKIE['siro_session']) ? $_COOKIE['siro_session'] : null;
+        $cookieSession = isset($_COOKIE['siro_session']) && is_string($_COOKIE['siro_session']) ?
+            $_COOKIE['siro_session'] : null;
         $this->sessionId = $this->sessionId ?: ($cookieSession ?: ($sessionId ?: $this->generateId()));
 
         if (preg_match('/^[a-f0-9]{64}$/', $this->sessionId) !== 1) {
@@ -73,7 +78,8 @@ final class Session
         }
 
         $idleTimeout = (int) Env::get('SESSION_IDLE_TIMEOUT', '1800');
-        $lastActivity = isset($this->data['_last_activity']) && is_numeric($this->data['_last_activity']) ? (int) $this->data['_last_activity'] : 0;
+        $lastActivity = isset($this->data['_last_activity']) && is_numeric($this->data['_last_activity']) ? (int) $this
+            ->data['_last_activity'] : 0;
         if ($lastActivity > 0 && (time() - $lastActivity) > $idleTimeout) {
             $this->destroy();
             $this->sessionId = $this->generateId();

@@ -145,8 +145,13 @@ final class Database
      * @param array<int|string, mixed> $params
      * @return array<int, array<string, mixed>>
      */
-    public static function selectCached(string $sql, array $params, int $ttl, string $cachePrefix = 'qb:default:', ?string $connection = null): array
-    {
+    public static function selectCached(
+        string $sql,
+        array $params,
+        int $ttl,
+        string $cachePrefix = 'qb:default:',
+        ?string $connection = null
+    ): array {
         return self::getInstance()->selectCached($sql, $params, $ttl, $cachePrefix, $connection);
     }
 

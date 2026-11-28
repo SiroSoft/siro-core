@@ -50,5 +50,11 @@ interface DatabaseInterface
      * @param array<int|string, mixed> $params
      * @return array<int, array<string, mixed>>
      */
-    public function selectCached(string $sql, array $params, int $ttl, string $cachePrefix = 'qb:default:', ?string $connection = null): array;
+    public function selectCached(
+        string $sql,
+        array $params,
+        int $ttl,
+        string $cachePrefix = 'qb:default:',
+        ?string $connection = null
+    ): array;
 }

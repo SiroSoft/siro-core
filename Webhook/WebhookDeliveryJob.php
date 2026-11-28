@@ -43,7 +43,8 @@ final class WebhookDeliveryJob implements QueueInterface
         $url = isset($data['url']) && is_string($data['url']) ? $data['url'] : '';
         $event = isset($data['event']) && is_string($data['event']) ? $data['event'] : '';
         $secret = isset($data['secret']) && is_string($data['secret']) ? $data['secret'] : '';
-        $timeout = isset($data['timeout']) && is_numeric($data['timeout']) ? (int) $data['timeout'] : self::DEFAULT_TIMEOUT;
+        $timeout = isset($data['timeout']) && is_numeric($data['timeout']) ? (int) $data['timeout'] :
+            self::DEFAULT_TIMEOUT;
         $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : [];
 
         if (!self::isHttpUrl($url)) {

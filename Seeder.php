@@ -38,7 +38,8 @@ abstract class Seeder
     {
         $instance = is_string($seeder) ? new $seeder() : $seeder;
         if (!method_exists($instance, 'run')) {
-            throw new \RuntimeException('Seeder must have a run() method: ' . (is_string($seeder) ? $seeder : $instance::class));
+            throw new \RuntimeException('Seeder must have a run() method: ' . (is_string($seeder) ? $seeder :
+                $instance::class));
         }
         /** @var object{run(): void} $instance */
         $instance->run();

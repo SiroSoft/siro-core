@@ -130,7 +130,10 @@ final class Queue
 
     public static function assertPushed(string $job, ?callable $callback = null): void
     {
-        $matched = array_filter(self::$fakeJobs, fn($j) => $j['job'] === $job && ($callback === null || $callback($j['data'])));
+        $matched = array_filter(
+            self::$fakeJobs,
+            fn($j) => $j['job'] === $job && ($callback === null || $callback($j['data']))
+        );
         \PHPUnit\Framework\Assert::assertGreaterThan(0, count($matched), "Job {$job} was not pushed.");
     }
 
@@ -172,13 +175,30 @@ final class Queue
             $jAvailable = $j['available_at'] ?? 0;
             $lockedUntil = $j['locked_until'] ?? null;
             $status = (is_numeric($lockedUntil) && (int) $lockedUntil > time()) ? 'processing' : 'pending';
-            $badge = $status === 'processing' ? '<span class="badge badge-blue">PROCESSING</span>' : '<span class="badge badge-green">PENDING</span>';
+            $badge = $status === 'processing' ? '<span class="badge badge-blue">PROCESSING</span>' :
+                '<span class="badge badge-green">PENDING</span>';
             $jIdEsc = htmlspecialchars(is_scalar($jId) ? (string) $jId : '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $jJobEsc = htmlspecialchars(is_scalar($jJob) ? (string) $jJob : '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $jAttemptsEsc = htmlspecialchars(is_scalar($jAttempts) ? (string) $jAttempts : '0', ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $jMaxAttemptsEsc = htmlspecialchars(is_scalar($jMaxAttempts) ? (string) $jMaxAttempts : '3', ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $jPriorityEsc = htmlspecialchars(is_scalar($jPriority) ? (string) $jPriority : '0', ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $jAvailableEsc = htmlspecialchars(date('Y-m-d H:i:s', is_numeric($jAvailable) ? (int) $jAvailable : 0), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $jAttemptsEsc = htmlspecialchars(
+                is_scalar($jAttempts) ? (string) $jAttempts : '0',
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
+            $jMaxAttemptsEsc = htmlspecialchars(
+                is_scalar($jMaxAttempts) ? (string) $jMaxAttempts : '3',
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
+            $jPriorityEsc = htmlspecialchars(
+                is_scalar($jPriority) ? (string) $jPriority : '0',
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
+            $jAvailableEsc = htmlspecialchars(
+                date('Y-m-d H:i:s', is_numeric($jAvailable) ? (int) $jAvailable : 0),
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
             $rows .= '<tr><td>' . $jIdEsc . '</td><td>' . $jJobEsc . ' ' . $badge . '</td>'
                 . '<td>' . $jAttemptsEsc . '/' . $jMaxAttemptsEsc . '</td>'
                 . '<td>' . $jPriorityEsc . '</td>'
@@ -188,12 +208,14 @@ final class Queue
         return '<!DOCTYPE html><html><head><title>Queue Dashboard - Siro</title>'
             . '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             . '<meta http-equiv="refresh" content="10">'
-            . '<style>body{font-family:-apple-system,sans-serif;max-width:960px;margin:0 auto;padding:20px;background:#f5f5f5}'
+            . '<style>body{font-family:-apple-system,sans-serif;max-width:960px;margin:0 ' .
+                'auto;padding:20px;background:#f5f5f5}'
             . '.stat{display:inline-block;background:#fff;border-radius:8px;padding:20px 30px;margin:10px;'
             . 'box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center;min-width:160px}'
             . '.stat h3{margin:0;font-size:14px;color:#666}'
             . '.stat .num{font-size:32px;font-weight:700;color:#333}'
-            . 'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}'
+            . 'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-' .
+                'shadow:0 1px 3px rgba(0,0,0,.1)}'
             . 'th,td{padding:12px 16px;text-align:left;border-bottom:1px solid #eee}'
             . 'th{background:#fafafa;font-weight:600;color:#666;font-size:13px}'
             . 'h1{color:#333}'
@@ -202,18 +224,22 @@ final class Queue
             . '.badge-blue{background:#e6f0ff;color:#06c}'
             . '.badge-red{background:#ffe6e6;color:#c00}</style></head><body>'
             . '<h1>Queue Dashboard <span style="font-size:14px;color:#999">auto-refresh 10s</span></h1>'
-            . '<div class="stat"><h3>Pending</h3><div class="num">' . htmlspecialchars((string) $pending, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Pending</h3><div class="num">' . htmlspecialchars((string) $pending, ENT_QUOTES |
+                ENT_HTML5, 'UTF-8') . '</div></div>'
             . '<div class="stat"><h3>Processing</h3><div class="num">'
             . htmlspecialchars((string) $processing, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
-            . '<div class="stat"><h3>Failed</h3><div class="num">' . htmlspecialchars((string) $failed, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
+            . '<div class="stat"><h3>Failed</h3><div class="num">' . htmlspecialchars((string) $failed, ENT_QUOTES |
+                ENT_HTML5, 'UTF-8') . '</div></div>'
             . '<div class="stat"><h3>Success Rate</h3><div class="num">'
             . htmlspecialchars((string) $successRate, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '%</div></div>'
             . '<div class="stat"><h3>Avg Attempts</h3><div class="num">'
             . htmlspecialchars((string) $avgAttempts, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div></div>'
             . '<h2>Recent Jobs</h2>'
-            . '<table><thead><tr><th>ID</th><th>Job</th><th>Attempts</th><th>Priority</th><th>Available</th></tr></thead><tbody>'
+            . '<table><thead><tr><th>ID</th><th>Job</th><th>Attempts</th><th>Priority</th><th>Available</th></tr></' .
+                'thead><tbody>'
             . $rows . '</tbody></table>'
-            . '<p style="color:#999;font-size:12px;margin-top:20px">Siro Queue Dashboard · <a href="/metrics">Metrics</a></p></body></html>';
+            . '<p style="color:#999;font-size:12px;margin-top:20px">Siro Queue Dashboard · <a ' .
+                'href="/metrics">Metrics</a></p></body></html>';
     }
 
     private const DEFAULT_MAX_ATTEMPTS = 3;
@@ -307,7 +333,8 @@ final class Queue
         try {
             $now = time();
             $row = Database::first(
-                "SELECT * FROM jobs WHERE available_at <= :now AND (locked_until IS NULL OR locked_until < :now2) ORDER BY priority DESC, id ASC LIMIT 1",
+                "SELECT * FROM jobs WHERE available_at <= :now AND (locked_until IS NULL OR locked_until < :now2) " .
+                    "ORDER BY priority DESC, id ASC LIMIT 1",
                 ['now' => $now, 'now2' => $now]
             );
 
@@ -318,7 +345,8 @@ final class Queue
 
             $lockDuration = min(is_numeric($row['timeout'] ?? null) ? (int) $row['timeout'] : 60, 3600);
             $affected = Database::execute(
-                "UPDATE jobs SET locked_until = :lock WHERE id = :id AND (locked_until IS NULL OR locked_until < :now3)",
+                "UPDATE jobs SET locked_until = :lock WHERE id = :id AND (locked_until IS NULL OR locked_until < " .
+                    ":now3)",
                 ['lock' => $now + $lockDuration, 'id' => $row['id'], 'now3' => $now]
             );
 
@@ -343,14 +371,16 @@ final class Queue
             $decodedData = json_decode($rowData, true);
             /** @var array<string, mixed> $jobData */
             $jobData = is_array($decodedData) ? $decodedData : [];
-            $timeoutVal = isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] : self::DEFAULT_TIMEOUT;
+            $timeoutVal = isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] :
+                self::DEFAULT_TIMEOUT;
             $timeout = $timeoutVal;
             $maxExecTime = time() + $timeout;
 
             $rowJob = $row['job'] ?? '';
             if (is_string($rowJob) && $rowJob !== '') {
                 if (!self::isJobAllowed($rowJob)) {
-                    throw new \RuntimeException("Job class '{$rowJob}' is not registered in the allowed jobs whitelist. Use Queue::registerJob() to allow it.");
+                    throw new \RuntimeException("Job class '{$rowJob}' is not registered in the allowed jobs " .
+                        "whitelist. Use Queue::registerJob() to allow it.");
                 }
                 if (!class_exists($rowJob)) {
                     throw new \RuntimeException("Job class '{$rowJob}' does not exist.");
@@ -393,7 +423,8 @@ final class Queue
             } else {
                 $backoff = self::calculateBackoff($attempts);
                 Database::execute(
-                    "UPDATE jobs SET attempts = :attempts, locked_until = NULL, available_at = :available_at WHERE id = :id",
+                    "UPDATE jobs SET attempts = :attempts, locked_until = NULL, available_at = :available_at WHERE " .
+                        "id = :id",
                     [
                         'attempts' => $attempts,
                         'available_at' => time() + $backoff,
@@ -429,7 +460,8 @@ final class Queue
         $jobData = isset($decoded['data']) && is_array($decoded['data']) ? $decoded['data'] : [];
         $attempts = isset($decoded['attempts']) && is_numeric($decoded['attempts']) ? (int) $decoded['attempts'] : 0;
         $maxAttempts = self::effectiveMaxAttempts($decoded['max_attempts'] ?? null);
-        $timeout = isset($decoded['timeout']) && is_numeric($decoded['timeout']) ? (int) $decoded['timeout'] : self::DEFAULT_TIMEOUT;
+        $timeout = isset($decoded['timeout']) && is_numeric($decoded['timeout']) ? (int) $decoded['timeout'] :
+            self::DEFAULT_TIMEOUT;
         $maxExecTime = time() + $timeout;
 
         $success = false;
@@ -438,7 +470,8 @@ final class Queue
         try {
             if ($job !== '') {
                 if (!self::isJobAllowed($job)) {
-                    throw new \RuntimeException("Job class '{$job}' is not registered in the allowed jobs whitelist. Use Queue::registerJob() to allow it.");
+                    throw new \RuntimeException("Job class '{$job}' is not registered in the allowed jobs whitelist. " .
+                        "Use Queue::registerJob() to allow it.");
                 }
                 if (!class_exists($job)) {
                     throw new \RuntimeException("Job class '{$job}' does not exist.");
@@ -690,7 +723,8 @@ final class Queue
                         0,
                         self::DEFAULT_PRIORITY,
                         self::DEFAULT_MAX_ATTEMPTS,
-                        isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] : self::DEFAULT_TIMEOUT
+                        isset($row['timeout']) && is_numeric($row['timeout']) ? (int) $row['timeout'] :
+                            self::DEFAULT_TIMEOUT
                     );
                     Database::execute("DELETE FROM failed_jobs WHERE id = :id", ['id' => $row['id']]);
                     $count++;
@@ -734,6 +768,9 @@ final class Queue
      */
     public static function getFailedJobs(int $limit = 50): array
     {
-        return Database::select("SELECT * FROM failed_jobs ORDER BY id DESC LIMIT :lim", ['lim' => max(1, (int) $limit)]);
+        return Database::select(
+            "SELECT * FROM failed_jobs ORDER BY id DESC LIMIT :lim",
+            ['lim' => max(1, (int) $limit)]
+        );
     }
 }

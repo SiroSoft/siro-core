@@ -306,7 +306,11 @@ final class Router
         $secret = (string) Env::get('APP_KEY', '');
         $staticData = $data['static'] ?? [];
         $dynamicData = $data['dynamic'] ?? [];
-        $hmac = $secret !== '' ? hash_hmac('sha256', json_encode($staticData) . json_encode($dynamicData), $secret) : '';
+        $hmac = $secret !== '' ? hash_hmac(
+            'sha256',
+            json_encode($staticData) . json_encode($dynamicData),
+            $secret
+        ) : '';
         $data['hmac'] = $hmac;
         $content = '<?php exit; ?>' . PHP_EOL . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
@@ -878,8 +882,14 @@ final class Router
      * @param array<int, string> $except Skip these actions.
      * @return array<string, Route> Registered routes keyed by action name.
      */
-    public function resource(string $name, string $controller, array $middleware = [], int $cacheTtl = 0, array $only = [], array $except = []): array
-    {
+    public function resource(
+        string $name,
+        string $controller,
+        array $middleware = [],
+        int $cacheTtl = 0,
+        array $only = [],
+        array $except = []
+    ): array {
         $actions = self::RESOURCE_ACTIONS;
         if ($only !== []) {
             $actions = array_values(array_intersect($actions, $only));
@@ -907,7 +917,8 @@ final class Router
             $routes['store'] = $this->post("/{$name}", $controller . '@store', [...$middleware, JsonMiddleware::class]);
         }
         if (in_array('update', $actions, true)) {
-            $routes['update'] = $this->put("/{$name}/{id}", $controller . '@update', [...$middleware, JsonMiddleware::class]);
+            $routes['update'] = $this
+                ->put("/{$name}/{id}", $controller . '@update', [...$middleware, JsonMiddleware::class]);
         }
         if (in_array('delete', $actions, true)) {
             $routes['delete'] = $this->delete("/{$name}/{id}", $controller . '@delete', $middleware);

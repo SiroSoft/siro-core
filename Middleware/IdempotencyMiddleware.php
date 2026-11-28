@@ -43,7 +43,8 @@ final class IdempotencyMiddleware implements MiddlewareInterface
         $idempotencyKey = $request->header('Idempotency-Key');
 
         if ($idempotencyKey === null || trim($idempotencyKey) === '') {
-            throw new ValidationException(['idempotency_key' => ['Idempotency-Key header is required for this operation.']]);
+            throw new ValidationException(['idempotency_key' =>
+                ['Idempotency-Key header is required for this operation.']]);
         }
 
         if (strlen($idempotencyKey) > 255) {
@@ -66,7 +67,8 @@ final class IdempotencyMiddleware implements MiddlewareInterface
 
             if ($storedResponse !== null) {
                 /** @var array<string, mixed> $storedResponse */
-                $statusCode = isset($storedResponse['_status']) && is_numeric($storedResponse['_status']) ? (int) $storedResponse['_status'] : 200;
+                $statusCode = isset($storedResponse['_status']) && is_numeric($storedResponse['_status']) ?
+                    (int) $storedResponse['_status'] : 200;
                 unset($storedResponse['_status']);
 
                 return Response::json($storedResponse, $statusCode)

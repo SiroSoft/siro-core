@@ -13,9 +13,11 @@ use Throwable;
  * Create an OAuth2 client.
  *
  * Usage:
- *   php siro make:oauth-client "Partner A" --redirect-uri=https://partner.example/callback --grants=authorization_code,refresh_token --scopes=read
+ *   php siro make:oauth-client "Partner A" --redirect-uri=https://partner.example/callback \
+ *     --grants=authorization_code,refresh_token --scopes=read
  *   php siro make:oauth-client "Backend Service" --grants=client_credentials --scopes=read,write
- *   php siro make:oauth-client "Mobile App" --public --redirect-uri=myapp://callback --grants=authorization_code,refresh_token
+ *   php siro make:oauth-client "Mobile App" --public --redirect-uri=myapp://callback \
+ *     --grants=authorization_code,refresh_token
  *
  * The client secret is printed exactly once — store it now, it cannot be
  * retrieved later. Public clients (--public) have no secret; the
@@ -51,8 +53,12 @@ final class MakeOAuthClientCommand implements \Siro\Core\Commands\CommandInterfa
         }
 
         if ($name === '') {
-            $this->error('Usage: php siro make:oauth-client <name> [--public] [--redirect-uri=...] [--grants=...] [--scopes=...]');
-            $this->info('Example: php siro make:oauth-client "Partner A" --redirect-uri=https://partner.example/callback --scopes=read');
+            $this
+                ->error('Usage: php siro make:oauth-client <name> [--public] [--redirect-uri=...] [--grants=...] ' .
+                '[--scopes=...]');
+            $this
+                ->info('Example: php siro make:oauth-client "Partner A" ' .
+                '--redirect-uri=https://partner.example/callback --scopes=read');
             return 1;
         }
 
@@ -93,7 +99,9 @@ final class MakeOAuthClientCommand implements \Siro\Core\Commands\CommandInterfa
                 $this->write('  Public client (no secret — use PKCE).');
             }
             $this->write('  Grants:        ' . implode(',', $client['grants']));
-            $this->write('  Scopes:        ' . ($client['scopes'] !== '' ? $client['scopes'] : '(all configured scopes)'));
+            $this
+                ->write('  Scopes:        ' . ($client['scopes'] !== '' ? $client['scopes'] :
+                '(all configured scopes)'));
             return 0;
         } catch (Throwable $e) {
             $this->error('Failed to create OAuth2 client: ' . $e->getMessage());
@@ -113,7 +121,8 @@ final class MakeOAuthClientCommand implements \Siro\Core\Commands\CommandInterfa
 
     public function help(): void
     {
-        echo "\nUsage: php siro make:oauth-client <name> [--public] [--redirect-uri=...] [--grants=...] [--scopes=...]\n\n";
+        echo "\nUsage: php siro make:oauth-client <name> [--public] [--redirect-uri=...] [--grants=...] " .
+            "[--scopes=...]\n\n";
         echo "Creates an OAuth2 client (league/oauth2-server bridge).\n";
         echo "The client secret is shown once — store it immediately.\n\n";
     }

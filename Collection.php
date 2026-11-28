@@ -315,7 +315,8 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
         if ($column === null) {
             return array_sum($this->items);
         }
-        return array_sum(array_map(fn($item) => is_array($item) ? ($item[$column] ?? 0) : ($item->$column ?? 0), $this->items));
+        return array_sum(array_map(fn($item) => is_array($item) ? ($item[$column] ?? 0) : ($item->$column ?? 0), $this
+            ->items));
     }
 
     public function avg(?string $column = null): float|int
@@ -332,7 +333,8 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
         if ($column === null) {
             return min($this->items);
         }
-        return min(array_map(fn($item) => is_array($item) ? ($item[$column] ?? 0) : ($item->$column ?? 0), $this->items));
+        return min(array_map(fn($item) => is_array($item) ? ($item[$column] ?? 0) : ($item->$column ?? 0), $this
+            ->items));
     }
 
     public function max(?string $column = null): mixed
@@ -343,7 +345,8 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
         if ($column === null) {
             return max($this->items);
         }
-        return max(array_map(fn($item) => is_array($item) ? ($item[$column] ?? 0) : ($item->$column ?? 0), $this->items));
+        return max(array_map(fn($item) => is_array($item) ? ($item[$column] ?? 0) : ($item->$column ?? 0), $this
+            ->items));
     }
 
     public function shuffle(): self

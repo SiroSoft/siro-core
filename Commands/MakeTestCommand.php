@@ -46,7 +46,9 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface
         $dirName = $isUnit ? 'Unit' : 'Feature';
         $suffix = 'Test';
 
-        $path = $this->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . $dirName . DIRECTORY_SEPARATOR . $className . $suffix . '.php';
+        $path = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . $dirName . DIRECTORY_SEPARATOR .
+            $className . $suffix . '.php';
 
         if (is_file($path) && !$this->confirmOverwrite($this->basePath, $path)) {
             return 0;
@@ -105,7 +107,10 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface
             $decoded = json_decode($bodyRaw, true);
             if (is_array($decoded)) {
                 $bodyArray = $decoded;
-                $bodyJson = (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $bodyJson = (string) json_encode(
+                    $decoded,
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                );
             }
         }
 
@@ -121,7 +126,10 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         // Generate test method name from path
-        $testName = 'test_' . strtolower($method) . '_' . trim(preg_replace('/[^a-zA-Z0-9]+/', '_', $apiPath) ?? '', '_');
+        $testName = 'test_' . strtolower($method) . '_' . trim(
+            preg_replace('/[^a-zA-Z0-9]+/', '_', $apiPath) ?? '',
+            '_'
+        );
         $testName = substr($testName, 0, 80);
 
         // Status assertion method
@@ -170,12 +178,14 @@ final class MakeTestCommand implements \Siro\Core\Commands\CommandInterface
         // asserted in the template body below.
         $assertStructure = '';
         if ($responseKeys !== []) {
-            $assertStructure = "\n        \$response->assertJsonPath('success', " . ($status < 400 ? 'true' : 'false') . ");";
+            $assertStructure = "\n        \$response->assertJsonPath('success', " . ($status < 400 ? 'true' : 'false') .
+                ");";
             foreach (array_keys($responseKeys) as $responseKey) {
                 if ($responseKey === 'success' || $responseKey === 'message') {
                     continue;
                 }
-                $assertStructure .= "\n        \$this->assertArrayHasKey('" . addslashes((string) $responseKey) . "', \$body);";
+                $assertStructure .= "\n        \$this->assertArrayHasKey('" . addslashes((string) $responseKey) .
+                    "', \$body);";
             }
         }
 

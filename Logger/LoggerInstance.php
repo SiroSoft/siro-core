@@ -23,7 +23,19 @@ final class LoggerInstance implements LoggerInterface
     /** @var array{headers: array<int, string>, body: array<int, string>, query: array<int, string>} */
     private array $sanitizeConfig = [
         'headers' => ['authorization', 'cookie', 'x-api-key', 'x-csrf-token', 'session-id'],
-        'body' => ['password', 'token', 'otp', 'secret', 'credit_card', 'credit-card', 'card_number', 'cvv', 'pin', 'ssn', 'passport'],
+        'body' => [
+            'password',
+            'token',
+            'otp',
+            'secret',
+            'credit_card',
+            'credit-card',
+            'card_number',
+            'cvv',
+            'pin',
+            'ssn',
+            'passport'
+        ],
         'query' => ['token', 'key', 'secret', 'api_key', 'code'],
     ];
 
@@ -86,8 +98,15 @@ final class LoggerInstance implements LoggerInterface
         }
     }
 
-    public function request(string $method, string $path, int $status, float $timeMs, string $ip = '', string $traceId = '', string $userAgent = ''): void
-    {
+    public function request(
+        string $method,
+        string $path,
+        int $status,
+        float $timeMs,
+        string $ip = '',
+        string $traceId = '',
+        string $userAgent = ''
+    ): void {
         $parts = [
             date('Y-m-d H:i:s'),
             strtoupper($method),
@@ -143,7 +162,8 @@ final class LoggerInstance implements LoggerInterface
 
             $trace = $error->getTraceAsString();
             if ($trace !== '') {
-                $line .= PHP_EOL . '  Stack trace:' . PHP_EOL . '  ' . str_replace(PHP_EOL, PHP_EOL . '  ', $this->sanitize($trace));
+                $line .= PHP_EOL . '  Stack trace:' . PHP_EOL . '  ' . str_replace(PHP_EOL, PHP_EOL . '  ', $this
+                    ->sanitize($trace));
             }
         } else {
             $line = sprintf('[%s] %s', date('Y-m-d H:i:s'), $this->sanitize($error));
@@ -248,7 +268,8 @@ final class LoggerInstance implements LoggerInterface
             '/"(credit_card|card_number|cvv|cvc|ssn|passport)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
             '/"(session_id|sessionid)"\s*:\s*"[^"]{4,}"/i' => '"$1":"[REDACTED]"',
             '/"(refresh_token|access_token)"\s*:\s*"[^"]{8,}"/i' => '"$1":"[REDACTED]"',
-            '/\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/' => '[REDACTED-CARD]',
+            '/\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/' =>
+                '[REDACTED-CARD]',
         ];
 
         $this->compiledSanitizePatterns = [
@@ -345,7 +366,9 @@ final class LoggerInstance implements LoggerInterface
 
     private function getTraceDateDir(string $traceId = ''): string
     {
-        $dir = $this->traceDir . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR . date('d');
+        $dir = $this
+            ->traceDir . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m') . DIRECTORY_SEPARATOR .
+            date('d');
         if ($traceId !== '') {
             $prefix = substr(hash('xxh3', $traceId), 0, 2);
             $dir .= DIRECTORY_SEPARATOR . $prefix;
@@ -406,7 +429,10 @@ final class LoggerInstance implements LoggerInterface
             mkdir($traceDateDir, 0775, true);
         }
         $traceFile = $traceDateDir . DIRECTORY_SEPARATOR . $traceId . '.json';
-        file_put_contents($traceFile, (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+        file_put_contents(
+            $traceFile,
+            (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+        );
 
         if ($this->shouldCleanTraces()) {
             $this->cleanOldTraces();
@@ -527,7 +553,8 @@ final class LoggerInstance implements LoggerInterface
 
     private function protectLogDir(): void
     {
-        $dirs = array_filter([$this->logDir, $this->dailyDir, $this->mainDir, $this->traceDir], fn (string $d) => is_dir($d));
+        $dirs = array_filter([$this->logDir, $this->dailyDir, $this->mainDir, $this
+            ->traceDir], fn (string $d) => is_dir($d));
 
         foreach ($dirs as $dir) {
             $htaccess = $dir . DIRECTORY_SEPARATOR . '.htaccess';

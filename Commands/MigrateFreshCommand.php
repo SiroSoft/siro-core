@@ -146,7 +146,10 @@ final class MigrateFreshCommand implements \Siro\Core\Commands\CommandInterface
                     $pdo->beginTransaction();
                 } catch (Throwable) {
                     $canTransaction = false;
-                    $this->warn('Transactions are not supported by this driver; running migration without a transaction: ' . $migrationName);
+                    $this
+                        ->warn('Transactions are not supported by this driver; running migration without a ' .
+                        'transaction: ' .
+                        $migrationName);
                 }
 
                 $instance->up($pdo);

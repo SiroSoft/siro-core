@@ -51,7 +51,10 @@ final class AuthMiddleware implements MiddlewareInterface
 
             $user = $this->resolveUser($request, $userId);
 
-            if (!$user instanceof Model || (is_numeric($user->getAttribute('status')) ? (int) $user->getAttribute('status') : 0) !== 1) {
+            if (
+                !$user instanceof Model || (is_numeric($user->getAttribute('status')) ? (int) $user
+                ->getAttribute('status') : 0) !== 1
+            ) {
                 return Response::error('Unauthorized', 401, [
                     'token' => ['Invalid or expired token'],
                 ]);
@@ -59,7 +62,8 @@ final class AuthMiddleware implements MiddlewareInterface
 
             /** @var array<string, mixed> $userData */
             $userData = $user->toArray();
-            $tokenVer = isset($userData['token_version']) ? (is_numeric($userData['token_version']) ? (int) $userData['token_version'] : 0) : 1;
+            $tokenVer = isset($userData['token_version']) ? (is_numeric($userData['token_version']) ?
+                (int) $userData['token_version'] : 0) : 1;
             if ($tokenVer !== $tokenVersion) {
                 return Response::error('Unauthorized', 401, [
                     'token' => ['Invalid or expired token'],
@@ -76,11 +80,14 @@ final class AuthMiddleware implements MiddlewareInterface
             $userRoleVal = isset($userData['role']) && is_string($userData['role'])
                 ? $userData['role']
                 : (isset($userData['role']) && is_scalar($userData['role']) ? (string) $userData['role'] : 'user');
-            $userStatusVal = isset($userData['status']) && is_numeric($userData['status']) ? (int) $userData['status'] : 0;
-            $userTokenVerVal = isset($userData['token_version']) && is_numeric($userData['token_version']) ? (int) $userData['token_version'] : 1;
+            $userStatusVal = isset($userData['status']) && is_numeric($userData['status']) ? (int) $userData['status'] :
+                0;
+            $userTokenVerVal = isset($userData['token_version']) && is_numeric($userData['token_version']) ?
+                (int) $userData['token_version'] : 1;
             $userCreatedAtVal = isset($userData['created_at']) && is_string($userData['created_at'])
                 ? $userData['created_at']
-                : (isset($userData['created_at']) && is_scalar($userData['created_at']) ? (string) $userData['created_at'] : '');
+                : (isset($userData['created_at']) && is_scalar($userData['created_at']) ?
+                    (string) $userData['created_at'] : '');
             $userAvatarVal = isset($userData['avatar']) && is_string($userData['avatar'])
                 ? $userData['avatar']
                 : (isset($userData['avatar']) && is_scalar($userData['avatar']) ? (string) $userData['avatar'] : '');
@@ -113,7 +120,8 @@ final class AuthMiddleware implements MiddlewareInterface
                 }
             }
         } catch (Throwable $e) {
-            Logger::error('Authentication failed: ' . $e->getMessage() . ' | IP: ' . $request->ip() . ' | Path: ' . $request->path());
+            Logger::error('Authentication failed: ' . $e->getMessage() . ' | IP: ' . $request
+                ->ip() . ' | Path: ' . $request->path());
 
             return Response::error('Unauthorized', 401, [
                 'token' => ['Invalid or expired token'],

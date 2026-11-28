@@ -54,7 +54,9 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('  ' . str_repeat('=', 50));
 
         // Create temp benchmark table
-        $pdo->exec('CREATE TEMP TABLE IF NOT EXISTS _bench_ (id INTEGER PRIMARY KEY, key TEXT, value TEXT, created_at TEXT)');
+        $pdo
+            ->exec('CREATE TEMP TABLE IF NOT EXISTS _bench_ (id INTEGER PRIMARY KEY, key TEXT, value TEXT, ' .
+            'created_at TEXT)');
         $pdo->exec('DELETE FROM _bench_');
 
         $this->write('');
@@ -90,7 +92,11 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface
             $slowStmt->fetch();
         }
         $slowTime = (microtime(true) - $start) * 1000;
-        $this->write('  SELECT (non-indexed): ' . number_format($slowTime > 0 ? round(min($iterations, 100) / ($slowTime / 1000), 0) : 0) . ' ops/sec');
+        $this
+            ->write('  SELECT (non-indexed): ' . number_format($slowTime > 0 ? round(
+                min($iterations, 100) / ($slowTime / 1000),
+                0
+            ) : 0) . ' ops/sec');
 
         // UPDATE benchmark
         $start = microtime(true);
@@ -128,7 +134,8 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface
                 if ($tblName === '') {
                     continue;
                 }
-                $countVal = $this->safeQuery($pdo, "SELECT COUNT(*) FROM \"" . str_replace('"', '""', $tblName) . '"') ?? 0;
+                $countVal = $this
+                    ->safeQuery($pdo, "SELECT COUNT(*) FROM \"" . str_replace('"', '""', $tblName) . '"') ?? 0;
                 $cnt = is_numeric($countVal) ? (int) $countVal : 0;
                 if ($cnt > $largestCount) {
                     $largestCount = $cnt;
@@ -137,7 +144,9 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface
             }
             if ($largestTable !== '' && $largestCount > 0) {
                 $this->write('');
-                $this->write('  Real-table benchmark (table: ' . $largestTable . ', ' . number_format($largestCount) . ' rows)');
+                $this
+                    ->write('  Real-table benchmark (table: ' . $largestTable . ', ' . number_format($largestCount) .
+                    ' rows)');
                 $this->write('');
 
                 // SELECT benchmark on real table
@@ -150,7 +159,9 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface
                 }
                 $realTime = (microtime(true) - $start) * 1000;
                 $realPerSec = $realTime > 0 ? round($limitIter / ($realTime / 1000), 0) : 0;
-                $this->write('  SELECT (real table): ' . number_format($realPerSec) . ' ops/sec (' . round($realTime, 1) . 'ms total)');
+                $this
+                    ->write('  SELECT (real table): ' . number_format($realPerSec) . ' ops/sec (' .
+                    round($realTime, 1) . 'ms total)');
 
                 // COUNT benchmark
                 $start = microtime(true);
@@ -162,7 +173,9 @@ final class DbBenchmarkCommand implements \Siro\Core\Commands\CommandInterface
                 }
                 $countTime = (microtime(true) - $start) * 1000;
                 $countPerSec = $countTime > 0 ? round($limitIter / ($countTime / 1000), 0) : 0;
-                $this->write('  COUNT:   ' . number_format($countPerSec) . ' ops/sec (' . round($countTime, 1) . 'ms total)');
+                $this
+                    ->write('  COUNT:   ' . number_format($countPerSec) . ' ops/sec (' . round($countTime, 1) .
+                    'ms total)');
             }
         }
 

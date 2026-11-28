@@ -59,11 +59,14 @@ final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface
         $this->write('  Mode:     ' . ($liteConfig->isEnabled() ? 'Siro Lite' : 'Standard SQLite'));
         $this->write('  Version:  ' . $this->safeStr($health['version']));
         $this->write('');
-        $this->write('  Size:     ' . $this->safeStr($health['file_size_mb']) . ' MB (file) / ' . $this->safeStr($health['database_size_mb']) . ' MB (pages)');
+        $this->write('  Size:     ' . $this->safeStr($health['file_size_mb']) . ' MB (file) / ' . $this
+            ->safeStr($health['database_size_mb']) . ' MB (pages)');
         $this->write('  Tables:   ' . $this->safeStr($health['table_count']));
         $this->write('  Indexes:  ' . $this->safeStr($health['index_count']));
-        $this->write('  Pages:    ' . $this->safeStr($health['page_count']) . ' total, ' . $this->safeStr($health['free_pages']) . ' free');
-        $this->write('  Fragm.:   ' . $this->safeStr($health['fragmentation_percent']) . '% (' . $this->safeStr($health['fragmentation_level']) . ')');
+        $this->write('  Pages:    ' . $this->safeStr($health['page_count']) . ' total, ' . $this
+            ->safeStr($health['free_pages']) . ' free');
+        $this->write('  Fragm.:   ' . $this->safeStr($health['fragmentation_percent']) . '% (' . $this
+            ->safeStr($health['fragmentation_level']) . ')');
         $walEnabled = is_scalar($health['wal_enabled'] ?? false) ? (bool) $health['wal_enabled'] : false;
         $this->write('  WAL:      ' . ($walEnabled ? 'Enabled' : 'Disabled'));
         $walSizeBytes = $health['wal_size_bytes'] ?? 0;
@@ -116,7 +119,8 @@ final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface
             $this->write('  Size:     ' . number_format($sizeMb, 2) . ' MB');
 
             // Table count
-            $tblSql = "SELECT COUNT(*) AS c FROM information_schema.TABLES WHERE table_schema = " . $pdo->quote($database);
+            $tblSql = "SELECT COUNT(*) AS c FROM information_schema.TABLES WHERE table_schema = " . $pdo
+                ->quote($database);
             $tblSql .= " AND table_type = 'BASE TABLE'";
             $tblStmt = $pdo->query($tblSql);
             $tblRow = $tblStmt !== false ? $tblStmt->fetch(PDO::FETCH_ASSOC) : false;
@@ -124,7 +128,9 @@ final class DbHealthCommand implements \Siro\Core\Commands\CommandInterface
             $this->write('  Tables:   ' . $tables);
 
             // Index count
-            $idxStmt = $pdo->query("SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE table_schema = " . $pdo->quote($database));
+            $idxStmt = $pdo
+                ->query("SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE table_schema = " . $pdo
+                ->quote($database));
             $idxRow = $idxStmt !== false ? $idxStmt->fetch(PDO::FETCH_ASSOC) : false;
             $indexes = is_array($idxRow) && is_scalar($idxRow['c'] ?? null) ? (int) $idxRow['c'] : 0;
             $this->write('  Indexes:  ' . $indexes);

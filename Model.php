@@ -152,7 +152,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             if ($key !== '') {
                 trigger_error(
                     sprintf(
-                        'Mass assignment attempt on unprotected model [%s]: "%s" was discarded because $fillable is empty.',
+                        'Mass assignment attempt on unprotected model [%s]: "%s" was discarded because $fillable is ' .
+                            'empty.',
                         static::class,
                         $key
                     ),
@@ -684,7 +685,10 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
                 Event::emit("{$table}.updated", $this);
                 if (class_exists(Mercure::class)) {
                     $pk = $this->getAttribute($key);
-                    Mercure::publish(Mercure::topic($table, is_numeric($pk) ? (int) $pk : (is_string($pk) ? $pk : null)), [
+                    Mercure::publish(Mercure::topic(
+                        $table,
+                        is_numeric($pk) ? (int) $pk : (is_string($pk) ? $pk : null)
+                    ), [
                         'action' => 'updated',
                         'id' => $pk,
                     ]);
@@ -825,7 +829,8 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     {
         if (!array_key_exists($name, $this->relations) && !self::$nPlusOneWarned) {
             $class = static::class;
-            self::$relationAccessCount[$class . '::' . $name] = (self::$relationAccessCount[$class . '::' . $name] ?? 0) + 1;
+            self::$relationAccessCount[$class . '::' . $name] = (self::$relationAccessCount[$class . '::' . $name] ??
+                0) + 1;
             if (self::$relationAccessCount[$class . '::' . $name] >= self::N_PLUS_ONE_THRESHOLD) {
                 self::$nPlusOneWarned = true;
                 $msg = "N+1 detected: {$class}::{$name} accessed " . self::$relationAccessCount[$class . '::' . $name]

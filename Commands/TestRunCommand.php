@@ -40,7 +40,8 @@ final class TestRunCommand implements \Siro\Core\Commands\CommandInterface
             return 1;
         }
 
-        $phpunitPath = $this->basePath . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'phpunit';
+        $phpunitPath = $this
+            ->basePath . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'phpunit';
         if (!is_file($phpunitPath)) {
             $this->write("  \033[33mPHPUnit not found. Run 'composer install' first.\033[0m");
             return 1;
@@ -54,7 +55,13 @@ final class TestRunCommand implements \Siro\Core\Commands\CommandInterface
 
         $allowedPassthruFlags = ['--filter=', '--testsuite=', '--stop-on-failure', '--stop-on-error', '--group=',
             '--exclude-group=', '--colors=', '--testdox', '--prepend=', '--coverage-html=', '--coverage-text=',
-            '--coverage-clover=', '--log-junit=', '--debug', '--no-configuration', '--bootstrap=', '-c', '--configuration=',
+            '--coverage-clover=',
+            '--log-junit=',
+            '--debug',
+            '--no-configuration',
+            '--bootstrap=',
+            '-c',
+            '--configuration=',
             '--no-coverage'];
 
         // Parse flags, forward only whitelisted ones to PHPUnit
@@ -115,7 +122,8 @@ final class TestRunCommand implements \Siro\Core\Commands\CommandInterface
             $this->write("  Filter: " . implode(' ', array_filter($args, fn($a) => str_starts_with($a, '--filter='))));
         }
         if ($hasSuite) {
-            $this->write("  Suite: " . implode(' ', array_filter($args, fn($a) => str_starts_with($a, '--testsuite='))));
+            $this
+                ->write("  Suite: " . implode(' ', array_filter($args, fn($a) => str_starts_with($a, '--testsuite='))));
         }
         $this->write('');
 

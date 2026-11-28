@@ -33,7 +33,9 @@ final class MakeOAuthKeysCommand implements \Siro\Core\Commands\CommandInterface
     public function run(array $args): int
     {
         if (!class_exists(Key::class)) {
-            $this->error('OAuth2 is not installed. Run: composer require league/oauth2-server laminas/laminas-diactoros');
+            $this
+                ->error('OAuth2 is not installed. Run: composer require league/oauth2-server ' .
+                'laminas/laminas-diactoros');
             return 1;
         }
 

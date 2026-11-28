@@ -295,7 +295,8 @@ final class Blueprint
                     }
                 }
                 if (!$alreadyHasInline) {
-                    $parts[] = '  PRIMARY KEY (' . implode(', ', array_map(fn(string $c): string => $this->quote($c), $primaryColumns)) . ')';
+                    $parts[] = '  PRIMARY KEY (' . implode(', ', array_map(fn(string $c): string => $this
+                        ->quote($c), $primaryColumns)) . ')';
                 }
             } elseif ($cmd['type'] === 'unique' || $cmd['type'] === 'index') {
                 if ($isMysql) {
@@ -471,7 +472,8 @@ final class Blueprint
             } elseif ($col->defaultValue === false) {
                 $default = '0';
             } else {
-                $default = is_string($col->defaultValue) ? "'{$col->defaultValue}'" : (is_scalar($col->defaultValue) ? (string) $col->defaultValue : '');
+                $default = is_string($col->defaultValue) ? "'{$col->defaultValue}'" : (is_scalar($col
+                    ->defaultValue) ? (string) $col->defaultValue : '');
             }
             $parts[] = "DEFAULT {$default}";
         }
@@ -594,10 +596,12 @@ final class Blueprint
             $cmdName = $cmd['name'] ?? null;
             $name = is_string($cmdName) ? $cmdName : ('uq_' . $this->table . '_' . implode('_', $columns));
             if ($inline) {
-                return "CONSTRAINT {$name} UNIQUE (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
+                return "CONSTRAINT {$name} UNIQUE (" . implode(', ', array_map(fn($c) => $this
+                    ->quote($c), $columns)) . ")";
             }
             $tableSql = $this->quote($this->table);
-            return "CREATE UNIQUE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
+            return "CREATE UNIQUE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this
+                ->quote($c), $columns)) . ")";
         }
 
         if ($cmd['type'] === 'index') {
@@ -609,7 +613,8 @@ final class Blueprint
                 return "INDEX {$name} (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
             }
             $tableSql = $this->quote($this->table);
-            return "CREATE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this->quote($c), $columns)) . ")";
+            return "CREATE INDEX {$name} ON {$tableSql} (" . implode(', ', array_map(fn($c) => $this
+                ->quote($c), $columns)) . ")";
         }
 
         return null;

@@ -33,7 +33,8 @@ final class Hash
         return password_verify($value, $hash);
     }
 
-    /** @param array<string, mixed> $options */ public static function needsRehash(string $hash, array $options = []): bool
+    /** @param array<string, mixed> $options */
+    public static function needsRehash(string $hash, array $options = []): bool
     {
         return password_needs_rehash($hash, PASSWORD_BCRYPT, $options);
     }

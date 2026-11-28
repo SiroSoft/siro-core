@@ -14,7 +14,10 @@ final class CorsMiddleware implements MiddlewareInterface
     {
         $allowedOrigins = (string) Env::get('CORS_ALLOWED_ORIGINS', '*');
         $allowedMethods = (string) Env::get('CORS_ALLOWED_METHODS', 'GET,POST,PUT,DELETE,OPTIONS');
-        $allowedHeaders = (string) Env::get('CORS_ALLOWED_HEADERS', 'Content-Type,Authorization,X-Requested-With,X-Request-Id');
+        $allowedHeaders = (string) Env::get(
+            'CORS_ALLOWED_HEADERS',
+            'Content-Type,Authorization,X-Requested-With,X-Request-Id'
+        );
 
         $origin = (string) $request->header('origin', '');
         $allowOrigin = $allowedOrigins === '*' ? '*' : $this->resolveOrigin($origin, $allowedOrigins);
@@ -34,15 +37,24 @@ final class CorsMiddleware implements MiddlewareInterface
         return $result;
     }
 
-    private function appendHeaders(Response $response, string $allowOrigin, string $allowedMethods, string $allowedHeaders, bool $allowCredentials): void
-    {
+    private function appendHeaders(
+        Response $response,
+        string $allowOrigin,
+        string $allowedMethods,
+        string $allowedHeaders,
+        bool $allowCredentials
+    ): void {
         if ($allowOrigin !== '') {
             $response->header('Access-Control-Allow-Origin', $allowOrigin);
         }
         $response->header('Access-Control-Allow-Methods', $allowedMethods);
         $response->header('Access-Control-Allow-Headers', $allowedHeaders);
         $response->header('Access-Control-Allow-Credentials', $allowCredentials ? 'true' : 'false');
-        $response->header('Access-Control-Expose-Headers', 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Siro-Trace-Id');
+        $response
+            ->header(
+                'Access-Control-Expose-Headers',
+                'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Siro-Trace-Id'
+            );
         $response->header('Vary', 'Origin');
     }
 

@@ -141,7 +141,9 @@ final class DbOptimizeCommand implements \Siro\Core\Commands\CommandInterface
         $ok = true;
 
         try {
-            $an = $pdo->query('ANALYZE TABLE users, products, categories, orders, posts, tags, refresh_tokens, api_keys, jobs');
+            $an = $pdo
+                ->query('ANALYZE TABLE users, products, categories, orders, posts, tags, refresh_tokens, api_keys, ' .
+                'jobs');
             if ($an !== false) {
                 $an->fetchAll(\PDO::FETCH_ASSOC);
             }
@@ -161,7 +163,9 @@ final class DbOptimizeCommand implements \Siro\Core\Commands\CommandInterface
         }
 
         try {
-            $opt = $pdo->query('OPTIMIZE TABLE users, products, categories, orders, posts, tags, refresh_tokens, api_keys, jobs');
+            $opt = $pdo
+                ->query('OPTIMIZE TABLE users, products, categories, orders, posts, tags, refresh_tokens, api_keys, ' .
+                'jobs');
             if ($opt !== false) {
                 $opt->fetchAll(\PDO::FETCH_ASSOC);
             }

@@ -273,7 +273,13 @@ final class Container
             return [true, $value];
         }
 
-        if (is_object($value) && !in_array($typeName, ['string', 'int', 'float', 'bool', 'array', 'callable', 'iterable', 'object'], true)) {
+        if (
+            is_object($value) && !in_array(
+                $typeName,
+                ['string', 'int', 'float', 'bool', 'array', 'callable', 'iterable', 'object'],
+                true
+            )
+        ) {
             if ($value instanceof $typeName) {
                 return [true, $value];
             }
@@ -315,7 +321,8 @@ final class Container
 
         if (!$type->allowsNull()) {
             throw new RuntimeException(
-                "Cannot inject [{$key}] into {$class}::\${$param->getName()}: expected {$typeName}, got " . gettype($value) . '.'
+                "Cannot inject [{$key}] into {$class}::\${$param->getName()}: expected {$typeName}, got " .
+                    gettype($value) . '.'
             );
         }
         if ($param->isDefaultValueAvailable()) {
@@ -333,7 +340,8 @@ final class Container
             throw new RuntimeException("Circular dependency detected: {$chain} -> {$class}");
         }
         if (count($this->resolvingStack) >= self::MAX_RESOLVE_DEPTH) {
-            throw new RuntimeException("Maximum resolution depth ({self::MAX_RESOLVE_DEPTH}) exceeded. Possible circular dependency.");
+            throw new RuntimeException("Maximum resolution depth ({self::MAX_RESOLVE_DEPTH}) exceeded. Possible " .
+                "circular dependency.");
         }
 
         $this->resolvingStack[$class] = 1;

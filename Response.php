@@ -62,8 +62,12 @@ final class Response
      * @param array<string, mixed> $meta
      */
     /** @param array<string, mixed> $meta */
-    public static function success(mixed $data = null, string $message = 'OK', int $statusCode = 200, array $meta = []): self
-    {
+    public static function success(
+        mixed $data = null,
+        string $message = 'OK',
+        int $statusCode = 200,
+        array $meta = []
+    ): self {
         $meta['timestamp'] = date('c');
         return new self([
             'success' => true,
@@ -74,8 +78,12 @@ final class Response
     }
 
     /** @param array<string, mixed> $errors */
-    public static function error(string $message, int $statusCode = 400, array $errors = [], string $errorCode = ''): self
-    {
+    public static function error(
+        string $message,
+        int $statusCode = 400,
+        array $errors = [],
+        string $errorCode = ''
+    ): self {
         $meta = ['timestamp' => date('c')];
         if ($errors !== []) {
             $meta['errors'] = $errors;
@@ -382,7 +390,8 @@ final class Response
         return trim($clean);
     }
 
-    /** @param array<string, string> $headers */ public static function download(string $filePath, ?string $filename = null, array $headers = []): self
+    /** @param array<string, string> $headers */
+    public static function download(string $filePath, ?string $filename = null, array $headers = []): self
     {
         try {
             $filePath = self::sanitizeDownloadPath($filePath);
@@ -449,7 +458,8 @@ final class Response
     /**
      * Create a file response (inline display).
      */
-    /** @param array<string, string> $headers */ public static function file(string $filePath, ?string $contentType = null, array $headers = []): self
+    /** @param array<string, string> $headers */
+    public static function file(string $filePath, ?string $contentType = null, array $headers = []): self
     {
         try {
             $filePath = self::sanitizeDownloadPath($filePath);
@@ -461,7 +471,9 @@ final class Response
         $response->isFileResponse = true;
         $response->filePath = $filePath;
         $response->extraHeaders['Content-Disposition'] = 'inline';
-        $response->extraHeaders['Content-Type'] = $contentType ?? (mime_content_type($filePath) ?: 'application/octet-stream');
+        $response
+            ->extraHeaders['Content-Type'] = $contentType ?? (mime_content_type($filePath) ?:
+            'application/octet-stream');
         $response->extraHeaders['Content-Length'] = (string) filesize($filePath);
 
         foreach ($headers as $name => $value) {
